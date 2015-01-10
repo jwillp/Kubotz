@@ -5,8 +5,6 @@ package com.brm.GoatEngine.ECS.Components;
 
 public abstract class Component {
 
-    public final static String ID = "GENERIC_PROPERTY";
-
     private boolean isEnabled;
 
 

@@ -7,6 +7,7 @@ import java.util.HashSet;
  */
 public class TagsComponent extends Component {
 
+    public static final String ID = "TAGS_COMPONENT";
     private HashSet<String> tags = new HashSet<String>();
 
     /**
