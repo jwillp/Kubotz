@@ -2,7 +2,7 @@ package com.brm.GoatEngine.Math;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.Kubotz.Properties.PhysicsProperty;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 
 import java.util.ArrayList;
 
@@ -90,10 +90,10 @@ public class QuadTree {
 
         for(QuadTree node: this.getNodes()){
 
-            PhysicsProperty bp = (PhysicsProperty)entity.getProperty(PhysicsProperty.ID);
+            /*PhysicsComponent bp = (PhysicsComponent)entity.getProperty(PhysicsComponent.ID);
             if(  node.getBounds().contains(bp.getBounds())){
                 return currentIndex;
-            }
+            }*/
             currentIndex++;
         }
         return -1; // Subnode not found (part of the root then)

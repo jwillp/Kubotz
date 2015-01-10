@@ -1,14 +1,15 @@
-package com.brm.Kubotz.Properties;
+package com.brm.GoatEngine.ECS.Components;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Properties.Property;
+import com.brm.GoatEngine.ECS.Components.Component;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World
+ * Dependencie: Box2D
  */
-public class PhysicsProperty extends Property {
+public class PhysicsComponent extends Component {
 
     public final static String ID = "PHYSICS_PROPERTY";
 
@@ -24,7 +25,7 @@ public class PhysicsProperty extends Property {
 
 
 
-    public PhysicsProperty(World world, BodyDef.BodyType bodyType, float x, float y, float width, float height ){
+    public PhysicsComponent(World world, BodyDef.BodyType bodyType, float x, float y, float width, float height){
 
         this.setWidth(width);
         this.setHeight(height);

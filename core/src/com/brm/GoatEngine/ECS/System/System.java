@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.ECS.System;
 
 
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.EntityManager;
 
 public abstract class System {
 

@@ -1,14 +1,14 @@
-package com.brm.Kubotz.Properties.Skills;
+package com.brm.Kubotz.Component.Skills;
 
 /**
  * Magnetic Feet
  */
-public class MagneticFeetProperty extends SkillProperty {
+public class MagneticFeetComponent extends SkillComponent {
     /**
      * @param coolDownDelay  : in seconds
      * @param maxFlyDuration : in seconds
      */
-    public MagneticFeetProperty() {
+    public MagneticFeetComponent() {
         super(0, 0);
     }
 }

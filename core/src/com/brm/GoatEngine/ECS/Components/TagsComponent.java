@@ -1,13 +1,11 @@
-package com.brm.Kubotz.Properties;
-
-import com.brm.GoatEngine.ECS.Properties.Property;
+package com.brm.GoatEngine.ECS.Components;
 
 import java.util.HashSet;
 
 /**
  * Used to add tags to an entity
  */
-public class TagsProperty extends Property {
+public class TagsComponent extends Component {
 
     private HashSet<String> tags = new HashSet<String>();
 

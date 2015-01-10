@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Properties.Skills;
+package com.brm.Kubotz.Component.Skills;
 
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -6,7 +6,7 @@ import com.brm.GoatEngine.Utils.Timer;
  * Lets an Entity Fly i.e. it is not affected by Gravity
  * (Flying platforms will have this for instance)
  */
-public class FlyProperty extends SkillProperty {
+public class FlyComponent extends SkillComponent {
 
     public static String ID =  "FLY_PROPERTY";
 
@@ -14,7 +14,7 @@ public class FlyProperty extends SkillProperty {
     private Timer duration; //Timing how long the flying has been used
 
 
-    public FlyProperty(int coolDownDelay, int maxFlyDuration){
+    public FlyComponent(int coolDownDelay, int maxFlyDuration){
         super(coolDownDelay, maxFlyDuration);
     }
 

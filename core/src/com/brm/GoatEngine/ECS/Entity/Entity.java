@@ -1,94 +1,16 @@
 package com.brm.GoatEngine.ECS.Entity;
 
-import com.brm.GoatEngine.ECS.Properties.Property;
+import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.Kubotz.Component.ControllableComponent;
 
-import java.util.HashSet;
 import java.util.Hashtable;
 
 public class Entity {
 
     protected String ID;
-    protected Hashtable<String, Property> properties = new  Hashtable<String, Property>();
-
-
-
-
-    /**
-     * Returns whether or not the entity has a certain Property
-     */
-    public boolean hasProperty(String propertyName){
-        return this.properties.containsKey(propertyName);
-    }
-
-
-    /**
-     * Adds a new property
-     * @param property
-     * @return
-     */
-    public Entity addProperty(Property property, String propertyName){
-        this.properties.put(propertyName, property);
-        return this;
-    }
-
-
-    /**
-     * Retrieve a property by its name
-     * @param propertyName
-     * @return
-     */
-    public Property getProperty(String propertyName){
-
-        Property property = this.properties.get(propertyName);
-        if(property != null)
-            return property;
-        else {
-            throw new Property.EntityPropertyNotFoundException(propertyName);
-        }
-
-    }
-
-
-    /**
-     * Removes a property
-     * @param propertyName
-     */
-    public void removeProperty(String propertyName){
-        this.properties.remove(propertyName);
-
-    }
-
-
-    /**
-     * Enables a property
-     */
-    public void enableProperty(String propertyName){
-        this.properties.get(propertyName).setEnabled(true);
-    }
-
-    /**
-     * Disables a property
-     */
-    public void disableProperty(String propertyName){
-        this.properties.get(propertyName).setEnabled(false);
-    }
-
-
-    /**
-     * Returns all the properties of the Entity
-     * @return
-     */
-    public Hashtable<String, Property> getProperties() {
-        return properties;
-    }
-
-    /**
-     * Sets the properties of the entity
-     * @param properties
-     */
-    public void setProperties(Hashtable<String, Property> properties) {
-        this.properties = properties;
-    }
+    protected EntityManager manager;
 
 
     public String getID() {
@@ -99,8 +21,57 @@ public class Entity {
         this.ID = ID;
     }
 
+    public void setManager(EntityManager manager) {
+        this.manager = manager;
+    }
+
+    // Wrapper methods //
+    // TODO catch null pointer on manager meaning entity not registered
+    /**
+     * WRAPPER METHOD adds a component to the entity in the entity manager
+     * @param cp
+     * @param compId
+     * @return
+     */
+    public Entity addComponent(Component cp, String compId) {
+        manager.addComponent(compId, cp, getID());
+        return this;
+    }
+
+    /**
+     * WRAPPER METHOD Gets a component using its ID
+     * @param componentId
+     * @return
+     */
+    public Component getComponent(String componentId){
+        return manager.getComponent(componentId, getID());
+    }
+
+    /**
+     * WRAPPER METHOD Returns whether or not the entity has a certain Component
+     * @param componentId
+     * @return
+     */
+    public boolean hasComponent(String componentId){
+        return  manager.hasComponent(componentId, getID());
+    }
+
+
+    /**
+     * Enables a Component
+     */
+    public void enableComponent(String componentId){
+        this.getComponent(componentId).setEnabled(true);
+    }
+
+    /**
+     * Disables a Component
+     */
+    public void disableComponent(String componentId){
+        this.getComponent(componentId).setEnabled(false);
+    }
+
+
 
 }
-
-
 

@@ -2,9 +2,9 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.brm.Kubotz.ActionInput;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.Kubotz.GameAction;
+import com.brm.Kubotz.Input.ActionInput;
+import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.Kubotz.Input.GameAction;
 
 import java.util.ArrayList;
 

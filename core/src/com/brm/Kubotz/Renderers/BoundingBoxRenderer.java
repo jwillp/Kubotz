@@ -5,8 +5,8 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.Kubotz.Properties.AppearanceProperty;
-import com.brm.Kubotz.Properties.PhysicsProperty;
+import com.brm.Kubotz.Component.AppearanceComponent;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 
 /**
  * Used to render a Bounding Box.
@@ -24,8 +24,8 @@ public class BoundingBoxRenderer {
 
 
     public void draw(OrthographicCamera cam){
-        Rectangle rect = ((PhysicsProperty)entity.getProperty(PhysicsProperty.ID)).getBounds();
-        Color color = ((AppearanceProperty)entity.getProperty(AppearanceProperty.ID)).getDebugColor();
+        Rectangle rect = ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).getBounds();
+        Color color = ((AppearanceComponent)entity.getComponent(AppearanceComponent.ID)).getDebugColor();
 
         shapeRenderer.setProjectionMatrix(cam.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);

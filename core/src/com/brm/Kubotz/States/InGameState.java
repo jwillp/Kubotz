@@ -5,15 +5,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.Kubotz.Entities.BlockBuilder;
 import com.brm.Kubotz.Entities.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.Kubotz.GameAction;
-import com.brm.Kubotz.Properties.CameraTargetProperty;
-import com.brm.Kubotz.Properties.PhysicsProperty;
+import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.Kubotz.Entities.RobotBuilder;
+import com.brm.Kubotz.Input.GameAction;
+import com.brm.Kubotz.Component.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.Kubotz.Systems.CharacterControlSystem;
 import com.brm.Kubotz.Systems.InputTranslationSystem;
 import com.brm.Kubotz.Systems.PhysicsSystem;
@@ -77,21 +80,22 @@ public class InGameState extends GameState {
         Random rand = new Random();
 
         //ground
-        this.entityManager.registerEntity(EntityFactory.createBlock(physicsSystem.getWorld(), 1, 1, 20,1));
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(1,1)).withSize(20,1).build();
+
 
         //Blocks
-        this.entityManager.registerEntity(EntityFactory.createBlock(physicsSystem.getWorld(), 3, 5, 3,1));
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(3,5)).withSize(3,1).build();
 
-        this.entityManager.registerEntity(EntityFactory.createBlock(physicsSystem.getWorld(), 7, 10, 3,1));
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(7,10)).withSize(3,1).build();
 
-        this.entityManager.registerEntity(EntityFactory.createBlock(physicsSystem.getWorld(), 10, 12, 3,1));
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(10,12)).withSize(3,1).build();
 
 
         // Player
+        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).
+                withCameraTargetComponent().build();
 
-        this.player = EntityFactory.createCharacter(physicsSystem.getWorld(), 2, 5);
-        this.player.addProperty(new CameraTargetProperty(), CameraTargetProperty.ID);
-        this.entityManager.registerEntity(this.player);
+
         Logger.log("In Game State initialised");
 
 
@@ -146,8 +150,10 @@ public class InGameState extends GameState {
             BitmapFont font = new BitmapFont();
             sb.begin();
             font.draw(sb, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
-            font.draw(sb, "IS GROUNDED: " + ((PhysicsProperty)this.player.getProperty(PhysicsProperty.ID)).isGrounded(), 0, Gdx.graphics.getHeight()-30);
-            sb.end();
+            font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent)this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight()-30);
+            font.draw(sb, "HAS CAMERA: " + (this.player.hasComponent(CameraTargetComponent.ID)), 0, Gdx.graphics.getHeight()-50);
+
+        sb.end();
         /*}*/
 
 

@@ -1,9 +1,9 @@
-package com.brm.GoatEngine.ECS.Properties;
+package com.brm.GoatEngine.ECS.Components;
 
 
 
 
-public abstract class Property {
+public abstract class Component {
 
     public final static String ID = "GENERIC_PROPERTY";
 

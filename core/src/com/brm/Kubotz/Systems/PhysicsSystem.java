@@ -5,8 +5,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.Kubotz.Properties.PhysicsProperty;
+import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 
 import java.util.Stack;
 
@@ -37,45 +37,26 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
     @Override
     public void update(float dt) {
 
-        processContacts();
         world.step(1 / 60f, 6, 2);
 
     }
 
 
     /**
-     * Processes all the Box2D contact at once instead of relying
-     * on the callbacks that could happen anytime
+     * Check if a body is grounded according to it's feet sensor
+     * and according to the case set it as grounded or not
+     * @param fixture
+     * @return returns whether or not the test was valid
      */
-    private void processContacts(){
-
-        for(Contact contact: this.contacts){
-            Fixture fixtureA = contact.getFixtureA();
-            Fixture fixtureB = contact.getFixtureB();
-
-
-            Body bodyA = contact.getFixtureA().getBody();
-            Body bodyB = contact.getFixtureB().getBody();
-
-
-            if(bodyA.getType() != bodyB.getType()){
-                Logger.log(fixtureA.getUserData());
-                Logger.log(fixtureB.getUserData());
-                if(fixtureA.getUserData() == "footSensor"){ //And B is logically not a Dynamic body
-
-                    Entity a = (Entity) bodyA.getUserData();
-                    ((PhysicsProperty)a.getProperty(PhysicsProperty.ID)).setGrounded(true);
-
-                }else if(fixtureB.getUserData() == "footSensor"){  //And A is logically not a Dynamic body
-
-                    Entity b = (Entity) bodyB.getUserData();
-                    ((PhysicsProperty)b.getProperty(PhysicsProperty.ID)).setGrounded(true);
-                }
+    public void testFeetSensor(Fixture fixture){
+        if(fixture.getUserData() != null)
+            if(fixture.getUserData().equals("footSensor")){ //And B is logically not a Dynamic body
+                Entity entity = (Entity) fixture.getBody().getUserData();
+                ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).setGrounded(true);
             }
-        }
-        //We are done with it
-        this.contacts.clear();
     }
+
+
 
     // CONTACT LISTENING
 
@@ -84,22 +65,10 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
 
-
-        Body bodyA = contact.getFixtureA().getBody();
-        Body bodyB = contact.getFixtureB().getBody();
-
-
-        if(bodyA.getType() != bodyB.getType()){
-            if(fixtureA.getUserData() == "footSensor"){ //And B is logically not a Dynamic body
-
-                Entity a = (Entity) bodyA.getUserData();
-                ((PhysicsProperty)a.getProperty(PhysicsProperty.ID)).setGrounded(true);
-
-            }else if(fixtureB.getUserData() == "footSensor"){  //And A is logically not a Dynamic body
-
-                Entity b = (Entity) bodyB.getUserData();
-                ((PhysicsProperty)b.getProperty(PhysicsProperty.ID)).setGrounded(true);
-            }
+        //Feet sensor Test
+        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
+            testFeetSensor(fixtureA);
+            testFeetSensor(fixtureB);
         }
 
     }
@@ -109,24 +78,13 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
 
-
-        Body bodyA = contact.getFixtureA().getBody();
-        Body bodyB = contact.getFixtureB().getBody();
-
-
-        if(bodyA.getType() != bodyB.getType()){
-            if(fixtureA.getUserData() == "footSensor"){ //And B is logically not a Dynamic body
-
-                Entity a = (Entity) bodyA.getUserData();
-                ((PhysicsProperty)a.getProperty(PhysicsProperty.ID)).setGrounded(false);
-
-            }else if(fixtureB.getUserData() == "footSensor"){  //And A is logically not a Dynamic body
-
-                Entity b = (Entity) bodyB.getUserData();
-                ((PhysicsProperty)b.getProperty(PhysicsProperty.ID)).setGrounded(false);
-            }
+        //Feet sensor Test
+        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
+            testFeetSensor(fixtureA);
+            testFeetSensor(fixtureB);
         }
     }
+
 
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {}

@@ -5,10 +5,11 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.Kubotz.Properties.PhysicsProperty;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 
 /**
  * Used to display the World
+ * Dependency = LibGDX
  * It manages the Orthographic Camera
  */
 public class Viewport {
@@ -41,7 +42,6 @@ public class Viewport {
         this.speed.x = 3.0f;
         this.speed.y = 8.0f;
 
-
     }
 
 
@@ -50,8 +50,7 @@ public class Viewport {
      * @param target: The gameObject to follow
      */
     public void update(Entity target){
-        PhysicsProperty phys = (PhysicsProperty) target.getProperty(PhysicsProperty.ID);
-
+        PhysicsComponent phys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
         Vector3 cameraPosition = getCamera().position;
         cameraPosition.x += (phys.getPosition().x - cameraPosition.x) * speed.x * Gdx.graphics.getDeltaTime();

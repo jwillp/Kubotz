@@ -1,4 +1,4 @@
-package com.brm.Kubotz;
+package com.brm.Kubotz.Input;
 
 
 import java.util.HashMap;

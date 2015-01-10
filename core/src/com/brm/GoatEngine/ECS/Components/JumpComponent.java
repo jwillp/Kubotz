@@ -1,12 +1,12 @@
-package com.brm.Kubotz.Properties;
+package com.brm.GoatEngine.ECS.Components;
 
 
-import com.brm.GoatEngine.ECS.Properties.Property;
+import com.brm.GoatEngine.ECS.Components.Component;
 
 /**
  * Allows an entity to be able to jump
  */
-public class JumpProperty extends Property {
+public class JumpComponent extends Component {
     public static final String ID = "JUMP_PROPERTY";
 
     private int nbJumpsMax = 1; //The Max number of consecutive jumps
@@ -15,7 +15,7 @@ public class JumpProperty extends Property {
     /**
      * Defaults the number of jumps to 1
      */
-    public JumpProperty(){
+    public JumpComponent(){
         this.setNbJumpsMax(1);
     }
 
@@ -23,7 +23,7 @@ public class JumpProperty extends Property {
      * Allows to put a defined number of jumps
      * @param nbMaxJumps
      */
-    public JumpProperty(int nbMaxJumps){
+    public JumpComponent(int nbMaxJumps){
         this.setNbJumpsMax(nbMaxJumps);
     }
 

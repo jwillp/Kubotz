@@ -1,12 +1,12 @@
-package com.brm.Kubotz.Properties;
+package com.brm.Kubotz.Component;
 
 import com.badlogic.gdx.graphics.Color;
-import com.brm.GoatEngine.ECS.Properties.Property;
+import com.brm.GoatEngine.ECS.Components.Component;
 
 /**
  * Created by Home on 2014-12-25.
  */
-public class AppearanceProperty extends Property {
+public class AppearanceComponent extends Component {
 
     public static String ID = "APPEARANCE_PROPERTY";
 
