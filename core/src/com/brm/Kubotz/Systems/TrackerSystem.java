@@ -29,22 +29,26 @@ public class TrackerSystem extends com.brm.GoatEngine.ECS.System.System{
 
 
     public void trackTarget(Entity tracker, Entity target){
+
         TrackerComponent trackerComp = (TrackerComponent)tracker.getComponent(TrackerComponent.ID);
-        PhysicsComponent trackerPhys = (PhysicsComponent) tracker.getComponent(PhysicsComponent.ID);
-        PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
-
-        Vector2 speed = trackerPhys.getAcceleration(); // TODO see if it works otherwise use lerp
-
-        // Move
-
-        float posX = (targetPhys.getPosition().x - trackerPhys.getPosition().x + trackerComp.distance.x) * speed.x * Gdx.graphics.getDeltaTime();
-        float posY = (targetPhys.getPosition().y - trackerPhys.getPosition().y + trackerComp.distance.y) * speed.y * Gdx.graphics.getDeltaTime();
+        if(!trackerComp.isEnabled()){
 
 
+            PhysicsComponent trackerPhys = (PhysicsComponent) tracker.getComponent(PhysicsComponent.ID);
+            PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
-        trackerPhys.getBody().setLinearVelocity(new Vector2(posX, posY));
+            Vector2 speed = trackerPhys.getAcceleration();
 
+            // Move
+            // TODO If Robot, move like a robot (Jump etc..)
+            float posX = (targetPhys.getPosition().x - trackerPhys.getPosition().x + trackerComp.distance.x)
+                    * speed.x * Gdx.graphics.getDeltaTime();
+            float posY = (targetPhys.getPosition().y - trackerPhys.getPosition().y + trackerComp.distance.y)
+                    * speed.y * Gdx.graphics.getDeltaTime();
 
+            trackerPhys.getBody().setLinearVelocity(new Vector2(posX, posY));
+
+        }
 
 
     }

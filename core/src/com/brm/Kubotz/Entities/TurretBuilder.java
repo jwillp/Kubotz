@@ -110,7 +110,7 @@ public class TurretBuilder extends EntityBuilder{
         turret.addComponent(trackerComponent, TrackerComponent.ID);
 
 
-        
+
         return turret;
     }
 
