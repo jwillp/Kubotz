@@ -1,15 +1,23 @@
 package com.brm.Kubotz.Systems;
 
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Viewport;
 import com.brm.Kubotz.Config;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.Kubotz.Properties.CameraTargetProperty;
+import com.brm.Kubotz.Properties.ControllableProperty;
+import com.brm.Kubotz.Properties.PhysicsProperty;
 
-
+/**
+ * Responsible for displaying all visual ellements on screen
+ */
 public class RenderingSystem extends com.brm.GoatEngine.ECS.System.System {
 
 
@@ -19,19 +27,35 @@ public class RenderingSystem extends com.brm.GoatEngine.ECS.System.System {
     private Box2DDebugRenderer debugRenderer;
 
 
+
+
+
     public RenderingSystem(EntityManager em) {
         super(em);
     }
 
     public void init(){
-        this.viewport = new Viewport(20, 14);
+        this.viewport = new Viewport(20, 20);
         debugRenderer = new Box2DDebugRenderer();
 
 
 
     }
 
-    public void update(){}
+    public void update(){
+            updateCamera();
+
+    }
+
+
+
+    public void updateCamera(){
+        //Todo get the only controllable entity (using ID would ensure that)
+        for(Entity e: this.em.getEntitiesWithProperty(CameraTargetProperty.ID)){
+            this.viewport.update(e);
+        }
+    }
+
 
 
     public void render(World world){

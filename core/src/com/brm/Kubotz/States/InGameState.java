@@ -12,9 +12,10 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.Kubotz.Entities.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.Kubotz.GameAction;
+import com.brm.Kubotz.Properties.CameraTargetProperty;
 import com.brm.Kubotz.Properties.PhysicsProperty;
 import com.brm.Kubotz.Systems.CharacterControlSystem;
-import com.brm.Kubotz.Systems.InputSystem;
+import com.brm.Kubotz.Systems.InputTranslationSystem;
 import com.brm.Kubotz.Systems.PhysicsSystem;
 import com.brm.Kubotz.Systems.RenderingSystem;
 
@@ -27,7 +28,7 @@ public class InGameState extends GameState {
     private EntityManager entityManager;
     private RenderingSystem renderingSystem;
     private PhysicsSystem physicsSystem;
-    private InputSystem inputSystem;
+    private InputTranslationSystem inputSystem;
 
     private CharacterControlSystem characterControlSystem;
 
@@ -57,7 +58,7 @@ public class InGameState extends GameState {
         this.renderingSystem = new RenderingSystem(this.entityManager);
         this.renderingSystem.init();
 
-        this.inputSystem = new InputSystem(this.entityManager);
+        this.inputSystem = new InputTranslationSystem(this.entityManager);
         this.inputSystem.init();
 
         this.characterControlSystem = new CharacterControlSystem(this.entityManager);
@@ -89,10 +90,9 @@ public class InGameState extends GameState {
         // Player
 
         this.player = EntityFactory.createCharacter(physicsSystem.getWorld(), 2, 5);
+        this.player.addProperty(new CameraTargetProperty(), CameraTargetProperty.ID);
         this.entityManager.registerEntity(this.player);
         Logger.log("In Game State initialised");
-
-
 
 
 
@@ -123,7 +123,7 @@ public class InGameState extends GameState {
 
         this.gameActions.clear();
 
-
+        this.renderingSystem.update();
 
     }
 

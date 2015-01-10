@@ -12,7 +12,7 @@ import com.brm.Kubotz.Properties.PhysicsProperty;
 import java.util.ArrayList;
 
 /**
- * System handling the controllable Entities such as mst characters
+ * System handling the controllable Entities such as most characters
  */
 public class CharacterControlSystem extends com.brm.GoatEngine.ECS.System.System {
 
@@ -31,10 +31,7 @@ public class CharacterControlSystem extends com.brm.GoatEngine.ECS.System.System
             if(gameActions.isEmpty()){
                 decelerate((PhysicsProperty)e.getProperty(PhysicsProperty.ID));
             }
-
-
         }
-
     }
 
     /**
@@ -46,8 +43,6 @@ public class CharacterControlSystem extends com.brm.GoatEngine.ECS.System.System
         PhysicsProperty phys = (PhysicsProperty) entity.getProperty(PhysicsProperty.ID);
         String actionType = (String) action.getData("TYPE");
 
-        Logger.log(actionType);
-
         if(actionType.equals(GameAction.MOVE_LEFT)) {
             moveLeft(phys);
         }else if(actionType.equals(GameAction.MOVE_RIGHT)){
@@ -57,7 +52,6 @@ public class CharacterControlSystem extends com.brm.GoatEngine.ECS.System.System
         }else if(actionType.equals(GameAction.MOVE_DOWN)){
             moveDown(phys);
         }else{
-            Logger.log("DECEL");
             decelerate(phys);
         }
 

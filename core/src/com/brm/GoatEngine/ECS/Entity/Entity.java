@@ -9,7 +9,7 @@ public class Entity {
 
     protected String ID;
     protected Hashtable<String, Property> properties = new  Hashtable<String, Property>();
-    protected HashSet<String> tags = new HashSet<String>();
+
 
 
 
@@ -100,23 +100,6 @@ public class Entity {
     }
 
 
-
-
-    public void addTag(String tag){
-        this.tags.add(tag);
-    }
-
-    public void removeTag(String tag){
-        this.tags.remove(tag);
-    }
-
-    public boolean hasTag(String tag){
-        return this.tags.contains(tag);
-    }
-
-    public HashSet<String> getTags() {
-        return tags;
-    }
 }
 
 
