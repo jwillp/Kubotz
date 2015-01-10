@@ -6,7 +6,6 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Utils.Logger;
 
 /**
  * Manages entities having a TrackingComponent enabling them to follow another entity
@@ -30,6 +29,7 @@ public class TrackerSystem extends com.brm.GoatEngine.ECS.System.System{
 
 
     public void trackTarget(Entity tracker, Entity target){
+        TrackerComponent trackerComp = (TrackerComponent)tracker.getComponent(TrackerComponent.ID);
         PhysicsComponent trackerPhys = (PhysicsComponent) tracker.getComponent(PhysicsComponent.ID);
         PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
@@ -37,8 +37,8 @@ public class TrackerSystem extends com.brm.GoatEngine.ECS.System.System{
 
         // Move
 
-        float posX = (targetPhys.getPosition().x - trackerPhys.getPosition().x - 2) * speed.x * Gdx.graphics.getDeltaTime();
-        float posY = (targetPhys.getPosition().y - trackerPhys.getPosition().y + 2) * speed.y * Gdx.graphics.getDeltaTime();
+        float posX = (targetPhys.getPosition().x - trackerPhys.getPosition().x + trackerComp.distance.x) * speed.x * Gdx.graphics.getDeltaTime();
+        float posY = (targetPhys.getPosition().y - trackerPhys.getPosition().y + trackerComp.distance.y) * speed.y * Gdx.graphics.getDeltaTime();
 
 
 

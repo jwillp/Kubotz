@@ -21,7 +21,7 @@ public class TurretBuilder extends EntityBuilder{
     private String targetId;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(0.4f, 0.4f);
-
+    private Vector2 distance = new Vector2(-2,2);
     /**
      * Ctor
      * @param entityManager
@@ -74,6 +74,10 @@ public class TurretBuilder extends EntityBuilder{
         return this;
     }
 
+    public TurretBuilder withDistance(Vector2 distance){
+        this.distance = distance;
+        return this;
+    }
 
     @Override
     public Entity build() {
@@ -99,9 +103,14 @@ public class TurretBuilder extends EntityBuilder{
 
 
         //Tracker Component
-        turret.addComponent(physics, PhysicsComponent.ID);
-        turret.addComponent(new TrackerComponent(this.targetId), TrackerComponent.ID);
+        TrackerComponent trackerComponent = new TrackerComponent(this.targetId);
+        trackerComponent.distance = this.distance;
 
+        turret.addComponent(physics, PhysicsComponent.ID);
+        turret.addComponent(trackerComponent, TrackerComponent.ID);
+
+
+        
         return turret;
     }
 
