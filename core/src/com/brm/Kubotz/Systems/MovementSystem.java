@@ -33,13 +33,16 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
 
             for(VirtualButton btn : gamepad.getPressedButtons()){
                 processMovementButtons(e, btn);
+                btnToRelease.add(btn);
 
             }
-
 
             if(!gamepad.isAnyButtonPressed()){
                 decelerate((PhysicsComponent)e.getComponent(PhysicsComponent.ID));
             }
+
+            gamepad.releaseButtons(btnToRelease);
+
 
         }
     }
