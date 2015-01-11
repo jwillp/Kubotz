@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS;
 
 import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 
 import java.util.*;
@@ -116,6 +117,19 @@ public class EntityManager {
         }
         return entities;
     }
+
+
+    public ArrayList<Entity> getEntitiesWithTag(String tag){
+        ArrayList<Entity> entitiesWithTag = new ArrayList<Entity>();
+        for(Entity e: getEntitiesWithComponent(TagsComponent.ID)){
+            if(((TagsComponent)e.getComponent(TagsComponent.ID)).hasTag(tag)){
+                entitiesWithTag.add(e);
+            }
+        }
+        return entitiesWithTag;
+    }
+
+
 
 
 

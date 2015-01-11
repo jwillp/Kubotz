@@ -3,7 +3,6 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -42,20 +41,6 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
     }
 
 
-    /**
-     * Check if a body is grounded according to it's feet sensor
-     * and according to the case set it as grounded or not
-     * @param fixture
-     * @return returns whether or not the test was valid
-     */
-    public void testFeetSensor(Fixture fixture){
-        if(fixture.getUserData() != null)
-            if(fixture.getUserData().equals("footSensor")){ //And B is logically not a Dynamic body
-                Entity entity = (Entity) fixture.getBody().getUserData();
-                ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).setGrounded(true);
-            }
-    }
-
 
 
     // CONTACT LISTENING
@@ -67,8 +52,8 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
 
         //Feet sensor Test
         if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
-            testFeetSensor(fixtureA);
-            testFeetSensor(fixtureB);
+            testFeetSensor(fixtureA, true);
+            testFeetSensor(fixtureB, true);
         }
 
     }
@@ -80,8 +65,9 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
 
         //Feet sensor Test
         if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
-            testFeetSensor(fixtureA);
-            testFeetSensor(fixtureB);
+            // Our feet are leaving ground, we are not grounded anymore
+            testFeetSensor(fixtureA, false);
+            testFeetSensor(fixtureB, false);
         }
     }
 
@@ -91,6 +77,46 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
 
     @Override
     public void postSolve(Contact contact, ContactImpulse impulse) {}
+
+
+
+
+    /**
+     * Check if a body is grounded according to it's feet sensor
+     * and according to the case set it as grounded or not
+     * @param fixture The fixture of the body to test
+     * @param grounded If the test is true whether we set the body as grounded or not
+     * @return returns whether or not the test was valid
+     */
+    public void testFeetSensor(Fixture fixture, boolean grounded){
+        if(fixture.getUserData() != null)
+            if(fixture.getUserData().equals("footSensor")){ //And B is logically not a Dynamic body
+                Entity entity = (Entity) fixture.getBody().getUserData();
+                ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
+            }
+    }
+
+
+
+    public void processContact(Contact contact){
+        Fixture fixtureA = contact.getFixtureA();
+        Fixture fixtureB = contact.getFixtureB();
+
+        //Feet sensor Test
+        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
+            testFeetSensor(fixtureA, true);
+            testFeetSensor(fixtureB, true);
+        }
+    }
+
+
+
+
+
+
+
+
+
 
 
 

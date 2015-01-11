@@ -82,7 +82,7 @@ public class RobotBuilder extends EntityBuilder{
 
 
         //Control
-        ControllableComponent cp = new ControllableComponent();
+        ControllableComponent cp = new ControllableComponent(ControllableComponent.InputSource.USER_INPUT);
 
 
 

@@ -20,17 +20,20 @@ public class CharacterControlSystem extends com.brm.GoatEngine.ECS.System.System
         super(em);
     }
 
-    public void update(ArrayList<GameAction> gameActions){
+    public void update(){
 
         // For each controllable entity --> process every possible action
         for(Entity e : this.em.getEntitiesWithComponent(ControllableComponent.ID)){
-            for(GameAction gameAction : gameActions){
+            ControllableComponent cp = (ControllableComponent) e.getComponent(ControllableComponent.ID);
+            for(GameAction gameAction : cp.gameActions){
                 processAction(e, gameAction);
             }
-            if(gameActions.isEmpty()){
+            if(cp.gameActions.isEmpty()){
                 decelerate((PhysicsComponent)e.getComponent(PhysicsComponent.ID));
             }
+            cp.gameActions.clear();
         }
+
     }
 
     /**

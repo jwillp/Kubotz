@@ -36,13 +36,10 @@ public class InGameState extends GameState {
     private CharacterControlSystem characterControlSystem;
 
 
-
-
-
     private Entity player;
 
 
-    private ArrayList<GameAction> gameActions;
+
 
 
 
@@ -66,12 +63,6 @@ public class InGameState extends GameState {
 
         this.characterControlSystem = new CharacterControlSystem(this.entityManager);
         this.characterControlSystem.init();
-
-
-
-        // Game Actions Container
-        this.gameActions = new ArrayList<GameAction>();
-
 
 
 
@@ -114,7 +105,7 @@ public class InGameState extends GameState {
 
     @Override
     public void handleInput(GameStateManager engine) {
-        this.inputSystem.update(gameActions);
+        this.inputSystem.update();
     }
 
     @Override
@@ -122,11 +113,8 @@ public class InGameState extends GameState {
 
 
 
-        this.characterControlSystem.update(this.gameActions);
+        this.characterControlSystem.update();
         this.physicsSystem.update(deltaTime);
-
-        this.gameActions.clear();
-
         this.renderingSystem.update();
 
     }
