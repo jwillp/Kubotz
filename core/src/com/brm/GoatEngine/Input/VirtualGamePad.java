@@ -1,0 +1,108 @@
+package com.brm.GoatEngine.Input;
+
+import com.brm.GoatEngine.ECS.Components.Component;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
+
+/**
+ * A virtual gamepad to be used by the AI
+ * This makes an entity controllable (it can use the buttons to shoot, to attack to move etc..)
+ * This is a Component it must therfore be attached to an entity
+ */
+public class VirtualGamePad extends Component {
+
+    public final static String ID = "VIRTUAL_GAME_PAD";
+
+    public enum InputSource{ USER_INPUT, AI_INPUT }
+
+    private ArrayList<VirtualButton> pressedButtons; //A list of the pressed buttons of the gamepad
+    public InputSource inputSource; // Who makes the input (AI or User?)
+
+
+
+
+
+    public VirtualGamePad(InputSource inputSource){
+        this.setInputSource(inputSource);
+        this.pressedButtons = new ArrayList<VirtualButton>();
+    }
+
+
+    /**
+     * Method simulating a button press
+     * @param btn
+     */
+    public void pressButton(VirtualButton btn){
+        this.pressedButtons.add(btn);
+    }
+
+    /**
+     * Method simulating a button release
+     */
+    public void releaseButton(VirtualButton btn){
+        this.pressedButtons.remove(btn);
+    }
+
+    /**
+     * Releases a collection of buttons
+     * @param buttons
+     */
+    public void releaseButtons(Collection<VirtualButton> buttons){
+        this.pressedButtons.removeAll(buttons);
+    }
+
+    /**
+     * Releases all pressed button
+     */
+    public void releaseAll(){
+        this.pressedButtons.clear();
+    }
+
+
+    /**
+     * Returns whether or not a button is pressed
+     * @param btn
+     * @return
+     */
+    public boolean isButtonPressed(VirtualButton btn){
+        return this.pressedButtons.contains(btn);
+    }
+
+    /**
+     * Returns whether or not there is any button pressed
+     * If there is no button press returns true otherwise false
+     * @return
+     */
+    public boolean isAnyButtonPressed(){
+        return !this.pressedButtons.isEmpty();
+    }
+
+
+
+    // GETTERS && SETTERS //
+    /**
+     * Returns the Input Source
+     * @return
+     */
+    public InputSource getInputSource() {
+        return inputSource;
+    }
+
+    public void setInputSource(InputSource inputSource) {
+        this.inputSource = inputSource;
+    }
+
+    public ArrayList<VirtualButton> getPressedButtons() {
+        return pressedButtons;
+    }
+
+
+
+
+
+
+
+
+}

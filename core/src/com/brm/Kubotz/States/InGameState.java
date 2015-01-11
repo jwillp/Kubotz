@@ -16,10 +16,8 @@ import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockBuilder;
 import com.brm.Kubotz.Entities.RobotBuilder;
 import com.brm.Kubotz.Entities.TurretBuilder;
-import com.brm.Kubotz.Input.GameAction;
 import com.brm.Kubotz.Systems.*;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 
@@ -31,7 +29,7 @@ public class InGameState extends GameState {
     private InputTranslationSystem inputSystem;
     private TrackerSystem trackerSystem;
 
-    private CharacterControlSystem characterControlSystem;
+    private MovementSystem movementSystem;
 
 
     private Entity player;
@@ -60,8 +58,8 @@ public class InGameState extends GameState {
         this.inputSystem = new InputTranslationSystem(this.entityManager);
         this.inputSystem.init();
 
-        this.characterControlSystem = new CharacterControlSystem(this.entityManager);
-        this.characterControlSystem.init();
+        this.movementSystem = new MovementSystem(this.entityManager);
+        this.movementSystem.init();
 
 
         this.trackerSystem = new TrackerSystem(this.entityManager);
@@ -115,7 +113,7 @@ public class InGameState extends GameState {
 
 
 
-        this.characterControlSystem.update();
+        this.movementSystem.update();
         this.trackerSystem.update();
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
@@ -132,7 +130,6 @@ public class InGameState extends GameState {
 
         // DRAW WORLD
         this.renderingSystem.render(physicsSystem.getWorld());
-
 
 
         // FPS

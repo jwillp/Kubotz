@@ -59,6 +59,9 @@ public class PhysicsComponent extends Component {
         return acceleration;
     }
 
+    public Vector2 getVelocity(){return this.body.getLinearVelocity();}
+
+
 
     public float getWidth() {
         return width;

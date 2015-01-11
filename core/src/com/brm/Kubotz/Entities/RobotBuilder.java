@@ -9,9 +9,9 @@ import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.CameraTargetComponent;
-import com.brm.Kubotz.Component.ControllableComponent;
 import com.brm.Kubotz.Component.Skills.FlyComponent;
 
 /**
@@ -82,7 +82,7 @@ public class RobotBuilder extends EntityBuilder{
 
 
         //Control
-        ControllableComponent cp = new ControllableComponent(ControllableComponent.InputSource.USER_INPUT);
+        VirtualGamePad gamePad = new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT);
 
 
 
@@ -96,7 +96,7 @@ public class RobotBuilder extends EntityBuilder{
         character.addComponent(appearance, AppearanceComponent.ID);
         character.addComponent(jp, JumpComponent.ID);
         character.addComponent(fp, FlyComponent.ID);
-        character.addComponent(cp, ControllableComponent.ID);
+        character.addComponent(gamePad, VirtualGamePad.ID);
         character.addComponent(new TagsComponent(), TagsComponent.ID);
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
 
