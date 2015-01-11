@@ -6,21 +6,18 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockBuilder;
-import com.brm.Kubotz.Entities.EntityFactory;
-import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.Kubotz.Entities.RobotBuilder;
+import com.brm.Kubotz.Entities.TurretBuilder;
 import com.brm.Kubotz.Input.GameAction;
-import com.brm.Kubotz.Component.CameraTargetComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.Kubotz.Systems.CharacterControlSystem;
-import com.brm.Kubotz.Systems.InputTranslationSystem;
-import com.brm.Kubotz.Systems.PhysicsSystem;
-import com.brm.Kubotz.Systems.RenderingSystem;
+import com.brm.Kubotz.Systems.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -32,6 +29,7 @@ public class InGameState extends GameState {
     private RenderingSystem renderingSystem;
     private PhysicsSystem physicsSystem;
     private InputTranslationSystem inputSystem;
+    private TrackerSystem trackerSystem;
 
     private CharacterControlSystem characterControlSystem;
 
@@ -41,7 +39,8 @@ public class InGameState extends GameState {
 
 
 
-
+    public InGameState() {
+    }
 
 
     @Override
@@ -65,6 +64,8 @@ public class InGameState extends GameState {
         this.characterControlSystem.init();
 
 
+        this.trackerSystem = new TrackerSystem(this.entityManager);
+
 
 
         // MAP
@@ -87,8 +88,9 @@ public class InGameState extends GameState {
                 withCameraTargetComponent().build();
 
 
+        //Turret
+        new TurretBuilder(this.entityManager, physicsSystem.getWorld(), this.player).build();
         Logger.log("In Game State initialised");
-
 
 
     }
@@ -114,6 +116,7 @@ public class InGameState extends GameState {
 
 
         this.characterControlSystem.update();
+        this.trackerSystem.update();
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
 
@@ -133,16 +136,14 @@ public class InGameState extends GameState {
 
 
         // FPS
-        /*if(Config.DEBUG_RENDERING_ENABLED){*/
+        if(Config.DEBUG_RENDERING_ENABLED) {
             SpriteBatch sb = this.renderingSystem.getSpriteBatch();
             BitmapFont font = new BitmapFont();
             sb.begin();
             font.draw(sb, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
-            font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent)this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight()-30);
-            font.draw(sb, "HAS CAMERA: " + (this.player.hasComponent(CameraTargetComponent.ID)), 0, Gdx.graphics.getHeight()-50);
-
-        sb.end();
-        /*}*/
+            font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
+            sb.end();
+        }
 
 
 

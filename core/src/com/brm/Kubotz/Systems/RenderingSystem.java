@@ -49,6 +49,7 @@ public class RenderingSystem extends com.brm.GoatEngine.ECS.System.System {
 
     public void updateCamera(){
         //Todo get the only controllable entity (using ID would ensure that)
+        //Todo Try to make camera using a Tracker System
         for(Entity e: this.em.getEntitiesWithComponent(CameraTargetComponent.ID)){
             this.viewport.update(e);
         }
