@@ -37,7 +37,6 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-
         if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
             moveUp(entity);
         }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
@@ -55,8 +54,35 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
             decelerate(entity);
         }// TODO Revise My Logic here
 
-
     }
+
+
+    /**
+     * Checks wether or not an entity is flying and disable enable gravity accordingly
+     * @param entity
+     */
+    public void flyCheck(Entity entity){
+        if(entity.hasComponent(FlyComponent.ID)){
+            FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
+
+
+            if(flyComponent.getDuration().isDone()){
+                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+                phys.getBody().setGravityScale(1);
+                
+            }
+
+
+
+            if(flyComponent.isEnabled()){
+
+            }
+        }
+    }
+
+
+
+
 
     /***
      * Makes the entity move left (whether it is during flying or walking or dashing)
@@ -66,6 +92,11 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
 
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x - phys.getAcceleration().x;
+
+
+
+
+
 
         if(Math.abs(resultingVelocity) > phys.MAX_SPEED.x){
             resultingVelocity = -phys.MAX_SPEED.x;
