@@ -1,87 +1,51 @@
-package com.brm.Kubotz.Systems;
+package com.brm.Kubotz.Systems.MovementSystem;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Input.VirtualButton;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
-import java.util.ArrayList;
-
 /**
- * System handling the controllable Entities such as most characters
+ * On Ground Movement System: Walking + Jumping
  */
-public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
+public class WalkingSystem extends EntitySystem {
 
 
-    public MovementSystem(EntityManager em) {
+    public WalkingSystem(EntityManager em) {
         super(em);
     }
 
-    public void update(){
-        // For each entity with a gamePad --> process buttons
-        for(Entity e : this.em.getEntitiesWithComponent(VirtualGamePad.ID)){
-                processMovementButtons(e);
-        }
-    }
+
+    public void update(){}
+
 
     /**
-     * Process a Movement Button for an entity
-     * @param entity
+     * Process a Movement Button for the entities
      */
-    private void processMovementButtons(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+    public void handleInput(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-        if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
-            moveUp(entity);
-        }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
-            moveDown(entity);
-
-        }else if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
-            moveRight(entity);
-        }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
-            moveLeft(entity);
-        }else{
-            //No movement made we decelerate
+        if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
-        }
-        if(!gamePad.isAnyButtonPressed()){
-            decelerate(entity);
-        }// TODO Revise My Logic here
-
-    }
-
-
-    /**
-     * Checks wether or not an entity is flying and disable enable gravity accordingly
-     * @param entity
-     */
-    public void flyCheck(Entity entity){
-        if(entity.hasComponent(FlyComponent.ID)){
-            FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
-
-
-            if(flyComponent.getDuration().isDone()){
-                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                phys.getBody().setGravityScale(1);
-                
-            }
-
-
-
-            if(flyComponent.isEnabled()){
-
+        } else {
+            if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                jump(entity);
+            } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
+                moveDown(entity); // TODO test if crouch or fall down
+            } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+                moveRight(entity);
+            } else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+                moveLeft(entity);
+            } else {
+                //No movement made we decelerate
+                decelerate(entity);
             }
         }
     }
-
-
-
 
 
     /***
@@ -92,11 +56,6 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
 
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x - phys.getAcceleration().x;
-
-
-
-
-
 
         if(Math.abs(resultingVelocity) > phys.MAX_SPEED.x){
             resultingVelocity = -phys.MAX_SPEED.x;
@@ -116,39 +75,6 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
             resultingVelocity = phys.MAX_SPEED.x;
         }
         moveInX(entity, resultingVelocity);
-    }
-
-
-
-
-    /**
-     * Decides wether we fly upwards or jump
-     */ // TODO do the same for crouch and fall down
-    private void moveUp(Entity entity){
-        if(entity.hasComponent(FlyComponent.ID)){
-            flyUp(entity);
-        }else{
-            jump(entity);
-        }
-    }
-
-
-
-
-    /**
-     * Makes the entity fly upwards
-     */
-    private void flyUp(Entity entity){
-
-        PhysicsComponent phys = ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID));
-        Vector2 vel = phys.getVelocity();
-        Vector2 accel = phys.getAcceleration();
-
-        float resultingVelocity = vel.y + accel.y;
-        if(resultingVelocity > phys.MAX_SPEED.y){
-            resultingVelocity = phys.MAX_SPEED.y;
-        }
-        moveInY(entity, resultingVelocity);
     }
 
 
@@ -188,23 +114,8 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
             resultingVelocity = -phys.MAX_SPEED.y;
         }
         // it's half a jump
-        this.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
+        this.moveInY(entity, resultingVelocity/2);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -217,16 +128,9 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
         if(phys.isGrounded()){
             Vector2 vel = phys.getVelocity();
             // DECELERATION (the character needs to slow down!)
-            if (vel.x != 0) {
-                if (vel.x > 0) {
-                    moveInX(entity, vel.x - phys.getAcceleration().x);
-                } else {
-                    moveInX(entity, vel.x + phys.getAcceleration().x);
-                }
-                if(Math.abs(vel.x) < 0.1){ // so it can go to 0 (otherwise we could move for ever)
-                    stopX(entity);
-                }
-            }
+            float finalVel = (vel.x > 0) ?
+                    Math.max(vel.x - phys.getAcceleration().x, 0) : Math.min(vel.x + phys.getAcceleration().x, 0);
+            moveInX(entity, finalVel);
         }
     }
 
@@ -257,27 +161,6 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
     private void stopX(Entity entity){
         moveInX(entity, 0);
     }
-
-    /**
-     * Abruptly stops the controllable an in Y
-     */
-    private void stopY(Entity entity){
-        moveInX(entity, 0);
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

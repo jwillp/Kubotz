@@ -3,12 +3,12 @@ package com.brm.GoatEngine.ECS.System;
 
 import com.brm.GoatEngine.ECS.EntityManager;
 
-public abstract class System {
+public abstract class EntitySystem {
 
     protected EntityManager em;
 
 
-    public System(EntityManager em){
+    public EntitySystem(EntityManager em){
         this.em = em;
     }
 

@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Input.UserInput;
@@ -12,7 +13,7 @@ import com.brm.Kubotz.Input.UserInput;
  * Used to manage User input and AI input
  * These inputs are first translated to virtual GamePad inputs
  */
-public class InputTranslationSystem extends com.brm.GoatEngine.ECS.System.System {
+public class InputTranslationSystem extends EntitySystem {
 
 
     public InputTranslationSystem(EntityManager em) {
@@ -49,23 +50,23 @@ public class InputTranslationSystem extends com.brm.GoatEngine.ECS.System.System
                 }
 
                 //Action buttons
-                if (Gdx.input.isKeyPressed(UserInput.PRIMARY_ACTION_BUTTON)) {
+                if (Gdx.input.isKeyJustPressed(UserInput.PRIMARY_ACTION_BUTTON)) {
                     gamePad.pressButton(GameButton.PRIMARY_ACTION_BUTTON);
                 }
 
-                if (Gdx.input.isKeyPressed(UserInput.SECONDARY_ACTION_BUTTON)) {
+                if (Gdx.input.isKeyJustPressed(UserInput.SECONDARY_ACTION_BUTTON)) {
                     gamePad.pressButton(GameButton.SECONDARY_ACTION_BUTTON);
                 }
 
-                if (Gdx.input.isKeyPressed(UserInput.START)) {
+                if (Gdx.input.isKeyJustPressed(UserInput.START)) {
                     gamePad.pressButton(GameButton.START_BUTTON);
                 }
 
-                if (Gdx.input.isKeyPressed(UserInput.PUNCH)) {
+                if (Gdx.input.isKeyJustPressed(UserInput.PUNCH)) {
                     gamePad.pressButton(GameButton.PUNCH_BUTTON);
                 }
 
-                if (Gdx.input.isKeyPressed(UserInput.ACTIVE_SKILL)) {
+                if (Gdx.input.isKeyJustPressed(UserInput.ACTIVE_SKILL)) {
                     gamePad.pressButton(GameButton.ACTIVE_SKILL_BUTTON);
                 }
             }

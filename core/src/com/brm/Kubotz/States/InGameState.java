@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.StateManger.GameState;
@@ -17,6 +18,7 @@ import com.brm.Kubotz.Entities.BlockBuilder;
 import com.brm.Kubotz.Entities.RobotBuilder;
 import com.brm.Kubotz.Entities.TurretBuilder;
 import com.brm.Kubotz.Systems.*;
+import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
 
 import java.util.Random;
 
@@ -87,7 +89,8 @@ public class InGameState extends GameState {
 
 
         //Turret
-        new TurretBuilder(this.entityManager, physicsSystem.getWorld(), this.player).build();
+        //Entity turret = new TurretBuilder(this.entityManager, physicsSystem.getWorld(), this.player).build();
+        //turret.disableComponent(TrackerComponent.ID);
         Logger.log("In Game State initialised");
 
 
@@ -106,6 +109,7 @@ public class InGameState extends GameState {
     @Override
     public void handleInput(GameStateManager engine) {
         this.inputSystem.update();
+        this.movementSystem.handleInput();
     }
 
     @Override

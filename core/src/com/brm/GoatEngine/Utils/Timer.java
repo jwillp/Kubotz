@@ -21,7 +21,15 @@ public class Timer {
         if(startTime == -1 || lastCheck == -1){
             throw new TimerException("The Timer was not started, call function start() before using Timer");
         }
-        return System.currentTimeMillis() - this.startTime >= this.delay/1000;
+        return System.currentTimeMillis() - this.lastCheck >= this.delay;
+    }
+
+    /**
+     * Forces the timer to be done, after that method call
+     * the timer will ineitably be done
+     */
+    public void terminate(){
+        this.lastCheck = 0;
     }
 
 
@@ -47,9 +55,10 @@ public class Timer {
     }
 
 
-
+    /**
+     * Exceptions related to Timer Misuse
+     */
     public class TimerException extends RuntimeException{
-
         public TimerException(String message){
             super(message);
         }

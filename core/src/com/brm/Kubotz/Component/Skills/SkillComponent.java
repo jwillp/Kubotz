@@ -8,8 +8,8 @@ import com.brm.GoatEngine.ECS.Components.Component;
  */
 public abstract class SkillComponent extends Component {
 
-    private Timer coolDown; //How long between calls of the property
-    private Timer duration; //Timing how long the skill has been used
+    protected Timer coolDownTimer; //How long between calls of the property
+    protected Timer effectDurationTimer; //Timing how long the skill has been used
 
     /**
      *
@@ -17,24 +17,28 @@ public abstract class SkillComponent extends Component {
      * @param maxDuration: in seconds
      */
     public SkillComponent(int coolDownDelay, int maxDuration){
-        this.setCoolDown(new Timer(coolDownDelay));
-        this.setDuration(new Timer(maxDuration));
+        this.setCoolDownTimer(new Timer(coolDownDelay));
+        this.setEffectDurationTimer(new Timer(maxDuration));
+
+        this.getCoolDownTimer().start();
+        this.getEffectDurationTimer().start();
+
     }
 
-    public Timer getCoolDown() {
-        return coolDown;
+    public Timer getCoolDownTimer() {
+        return coolDownTimer;
     }
 
-    public void setCoolDown(Timer coolDown) {
-        this.coolDown = coolDown;
+    public void setCoolDownTimer(Timer coolDownTimer) {
+        this.coolDownTimer = coolDownTimer;
     }
 
-    public Timer getDuration() {
-        return duration;
+    public Timer getEffectDurationTimer() {
+        return effectDurationTimer;
     }
 
-    public void setDuration(Timer duration) {
-        this.duration = duration;
+    public void setEffectDurationTimer(Timer effectDurationTimer) {
+        this.effectDurationTimer = effectDurationTimer;
     }
 
 }

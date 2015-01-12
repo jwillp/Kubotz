@@ -6,11 +6,12 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
 
 /**
  * Manages entities having a TrackingComponent enabling them to follow another entity
  */
-public class TrackerSystem extends com.brm.GoatEngine.ECS.System.System{
+public class TrackerSystem extends EntitySystem {
 
 
     public TrackerSystem(EntityManager em) {

@@ -112,8 +112,10 @@ public class EntityManager {
 
     public ArrayList<Entity> getEntitiesWithComponent(String componentId){
         ArrayList<Entity> entities = new ArrayList<Entity>();
-        for(String enId : this.components.get(componentId).keySet()){
-            entities.add(getEntity(enId));
+        if(this.components.containsKey(componentId)){
+            for(String enId : this.components.get(componentId).keySet()){
+                entities.add(getEntity(enId));
+            }
         }
         return entities;
     }

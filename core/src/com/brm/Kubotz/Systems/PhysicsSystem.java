@@ -6,6 +6,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
 
 import java.util.Stack;
 
@@ -13,7 +14,7 @@ import java.util.Stack;
  * Responsible for checking collisions, making the entities move
  * and apply gravity to the necessary entities
  */
-public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implements ContactListener {
+public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
     private World world;
@@ -89,14 +90,13 @@ public class PhysicsSystem extends com.brm.GoatEngine.ECS.System.System implemen
      * @return returns whether or not the test was valid
      */
     public void testFeetSensor(Fixture fixture, boolean grounded){
-        if(fixture.getUserData() != null)
-            if(fixture.getUserData().equals("footSensor")){ //And B is logically not a Dynamic body
+        if(fixture.getUserData() != null) {
+            if (fixture.getUserData().equals("footSensor")) { //And B is logically not a Dynamic body
                 Entity entity = (Entity) fixture.getBody().getUserData();
-                ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
+                ((PhysicsComponent) entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
             }
+        }
     }
-
-
 
     public void processContact(Contact contact){
         Fixture fixtureA = contact.getFixtureA();

@@ -5,10 +5,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Viewport;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Component.CameraTargetComponent;
@@ -16,7 +15,7 @@ import com.brm.Kubotz.Component.CameraTargetComponent;
 /**
  * Responsible for displaying all visual ellements on screen
  */
-public class RenderingSystem extends com.brm.GoatEngine.ECS.System.System {
+public class RenderingSystem extends EntitySystem {
 
 
     private Viewport viewport;

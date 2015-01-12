@@ -90,7 +90,7 @@ public class RobotBuilder extends EntityBuilder{
         JumpComponent jp = new JumpComponent(3);
 
         // Flying Property
-        FlyComponent fp = new FlyComponent(10,1);
+        FlyComponent fp = new FlyComponent(1*1000,10*1000);
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);

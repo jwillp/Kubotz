@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Component.Skills;
 
-import com.brm.GoatEngine.Utils.Timer;
+import com.badlogic.gdx.math.Vector2;
 
 /**
  * Lets an Entity Fly i.e. it is not affected by Gravity
@@ -10,8 +10,10 @@ public class FlyComponent extends SkillComponent {
 
     public static String ID =  "FLY_PROPERTY";
 
-    private Timer coolDown; //How long between calls of the property
-    private Timer duration; //Timing how long the flying has been used
+    public Vector2 acceleration = new Vector2(0.5f,0.5f);
+    public Vector2 deceleration = new Vector2(15.0f, 15.0f);
+    public final Vector2 MAX_SPEED = new Vector2(18f, 18f);
+
 
 
     public FlyComponent(int coolDownDelay, int maxFlyDuration){
@@ -19,19 +21,4 @@ public class FlyComponent extends SkillComponent {
     }
 
 
-    public Timer getCoolDown() {
-        return coolDown;
-    }
-
-    public void setCoolDown(Timer coolDown) {
-        this.coolDown = coolDown;
-    }
-
-    public Timer getDuration() {
-        return duration;
-    }
-
-    public void setDuration(Timer duration) {
-        this.duration = duration;
-    }
 }

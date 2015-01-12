@@ -1,11 +1,7 @@
 package com.brm.GoatEngine.ECS.Entity;
 
 import com.brm.GoatEngine.ECS.Components.Component;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.Kubotz.Component.ControllableComponent;
-
-import java.util.Hashtable;
 
 public class Entity {
 
