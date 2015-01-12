@@ -23,83 +23,71 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
     }
 
     public void update(){
-
-        // For each controllable entity --> process every possible action
+        // For each entity with a gamePad --> process buttons
         for(Entity e : this.em.getEntitiesWithComponent(VirtualGamePad.ID)){
-
-            VirtualGamePad gamepad = (VirtualGamePad) e.getComponent(VirtualGamePad.ID);
-
-            ArrayList<VirtualButton> btnToRelease = new ArrayList<VirtualButton>();
-
-            for(VirtualButton btn : gamepad.getPressedButtons()){
-                processMovementButtons(e, btn);
-                btnToRelease.add(btn);
-
-            }
-
-            if(!gamepad.isAnyButtonPressed()){
-                decelerate((PhysicsComponent)e.getComponent(PhysicsComponent.ID));
-            }
-
-            gamepad.releaseButtons(btnToRelease);
-
-
+                processMovementButtons(e);
         }
     }
 
     /**
      * Process a Movement Button for an entity
      * @param entity
-     * @param btn
      */
-    private void processMovementButtons(Entity entity, VirtualButton btn){
-
+    private void processMovementButtons(Entity entity){
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-        if(btn == GameButton.MOVE_UP){
-            jump(entity);
-        }else if(btn == GameButton.MOVE_DOWN){
-            moveDown(phys);
 
-        }else if(btn == GameButton.MOVE_RIGHT){
-            moveRight(phys);
-        }else if(btn == GameButton.MOVE_LEFT){
-            moveLeft(phys);
+        if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
+            moveUp(entity);
+        }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
+            moveDown(entity);
+
+        }else if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
+            moveRight(entity);
+        }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
+            moveLeft(entity);
         }else{
             //No movement made we decelerate
-            decelerate(phys);
+            decelerate(entity);
         }
+        if(!gamePad.isAnyButtonPressed()){
+            decelerate(entity);
+        }// TODO Revise My Logic here
+
+
     }
 
     /***
-     * Makes the entity move left
+     * Makes the entity move left (whether it is during flying or walking or dashing)
      */
-    private void moveLeft(PhysicsComponent mp){
-        Vector2 vel = mp.getVelocity();
+    private void moveLeft(Entity entity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
-        float resultingVelocity = vel.x - mp.getAcceleration().x;
+        Vector2 vel = phys.getVelocity();
+        float resultingVelocity = vel.x - phys.getAcceleration().x;
 
-        if(Math.abs(resultingVelocity) > mp.MAX_SPEED.x){
-            resultingVelocity = -mp.MAX_SPEED.x;
+        if(Math.abs(resultingVelocity) > phys.MAX_SPEED.x){
+            resultingVelocity = -phys.MAX_SPEED.x;
         }
 
-        mp.getBody().setLinearVelocity(resultingVelocity, vel.y);
+        phys.getBody().setLinearVelocity(resultingVelocity, vel.y);
     }
 
     /**
-     * Makes the entity move right
+     * Makes the entity move right (whether it is during flying or walking or dashing)
      */
-    private void moveRight(PhysicsComponent mp){
-        Vector2 vel = mp.getVelocity();
-
-        float resultingVelocity = vel.x + mp.getAcceleration().x;
-        if(resultingVelocity > mp.MAX_SPEED.x){
-            resultingVelocity = mp.MAX_SPEED.x;
+    private void moveRight(Entity entity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        Vector2 vel = phys.getVelocity();
+        float resultingVelocity = vel.x + phys.getAcceleration().x;
+        if(resultingVelocity > phys.MAX_SPEED.x){
+            resultingVelocity = phys.MAX_SPEED.x;
         }
-
-        mp.getBody().setLinearVelocity(resultingVelocity, vel.y);
+        moveInX(entity, resultingVelocity);
     }
+
+
 
 
     /**
@@ -120,6 +108,7 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
      * Makes the entity fly upwards
      */
     private void flyUp(Entity entity){
+
         PhysicsComponent phys = ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID));
         Vector2 vel = phys.getVelocity();
         Vector2 accel = phys.getAcceleration();
@@ -128,7 +117,7 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
         if(resultingVelocity > phys.MAX_SPEED.y){
             resultingVelocity = phys.MAX_SPEED.y;
         }
-        phys.getBody().setLinearVelocity(resultingVelocity, vel.y);
+        moveInY(entity, resultingVelocity);
     }
 
 
@@ -149,7 +138,7 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
                 }
                 Vector2 vel = phys.getVelocity();
                 float resultingVelocity = -phys.getBody().getWorld().getGravity().y*0.6f;
-                phys.getBody().setLinearVelocity(vel.x, resultingVelocity*phys.getBody().getGravityScale());
+                moveInY(entity, resultingVelocity*phys.getBody().getGravityScale());
                 phys.setGrounded(false);
                 jp.nbJujmps++;
             }
@@ -159,7 +148,8 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
     /**
      * Makes the entity fall faster when not on ground
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
-    private void moveDown(PhysicsComponent phys){
+    private void moveDown(Entity entity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
         float resultingVelocity = vel.y - phys.getAcceleration().y;
@@ -167,45 +157,94 @@ public class MovementSystem extends com.brm.GoatEngine.ECS.System.System {
             resultingVelocity = -phys.MAX_SPEED.y;
         }
         // it's half a jump
-        phys.getBody().setLinearVelocity(vel.x, resultingVelocity * phys.getBody().getGravityScale());
+        this.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * Gradually stops the entity by applying deceleration
      * to its velocity
      */
-    private void decelerate(PhysicsComponent phys){
+    private void decelerate(Entity entity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         if(phys.isGrounded()){
             Vector2 vel = phys.getVelocity();
             // DECELERATION (the character needs to slow down!)
             if (vel.x != 0) {
                 if (vel.x > 0) {
-                    phys.getBody().setLinearVelocity(vel.x - phys.getAcceleration().x, vel.y);
+                    moveInX(entity, vel.x - phys.getAcceleration().x);
                 } else {
-                    phys.getBody().setLinearVelocity(vel.x + phys.getAcceleration().x, vel.y);
+                    moveInX(entity, vel.x + phys.getAcceleration().x);
                 }
                 if(Math.abs(vel.x) < 0.1){ // so it can go to 0 (otherwise we could move for ever)
-                    phys.getBody().setLinearVelocity(0, vel.y);
+                    stopX(entity);
                 }
             }
         }
     }
 
+
+
     /**
-     * Abruptly stops the controllable entity in X
+     * Makes an entity move horizontally i.e. on the X axis
+     * according to a specified velocity
      */
-    private void stopX(PhysicsComponent phys){
-        Vector2 vel = phys.getVelocity();
-        phys.getBody().setLinearVelocity(0, vel.y);
+    private void moveInX(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
     }
 
     /**
-     * Abruptly stops the controllable entity in Y
+     * Makes an entity move horizontally i.e. on the Y axis
+     * according to a specified velocity
      */
-    private void stopY(PhysicsComponent phys){
-        Vector2 vel = phys.getVelocity();
-        phys.getBody().setLinearVelocity(vel.x, 0);
+    private void moveInY(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
     }
+
+
+    /**
+     * Abruptly stops an entity in X
+     */
+    private void stopX(Entity entity){
+        moveInX(entity, 0);
+    }
+
+    /**
+     * Abruptly stops the controllable an in Y
+     */
+    private void stopY(Entity entity){
+        moveInX(entity, 0);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
