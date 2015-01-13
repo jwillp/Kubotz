@@ -143,6 +143,11 @@ public class InGameState extends GameState {
             sb.begin();
             font.draw(sb, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
             font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
+
+
+            String velText = "Velocity: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getVelocity();
+
+            font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
             sb.end();
         }
 

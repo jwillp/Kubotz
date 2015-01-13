@@ -10,8 +10,8 @@ public class FlyComponent extends SkillComponent {
 
     public static String ID =  "FLY_PROPERTY";
 
-    public Vector2 acceleration = new Vector2(0.5f,0.5f);
-    public Vector2 deceleration = new Vector2(15.0f, 15.0f);
+    public Vector2 acceleration = new Vector2(1.3f,1.3f);
+    public Vector2 deceleration = new Vector2(0.9999999999999f, 0.9999999999999f);
     public final Vector2 MAX_SPEED = new Vector2(18f, 18f);
 
 

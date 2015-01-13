@@ -2,6 +2,7 @@ package com.brm.GoatEngine.Utils;
 
 
 public class Timer {
+    public static final int INFINITE = -35; //To put the timer to be infinite and never be done
 
     private int delay; // in milliseconds so 60 means 60 milliseconds
     private long startTime = -1;
@@ -17,11 +18,11 @@ public class Timer {
     }
 
 
-    public boolean isDone(){
-        if(startTime == -1 || lastCheck == -1){
+    public boolean isDone() {
+        if (startTime == -1 || lastCheck == -1) {
             throw new TimerException("The Timer was not started, call function start() before using Timer");
         }
-        return System.currentTimeMillis() - this.lastCheck >= this.delay;
+        return (delay != INFINITE) && ((System.currentTimeMillis() - this.lastCheck) >= this.delay);
     }
 
     /**

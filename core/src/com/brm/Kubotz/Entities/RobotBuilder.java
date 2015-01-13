@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.CameraTargetComponent;
 import com.brm.Kubotz.Component.Skills.FlyComponent;
@@ -90,7 +91,7 @@ public class RobotBuilder extends EntityBuilder{
         JumpComponent jp = new JumpComponent(3);
 
         // Flying Property
-        FlyComponent fp = new FlyComponent(1*1000,10*1000);
+        FlyComponent fp = new FlyComponent(1000, Timer.INFINITE);
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);

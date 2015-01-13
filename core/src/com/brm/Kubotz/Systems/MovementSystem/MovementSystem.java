@@ -27,6 +27,7 @@ public class MovementSystem extends EntitySystem {
         for(Entity entity: em.getEntitiesWithComponent(VirtualGamePad.ID)){
             boolean useDefaultBehaviour = true; //Whether or not we will walk
 
+            //Fly Component
             if(entity.hasComponent(FlyComponent.ID)){
                 FlyComponent flyComp = (FlyComponent) entity.getComponent(FlyComponent.ID);
                 flySystem.handleInput(entity);
@@ -34,10 +35,6 @@ public class MovementSystem extends EntitySystem {
                     useDefaultBehaviour = false;
                 }
             }
-
-
-
-
             if(useDefaultBehaviour){
                 walkingSystem.handleInput(entity);
             }

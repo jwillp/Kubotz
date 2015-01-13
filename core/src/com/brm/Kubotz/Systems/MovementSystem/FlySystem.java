@@ -144,7 +144,7 @@ public class FlySystem extends EntitySystem {
         if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.y){
             resultingVelocity = -flyComp.MAX_SPEED.y;
         }
-        // it's half a jump
+
         this.flyInY(entity, resultingVelocity);
     }
 
@@ -155,10 +155,9 @@ public class FlySystem extends EntitySystem {
     private void flyLeft(Entity entity) {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-
         Vector2 vel = phys.getVelocity();
-        float resultingVelocity = vel.x - flyComp.acceleration.x;
 
+        float resultingVelocity = vel.x - flyComp.acceleration.x;
         if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.x){
             resultingVelocity = -flyComp.MAX_SPEED.x;
         }
@@ -174,7 +173,7 @@ public class FlySystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.x/flyComp.acceleration.x;
+        float resultingVelocity = vel.x + flyComp.acceleration.x;
         if(resultingVelocity > flyComp.MAX_SPEED.x){
             resultingVelocity = flyComp.MAX_SPEED.x;
         }
@@ -197,16 +196,12 @@ public class FlySystem extends EntitySystem {
 
 
         float finalVelX = (vel.x > 0) ?
-                Math.max(vel.x - flyComp.deceleration.x, 0.1f) : Math.min(vel.x + flyComp.deceleration.x, 0.1f);
+                Math.max(vel.x - flyComp.deceleration.x, 0.0f) : Math.min(vel.x + flyComp.deceleration.x, 0.0f);
         flyInX(entity, finalVelX);
 
         float finalVelY = (vel.y > 0) ?
-                Math.max(vel.y - flyComp.deceleration.y, 0.1f) : Math.min(vel.x + flyComp.deceleration.y, 0.1f);
+                Math.max(vel.y - flyComp.deceleration.y, 0.0f) : Math.min(vel.y + flyComp.deceleration.y, 0.0f);
         flyInY(entity, finalVelY);
-
-
-
-
     }
 
 
