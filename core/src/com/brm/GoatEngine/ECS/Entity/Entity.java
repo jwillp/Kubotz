@@ -52,6 +52,23 @@ public class Entity {
         return  manager.hasComponent(componentId, getID());
     }
 
+    /**
+     * Returns if the entity has a certain Component and if that component is Enabled
+     * If it does not have the component or that component is disabled returns false
+     * otherwise true
+     * @return
+     */
+    public boolean hasComponentEnabled(String componentId){
+
+        if(!hasComponent(componentId)){
+            return false;
+        }
+
+        //it has the component, is it enabled?
+        return getComponent(componentId).isEnabled();
+    }
+
+
 
     /**
      * Enables a Component

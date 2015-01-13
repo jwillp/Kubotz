@@ -1,15 +1,11 @@
 package com.brm.GoatEngine.ECS.Components;
 
-import com.brm.GoatEngine.ECS.Components.Component;
-
-/**
- * Created by Home on 2014-12-24.
- */
 public class HealthComponent extends Component {
 
     public final static String ID = "HEALTH_PROPERTY";
 
     private int amount = 0;
+    public float maxHealth = 100;
 
     public HealthComponent(){}
 
