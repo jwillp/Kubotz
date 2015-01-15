@@ -63,6 +63,20 @@ public class EntityManager {
     }
 
     /**
+     * Removes a component from an entity
+     * @param componentId
+     * @param entityId
+     * @return this for chaining
+     */
+    public EntityManager removeComponent(String componentId, String entityId){
+        HashMap<String, Component> componentEntry = this.components.get(componentId);
+        componentEntry.remove(entityId);
+        return this;
+    }
+
+
+
+    /**
      * Returns the component instance of a certain type belonging to an entity
      * @param componentId: the Id of the component to retrieve
      * @param entityId: The id of the entity of which we want the component
@@ -82,7 +96,7 @@ public class EntityManager {
      * @param entityId
      * @return
      */
-    public HashMap<String, Component> getEntityComponents(String entityId){
+    public HashMap<String, Component> getEntityForComponents(String entityId){
         HashMap<String, Component> components = new HashMap<String, Component>();
         for(String compId: this.components.keySet()){
             if(this.components.get(compId).containsKey(entityId)){
@@ -156,6 +170,21 @@ public class EntityManager {
         e.setManager(this);
         return e;
     }
+
+
+    /**
+     * Returns all entities
+     * @return
+     */
+    public HashSet<Entity> getEntities(){
+        HashSet<Entity> entities = new HashSet<Entity>();
+        for(String compId: this.components.keySet()){
+            entities.addAll(this.getEntitiesWithComponent(compId));
+        }
+
+        return entities;
+    }
+
 
 
 

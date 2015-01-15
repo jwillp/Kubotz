@@ -25,11 +25,15 @@ public class BoundingBoxRenderer {
 
     public void draw(OrthographicCamera cam){
         Rectangle rect = ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).getBounds();
-        Color color = ((AppearanceComponent)entity.getComponent(AppearanceComponent.ID)).getDebugColor();
+        //Color color = ((AppearanceComponent)entity.getComponent(AppearanceComponent.ID)).getDebugColor();
+        Color color = Color.CYAN;
 
         shapeRenderer.setProjectionMatrix(cam.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(color);
+
+
+
         shapeRenderer.rect(rect.getX(), rect.getY(), rect.getWidth(), rect.getWidth());
         shapeRenderer.end();
     }

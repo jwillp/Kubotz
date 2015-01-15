@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems;
 
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
@@ -11,6 +12,8 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Viewport;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Component.CameraTargetComponent;
+import com.brm.Kubotz.Renderers.BoundingBoxRenderer;
+import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 
 /**
  * Responsible for displaying all visual ellements on screen
@@ -24,15 +27,12 @@ public class RenderingSystem extends EntitySystem {
     private Box2DDebugRenderer debugRenderer;
 
 
-
-
-
     public RenderingSystem(EntityManager em) {
         super(em);
     }
 
     public void init(){
-        this.viewport = new Viewport(20, 20);
+        this.viewport = new Viewport(30, 30);
         debugRenderer = new Box2DDebugRenderer();
 
 
@@ -40,19 +40,13 @@ public class RenderingSystem extends EntitySystem {
     }
 
     public void update(){
-            updateCamera();
-
-    }
-
-
-
-    public void updateCamera(){
         //Todo get the only controllable entity (using ID would ensure that)
         //Todo Try to make camera using a Tracker System
-        for(Entity e: this.em.getEntitiesWithComponent(CameraTargetComponent.ID)){
-            this.viewport.update(e);
-        }
+        this.viewport.update(this.em.getEntitiesWithComponent(CameraTargetComponent.ID));
     }
+
+
+
 
 
 
@@ -64,10 +58,21 @@ public class RenderingSystem extends EntitySystem {
             }
         }*/
 
+
+
+
+
         if(Config.DEBUG_RENDERING_ENABLED) {
             this.spriteBatch.begin();
             debugRenderer.render(world, this.viewport.getCamera().combined);
             this.spriteBatch.end();
+
+
+            /** CAMERA DEBUG */
+            CameraDebugRenderer cdr = new CameraDebugRenderer(this.viewport.getCamera(), shapeRenderer);
+            cdr.render();
+
+
         }
 
     }

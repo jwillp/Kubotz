@@ -27,12 +27,23 @@ public class Entity {
      * WRAPPER METHOD adds a component to the entity in the entity manager
      * @param cp
      * @param compId
-     * @return
+     * @return this for chaining
      */
     public Entity addComponent(Component cp, String compId) {
         manager.addComponent(compId, cp, getID());
         return this;
     }
+
+    /**
+     * WRAPPER METHOD removes a component from an entity
+     * @param componentId
+     * @return this for chaining
+     */
+    public Entity removeComponent(String componentId){
+        manager.removeComponent(componentId, getID());
+        return this;
+    }
+
 
     /**
      * WRAPPER METHOD Gets a component using its ID

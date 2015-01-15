@@ -47,7 +47,8 @@ public class PhysicsComponent extends Component {
      * @return
      */
     public Rectangle getBounds(){
-        return new Rectangle(this.getPosition().x, this.getPosition().y, this.getWidth(), this.getHeight());
+
+        return new Rectangle(this.getPosition().x - this.getWidth()/2, this.getPosition().y-this.getHeight()/2, this.getWidth(), this.getHeight());
     }
 
     public Vector2 getPosition() {
