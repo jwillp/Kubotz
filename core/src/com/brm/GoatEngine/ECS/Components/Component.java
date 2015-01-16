@@ -5,7 +5,7 @@ package com.brm.GoatEngine.ECS.Components;
 
 public abstract class Component {
 
-    private boolean isEnabled;
+    private boolean isEnabled = true;
 
 
     public boolean isEnabled() {

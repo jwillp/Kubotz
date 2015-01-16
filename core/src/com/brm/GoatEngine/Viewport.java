@@ -20,10 +20,6 @@ import java.util.ArrayList;
 public class Viewport {
 
     private OrthographicCamera camera;
-    private float leftHotspot   = 0.0f;   // Minimum X
-    private float rightHotspot  = 0.0f;   // Maximum X
-    private float topHostpot    = 0.0f;   // Maximum Y
-    private float bottomHotspot = 0.0f;   // Minimum Y
 
 
     //For Smooth camera movement(delayed camera movement, (the higher the most direct and quick))
@@ -57,6 +53,8 @@ public class Viewport {
      * @param targets: The gameObjects having a CameraTargetComponent
      */
     public void update(ArrayList<Entity> targets){
+
+
         Vector2 leftMost = new Vector2(2500,2500);
         Vector2 rightMost = new Vector2(-2500,-2500);
 
@@ -88,6 +86,7 @@ public class Viewport {
      */
     public void updatePosition(Vector2 leftMost, Vector2 rightMost){
         // Find the center point between leftMost and rightMost pos
+        Vector3 oldPos = camera.position;
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
         float width = rightMost.x - leftMost.x;
@@ -98,6 +97,13 @@ public class Viewport {
         Vector3 cameraPosition = getCamera().position;
         cameraPosition.x += (newPos.x - cameraPosition.x) * speed.x * Gdx.graphics.getDeltaTime();
         cameraPosition.y += (newPos.y - cameraPosition.y) * speed.y * Gdx.graphics.getDeltaTime();
+
+
+        // TODO Check camera position limits of the map and rapply pos = old posIf necesary
+
+
+
+
     }
 
 
