@@ -4,7 +4,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
+import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 
 /**
  * System handling the controllable Entities such as most characters
@@ -35,6 +35,7 @@ public class MovementSystem extends EntitySystem {
                     useDefaultBehaviour = false;
                 }
             }
+
             if(useDefaultBehaviour){
                 walkingSystem.handleInput(entity);
             }
