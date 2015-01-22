@@ -43,6 +43,29 @@ public class RobotBuilder extends EntityBuilder{
     }
 
 
+    /**
+     * Defines the height of the Robot and the width ACCORDINGLY
+     * @return this for chaining
+     */
+    public RobotBuilder withHeight(float height){
+
+        this.size = new Vector2(height/2, height);
+        return this;
+    }
+
+    /**
+     * Defines the width of the Robot and the height ACCORDINGLY
+     * @return this for chaining
+     */
+    public RobotBuilder withWidth(float width){
+        this.size = new Vector2(width, width*2);
+        return this;
+    }
+
+
+
+
+
     @Override
     public Entity build() {
         Entity character = new Entity();
@@ -50,27 +73,60 @@ public class RobotBuilder extends EntityBuilder{
 
         //Physics
         PhysicsComponent physics;
-        physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, 0.5f,0.5f);
+        physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, size.x, size.y);
         physics.getAcceleration().set(0.5f, 15.0f);
 
-        CircleShape circleShape = new CircleShape();
-        circleShape.setRadius(physics.getWidth());
+        physics.getBody().setFixedRotation(true);
+
 
         FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = circleShape;
+
+
+        // Circle 1
+        CircleShape circleShapeTop = new CircleShape();
+        circleShapeTop.setRadius(physics.getWidth());
+        circleShapeTop.setPosition(new Vector2(0, size.y * 0.5f));
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
-
-
-        physics.getBody().setFixedRotation(true);
         physics.getBody().createFixture(fixtureDef);
-        circleShape.dispose();
+        circleShapeTop.dispose();
+
+
+        // Circle 2
+        CircleShape circleShapeBottom = new CircleShape();
+        circleShapeBottom.setRadius(physics.getWidth());
+        circleShapeBottom.setPosition(new Vector2(0, -size.y * 0.5f));
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = circleShapeBottom;
+        fixtureDef.density = 0.1f;
+        physics.getBody().createFixture(fixtureDef);
+        circleShapeBottom.dispose();
+
+        ///MIDDLE
+        PolygonShape polyShape = new PolygonShape();
+        polyShape.setAsBox(physics.getWidth(), 0.5f*physics.getHeight());
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = polyShape;
+        physics.getBody().createFixture(fixtureDef);
+        polyShape.dispose();
+
+
 
         //foot fixture
         PolygonShape footSensor = new PolygonShape();
-        footSensor.setAsBox(0.1f,0.1f, new Vector2(0,-0.5f), 0);
+        footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;
         fixtureDef.shape = footSensor;
         physics.getBody().createFixture(fixtureDef).setUserData("footSensor");
+
+
+
+
+
+
+
+
 
 
 
