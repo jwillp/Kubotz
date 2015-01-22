@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Renderers;
 
-import com.brm.GoatEngine.Viewport;
+
 import com.brm.GoatEngine.ECS.Entity.Entity;
 
 import java.util.ArrayList;
@@ -9,14 +9,13 @@ public class WorldRenderer {
 
 
     private ArrayList<Entity> entities;
-    private Viewport viewport;
+
 
     public WorldRenderer(ArrayList<Entity> entities){
 
         this.entities = entities;
 
         // Camera Setup
-        this.viewport = new Viewport(20, 14);
 
 
     }
