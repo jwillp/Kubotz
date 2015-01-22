@@ -86,13 +86,13 @@ public class InGameState extends GameState {
 
         // Player
         this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5))
-                .withHeight(0.5f)
+                .withHeight(1.0f)
                 .withCameraTargetComponent()
                 .build();
 
 
-        //Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
-        //bo.removeComponent(VirtualGamePad.ID);
+        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
+        bo.removeComponent(VirtualGamePad.ID);
         Logger.log("In Game State initialised");
 
 
