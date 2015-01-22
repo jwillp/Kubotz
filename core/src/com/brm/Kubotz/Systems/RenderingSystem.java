@@ -23,8 +23,6 @@ public class RenderingSystem extends EntitySystem {
     private SpriteBatch spriteBatch = new SpriteBatch();
     private ShapeRenderer shapeRenderer = new ShapeRenderer();
     private Box2DDebugRenderer debugRenderer;
-    private Entity camera;
-
 
     public RenderingSystem(EntityManager em) {
         super(em);
@@ -32,11 +30,6 @@ public class RenderingSystem extends EntitySystem {
 
     public void init(){
         this.cameraSystem = new CameraSystem(em);
-
-        //Creation of a main Camera
-        this.camera = new CameraBuilder(this.em, 30,30)
-                .withTag("mainCamera")
-                .build();
         debugRenderer = new Box2DDebugRenderer();
     }
 
@@ -58,15 +51,14 @@ public class RenderingSystem extends EntitySystem {
         }*/
         if(Config.DEBUG_RENDERING_ENABLED) {
 
-            CameraComponent camComp = (CameraComponent) this.camera.getComponent(CameraComponent.ID);
 
             this.spriteBatch.begin();
-            debugRenderer.render(world, camComp.camera.combined);
+            debugRenderer.render(world, cameraSystem.getMainCamera().combined);
             this.spriteBatch.end();
 
 
             /** CAMERA DEBUG */
-            CameraDebugRenderer cdr = new CameraDebugRenderer(camComp.camera, shapeRenderer);
+            CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
             cdr.render();
 
         }

@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.System;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraComponent;
@@ -9,16 +10,25 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Math.VectorMath;
+import com.brm.Kubotz.Entities.CameraBuilder;
 
 /**
  * A system handling all cameras and their movements
  */
 public class CameraSystem extends EntitySystem {
 
+    private Entity mainCamera;
 
     public CameraSystem(EntityManager em) {
         super(em);
+        //Creation of a main Camera
+        this.mainCamera = new CameraBuilder(this.em, 30,30)
+                .withTag("mainCamera")
+                .build();
+
     }
+
+
 
 
     public void update(){
@@ -103,4 +113,13 @@ public class CameraSystem extends EntitySystem {
                 * zoomSpeed * Gdx.graphics.getDeltaTime();
 
      }
+
+    /**
+     * Returns the orthographic camera
+     * @return
+     */
+    public OrthographicCamera getMainCamera() {
+        CameraComponent camComp = (CameraComponent) mainCamera.getComponent(CameraComponent.ID);
+        return camComp.camera;
+    }
 }
