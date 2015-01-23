@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Utils.Math;
+import com.brm.GoatEngine.Utils.GameMath;
 import com.brm.Kubotz.Entities.CameraBuilder;
 
 /**
@@ -96,7 +96,7 @@ public class CameraSystem extends EntitySystem {
     private void updateZoom(Entity cam, Vector2 leftMost, Vector2 rightMost){
         CameraComponent camComp = (CameraComponent)cam.getComponent(CameraComponent.ID);
         //Pythagorean distance
-        float zoomScale = (float) (Math.distance(leftMost, rightMost)/10.0f);
+        float zoomScale = (float) (GameMath.distance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
         zoomSpeed = camComp.zoomSpeed == -1 ?

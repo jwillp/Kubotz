@@ -85,13 +85,12 @@ public class FlySystem extends EntitySystem {
     }
 
     /**
-     * Checks whether or not an entity the entity still has the "right" to fly
+     * Checks whether or not an entity is still allowed to fly
      * Basically tries to disable it under the right conditions
-     * Checks all entities with flyingComponent
+     * Checks all entities with FlyingComponent
      */
     public void update(){
-        for(Entity entity : this.em.getEntitiesWithComponent(VirtualGamePad.ID)) {
-            if (entity.hasComponent(FlyComponent.ID)) {
+        for(Entity entity : this.em.getEntitiesWithComponent(FlyComponent.ID)) {
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
                 FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
 
@@ -103,8 +102,6 @@ public class FlySystem extends EntitySystem {
                     flyComponent.getCoolDownTimer().reset();
                     Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
                 }
-
-            }
         }
     }
 

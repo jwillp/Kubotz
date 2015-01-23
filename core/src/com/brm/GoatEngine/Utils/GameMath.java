@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 /**
  * Vectorial Math
  */
-public abstract class Math {
+public abstract class GameMath {
 
     /**
      * Calculates the distance between a Vector2 a and a Vector2 b

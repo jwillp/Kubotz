@@ -5,6 +5,8 @@ public class Timer {
     public static final int INFINITE = -35; //To put the timer to be infinite and never be done
     public static final int ONE_SECOND = 1000;
     public static final int HALF_A_SECOND = ONE_SECOND/2;
+    public static final int THIRD_OF_A_SECOND = ONE_SECOND/2;
+
     public static final int THREE_SECONDS = ONE_SECOND*3;
     public static final int FIVE_SECONDS = ONE_SECOND*5;
     public static final int TEN_SECONDS = ONE_SECOND*10;

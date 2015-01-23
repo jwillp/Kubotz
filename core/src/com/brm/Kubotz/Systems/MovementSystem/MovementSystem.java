@@ -48,8 +48,6 @@ public class MovementSystem extends EntitySystem {
                 }
             }
 
-
-
             if(useDefaultBehaviour){
                 walkingSystem.handleInput(entity);
             }
@@ -63,6 +61,7 @@ public class MovementSystem extends EntitySystem {
 
     public void update(){
         flySystem.update();
+        dashSystem.update();
         walkingSystem.update(Gdx.graphics.getDeltaTime());
 
     }
@@ -109,8 +108,14 @@ public class MovementSystem extends EntitySystem {
     }
 
 
-
-
+    /**
+     * Stops an entity completely i.e. in X && in Y
+     * @param entity the entity to stop
+     */
+    public static void stopXY(Entity entity){
+        stopX(entity);
+        stopY(entity);
+    }
 
 
 
