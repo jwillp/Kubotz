@@ -3,7 +3,7 @@ package com.brm.Kubotz.Renderers;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.brm.GoatEngine.Math.QuadTree;
+import com.brm.GoatEngine.Utils.QuadTree;
 
 
 public class QuadTreeRenderer{

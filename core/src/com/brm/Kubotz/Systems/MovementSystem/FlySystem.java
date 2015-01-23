@@ -55,7 +55,7 @@ public class FlySystem extends EntitySystem {
 
     /**
      * Method called when the entity requested to fly
-     * @param entity
+     * @param entity the entity to process
      */
     private void onFlyRequest(Entity entity) {
         //Double Check
@@ -75,7 +75,7 @@ public class FlySystem extends EntitySystem {
 
     /**
      * Method called then an entity requests to stop flying
-     * @param entity
+     * @param entity the entity to process
      */
     private void onStopFlyRequest(Entity entity){
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
@@ -115,7 +115,7 @@ public class FlySystem extends EntitySystem {
     /**
      * Makes an entity fly upwards
      * (Flying component must be already enabled)
-     * @param entity
+     * @param entity the entity to fly
      */
     private void flyUp(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -133,7 +133,7 @@ public class FlySystem extends EntitySystem {
     /**
      * Makes an entity fly downwards
      * (Flying component must be already enabled)
-     * @param entity
+     * @param entity the entity to fly
      */
     private void flyDown(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -150,7 +150,7 @@ public class FlySystem extends EntitySystem {
 
     /**
      * Flies an entity to the left
-     * @param entity
+     * @param entity the entity to fly
      */
     private void flyLeft(Entity entity) {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -166,7 +166,7 @@ public class FlySystem extends EntitySystem {
 
     /**
      * Flies an entity to the right
-     * @param entity
+     * @param entity the entity to fly
      */
     private void flyRight(Entity entity) {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -185,8 +185,8 @@ public class FlySystem extends EntitySystem {
 
 
     /**
-     * Decelerates an entity
-     * @param entity
+     * Decelerates an entity in air (during flight)
+     * @param entity the entity decelerate
      */
     private void decelerate(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -216,7 +216,7 @@ public class FlySystem extends EntitySystem {
     }
 
     /**
-     * Makes an entity fly horizontally i.e. on the Y axis
+     * Makes an entity fly vertically i.e. on the Y axis
      * according to a specified velocity
      * (Flying component must be already enabled)
      */

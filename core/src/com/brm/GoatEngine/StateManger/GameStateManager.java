@@ -118,7 +118,7 @@ public class GameStateManager {
 
     public void update(float deltaTime) {
         if(!this.states.empty()){
-            this.states.peek().update(this, deltaTime); // TODO Put real deltaTime
+            this.states.peek().update(this, deltaTime);
 
         }else{
             this.exitWithError("Game Engine Update::There is no state in the engine's stack.");
@@ -132,8 +132,6 @@ public class GameStateManager {
         }else{
             this.exitWithError("Game Engine Draw::There is no state in the engine's stack.");
         }
-
-        // TODO Draw FPS Rate
     }
 
 

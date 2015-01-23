@@ -1,11 +1,11 @@
-package com.brm.GoatEngine.Math;
+package com.brm.GoatEngine.Utils;
 
 import com.badlogic.gdx.math.Vector2;
 
 /**
  * Vectorial Math
  */
-public abstract class VectorMath {
+public abstract class Math {
 
     /**
      * Calculates the distance between a Vector2 a and a Vector2 b
@@ -16,7 +16,7 @@ public abstract class VectorMath {
     public static double distance(Vector2 a, Vector2 b){
         float x = a.x - b.x;
         float y = a.y - b.y;
-        return Math.sqrt(x*x+y*y);
+        return java.lang.Math.sqrt(x * x + y * y);
     }
 
 }

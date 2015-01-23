@@ -5,7 +5,7 @@ package com.brm.GoatEngine.ECS.Components;
 
 public abstract class Component {
 
-    private boolean isEnabled;
+    private boolean isEnabled = true; //By default a component is enabled
 
 
     public boolean isEnabled() {
@@ -22,7 +22,7 @@ public abstract class Component {
 
         //Constructor that accepts a message
         public EntityPropertyNotFoundException(String propertyName){
-            super("The Property \"" + propertyName + "\" not found in Entity");
+            super("The Component \"" + propertyName + "\" was not found in Entity");
         }
 
     }

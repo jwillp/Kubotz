@@ -22,15 +22,19 @@ public class Entity {
     }
 
     // Wrapper methods //
-    // TODO catch null pointer on manager meaning entity not registered
     /**
      * WRAPPER METHOD adds a component to the entity in the entity manager
      * @param cp
      * @param compId
      * @return this for chaining
      */
-    public Entity addComponent(Component cp, String compId) {
-        manager.addComponent(compId, cp, getID());
+    public Entity addComponent(Component cp, String compId){
+
+        try{
+            manager.addComponent(compId, cp, getID());
+        } catch (NullPointerException e) {
+            throw new UnregisteredEntityException();
+        }
         return this;
     }
 
@@ -40,7 +44,11 @@ public class Entity {
      * @return this for chaining
      */
     public Entity removeComponent(String componentId){
-        manager.removeComponent(componentId, getID());
+        try {
+            manager.removeComponent(componentId, getID());
+        } catch (NullPointerException e) {
+            throw new UnregisteredEntityException();
+        }
         return this;
     }
 
@@ -51,7 +59,11 @@ public class Entity {
      * @return
      */
     public Component getComponent(String componentId){
-        return manager.getComponent(componentId, getID());
+        try {
+            return manager.getComponent(componentId, getID());
+        } catch (NullPointerException e) {
+            throw new UnregisteredEntityException();
+        }
     }
 
     /**
@@ -60,7 +72,11 @@ public class Entity {
      * @return
      */
     public boolean hasComponent(String componentId){
-        return  manager.hasComponent(componentId, getID());
+        try {
+            return  manager.hasComponent(componentId, getID());
+        } catch (NullPointerException e) {
+            throw new UnregisteredEntityException();
+        }
     }
 
     /**
@@ -70,15 +86,12 @@ public class Entity {
      * @return
      */
     public boolean hasComponentEnabled(String componentId){
-
-        if(!hasComponent(componentId)){
-            return false;
+        if(hasComponent(componentId)){
+            //it has the component, is it enabled?
+            return getComponent(componentId).isEnabled();
         }
-
-        //it has the component, is it enabled?
-        return getComponent(componentId).isEnabled();
+        return false;
     }
-
 
 
     /**
@@ -96,6 +109,14 @@ public class Entity {
     }
 
 
+    /**
+     * Thrown when an unregistered entity tries to access a null EntityManager
+     */
+    public static class UnregisteredEntityException extends RuntimeException{
+        public UnregisteredEntityException(){
+            super("The Entity is not registered to any EntityManager");
+        }
+    }
 
 }
 

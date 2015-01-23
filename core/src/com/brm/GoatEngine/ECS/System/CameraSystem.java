@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Math.VectorMath;
+import com.brm.GoatEngine.Utils.Math;
 import com.brm.Kubotz.Entities.CameraBuilder;
 
 /**
@@ -40,11 +40,11 @@ public class CameraSystem extends EntitySystem {
             for(Entity target : this.em.getEntitiesWithComponent(CameraTargetComponent.ID)){
                 PhysicsComponent phys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
-                leftMost.x = Math.min(leftMost.x, phys.getPosition().x);
-                leftMost.y = Math.min(leftMost.y, phys.getPosition().y);
+                leftMost.x = java.lang.Math.min(leftMost.x, phys.getPosition().x);
+                leftMost.y = java.lang.Math.min(leftMost.y, phys.getPosition().y);
 
-                rightMost.x = Math.max(rightMost.x, phys.getPosition().x);
-                rightMost.y = Math.max(rightMost.y, phys.getPosition().y);
+                rightMost.x = java.lang.Math.max(rightMost.x, phys.getPosition().x);
+                rightMost.y = java.lang.Math.max(rightMost.y, phys.getPosition().y);
             }
 
             // Find the center point between between the two entities
@@ -96,11 +96,11 @@ public class CameraSystem extends EntitySystem {
     private void updateZoom(Entity cam, Vector2 leftMost, Vector2 rightMost){
         CameraComponent camComp = (CameraComponent)cam.getComponent(CameraComponent.ID);
         //Pythagorean distance
-        float zoomScale = (float) (VectorMath.distance(leftMost, rightMost)/10.0f);
+        float zoomScale = (float) (Math.distance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
         zoomSpeed = camComp.zoomSpeed == -1 ?
-                Math.sqrt((camComp.speed.x * camComp.speed.x) + (camComp.speed.y * camComp.speed.y))
+                java.lang.Math.sqrt((camComp.speed.x * camComp.speed.x) + (camComp.speed.y * camComp.speed.y))
                 : camComp.zoomSpeed;
 
 
@@ -109,7 +109,7 @@ public class CameraSystem extends EntitySystem {
 
 
         //Zoom according to distance
-        camComp.camera.zoom += (Math.min(Math.max(zoomScale, camComp.minimumZoom), camComp.maximumZoom ) - camComp.camera.zoom)
+        camComp.camera.zoom += (java.lang.Math.min(java.lang.Math.max(zoomScale, camComp.minimumZoom), camComp.maximumZoom) - camComp.camera.zoom)
                 * zoomSpeed * Gdx.graphics.getDeltaTime();
 
      }

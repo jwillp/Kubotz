@@ -20,8 +20,6 @@ public class WalkingSystem extends EntitySystem {
     }
 
 
-    public void update(){}
-
 
     /**
      * Process a Movement Button for the entities

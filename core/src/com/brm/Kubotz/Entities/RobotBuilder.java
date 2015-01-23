@@ -13,6 +13,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
+import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.Skills.FlyComponent;
 
 /**
@@ -90,16 +91,25 @@ public class RobotBuilder extends EntityBuilder{
         // Jump
         JumpComponent jp = new JumpComponent(3);
 
-        // Flying Property
-        FlyComponent fp = new FlyComponent(1000, Timer.INFINITE);
+
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);
         character.addComponent(jp, JumpComponent.ID);
-        character.addComponent(fp, FlyComponent.ID);
         character.addComponent(gamePad, VirtualGamePad.ID);
         character.addComponent(new TagsComponent(), TagsComponent.ID);
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
+
+
+        /* Flying Component */
+        FlyComponent fp = new FlyComponent(1000, Timer.INFINITE);
+        //character.addComponent(fp, FlyComponent.ID);
+
+
+        /* DASH Component */
+        DashComponent dash = new DashComponent();
+        character.addComponent(dash, DashComponent.ID);
+
 
 
 

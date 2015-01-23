@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Systems.MovementSystem;
 
+import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
@@ -13,6 +14,7 @@ public class MovementSystem extends EntitySystem {
 
     FlySystem flySystem;
     WalkingSystem walkingSystem;
+    DashSystem dashSystem;
 
 
 
@@ -20,6 +22,7 @@ public class MovementSystem extends EntitySystem {
         super(em);
         flySystem = new FlySystem(em);
         walkingSystem = new WalkingSystem(em);
+        dashSystem = new DashSystem(em);
     }
 
 
@@ -40,13 +43,15 @@ public class MovementSystem extends EntitySystem {
             }
         }
 
+        dashSystem.handleInput();
+
     }
 
 
 
     public void update(){
         flySystem.update();
-        walkingSystem.update();
+        walkingSystem.update(Gdx.graphics.getDeltaTime());
 
     }
 
