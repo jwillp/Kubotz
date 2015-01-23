@@ -63,7 +63,7 @@ public class FlySystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
             // We want to fly
-            if (!flyComponent.isEnabled() && flyComponent.getCoolDownTimer().isDone()) {
+            if (flyComponent.isDisabled() && flyComponent.getCoolDownTimer().isDone()) {
                 flyComponent.setEnabled(true);
                 phys.getBody().setGravityScale(0);
                 flyComponent.getEffectDurationTimer().reset();
@@ -74,7 +74,7 @@ public class FlySystem extends EntitySystem {
 
 
     /**
-     * Method called then an entity requests to stop flying
+     * Method called when an entity requests to stop flying
      * @param entity the entity to process
      */
     private void onStopFlyRequest(Entity entity){
@@ -98,7 +98,7 @@ public class FlySystem extends EntitySystem {
                 //Do we need to disable?
                 if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
                     flyComponent.setEnabled(false);
-                    this.stopY(entity);
+                    MovementSystem.stopY(entity);
                     phys.getBody().setGravityScale(1);
                     flyComponent.getCoolDownTimer().reset();
                     Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
@@ -126,7 +126,7 @@ public class FlySystem extends EntitySystem {
         if(resultingVelocity > flyComp.MAX_SPEED.y){
             resultingVelocity = flyComp.MAX_SPEED.y;
         }
-        flyInY(entity, resultingVelocity);
+        MovementSystem.moveInY(entity, resultingVelocity);
 
     }
 
@@ -145,7 +145,7 @@ public class FlySystem extends EntitySystem {
             resultingVelocity = -flyComp.MAX_SPEED.y;
         }
 
-        this.flyInY(entity, resultingVelocity);
+        MovementSystem.moveInY(entity, resultingVelocity);
     }
 
     /**
@@ -161,7 +161,7 @@ public class FlySystem extends EntitySystem {
         if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.x){
             resultingVelocity = -flyComp.MAX_SPEED.x;
         }
-        flyInX(entity, resultingVelocity);
+        MovementSystem.moveInX(entity, resultingVelocity);
     }
 
     /**
@@ -177,7 +177,7 @@ public class FlySystem extends EntitySystem {
         if(resultingVelocity > flyComp.MAX_SPEED.x){
             resultingVelocity = flyComp.MAX_SPEED.x;
         }
-        flyInX(entity, resultingVelocity);
+        MovementSystem.moveInX(entity, resultingVelocity);
     }
 
 
@@ -197,47 +197,15 @@ public class FlySystem extends EntitySystem {
 
         float finalVelX = (vel.x > 0) ?
                 Math.max(vel.x - flyComp.deceleration.x, 0.0f) : Math.min(vel.x + flyComp.deceleration.x, 0.0f);
-        flyInX(entity, finalVelX);
+        MovementSystem.moveInX(entity, finalVelX);
 
         float finalVelY = (vel.y > 0) ?
                 Math.max(vel.y - flyComp.deceleration.y, 0.0f) : Math.min(vel.y + flyComp.deceleration.y, 0.0f);
-        flyInY(entity, finalVelY);
+        MovementSystem.moveInY(entity, finalVelY);
     }
 
 
-    /**
-     * Makes an entity fly horizontally i.e. on the X axis
-     * according to a specified velocity
-     * (Flying component must be already enabled)
-     */
-    private void flyInX(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
-    }
 
-    /**
-     * Makes an entity fly vertically i.e. on the Y axis
-     * according to a specified velocity
-     * (Flying component must be already enabled)
-     */
-    private void flyInY(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
-    }
-
-    /**
-     * Abruptly stops an entity in X from flying
-     */
-    private void stopX(Entity entity){
-        flyInX(entity, 0);
-    }
-
-    /**
-     * Abruptly stops the controllable an in Y from flying
-     */
-    private void stopY(Entity entity){
-        flyInY(entity, 0);
-    }
 
 
 

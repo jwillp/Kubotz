@@ -1,10 +1,12 @@
 package com.brm.Kubotz.Systems.MovementSystem;
 
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.Skills.FlyComponent;
 
 /**
@@ -38,12 +40,22 @@ public class MovementSystem extends EntitySystem {
                     useDefaultBehaviour = false;
                 }
             }
+            if(entity.hasComponent(DashComponent.ID)){
+                DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
+                dashSystem.handleInput(entity);
+                if(dashComp.isEnabled()){
+                    useDefaultBehaviour = false;
+                }
+            }
+
+
+
             if(useDefaultBehaviour){
                 walkingSystem.handleInput(entity);
             }
         }
 
-        dashSystem.handleInput();
+
 
     }
 
@@ -57,8 +69,44 @@ public class MovementSystem extends EntitySystem {
 
 
 
+    /**
+     * Makes an entity move horizontally i.e. on the X axis
+     * according to a specified velocity
+     * @param entity the entity to move
+     * @param velocity the velocity to apply
+     */
+    public static void moveInX(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
+    }
+
+    /**
+     * Makes an entity move horizontally i.e. on the Y axis
+     * according to a specified velocity
+     * @param entity the entity to move
+     * @param velocity the velocity to apply
+     */
+    public static void moveInY(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
+    }
 
 
+    /**
+     * Abruptly stops an entity in X
+     * @param entity the entity to stop
+     */
+    public static void stopX(Entity entity){
+        moveInX(entity, 0);
+    }
+
+    /**
+     * Abruptly stops an entity in Y
+     * @param entity the entity to stop
+     */
+    public static void stopY(Entity entity){
+        moveInY(entity, 0);
+    }
 
 
 

@@ -72,7 +72,7 @@ public class WalkingSystem extends EntitySystem {
         if(resultingVelocity > phys.MAX_SPEED.x){
             resultingVelocity = phys.MAX_SPEED.x;
         }
-        moveInX(entity, resultingVelocity);
+        MovementSystem.moveInX(entity, resultingVelocity);
     }
 
 
@@ -80,10 +80,8 @@ public class WalkingSystem extends EntitySystem {
      * Makes the entity jump
      */
     private void jump(Entity entity){
-
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         JumpComponent jp;
-
         if(entity.hasComponent(JumpComponent.ID)){
             jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
@@ -91,9 +89,8 @@ public class WalkingSystem extends EntitySystem {
                 if(phys.isGrounded()){ //Reset jump number
                     jp.nbJujmps = 0;
                 }
-                Vector2 vel = phys.getVelocity();
                 float resultingVelocity = -phys.getBody().getWorld().getGravity().y*0.6f;
-                moveInY(entity, resultingVelocity*phys.getBody().getGravityScale());
+                MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                 phys.setGrounded(false);
                 jp.nbJujmps++;
             }
@@ -112,14 +109,13 @@ public class WalkingSystem extends EntitySystem {
             resultingVelocity = -phys.MAX_SPEED.y;
         }
         // it's half a jump
-        this.moveInY(entity, resultingVelocity/2);
+        MovementSystem.moveInY(entity, resultingVelocity / 2);
     }
-
-
 
     /**
      * Gradually stops the entity by applying deceleration
      * to its velocity
+     * @param entity the entity to stop
      */
     private void decelerate(Entity entity){
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
@@ -128,37 +124,7 @@ public class WalkingSystem extends EntitySystem {
             // DECELERATION (the character needs to slow down!)
             float finalVel = (vel.x > 0) ?
                     Math.max(vel.x - phys.getAcceleration().x, 0) : Math.min(vel.x + phys.getAcceleration().x, 0);
-            moveInX(entity, finalVel);
+            MovementSystem.moveInX(entity, finalVel);
         }
     }
-
-
-
-    /**
-     * Makes an entity move horizontally i.e. on the X axis
-     * according to a specified velocity
-     */
-    private void moveInX(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
-    }
-
-    /**
-     * Makes an entity move horizontally i.e. on the Y axis
-     * according to a specified velocity
-     */
-    private void moveInY(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
-    }
-
-
-    /**
-     * Abruptly stops an entity in X
-     */
-    private void stopX(Entity entity){
-        moveInX(entity, 0);
-    }
-
-
 }

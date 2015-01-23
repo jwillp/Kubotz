@@ -9,7 +9,6 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.DashComponent;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -23,7 +22,6 @@ public class DashSystem extends EntitySystem{
 
 
     public void handleInput(){
-
         for(Entity entity : em.getEntitiesWithComponent(DashComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 this.handleInput(entity);
@@ -32,10 +30,13 @@ public class DashSystem extends EntitySystem{
         }
     }
 
-
     public void handleInput(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+            //Request a Dash
+            onDashRequest(entity);
+
+            //Find dash direction
             if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
                 dashRight(entity);
 
@@ -48,11 +49,44 @@ public class DashSystem extends EntitySystem{
             }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
                 dashDown(entity);
             }
-
-
         }
 
     }
+
+    /**
+     * Method called when the entity requested to dash
+     * @param entity the entity to process
+     */
+    private void onDashRequest(Entity entity){
+        DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
+
+        //We want to dash! Can we?
+        if(dashComp.isDisabled() && dashComp.getCoolDownTimer().isDone()){
+            dashComp.setEnabled(true);
+            dashComp.getPreparationTimer();
+            dashComp.getPreparationTimer().reset();
+            Logger.log("Entity" + entity.getID() + " ==> DASH MODE ENABLED");
+
+        }
+
+
+
+
+    }
+
+
+    /**
+     * Method called when an entity requests to stop dashing
+     * @param entity the entity to process
+     */
+    private void onStopDashRequest(Entity entity){
+
+
+    }
+
+
+
+
 
     /**
      * Dashes the entity downwards
@@ -88,36 +122,12 @@ public class DashSystem extends EntitySystem{
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
+        float targetPos = phys.getPosition().x + dashComp.distance.x;
 
-        dashInX(entity, vel.x + 20);
-
-
+        phys.getPosition().x = (targetPos - phys.getPosition().x) * dashComp.speed.x * Gdx.graphics.getDeltaTime();
     }
 
 
-    /**
-     * Makes an entity dash horizontally i.e. on the X axis
-     * according to a specified velocity
-     * (Dash component must be already enabled)
-     * @param entity the velocity to apply
-     * @param velocity the velocity to apply
-     */
-    private void dashInX(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
-    }
-
-    /**
-     * Makes an entity dash vertically i.e. on the Y axis
-     * according to a specified velocity
-     * (Dash component must be already enabled)
-     * @param entity the entity to move
-     * @param velocity the velocity to apply
-     */
-    private void dashInY(Entity entity, float velocity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
-    }
 
 
 
