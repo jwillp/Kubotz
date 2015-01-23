@@ -28,6 +28,7 @@ public class VirtualGamePad extends Component {
     public VirtualGamePad(InputSource inputSource){
         this.setInputSource(inputSource);
         this.pressedButtons = new ArrayList<VirtualButton>();
+        this.justReleasedButtons = new ArrayList<VirtualButton>();
     }
 
 
