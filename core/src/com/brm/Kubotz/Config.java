@@ -9,5 +9,8 @@ public class Config {
 
     public static boolean DEBUG_RENDERING_ENABLED = true;
 
+    public static boolean TEXTURE_RENDERING_ENABLED = false;
+
+
 
 }

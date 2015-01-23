@@ -1,11 +1,14 @@
 package com.brm.Kubotz.Systems;
 
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraComponent;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.CameraSystem;
@@ -43,27 +46,65 @@ public class RenderingSystem extends EntitySystem {
 
 
     public void render(World world){
-        /*if(Config.DEBUG_RENDERING_ENABLED){
-            for(Entity e: this.em.getEntities()){
-                BoundingBoxRenderer br = new BoundingBoxRenderer(e, getShapeRenderer());
-                br.draw(this.viewport.getCamera());
-            }
-        }*/
         if(Config.DEBUG_RENDERING_ENABLED) {
+            this.renderDebug(world);
+        }
 
+        if(Config.TEXTURE_RENDERING_ENABLED){
+            renderTextures();
+        }
+
+
+    }
+
+    /**
+     * Renders the texture of all the entities
+     */
+    private void renderTextures(){
+        //Block Texture
+        Texture texture = new Texture(Gdx.files.internal("tile.png"));
+        for(Entity block: this.em.getEntitiesWithTag("block")){
+            PhysicsComponent phys = (PhysicsComponent) block.getComponent(PhysicsComponent.ID);
 
             this.spriteBatch.begin();
-            debugRenderer.render(world, cameraSystem.getMainCamera().combined);
+            this.spriteBatch.setProjectionMatrix(cameraSystem.getMainCamera().combined);
+            this.spriteBatch.draw(texture, phys.getPosition().x - phys.getWidth()/2 ,
+                                           phys.getPosition().y - phys.getHeight()/2,
+                                           phys.getWidth()*2, phys.getHeight()*2);
             this.spriteBatch.end();
-
-
-            /** CAMERA DEBUG */
-            CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
-            cdr.render();
-
         }
 
     }
+
+
+
+
+    /**
+     * Renders all the debug graphics
+     * @param world
+     */
+    private void renderDebug(World world){
+
+        this.spriteBatch.begin();
+        debugRenderer.render(world, cameraSystem.getMainCamera().combined);
+        this.spriteBatch.end();
+
+
+        /** CAMERA DEBUG */
+        CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
+        cdr.render();
+
+
+        /** FPS **/
+
+
+
+
+
+    }
+
+
+
 
 
     public SpriteBatch getSpriteBatch() {
