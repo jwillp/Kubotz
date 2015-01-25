@@ -38,7 +38,7 @@ public class SkillSystem extends EntitySystem {
      * Updates the input for the skills
      */
     public void update(){
-
+        magneticFeetSystem.update(0); //TODO Change that
     }
 
 

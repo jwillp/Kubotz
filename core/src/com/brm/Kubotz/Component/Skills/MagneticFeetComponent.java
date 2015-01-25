@@ -1,16 +1,24 @@
 package com.brm.Kubotz.Component.Skills;
 
+import com.brm.GoatEngine.Utils.Timer;
+
 /**
  * Magnetic Feet
  */
 public class MagneticFeetComponent extends SkillComponent {
     public static final String ID = "MAGNETIC_FIELD";
 
-    /**
-     * @param coolDownDelay  : in seconds
-     * @param maxFlyDuration : in seconds
-     */
+    public float startingAngle; //In DEGREE
+
     public MagneticFeetComponent() {
-        super(0, 0);
+        super(0, 1000);
+        this.setEnabled(false);
     }
+
+    public Timer getRotationTimer(){
+        return this.effectDurationTimer;
+    }
+
+
+
 }

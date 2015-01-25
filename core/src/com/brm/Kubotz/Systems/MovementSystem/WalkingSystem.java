@@ -112,12 +112,14 @@ public class WalkingSystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.y - phys.getAcceleration().y;
-        if(Math.abs(resultingVelocity) > phys.MAX_SPEED.y){
-            resultingVelocity = -phys.MAX_SPEED.y;
+
+        if(Math.abs(vel.y) > phys.MAX_SPEED.y){
+            vel.y = -phys.MAX_SPEED.y;
         }
+        float resultingVelocity = vel.y - phys.getAcceleration().y;
+
         // it's half a jump
-        this.moveInY(entity, resultingVelocity/2);
+        this.moveInY(entity, resultingVelocity);
     }
 
 

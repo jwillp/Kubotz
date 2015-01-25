@@ -92,12 +92,11 @@ public class InGameState extends GameState {
 
 
         // Player
-        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).
-                withCameraTargetComponent().build();
+        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).withCameraTargetComponent().build();
 
 
-        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
-        bo.disableComponent(VirtualGamePad.ID);
+        //Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
+        //bo.disableComponent(VirtualGamePad.ID);
         Logger.log("In Game State initialised");
 
 
@@ -116,8 +115,9 @@ public class InGameState extends GameState {
     @Override
     public void handleInput(GameStateManager engine) {
         this.inputSystem.update();
-        this.movementSystem.handleInput();
         this.skillSystem.handleInput();
+        this.movementSystem.handleInput();
+
     }
 
     @Override

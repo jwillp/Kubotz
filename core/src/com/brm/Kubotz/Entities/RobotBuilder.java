@@ -12,7 +12,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.Kubotz.Component.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.Kubotz.Component.Skills.FlyComponent;
 import com.brm.Kubotz.Component.Skills.MagneticFeetComponent;
 
