@@ -20,6 +20,7 @@ import com.brm.Kubotz.Entities.RobotBuilder;
 import com.brm.Kubotz.Entities.TurretBuilder;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
+import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
 
 import java.util.Random;
 
@@ -31,12 +32,12 @@ public class InGameState extends GameState {
     private PhysicsSystem physicsSystem;
     private InputTranslationSystem inputSystem;
     private TrackerSystem trackerSystem;
+    private SkillSystem skillSystem;
 
     private MovementSystem movementSystem;
 
 
     private Entity player;
-
 
 
 
@@ -67,6 +68,12 @@ public class InGameState extends GameState {
 
         this.trackerSystem = new TrackerSystem(this.entityManager);
 
+        this.skillSystem = new SkillSystem(this.entityManager);
+
+
+
+
+
 
 
         // MAP
@@ -85,12 +92,11 @@ public class InGameState extends GameState {
 
 
         // Player
-        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).
-                withCameraTargetComponent().build();
+        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).withCameraTargetComponent().build();
 
 
-        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
-        bo.removeComponent(VirtualGamePad.ID);
+        //Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
+        //bo.disableComponent(VirtualGamePad.ID);
         Logger.log("In Game State initialised");
 
 
@@ -109,7 +115,9 @@ public class InGameState extends GameState {
     @Override
     public void handleInput(GameStateManager engine) {
         this.inputSystem.update();
+        this.skillSystem.handleInput();
         this.movementSystem.handleInput();
+
     }
 
     @Override
@@ -119,6 +127,7 @@ public class InGameState extends GameState {
 
         this.movementSystem.update();
         this.trackerSystem.update();
+        this.skillSystem.update();
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
 

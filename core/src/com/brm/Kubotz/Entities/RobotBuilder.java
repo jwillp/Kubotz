@@ -13,6 +13,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
+import com.brm.Kubotz.Component.Skills.MagneticFeetComponent;
 
 
 /**
@@ -51,7 +52,7 @@ public class RobotBuilder extends EntityBuilder{
         //Physics
         PhysicsComponent physics;
         physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, 0.5f,0.5f);
-        physics.getAcceleration().set(0.5f, 15.0f);
+        physics.getAcceleration().set(0.5f, 18.0f);
 
         CircleShape circleShape = new CircleShape();
         circleShape.setRadius(physics.getWidth());
@@ -95,10 +96,12 @@ public class RobotBuilder extends EntityBuilder{
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);
-        character.addComponent(jp, JumpComponent.ID);
-        character.addComponent(fp, FlyComponent.ID);
-        character.addComponent(gamePad, VirtualGamePad.ID);
+        character.addComponent(new JumpComponent(3), JumpComponent.ID);
+        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+        character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        character.addComponent(new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT), VirtualGamePad.ID);
         character.addComponent(new TagsComponent(), TagsComponent.ID);
+
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
 
 

@@ -134,6 +134,25 @@ public class EntityManager {
         return entities;
     }
 
+    /**
+     * Returns all the entities having a certain component and having that component enabled
+     * @param componentId
+     * @return
+     */
+    public ArrayList<Entity> getEntitiesWithComponentEnabled(String componentId){
+        ArrayList<Entity> entities = new ArrayList<Entity>();
+        if(this.components.containsKey(componentId)){
+            for(String enId : this.components.get(componentId).keySet()){
+                if(this.components.get(componentId).get(enId).isEnabled()){
+                    entities.add(getEntity(enId));
+                }
+            }
+        }
+        return entities;
+    }
+
+
+
 
     public ArrayList<Entity> getEntitiesWithTag(String tag){
         ArrayList<Entity> entitiesWithTag = new ArrayList<Entity>();

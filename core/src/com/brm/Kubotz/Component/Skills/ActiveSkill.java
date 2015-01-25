@@ -2,7 +2,7 @@ package com.brm.Kubotz.Component.Skills;
 
 import com.brm.GoatEngine.Utils.Timer;
 
-public abstract class ActiveSkill extends Skill {
+public abstract class ActiveSkill extends SkillComponent {
 
     protected Timer coolDownTimer; //How long between calls of the property
 
