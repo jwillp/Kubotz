@@ -3,6 +3,7 @@ package com.brm.Kubotz.Entities;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
@@ -10,10 +11,9 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.Kubotz.Component.CameraTargetComponent;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
+
 
 /**
  * Used to create block entities
@@ -91,7 +91,7 @@ public class RobotBuilder extends EntityBuilder{
         JumpComponent jp = new JumpComponent(3);
 
         // Flying Property
-        FlyComponent fp = new FlyComponent(1000, Timer.INFINITE);
+        FlyComponent fp = new FlyComponent(1000, 10000);
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);

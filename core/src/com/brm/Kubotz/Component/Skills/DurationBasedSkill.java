@@ -1,11 +1,12 @@
-package com.brm.Kubotz.Component.Skills.Active;
+package com.brm.Kubotz.Component.Skills;
 
 
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.Component.Skills.ActiveSkill;
 
-public class SwitchBasedFunc extends ActiveFunctionality{
+public class DurationBasedSkill extends ActiveSkill {
 
-    protected Timer coolDownTimer; //How long between calls of the property
+
     protected Timer effectDurationTimer; //Timing how long the skill has been used
 
     /**
@@ -13,22 +14,15 @@ public class SwitchBasedFunc extends ActiveFunctionality{
      * @param coolDownDelay: in seconds
      * @param maxDuration: in seconds
      */
-    public SwitchBasedFunc(int coolDownDelay, int maxDuration){
+    public DurationBasedSkill(int coolDownDelay, int maxDuration){
+        super(coolDownDelay);
         this.setCoolDownTimer(new Timer(coolDownDelay));
         this.setEffectDurationTimer(new Timer(maxDuration));
 
         this.getCoolDownTimer().start();
         this.getEffectDurationTimer().start();
-
     }
 
-    public Timer getCoolDownTimer() {
-        return coolDownTimer;
-    }
-
-    public void setCoolDownTimer(Timer coolDownTimer) {
-        this.coolDownTimer = coolDownTimer;
-    }
 
     public Timer getEffectDurationTimer() {
         return effectDurationTimer;
@@ -37,5 +31,8 @@ public class SwitchBasedFunc extends ActiveFunctionality{
     public void setEffectDurationTimer(Timer effectDurationTimer) {
         this.effectDurationTimer = effectDurationTimer;
     }
+
+
+
 
 }

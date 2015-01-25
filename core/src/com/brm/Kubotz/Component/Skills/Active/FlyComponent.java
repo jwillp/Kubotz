@@ -1,12 +1,13 @@
 package com.brm.Kubotz.Component.Skills.Active;
 
 import com.badlogic.gdx.math.Vector2;
+import com.brm.Kubotz.Component.Skills.DurationBasedSkill;
 
 /**
  * Lets an Entity Fly i.e. it is not affected by Gravity
  * (Flying platforms will have this for instance)
  */
-public class FlyComponent extends SwitchBasedFunc {
+public class FlyComponent extends DurationBasedSkill {
 
     public static String ID =  "FLY_FUNC";
 
