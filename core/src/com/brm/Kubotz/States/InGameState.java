@@ -92,7 +92,10 @@ public class InGameState extends GameState {
 
 
         // Player
-        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5)).withCameraTargetComponent().build();
+        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5))
+                .withHeight(0.5f)
+                .withCameraTargetComponent()
+                .build();
 
 
         //Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
