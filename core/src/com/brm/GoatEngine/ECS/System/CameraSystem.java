@@ -99,9 +99,7 @@ public class CameraSystem extends EntitySystem {
         float zoomScale = (float) (GameMath.distance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
-        zoomSpeed = camComp.zoomSpeed == -1 ?
-                java.lang.Math.sqrt((camComp.speed.x * camComp.speed.x) + (camComp.speed.y * camComp.speed.y))
-                : camComp.zoomSpeed;
+        zoomSpeed = camComp.zoomSpeed == -1 ? camComp.speed.len() : camComp.zoomSpeed;
 
 
 

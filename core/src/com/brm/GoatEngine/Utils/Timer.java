@@ -11,6 +11,16 @@ public class Timer {
     public static final int FIVE_SECONDS = ONE_SECOND*5;
     public static final int TEN_SECONDS = ONE_SECOND*10;
 
+    /**
+     * Returns the number of milliseconds for a certain number of seconds
+     * @param number the number of seconds desired
+     * @return
+     */
+    public static int nbSeconds(float number){
+        return (int) (number * 1000);
+    }
+
+
 
 
     private int delay; // in milliseconds so 60 means 60 milliseconds

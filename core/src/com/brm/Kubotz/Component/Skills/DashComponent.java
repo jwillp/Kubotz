@@ -15,11 +15,23 @@ public class DashComponent extends Component{
     public final static int DOWN = -1;
     public final static int UP = 1;
 
+    public Timer getRecoveryTimer() {
+        return recoveryTimer;
+    }
 
 
+    public enum Phase{
+        PREPARATION,
+        MOVEMENT,
+        DECELERATION,
+        RECOVERY,
+        NONE
+    }
+
+    public Phase phase;
 
     public Vector2 distance = new Vector2(10,10); // The distance in nb of game units a Dash is
-    public Vector2 speed = new Vector2(100,25);    // The Speed of the Dash
+    public Vector2 speed = new Vector2(2000,25);    // The Speed of the Dash
 
     public Vector2 startPosition;   //The position of the entity at the beginning of the dash
 
@@ -31,15 +43,24 @@ public class DashComponent extends Component{
 
 
 
-    private Timer coolDownTimer = new Timer(750);
-    private Timer preparationTimer = new Timer(200);
-    private Timer effectDurationTimer = new Timer(Timer.ONE_SECOND);
+    private Timer coolDownTimer = new Timer(750); //The time needed to wait between two uses of the dash
+
+    private Timer preparationTimer = new Timer(200);    // The time it takes for the preparation phase to be completed
+    private Timer effectDurationTimer = new Timer(800); // The maximum time the movement phase can last
+
+    private Timer recoveryTimer = new Timer(Timer.nbSeconds(2)); //The minimum recovery phase time
+
+
+
+
+
 
 
     public DashComponent(){
         coolDownTimer.start();
         preparationTimer.start();
         effectDurationTimer.start();
+        recoveryTimer.start();
 
         this.setEnabled(false);
     }

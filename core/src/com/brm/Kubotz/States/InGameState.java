@@ -127,7 +127,8 @@ public class InGameState extends GameState {
     @Override
     public void draw(GameStateManager engine) {
         // CLEAR SCREEN
-        Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
+        Gdx.gl.glClearColor(0.3f, 0.2f, 0.2f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 

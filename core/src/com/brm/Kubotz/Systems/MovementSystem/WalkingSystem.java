@@ -89,7 +89,7 @@ public class WalkingSystem extends EntitySystem {
                 if(phys.isGrounded()){ //Reset jump number
                     jp.nbJujmps = 0;
                 }
-                float resultingVelocity = -phys.getBody().getWorld().getGravity().y*0.6f;
+                float resultingVelocity = -phys.getBody().getWorld().getGravity().y*0.6f; //TODO What is this?
                 MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                 phys.setGrounded(false);
                 jp.nbJujmps++;
@@ -109,7 +109,7 @@ public class WalkingSystem extends EntitySystem {
             resultingVelocity = -phys.MAX_SPEED.y;
         }
         // it's half a jump
-        MovementSystem.moveInY(entity, resultingVelocity / 2);
+        MovementSystem.moveInY(entity, resultingVelocity);
     }
 
     /**
