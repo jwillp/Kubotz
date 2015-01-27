@@ -5,7 +5,9 @@ package com.brm.GoatEngine.ECS.Components;
 
 public abstract class Component {
 
+
     private boolean isEnabled = true; //By default a component is enabled
+
 
     /**
      * Returns if the component is enabled

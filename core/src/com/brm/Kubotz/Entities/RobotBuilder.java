@@ -3,6 +3,7 @@ package com.brm.Kubotz.Entities;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
@@ -10,11 +11,11 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
+import com.brm.Kubotz.Component.Skills.MagneticFeetComponent;
+
+
 
 /**
  * Used to create block entities
@@ -52,7 +53,7 @@ public class RobotBuilder extends EntityBuilder{
         //Physics
         PhysicsComponent physics;
         physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, 0.5f,0.5f);
-        physics.getAcceleration().set(0.5f, 15.0f);
+        physics.getAcceleration().set(0.5f, 18.0f);
 
         CircleShape circleShape = new CircleShape();
         circleShape.setRadius(physics.getWidth());
@@ -88,29 +89,26 @@ public class RobotBuilder extends EntityBuilder{
 
 
 
-        // Jump
-        JumpComponent jp = new JumpComponent(3);
-
-
 
         character.addComponent(physics, PhysicsComponent.ID);
         character.addComponent(appearance, AppearanceComponent.ID);
-        character.addComponent(jp, JumpComponent.ID);
-        character.addComponent(gamePad, VirtualGamePad.ID);
+        character.addComponent(new JumpComponent(3), JumpComponent.ID);
+        character.addComponent(new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT), VirtualGamePad.ID);
+
         character.addComponent(new TagsComponent(), TagsComponent.ID);
+
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
 
 
         /* Flying Component */
-        FlyComponent fp = new FlyComponent(1000, Timer.INFINITE);
-        //character.addComponent(fp, FlyComponent.ID);
-
+        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
 
         /* DASH Component */
-        DashComponent dash = new DashComponent();
-        character.addComponent(dash, DashComponent.ID);
+        //character.addComponent(new DashComponent(), DashComponent.ID);
 
 
+        /* MAGNETIC FEET */
+        character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
 
 
         return character;

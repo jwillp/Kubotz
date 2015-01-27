@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
+import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -91,17 +91,17 @@ public class FlySystem extends EntitySystem {
      */
     public void update(){
         for(Entity entity : this.em.getEntitiesWithComponent(FlyComponent.ID)) {
-                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
 
-                //Do we need to disable?
-                if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
-                    flyComponent.setEnabled(false);
-                    MovementSystem.stopY(entity);
-                    phys.getBody().setGravityScale(1);
-                    flyComponent.getCoolDownTimer().reset();
-                    Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
-                }
+            //Do we need to disable?
+            if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
+                flyComponent.setEnabled(false);
+                MovementSystem.stopY(entity);
+                phys.getBody().setGravityScale(1);
+                flyComponent.getCoolDownTimer().reset();
+                Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
+            }
         }
     }
 

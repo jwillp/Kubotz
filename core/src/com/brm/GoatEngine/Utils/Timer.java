@@ -67,11 +67,15 @@ public class Timer {
     }
 
     /**
-     * Returns the delta time
+     * Returns the delta time (current time since last check)
      * @return
      */
     public long getDeltaTime(){
             return System.currentTimeMillis() - lastCheck;
+    }
+
+    public int getDelay() {
+        return delay;
     }
 
 

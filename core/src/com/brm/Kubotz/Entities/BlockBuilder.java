@@ -6,6 +6,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
@@ -58,7 +59,14 @@ public class BlockBuilder extends EntityBuilder {
 
         physics.getBody().setUserData(block);
 
+        //Tags
+        TagsComponent tagComp = new TagsComponent();
+        tagComp.addTag("block");
+
+
         block.addComponent(physics, PhysicsComponent.ID);
+        block.addComponent(tagComp, TagsComponent.ID);
+
         return block;
     }
 
