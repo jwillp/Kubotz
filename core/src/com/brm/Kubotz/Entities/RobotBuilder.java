@@ -126,14 +126,6 @@ public class RobotBuilder extends EntityBuilder{
 
 
 
-
-
-
-
-
-
-
-
         // Add user data to Body
         physics.getBody().setUserData(character);
 
@@ -162,11 +154,10 @@ public class RobotBuilder extends EntityBuilder{
         //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashComponent(), DashComponent.ID);
-
+        character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
-        character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
 
 
         return character;

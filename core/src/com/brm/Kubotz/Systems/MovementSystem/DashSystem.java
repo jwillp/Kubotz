@@ -199,7 +199,7 @@ public class DashSystem extends EntitySystem{
         //If the entity is not grounded ==> FREEZE Gamepad
         boolean isFrozen = !phys.isGrounded() || !dashComp.getRecoveryTimer().isDone();
 
-        virtualGamePad.setEnabled(isFrozen);
+        virtualGamePad.setEnabled(!isFrozen);
 
         if(!isFrozen){
             dashComp.phase = DashComponent.Phase.NONE;
