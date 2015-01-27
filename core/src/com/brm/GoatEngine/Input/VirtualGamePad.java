@@ -17,6 +17,7 @@ public class VirtualGamePad extends Component {
 
     public enum InputSource{ USER_INPUT, AI_INPUT }
 
+    private ArrayList<VirtualButton> justReleasedButtons; //A list of the buttons that where just released
     private ArrayList<VirtualButton> pressedButtons; //A list of the pressed buttons of the gamepad
     public InputSource inputSource; // Who makes the input (AI or User?)
 
@@ -27,6 +28,7 @@ public class VirtualGamePad extends Component {
     public VirtualGamePad(InputSource inputSource){
         this.setInputSource(inputSource);
         this.pressedButtons = new ArrayList<VirtualButton>();
+        this.justReleasedButtons = new ArrayList<VirtualButton>();
     }
 
 
@@ -43,6 +45,7 @@ public class VirtualGamePad extends Component {
      */
     public void releaseButton(VirtualButton btn){
         this.pressedButtons.remove(btn);
+        this.justReleasedButtons.add(btn);
     }
 
     /**
@@ -58,6 +61,7 @@ public class VirtualGamePad extends Component {
      */
     public void releaseAll(){
         this.pressedButtons.clear();
+        this.justReleasedButtons.clear();
     }
 
 
@@ -78,6 +82,21 @@ public class VirtualGamePad extends Component {
     public boolean isAnyButtonPressed(){
         return !this.pressedButtons.isEmpty();
     }
+
+
+
+    /**
+     * Returns whether or not a button was just released
+     * @param btn
+     * @return
+     */
+    public boolean isButtonJustReleased(VirtualButton btn){
+        return this.justReleasedButtons.contains(btn);
+    }
+
+
+
+
 
 
 

@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.FlyComponent;
+import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -103,7 +103,6 @@ public class FlySystem extends EntitySystem {
                     flyComponent.getCoolDownTimer().reset();
                     Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
                 }
-
             }
         }
     }

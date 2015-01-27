@@ -74,7 +74,6 @@ public class Entity {
         if(!hasComponent(componentId)){
             return false;
         }
-
         //it has the component, is it enabled?
         return getComponent(componentId).isEnabled();
     }
