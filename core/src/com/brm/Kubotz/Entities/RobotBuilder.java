@@ -76,7 +76,7 @@ public class RobotBuilder extends EntityBuilder{
         PhysicsComponent physics;
 
         physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, size.x, size.y);
-        physics.getAcceleration().set(0.5f, 15.0f);
+        physics.getAcceleration().set(0.5f, 20.0f);
 
         physics.getBody().setFixedRotation(true);
 
