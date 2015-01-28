@@ -13,8 +13,6 @@ public class EntityManager {
 
     private HashMap<String, HashMap<String, Component>> components = new HashMap<String, HashMap<String, Component>>();
 
-    private ArrayList<Entity> entities = new  ArrayList<Entity>();
-
     public EntityManager(){
 
     }
@@ -32,7 +30,7 @@ public class EntityManager {
 
     /**
      * Registers an Entity in the manager and gives it an ID
-     * @param entity
+     * @param entity the entity to register
      * @return returns the id of the newly registered entity
      */
     public String registerEntity(Entity entity) {
@@ -64,8 +62,8 @@ public class EntityManager {
 
     /**
      * Removes a component from an entity
-     * @param componentId
-     * @param entityId
+     * @param componentId the id of the component
+     * @param entityId the id of the entity
      * @return this for chaining
      */
     public EntityManager removeComponent(String componentId, String entityId){
@@ -77,7 +75,7 @@ public class EntityManager {
 
 
     /**
-     * Returns the component instance of a certain type belonging to an entity
+     * Returns the component instance of a certain component type belonging to an entity
      * @param componentId: the Id of the component to retrieve
      * @param entityId: The id of the entity of which we want the component
      * @return Component: The desired component instance
@@ -93,8 +91,8 @@ public class EntityManager {
 
     /**
      * Returns all the components of a certain entity
-     * @param entityId
-     * @return
+     * @param entityId : the id of the entity
+     * @return //TODO understand this madness! What was I thinking?
      */
     public HashMap<String, Component> getEntityForComponents(String entityId){
         HashMap<String, Component> components = new HashMap<String, Component>();
@@ -112,7 +110,7 @@ public class EntityManager {
      * Returns whether or not an entity has a certain component
      * @param componentId the id of the component
      * @param entityId the Id of the entity
-     * @return
+     * @return the component
      */
     public boolean hasComponent(String componentId, String entityId) {
         return this.components.containsKey(componentId) && this.components.get(componentId).containsKey(entityId);

@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems.MovementSystem;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
@@ -152,7 +153,7 @@ public class DashSystem extends EntitySystem{
             velocity.y = dashComp.direction.y * (phys.getVelocity().y + dashComp.speed.y) * Gdx.graphics.getDeltaTime();
             MovementSystem.moveInX(entity, velocity.x);
             MovementSystem.moveInY(entity, velocity.y);
-            Logger.log(velocity.x);
+
         }
     }
 
@@ -169,12 +170,22 @@ public class DashSystem extends EntitySystem{
 
 
         //DECELERATION IN X //TODO Tweak for a smoother transition
-        decelVel.x = (phys.getVelocity().x > 0) ?
-                Math.max(phys.getVelocity().x - dashComp.speed.x, 0) :
-                Math.min(phys.getVelocity().x + dashComp.speed.x, 0);
+        if(dashComp.direction.x != 0){
+            decelVel.x = (phys.getVelocity().x > 0) ?
+                    Math.max(phys.getVelocity().x - dashComp.speed.x, 0):
+                    Math.min(phys.getVelocity().x + dashComp.speed.x, 0);
+            MovementSystem.moveInX(entity, decelVel.x * Gdx.graphics.getDeltaTime());
+        }
 
 
-        MovementSystem.moveInX(entity, decelVel.x * Gdx.graphics.getDeltaTime());
+        if (dashComp.direction.y != 0) {
+            decelVel.y = (phys.getVelocity().y > 0) ?
+                    Math.max(phys.getVelocity().y - dashComp.speed.y, 0):
+                    Math.min(phys.getVelocity().y + dashComp.speed.y, 0);
+            MovementSystem.moveInY(entity, decelVel.y * Gdx.graphics.getDeltaTime());
+        }
+
+
 
         Logger.log("Entity" + entity.getID() + " ==> DASH PHASE DECELERATION");
 
@@ -194,19 +205,22 @@ public class DashSystem extends EntitySystem{
     private void updateRecoveryPhase(Entity entity){
         Logger.log("Entity" + entity.getID() + " ==> DASH PHASE RECOVERY");
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-        VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+        JumpComponent jumpComponent = (JumpComponent) entity.getComponent(JumpComponent.ID);
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
         //If the entity is not grounded ==> FREEZE Gamepad
         boolean isFrozen = !phys.isGrounded() || !dashComp.getRecoveryTimer().isDone();
 
-        virtualGamePad.setEnabled(!isFrozen);
+        jumpComponent.setEnabled(!isFrozen);
 
         if(!isFrozen){
             dashComp.phase = DashComponent.Phase.NONE;
             dashComp.setEnabled(false);
             dashComp.direction.set(0,0);
         }
+
+        dashComp.setEnabled(false);
+        dashComp.direction.set(0,0);
     }
 
 

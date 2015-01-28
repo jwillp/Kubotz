@@ -31,7 +31,7 @@ public class DashComponent extends Component{
     public Phase phase;
 
     public Vector2 distance = new Vector2(10,10); // The distance in nb of game units a Dash is
-    public Vector2 speed = new Vector2(2000,25);    // The Speed of the Dash
+    public Vector2 speed = new Vector2(2000,2000);    // The Speed of the Dash
 
     public Vector2 startPosition;   //The position of the entity at the beginning of the dash
 
