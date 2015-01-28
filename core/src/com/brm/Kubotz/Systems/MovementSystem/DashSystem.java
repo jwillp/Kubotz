@@ -180,8 +180,9 @@ public class DashSystem extends EntitySystem{
 
         // Is the entity done decelerating
         if(phys.getVelocity().x == 0){
-            dashComp.phase = DashComponent.Phase.RECOVERY;
             phys.getBody().setGravityScale(1);
+            dashComp.phase = DashComponent.Phase.RECOVERY;
+
         }
 
     }
