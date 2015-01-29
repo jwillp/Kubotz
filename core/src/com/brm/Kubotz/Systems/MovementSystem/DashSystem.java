@@ -9,7 +9,6 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -41,16 +40,12 @@ public class DashSystem extends EntitySystem{
             //Find dash direction
             if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
                 dashComp.direction.x = DashComponent.RIGHT;
-                Logger.log("DASH RIGHT");
             }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
                 dashComp.direction.x = DashComponent.LEFT;
-                Logger.log("DASH LEFT");
             }else if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
                 dashComp.direction.y = DashComponent.UP;
-                Logger.log("DASH UP");
             }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
                 dashComp.direction.y = DashComponent.DOWN;
-                Logger.log("DASH DOWN");
             }else{
                 isDashValid = false;
             }
@@ -126,7 +121,6 @@ public class DashSystem extends EntitySystem{
         if(dashComp.getPreparationTimer().isDone()){
             //We can now proceed to dashing in whatever direction
             dashComp.phase = DashComponent.Phase.MOVEMENT;
-            Logger.log("Entity" + entity.getID() + " ==> DASH PHASE PREPARATION");
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             phys.getBody().setGravityScale(0);
 
@@ -185,10 +179,6 @@ public class DashSystem extends EntitySystem{
             MovementSystem.moveInY(entity, decelVel.y * Gdx.graphics.getDeltaTime());
         }
 
-
-
-        Logger.log("Entity" + entity.getID() + " ==> DASH PHASE DECELERATION");
-
         // Is the entity done decelerating
         if(phys.getVelocity().x == 0){
             phys.getBody().setGravityScale(1);
@@ -203,7 +193,6 @@ public class DashSystem extends EntitySystem{
      * @param entity
      */
     private void updateRecoveryPhase(Entity entity){
-        Logger.log("Entity" + entity.getID() + " ==> DASH PHASE RECOVERY");
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
         JumpComponent jumpComponent = (JumpComponent) entity.getComponent(JumpComponent.ID);
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
