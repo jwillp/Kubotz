@@ -13,8 +13,6 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
-import com.brm.Kubotz.Component.Skills.MagneticFeetComponent;
-
 
 
 /**
