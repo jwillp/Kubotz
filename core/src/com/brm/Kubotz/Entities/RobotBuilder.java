@@ -78,10 +78,18 @@ public class RobotBuilder extends EntityBuilder{
         physics.getAcceleration().set(0.5f, 20.0f);
 
         physics.getBody().setFixedRotation(true);
+        physics.getBody().setSleepingAllowed(false);
 
+        FixtureDef fixtureDef;
 
-        FixtureDef fixtureDef = new FixtureDef();
-
+        ///MIDDLE
+        PolygonShape polyShape = new PolygonShape();
+        polyShape.setAsBox(physics.getWidth(), 0.5f*physics.getHeight());
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = polyShape;
+        fixtureDef.density = 0;
+        physics.getBody().createFixture(fixtureDef);
+        polyShape.dispose();
 
         // Circle 1
         CircleShape circleShapeTop = new CircleShape();
@@ -104,14 +112,7 @@ public class RobotBuilder extends EntityBuilder{
         physics.getBody().createFixture(fixtureDef);
         circleShapeBottom.dispose();
 
-        ///MIDDLE
-        PolygonShape polyShape = new PolygonShape();
-        polyShape.setAsBox(physics.getWidth(), 0.5f*physics.getHeight());
-        fixtureDef = new FixtureDef();
-        fixtureDef.shape = polyShape;
-        fixtureDef.density = 0;
-        physics.getBody().createFixture(fixtureDef);
-        polyShape.dispose();
+
 
 
 
