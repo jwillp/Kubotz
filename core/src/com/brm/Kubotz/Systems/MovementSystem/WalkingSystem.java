@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems.MovementSystem;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -93,7 +94,7 @@ public class WalkingSystem extends EntitySystem {
                     jp.nbJujmps = 0;
                 }
 
-                float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale(); //TODO What is this?
+                float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
                 MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                 phys.setGrounded(false);
                 jp.nbJujmps++;
@@ -106,14 +107,14 @@ public class WalkingSystem extends EntitySystem {
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
     private void moveDown(Entity entity){
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        Vector2 vel = phys.getVelocity();
+        Vector2 vel = phys.getVelocity().cpy();
 
 
         if(Math.abs(vel.y) > phys.MAX_SPEED.y){
             vel.y = -phys.MAX_SPEED.y;
         }
-        float resultingVelocity = vel.y - phys.getAcceleration().y;
-
+        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f;
+        resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);
         // it's half a jump
         MovementSystem.moveInY(entity, resultingVelocity);
     }
