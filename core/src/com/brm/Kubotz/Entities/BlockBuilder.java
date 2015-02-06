@@ -44,6 +44,10 @@ public class BlockBuilder extends EntityBuilder {
         Entity block = new Entity();
         entityManager.registerEntity(block);
 
+
+        //Readjust position so it is not positioned according to the middle, but rather the bottom left corner
+        position.set(position.x + size.x/2, position.y + size.y/2);
+
         // Physics
         PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.StaticBody,
                                                         position.x, position.y, size.x, size.y);
@@ -58,6 +62,8 @@ public class BlockBuilder extends EntityBuilder {
         polyShape.dispose();
 
         physics.getBody().setUserData(block);
+
+
 
         //Tags
         TagsComponent tagComp = new TagsComponent();

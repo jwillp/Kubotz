@@ -1,4 +1,4 @@
-package com.brm.Kubotz.States;
+package com.brm.Kubotz.GameStates;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.brm.GoatEngine.StateManger.GameState;

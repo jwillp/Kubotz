@@ -1,4 +1,4 @@
-package com.brm.Kubotz.States;
+package com.brm.Kubotz.GameStates;
 
 import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;

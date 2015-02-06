@@ -22,10 +22,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
     public PhysicsSystem(EntityManager em) {
         super(em);
-    }
-
-    public void init() {
-
         Box2D.init();
         this.contacts = new Stack<Contact>();
         world = new World(new Vector2(0, -40f), true);
@@ -33,6 +29,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
     }
+
 
     @Override
     public void update(float dt) {

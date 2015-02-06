@@ -1,4 +1,4 @@
-package com.brm.Kubotz.States;
+package com.brm.Kubotz.GameStates;
 
 
 import com.badlogic.gdx.Gdx;
@@ -7,17 +7,14 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockBuilder;
 import com.brm.Kubotz.Entities.RobotBuilder;
-import com.brm.Kubotz.Entities.TurretBuilder;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
@@ -54,16 +51,15 @@ public class InGameState extends GameState {
         this.entityManager = new EntityManager();
 
         this.physicsSystem = new PhysicsSystem(this.entityManager);
-        this.physicsSystem.init();
 
         this.renderingSystem = new RenderingSystem(this.entityManager);
-        this.renderingSystem.init();
+
 
         this.inputSystem = new InputTranslationSystem(this.entityManager);
-        this.inputSystem.init();
+
 
         this.movementSystem = new MovementSystem(this.entityManager);
-        this.movementSystem.init();
+
 
 
         this.trackerSystem = new TrackerSystem(this.entityManager);
@@ -80,15 +76,24 @@ public class InGameState extends GameState {
         Random rand = new Random();
 
         //ground
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(1,1)).withSize(20,1).build();
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(0,0)).withSize(20,0.5f).build();
+
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(1,1)).withSize(1,20).build();
 
 
         //Blocks
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(3,5)).withSize(3,1).build();
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(3,5)).withSize(3, 0.5f).build();
 
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(7,10)).withSize(3,1).build();
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(7,10)).withSize(3, 0.5f).build();
 
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(10,12)).withSize(3,1).build();
+        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(10,12)).withSize(3, 0.5f).build();
+
+
+
+
+
+
+
 
 
         // Player

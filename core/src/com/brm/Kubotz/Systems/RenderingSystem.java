@@ -29,12 +29,10 @@ public class RenderingSystem extends EntitySystem {
 
     public RenderingSystem(EntityManager em) {
         super(em);
-    }
-
-    public void init(){
         this.cameraSystem = new CameraSystem(em);
         debugRenderer = new Box2DDebugRenderer();
     }
+
 
     public void update(){
         this.cameraSystem.update();
