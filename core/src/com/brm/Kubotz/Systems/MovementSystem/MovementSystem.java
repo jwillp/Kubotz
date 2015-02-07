@@ -46,7 +46,7 @@ public class MovementSystem extends EntitySystem {
                 DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
                 dashSystem.handleInput(entity);
                 if(dashComp.isEnabled()){
-                    useDefaultBehaviour = false;
+                    useDefaultBehaviour = dashComp.phase == DashComponent.Phase.RECOVERY;
                 }
             }
 

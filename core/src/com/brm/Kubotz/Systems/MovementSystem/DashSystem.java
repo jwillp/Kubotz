@@ -197,19 +197,18 @@ public class DashSystem extends EntitySystem{
         JumpComponent jumpComponent = (JumpComponent) entity.getComponent(JumpComponent.ID);
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
-        //If the entity is not grounded ==> FREEZE Gamepad
-        boolean isFrozen = !phys.isGrounded() || !dashComp.getRecoveryTimer().isDone();
+        //If the entity is not grounded ==> we cannot jump
+        jumpComponent.setEnabled(phys.isGrounded());
 
-        jumpComponent.setEnabled(!isFrozen);
-
-        if(!isFrozen){
+        if(phys.isGrounded()){
+            jumpComponent.setEnabled(true);
             dashComp.phase = DashComponent.Phase.NONE;
             dashComp.setEnabled(false);
             dashComp.direction.set(0,0);
         }
 
-        dashComp.setEnabled(false);
-        dashComp.direction.set(0,0);
+
+
     }
 
 

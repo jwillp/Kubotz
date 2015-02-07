@@ -16,6 +16,7 @@ import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 
 import com.brm.Kubotz.Component.Skills.Active.MagneticFeetComponent;
+import com.brm.Kubotz.Component.Skills.DashComponent;
 
 
 /**
@@ -136,10 +137,6 @@ public class RobotBuilder extends EntityBuilder{
         appearance.setDebugColor(Color.GREEN);
 
 
-        //Control
-        VirtualGamePad gamePad = new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT);
-
-
 
 
         character.addComponent(physics, PhysicsComponent.ID);
@@ -153,13 +150,13 @@ public class RobotBuilder extends EntityBuilder{
 
 
         /* Flying Component */
-        character.addComponent(new FlyComponent(1000, Timer.THREE_SECONDS), FlyComponent.ID);
+        //character.addComponent(new FlyComponent(1000, Timer.THREE_SECONDS), FlyComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashComponent(), DashComponent.ID);
+        character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
-        character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
 
 
         return character;
