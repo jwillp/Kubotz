@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;
 import com.brm.GoatEngine.Utils.Logger;
@@ -103,8 +104,10 @@ public class InGameState extends GameState {
                 .build();
 
 
-        //Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2)).withCameraTargetComponent().build();
-        //bo.disableComponent(VirtualGamePad.ID);
+        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+                .withHeight(0.5f)
+                .withCameraTargetComponent().build();
+        bo.disableComponent(VirtualGamePad.ID);
         Logger.log("In Game State initialised");
 
 
