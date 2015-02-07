@@ -12,6 +12,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
+import com.brm.Kubotz.Component.Skills.Active.MagneticFeetComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
 
@@ -153,10 +154,10 @@ public class RobotBuilder extends EntityBuilder{
         //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
+        //character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
-        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
 
 
         return character;
