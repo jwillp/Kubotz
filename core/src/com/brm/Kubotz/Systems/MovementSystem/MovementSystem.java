@@ -6,6 +6,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
@@ -41,8 +42,7 @@ public class MovementSystem extends EntitySystem {
                 if(flyComp.isEnabled()){
                     useDefaultBehaviour = false;
                 }
-            }
-            if(entity.hasComponent(DashComponent.ID)){
+            }else if(entity.hasComponent(DashComponent.ID)){
                 DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
                 dashSystem.handleInput(entity);
                 if(dashComp.isEnabled()){

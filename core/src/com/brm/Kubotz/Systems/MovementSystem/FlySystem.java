@@ -55,7 +55,7 @@ public class FlySystem extends EntitySystem {
 
     /**
      * Method called when the entity requested to fly
-     * @param entity the entity to process
+     * @param entity
      */
     private void onFlyRequest(Entity entity) {
         //Double Check
@@ -63,7 +63,7 @@ public class FlySystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
             // We want to fly
-            if (flyComponent.isDisabled() && flyComponent.getCoolDownTimer().isDone()) {
+            if (!flyComponent.isEnabled() && flyComponent.getCoolDownTimer().isDone()) {
                 flyComponent.setEnabled(true);
                 phys.getBody().setGravityScale(0);
                 flyComponent.getEffectDurationTimer().reset();
@@ -74,8 +74,8 @@ public class FlySystem extends EntitySystem {
 
 
     /**
-     * Method called when an entity requests to stop flying
-     * @param entity the entity to process
+     * Method called then an entity requests to stop flying
+     * @param entity
      */
     private void onStopFlyRequest(Entity entity){
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
@@ -85,22 +85,24 @@ public class FlySystem extends EntitySystem {
     }
 
     /**
-     * Checks whether or not an entity is still allowed to fly
+     * Checks whether or not an entity the entity still has the "right" to fly
      * Basically tries to disable it under the right conditions
-     * Checks all entities with FlyingComponent
+     * Checks all entities with flyingComponent
      */
     public void update(){
-        for(Entity entity : this.em.getEntitiesWithComponent(FlyComponent.ID)) {
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
+        for(Entity entity : this.em.getEntitiesWithComponent(VirtualGamePad.ID)) {
+            if (entity.hasComponent(FlyComponent.ID)) {
+                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+                FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
 
-            //Do we need to disable?
-            if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
-                flyComponent.setEnabled(false);
-                MovementSystem.stopY(entity);
-                phys.getBody().setGravityScale(1);
-                flyComponent.getCoolDownTimer().reset();
-                Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
+                //Do we need to disable?
+                if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
+                    flyComponent.setEnabled(false);
+                    this.stopY(entity);
+                    phys.getBody().setGravityScale(1);
+                    flyComponent.getCoolDownTimer().reset();
+                    Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
+                }
             }
         }
     }
@@ -112,7 +114,7 @@ public class FlySystem extends EntitySystem {
     /**
      * Makes an entity fly upwards
      * (Flying component must be already enabled)
-     * @param entity the entity to fly
+     * @param entity
      */
     private void flyUp(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -123,14 +125,14 @@ public class FlySystem extends EntitySystem {
         if(resultingVelocity > flyComp.MAX_SPEED.y){
             resultingVelocity = flyComp.MAX_SPEED.y;
         }
-        MovementSystem.moveInY(entity, resultingVelocity);
+        flyInY(entity, resultingVelocity);
 
     }
 
     /**
      * Makes an entity fly downwards
      * (Flying component must be already enabled)
-     * @param entity the entity to fly
+     * @param entity
      */
     private void flyDown(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -142,12 +144,12 @@ public class FlySystem extends EntitySystem {
             resultingVelocity = -flyComp.MAX_SPEED.y;
         }
 
-        MovementSystem.moveInY(entity, resultingVelocity);
+        this.flyInY(entity, resultingVelocity);
     }
 
     /**
      * Flies an entity to the left
-     * @param entity the entity to fly
+     * @param entity
      */
     private void flyLeft(Entity entity) {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -158,12 +160,12 @@ public class FlySystem extends EntitySystem {
         if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.x){
             resultingVelocity = -flyComp.MAX_SPEED.x;
         }
-        MovementSystem.moveInX(entity, resultingVelocity);
+        flyInX(entity, resultingVelocity);
     }
 
     /**
      * Flies an entity to the right
-     * @param entity the entity to fly
+     * @param entity
      */
     private void flyRight(Entity entity) {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -174,7 +176,7 @@ public class FlySystem extends EntitySystem {
         if(resultingVelocity > flyComp.MAX_SPEED.x){
             resultingVelocity = flyComp.MAX_SPEED.x;
         }
-        MovementSystem.moveInX(entity, resultingVelocity);
+        flyInX(entity, resultingVelocity);
     }
 
 
@@ -182,8 +184,8 @@ public class FlySystem extends EntitySystem {
 
 
     /**
-     * Decelerates an entity in air (during flight)
-     * @param entity the entity decelerate
+     * Decelerates an entity
+     * @param entity
      */
     private void decelerate(Entity entity){
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
@@ -194,15 +196,47 @@ public class FlySystem extends EntitySystem {
 
         float finalVelX = (vel.x > 0) ?
                 Math.max(vel.x - flyComp.deceleration.x, 0.0f) : Math.min(vel.x + flyComp.deceleration.x, 0.0f);
-        MovementSystem.moveInX(entity, finalVelX);
+        flyInX(entity, finalVelX);
 
         float finalVelY = (vel.y > 0) ?
                 Math.max(vel.y - flyComp.deceleration.y, 0.0f) : Math.min(vel.y + flyComp.deceleration.y, 0.0f);
-        MovementSystem.moveInY(entity, finalVelY);
+        flyInY(entity, finalVelY);
     }
 
 
+    /**
+     * Makes an entity fly horizontally i.e. on the X axis
+     * according to a specified velocity
+     * (Flying component must be already enabled)
+     */
+    private void flyInX(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
+    }
 
+    /**
+     * Makes an entity fly horizontally i.e. on the Y axis
+     * according to a specified velocity
+     * (Flying component must be already enabled)
+     */
+    private void flyInY(Entity entity, float velocity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
+    }
+
+    /**
+     * Abruptly stops an entity in X from flying
+     */
+    private void stopX(Entity entity){
+        flyInX(entity, 0);
+    }
+
+    /**
+     * Abruptly stops the controllable an in Y from flying
+     */
+    private void stopY(Entity entity){
+        flyInY(entity, 0);
+    }
 
 
 

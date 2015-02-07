@@ -11,7 +11,9 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
+import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
 
@@ -84,7 +86,7 @@ public class RobotBuilder extends EntityBuilder{
 
         ///MIDDLE
         PolygonShape polyShape = new PolygonShape();
-        polyShape.setAsBox(physics.getWidth(), 0.5f*physics.getHeight());
+        polyShape.setAsBox(physics.getWidth(), 0.5f * physics.getHeight());
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
@@ -150,10 +152,10 @@ public class RobotBuilder extends EntityBuilder{
 
 
         /* Flying Component */
-        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+        character.addComponent(new FlyComponent(1000, Timer.THREE_SECONDS), FlyComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
+        //character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);

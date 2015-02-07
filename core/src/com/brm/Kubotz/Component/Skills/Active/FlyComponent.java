@@ -19,6 +19,7 @@ public class FlyComponent extends DurationBasedSkill {
 
     public FlyComponent(int coolDownDelay, int maxFlyDuration){
         super(coolDownDelay, maxFlyDuration);
+        this.setEnabled(false);
     }
 
 }
