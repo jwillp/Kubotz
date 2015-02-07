@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems;
 
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -103,7 +104,9 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-
+    public OrthographicCamera getCamera(){
+        return this.cameraSystem.getMainCamera();
+    }
 
     public SpriteBatch getSpriteBatch() {
         return spriteBatch;

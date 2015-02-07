@@ -35,13 +35,14 @@ public class MovementSystem extends EntitySystem {
         for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
             boolean useDefaultBehaviour = true; //Whether or not we will walk
 
-            //Fly Component
+            // Fly Component
             if(entity.hasComponent(FlyComponent.ID)){
                 FlyComponent flyComp = (FlyComponent) entity.getComponent(FlyComponent.ID);
                 flySystem.handleInput(entity);
                 if(flyComp.isEnabled()){
                     useDefaultBehaviour = false;
                 }
+            // Dash Component
             }else if(entity.hasComponent(DashComponent.ID)){
                 DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
                 dashSystem.handleInput(entity);
@@ -50,7 +51,7 @@ public class MovementSystem extends EntitySystem {
                 }
             }
 
-
+            //Whether or not we should use the walking behaviour (which is walking)
             if(useDefaultBehaviour){
                 walkingSystem.handleInput(entity);
             }

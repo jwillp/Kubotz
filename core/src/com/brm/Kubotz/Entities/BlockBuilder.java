@@ -46,7 +46,11 @@ public class BlockBuilder extends EntityBuilder {
 
 
         //Readjust position so it is not positioned according to the middle, but rather the bottom left corner
-        position.set(position.x + size.x/2, position.y + size.y/2);
+        position = new Vector2(position.x - size.x/2, position.y - size.y/2);
+
+
+
+
 
         // Physics
         PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.StaticBody,

@@ -117,9 +117,6 @@ public class RobotBuilder extends EntityBuilder{
         circleShapeBottom.dispose();
 
 
-
-
-
         //foot fixture
         PolygonShape footSensor = new PolygonShape();
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);

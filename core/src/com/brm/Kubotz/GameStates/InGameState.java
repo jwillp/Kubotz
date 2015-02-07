@@ -5,6 +5,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -31,10 +35,15 @@ public class InGameState extends GameState {
     private InputTranslationSystem inputSystem;
     private TrackerSystem trackerSystem;
     private SkillSystem skillSystem;
-
     private MovementSystem movementSystem;
 
 
+
+    //MAP
+    private TiledMap tiledMap;
+    private OrthogonalTiledMapRenderer mapRenderer;
+
+    //PLAYER
     private Entity player;
 
 
@@ -74,20 +83,29 @@ public class InGameState extends GameState {
 
 
         // MAP
-        Random rand = new Random();
-
-        //ground
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(0,0)).withSize(20,0.5f).build();
-
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(1,1)).withSize(1,20).build();
 
 
-        //Blocks
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(3,5)).withSize(3, 0.5f).build();
+        //LOAD MAP
+        tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
+        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
 
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(7,10)).withSize(3, 0.5f).build();
+        TiledMapTileLayer layer = (TiledMapTileLayer) tiledMap.getLayers().get("base");
+        float tileSize = layer.getTileWidth();
 
-        new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(10,12)).withSize(3, 0.5f).build();
+        for(int row = 0; row <layer.getHeight(); row++){
+            for(int col = 0; col <layer.getHeight(); col++){
+
+
+                TiledMapTileLayer.Cell cell = layer.getCell(col, row);
+                if(cell != null){
+                    new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(col,row))
+                            .withSize(0.5f,0.5f)
+                            .build();
+                }
+
+
+            }
+        }
 
 
 
@@ -155,6 +173,8 @@ public class InGameState extends GameState {
 
         // DRAW WORLD
         this.renderingSystem.render(physicsSystem.getWorld());
+        this.mapRenderer.setView(this.renderingSystem.getCamera());
+        this.mapRenderer.render();
 
 
         // FPS
