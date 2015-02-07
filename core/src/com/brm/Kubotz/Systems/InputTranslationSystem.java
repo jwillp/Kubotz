@@ -28,7 +28,7 @@ public class InputTranslationSystem extends EntitySystem {
         for(Entity e: em.getEntitiesWithComponent(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
             gamePad.releaseAll(); //Release for everyone so with don't attack the button :)
-            
+
             if (gamePad.isEnabled()) {
                 //Translation of the USER INPUT
                 if (gamePad.inputSource == VirtualGamePad.InputSource.USER_INPUT && Gdx.input.isKeyPressed(Input.Keys.ANY_KEY)) {
