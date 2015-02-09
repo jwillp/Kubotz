@@ -94,17 +94,36 @@ public class InGameState extends GameState {
         mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 0.000001f);
 
 
-        MapObjects collisionObjects = tiledMap.getLayers().get("collision_objects").getObjects();
+        MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
 
         float tileSize = 64;
-        for(int i=0; i<collisionObjects.getCount(); i++){
-            RectangleMapObject obj = (RectangleMapObject) collisionObjects.get(i);
+        for(int i=0; i<mapObjects.getCount(); i++){
+
+
+
+
+
+
+            RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
-            new BlockBuilder(this.entityManager, physicsSystem.getWorld(),
-                    new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                                .withSize(0.5f,0.5f)
-                                .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
-                                .build();
+
+            if(obj.getProperties().get("type").equals("spawn")){
+                this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(),
+                        new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
+                        .withHeight(1.0f)
+                        .withCameraTargetComponent()
+                        .build();
+            }else{
+                new BlockBuilder(this.entityManager, physicsSystem.getWorld(),
+                        new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
+                        .withSize(0.5f,0.5f)
+                        .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
+                        .build();
+
+            }
+
+
+
         }
 
 
@@ -113,17 +132,7 @@ public class InGameState extends GameState {
 
 
 
-
-
-
-
-
-        // Player
-        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(10,9))
-                .withHeight(1.0f)
-                .withCameraTargetComponent()
-                .build();
-
+        
 
         /*Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
                 .withHeight(0.5f)
@@ -176,7 +185,7 @@ public class InGameState extends GameState {
 
         // DRAW WORLD
         this.renderingSystem.render(physicsSystem.getWorld());
-        this.mapRenderer.setView(this.renderingSystem.getCamera());
+        //this.mapRenderer.setView(this.renderingSystem.getCamera());
         this.mapRenderer.render();
 
 
@@ -195,9 +204,6 @@ public class InGameState extends GameState {
             sb.end();
         }
 
-
-
-        //Logger.log(Gdx.graphics.getFramesPerSecond() + " FPS");
 
     }
 }
