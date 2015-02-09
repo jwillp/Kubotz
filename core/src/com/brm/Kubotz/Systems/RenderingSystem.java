@@ -14,8 +14,11 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.CameraSystem;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.CameraBuilder;
+import com.brm.Kubotz.Renderers.BlockRenderer;
+import com.brm.Kubotz.Renderers.BoundingBoxRenderer;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 
 /**
@@ -60,18 +63,6 @@ public class RenderingSystem extends EntitySystem {
      * Renders the texture of all the entities
      */
     private void renderTextures(){
-        //Block Texture
-        Texture texture = new Texture(Gdx.files.internal("tile.png"));
-        for(Entity block: this.em.getEntitiesWithTag("block")){
-            PhysicsComponent phys = (PhysicsComponent) block.getComponent(PhysicsComponent.ID);
-
-            this.spriteBatch.begin();
-            this.spriteBatch.setProjectionMatrix(cameraSystem.getMainCamera().combined);
-            this.spriteBatch.draw(texture, phys.getPosition().x - phys.getWidth()/2 ,
-                                           phys.getPosition().y - phys.getHeight()/2,
-                                           phys.getWidth()*2, phys.getHeight()*2);
-            this.spriteBatch.end();
-        }
 
     }
 
@@ -87,6 +78,10 @@ public class RenderingSystem extends EntitySystem {
         this.spriteBatch.begin();
         debugRenderer.render(world, cameraSystem.getMainCamera().combined);
         this.spriteBatch.end();
+
+
+
+
 
 
         /** CAMERA DEBUG */

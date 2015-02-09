@@ -5,10 +5,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.maps.MapObjects;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -87,24 +91,20 @@ public class InGameState extends GameState {
 
         //LOAD MAP
         tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
-        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap);
-
-        TiledMapTileLayer layer = (TiledMapTileLayer) tiledMap.getLayers().get("base");
-        float tileSize = layer.getTileWidth();
-
-        for(int row = 0; row <layer.getHeight(); row++){
-            for(int col = 0; col <layer.getHeight(); col++){
+        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 0.000001f);
 
 
-                TiledMapTileLayer.Cell cell = layer.getCell(col, row);
-                if(cell != null){
-                    new BlockBuilder(this.entityManager, physicsSystem.getWorld(), new Vector2(col,row))
-                            .withSize(0.5f,0.5f)
-                            .build();
-                }
+        MapObjects collisionObjects = tiledMap.getLayers().get("collision_objects").getObjects();
 
-
-            }
+        float tileSize = 64;
+        for(int i=0; i<collisionObjects.getCount(); i++){
+            RectangleMapObject obj = (RectangleMapObject) collisionObjects.get(i);
+            Rectangle rect = obj.getRectangle();
+            new BlockBuilder(this.entityManager, physicsSystem.getWorld(),
+                    new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
+                                .withSize(0.5f,0.5f)
+                                .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
+                                .build();
         }
 
 
@@ -115,17 +115,20 @@ public class InGameState extends GameState {
 
 
 
+
+
+
         // Player
-        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(2,5))
-                .withHeight(0.5f)
+        this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(10,9))
+                .withHeight(1.0f)
                 .withCameraTargetComponent()
                 .build();
 
 
-        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+        /*Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
                 .withHeight(0.5f)
                 .withCameraTargetComponent().build();
-        bo.disableComponent(VirtualGamePad.ID);
+        bo.disableComponent(VirtualGamePad.ID);*/
         Logger.log("In Game State initialised");
 
 

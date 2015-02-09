@@ -25,14 +25,14 @@ public class PhysicsComponent extends Component {
 
 
 
-    public PhysicsComponent(World world, BodyDef.BodyType bodyType, float x, float y, float width, float height){
+    public PhysicsComponent(World world, BodyDef.BodyType bodyType, Vector2 position, float width, float height){
 
         this.setWidth(width);
         this.setHeight(height);
 
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = bodyType;
-        bodyDef.position.set(x, y);
+        bodyDef.position.set(position.x, position.y);
 
         this.body = world.createBody(bodyDef);
 

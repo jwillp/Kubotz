@@ -32,8 +32,8 @@ public class BlockBuilder extends EntityBuilder {
      * @return BlockBuilder for chaining
      */
     public BlockBuilder withSize(float witdh, float height){
-        size.x = witdh;
-        size.y = height;
+        size.x = witdh/2; //Divide by half because box2D width equals half of shape
+        size.y = height/2;
         return this;
     }
 
@@ -45,16 +45,12 @@ public class BlockBuilder extends EntityBuilder {
         entityManager.registerEntity(block);
 
 
+
         //Readjust position so it is not positioned according to the middle, but rather the bottom left corner
-        position = new Vector2(position.x - size.x/2, position.y - size.y/2);
-
-
-
-
+        position = new Vector2(position.x + size.x, position.y + size.y);
 
         // Physics
-        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.StaticBody,
-                                                        position.x, position.y, size.x, size.y);
+        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.StaticBody, position, size.x, size.y);
 
         PolygonShape polyShape = new PolygonShape();
         polyShape.setAsBox(physics.getWidth(), physics.getHeight());

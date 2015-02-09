@@ -52,7 +52,7 @@ public class RobotBuilder extends EntityBuilder{
      * @return this for chaining
      */
     public RobotBuilder withHeight(float height){
-
+        height /= 2; //Since box2D uses half width;
         this.size = new Vector2(height/2, height);
         return this;
     }
@@ -62,6 +62,7 @@ public class RobotBuilder extends EntityBuilder{
      * @return this for chaining
      */
     public RobotBuilder withWidth(float width){
+        width /= 2;
         this.size = new Vector2(width, width*2);
         return this;
     }
@@ -78,7 +79,7 @@ public class RobotBuilder extends EntityBuilder{
         //Physics
         PhysicsComponent physics;
 
-        physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position.x,position.y, size.x, size.y);
+        physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position, size.x, size.y);
         physics.getAcceleration().set(0.5f, 20.0f);
 
         physics.getBody().setFixedRotation(true);
@@ -147,10 +148,10 @@ public class RobotBuilder extends EntityBuilder{
 
 
         /* Flying Component */
-        //character.addComponent(new FlyComponent(1000, Timer.THREE_SECONDS), FlyComponent.ID);
+        character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
+        //character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);

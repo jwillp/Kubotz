@@ -87,7 +87,7 @@ public class TurretBuilder extends EntityBuilder{
 
         // Physics
         PhysicsComponent physics;
-        physics = new PhysicsComponent(world, BodyDef.BodyType.KinematicBody, position.x,position.y, 0.5f,0.5f);
+        physics = new PhysicsComponent(world, BodyDef.BodyType.KinematicBody, position, 0.5f,0.5f);
         physics.getAcceleration().set(120.0f, 120.0f);
 
         CircleShape circleShape = new CircleShape();
