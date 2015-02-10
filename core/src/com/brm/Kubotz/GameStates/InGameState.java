@@ -91,12 +91,15 @@ public class InGameState extends GameState {
 
         //LOAD MAP
         tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
-        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 0.000001f);
+        float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
+
+
+        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1/tileSize);
 
 
         MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
 
-        float tileSize = 64;
+
         for(int i=0; i<mapObjects.getCount(); i++){
 
 
@@ -107,7 +110,7 @@ public class InGameState extends GameState {
             RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
 
-            if(obj.getProperties().get("type").equals("spawn")){
+            if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
                 this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(1.0f)
@@ -119,11 +122,7 @@ public class InGameState extends GameState {
                         .withSize(0.5f,0.5f)
                         .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
                         .build();
-
             }
-
-
-
         }
 
 
@@ -185,7 +184,7 @@ public class InGameState extends GameState {
 
         // DRAW WORLD
         this.renderingSystem.render(physicsSystem.getWorld());
-        //this.mapRenderer.setView(this.renderingSystem.getCamera());
+        this.mapRenderer.setView(this.renderingSystem.getCamera());
         this.mapRenderer.render();
 
 
