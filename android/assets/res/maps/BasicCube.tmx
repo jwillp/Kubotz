@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="left-down" width="38" height="29" tilewidth="64" tileheight="64" nextobjectid="93">
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="38" height="29" tilewidth="64" tileheight="64" nextobjectid="116">
  <tileset firstgid="1" name="Dalle" tilewidth="64" tileheight="64">
   <tile id="0">
    <image width="64" height="64" source="smalltile.png"/>
@@ -8,6 +8,9 @@
    </objectgroup>
   </tile>
  </tileset>
+ <imagelayer name="Calque d'image 1" x="256" y="320">
+  <image source="J:/Spaceshoot/images/background.jpg"/>
+ </imagelayer>
  <layer name="images_layer" width="38" height="29">
   <data encoding="base64" compression="gzip">
    H4sIAAAAAAAAC+2UQQoAMAjD9P+f3hukW5EugV4lVLGrqokUN3jhhVeul2tOSl8vveAuyr433Uo6Gzrmr87A618vx19N6gsvouQA6Q93AzgRAAA=
@@ -26,7 +29,7 @@
   <object id="62" type="STATIC_PLATFORM" x="512" y="896" width="448" height="64"/>
   <object id="63" type="STATIC_PLATFORM" x="1472" y="896" width="448" height="64"/>
   <object id="64" type="STATIC_PLATFORM" x="960" y="576" width="512" height="64"/>
-  <object id="70" type="PLAYER_SPAWN" x="1152" y="512" width="64" height="64"/>
+  <object id="70" type="PLAYER_SPAWN" x="1152" y="1088" width="64" height="64"/>
   <object id="76" type="OBJECT_SPAWN" x="704" y="704" width="64" height="64"/>
   <object id="77" type="OBJECT_SPAWN" x="1664" y="704" width="64" height="64"/>
   <object id="78" type="OBJECT_SPAWN" x="640" y="1280" width="64" height="64"/>

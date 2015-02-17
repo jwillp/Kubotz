@@ -133,10 +133,10 @@ public class InGameState extends GameState {
 
         
 
-        /*Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
-                .withHeight(0.5f)
+        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+                .withHeight(1.0f)
                 .withCameraTargetComponent().build();
-        bo.disableComponent(VirtualGamePad.ID);*/
+        bo.disableComponent(VirtualGamePad.ID);
         Logger.log("In Game State initialised");
 
 

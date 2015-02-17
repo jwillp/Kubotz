@@ -148,10 +148,10 @@ public class RobotBuilder extends EntityBuilder{
 
 
         /* Flying Component */
-        character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashComponent(), DashComponent.ID);
+        character.addComponent(new DashComponent(), DashComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);

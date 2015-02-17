@@ -33,8 +33,8 @@ public class CameraSystem extends EntitySystem {
 
     public void update(){
         for(Entity camEntity: this.em.getEntitiesWithComponent(CameraComponent.ID)){
-            Vector2 leftMost = new Vector2(2500,2500);
-            Vector2 rightMost = new Vector2(-2500,-2500);
+            Vector2 leftMost = new Vector2(Integer.MAX_VALUE,Float.MAX_VALUE);
+            Vector2 rightMost = new Vector2(Integer.MIN_VALUE, Integer.MIN_VALUE);
 
             //Find the left most entity and the right most entity
             for(Entity target : this.em.getEntitiesWithComponent(CameraTargetComponent.ID)){
