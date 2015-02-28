@@ -13,6 +13,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 
+import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
 
@@ -152,6 +153,10 @@ public class RobotFactory extends EntityFactory {
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+
+        /* PUNCH Component*/
+        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+
 
 
         return character;

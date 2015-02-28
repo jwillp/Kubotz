@@ -87,7 +87,6 @@ public class WalkingSystem extends EntitySystem {
         JumpComponent jp;
         if(entity.hasComponent(JumpComponent.ID)){
             jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-            Logger.log(phys.getBody().getGravityScale());
 
             if(phys.isGrounded() || jp.nbJujmps < jp.getNbJumpsMax()){
                 if(phys.isGrounded()){ //Reset jump number

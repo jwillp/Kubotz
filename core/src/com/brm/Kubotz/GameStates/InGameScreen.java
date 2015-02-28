@@ -45,7 +45,7 @@ public class InGameScreen extends GameScreen {
 
     //PLAYER
     private Entity player;
-
+    private PunchSystem punchSystem;
 
 
     public InGameScreen() {
@@ -76,7 +76,7 @@ public class InGameScreen extends GameScreen {
 
         this.skillSystem = new SkillSystem(this.entityManager);
 
-
+        this.punchSystem = new PunchSystem(this.entityManager);
 
 
 
@@ -152,7 +152,9 @@ public class InGameScreen extends GameScreen {
     public void handleInput(GameScreenManager engine) {
         this.inputSystem.update();
         this.skillSystem.handleInput();
+        this.punchSystem.handleInput();
         this.movementSystem.handleInput();
+
 
     }
 
@@ -164,6 +166,9 @@ public class InGameScreen extends GameScreen {
         this.movementSystem.update();
         this.trackerSystem.update();
         this.skillSystem.update();
+        this.punchSystem.update();
+
+
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
 
