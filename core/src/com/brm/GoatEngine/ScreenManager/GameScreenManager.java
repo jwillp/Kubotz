@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.StateManger;
+package com.brm.GoatEngine.ScreenManager;
 
 
 import com.brm.GoatEngine.Utils.Logger;
@@ -12,10 +12,10 @@ import java.util.Stack;
  *  We have a stack of states so we play the state at the top of the list
  *
  */
-public class GameStateManager {
+public class GameScreenManager {
 
     // ATTRIBUTES //
-    private Stack<GameState> states = new Stack<GameState>();
+    private Stack<GameScreen> states = new Stack<GameScreen>();
     private boolean isRunning;
 
 
@@ -65,7 +65,7 @@ public class GameStateManager {
 
 
     // State Management //
-    public void changeState(GameState state){
+    public void changeState(GameScreen state){
 
         if(!this.states.isEmpty()){
             this.states.peek().cleanUp();
@@ -79,7 +79,7 @@ public class GameStateManager {
      * Adds a state on top of the list , so it poses the currently running state
      * @param state
      */
-    public void addState(GameState state){
+    public void addState(GameScreen state){
         Logger.log("Game Engine adding State ...");
         if(!this.states.isEmpty())
             this.states.peek().pause();

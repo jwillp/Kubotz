@@ -16,8 +16,8 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.StateManger.GameState;
-import com.brm.GoatEngine.StateManger.GameStateManager;
+import com.brm.GoatEngine.ScreenManager.GameScreen;
+import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
@@ -27,7 +27,7 @@ import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
 
 
-public class InGameState extends GameState {
+public class InGameScreen extends GameScreen {
 
     private EntityManager entityManager;
     private RenderingSystem renderingSystem;
@@ -48,12 +48,12 @@ public class InGameState extends GameState {
 
 
 
-    public InGameState() {
+    public InGameScreen() {
     }
 
 
     @Override
-    public void init(GameStateManager engine) {
+    public void init(GameScreenManager engine) {
 
         Logger.log("In Game State initialisation");
 
@@ -149,7 +149,7 @@ public class InGameState extends GameState {
     }
 
     @Override
-    public void handleInput(GameStateManager engine) {
+    public void handleInput(GameScreenManager engine) {
         this.inputSystem.update();
         this.skillSystem.handleInput();
         this.movementSystem.handleInput();
@@ -157,7 +157,7 @@ public class InGameState extends GameState {
     }
 
     @Override
-    public void update(GameStateManager engine, float deltaTime) {
+    public void update(GameScreenManager engine, float deltaTime) {
 
 
 
@@ -170,7 +170,7 @@ public class InGameState extends GameState {
     }
 
     @Override
-    public void draw(GameStateManager engine) {
+    public void draw(GameScreenManager engine) {
         // CLEAR SCREEN
         //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         Gdx.gl.glClearColor(0.3f, 0.2f, 0.2f, 1);
