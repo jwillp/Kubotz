@@ -3,14 +3,11 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.Kubotz.CONSTANTS;
 import com.brm.Kubotz.GameConstant;
-
-import java.util.Stack;
 
 /**dd
  * Responsible for checking collisions, making the entities move
@@ -20,12 +17,11 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
     private World world;
-    private Stack<Contact> contacts;
+
 
     public PhysicsSystem(EntityManager em) {
         super(em);
         Box2D.init();
-        this.contacts = new Stack<Contact>();
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(this);
 
@@ -96,21 +92,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
             }
         }
     }
-
-    public void processContact(Contact contact){
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-
-        //Feet sensor Test
-        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
-            testFeetSensor(fixtureA, true);
-            testFeetSensor(fixtureB, true);
-        }
-    }
-
-
-
-
 
 
 
