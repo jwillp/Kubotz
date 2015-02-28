@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.MovementSystem;
+package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
@@ -35,6 +35,10 @@ public class DashSystem extends EntitySystem{
         VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
             DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+
+
             boolean isDashValid = true;
 
             //Find dash direction

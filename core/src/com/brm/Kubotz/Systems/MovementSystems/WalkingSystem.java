@@ -1,7 +1,5 @@
-package com.brm.Kubotz.Systems.MovementSystem;
+package com.brm.Kubotz.Systems.MovementSystems;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -9,7 +7,6 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -62,7 +59,7 @@ public class WalkingSystem extends EntitySystem {
             resultingVelocity = -phys.MAX_SPEED.x;
         }
 
-        phys.getBody().setLinearVelocity(resultingVelocity, vel.y);
+        MovementSystem.moveInX(entity, resultingVelocity);
     }
 
     /**

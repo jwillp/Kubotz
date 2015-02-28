@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.MovementSystem;
+package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;

@@ -13,11 +13,23 @@ public class PhysicsComponent extends Component {
 
     public final static String ID = "PHYSICS_PROPERTY";
 
+    public enum Direction{
+        UP,
+        DOWN,
+        LEFT,  //RIGHT
+        RIGHT, //LEFT
+    }
+
+
+
     private Body body;
     private Vector2 acceleration = new Vector2(0,0);
     public final Vector2 MAX_SPEED = new Vector2(18f, 18f);
 
     private boolean isGrounded = false;
+
+    public Direction direction;
+
 
 
     private float width;

@@ -19,7 +19,7 @@ public class PunchComponent extends Component {
     public int damage = 10; //Number of damage per hit
 
     public Timer durationTimer = new Timer(20); //The Duration of the hit
-    public Timer cooldown = new Timer(500); //The delay between hits
+    public Timer cooldown = new Timer(80); //The delay between hits
     PhysicsComponent phys;
 
     public float radius = 0.2f;
@@ -39,18 +39,33 @@ public class PunchComponent extends Component {
     /**
      * Creates the attack box
      */
-    public void showAttackBox(){
+    public void showAttackBox(PhysicsComponent.Direction direction){
         //Create AttackBox
         FixtureDef fixtureDef;
         CircleShape circleShapeTop = new CircleShape();
         circleShapeTop.setRadius(phys.getWidth()*0.5f);
-        circleShapeTop.setPosition(new Vector2(phys.getWidth() + phys.getWidth()*0.5f, 0));
+        Vector2 position = null;
+        switch (direction) {
+            case RIGHT:
+                position = new Vector2(phys.getWidth() + phys.getWidth() * 0.5f, 0);
+                break;
+            case LEFT:
+                position = new Vector2(-phys.getWidth()-phys.getWidth() * 0.5f, 0);
+                break;
+        }
+
+        circleShapeTop.setPosition(position);
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
         this.punchFixture = this.phys.getBody().createFixture(fixtureDef);
         circleShapeTop.dispose();
     }
+
+
+
+
+
 
     /**
      * Removes the attackBox

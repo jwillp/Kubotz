@@ -23,7 +23,7 @@ import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.RobotFactory;
 import com.brm.Kubotz.Systems.*;
-import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
+import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
 
 

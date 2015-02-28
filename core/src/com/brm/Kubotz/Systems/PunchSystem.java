@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Systems;
 
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
@@ -23,10 +24,11 @@ public class PunchSystem extends EntitySystem{
         for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             PunchComponent punchComponent = (PunchComponent)entity.getComponent(PunchComponent.ID);
+            PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
             if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
               if(punchComponent.cooldown.isDone()){
-                  punchComponent.showAttackBox();
+                  punchComponent.showAttackBox(physicsComponent.direction);
                   punchComponent.durationTimer.reset();
               }
             }

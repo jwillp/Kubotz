@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.MovementSystem;
+package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -6,7 +6,6 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
@@ -81,6 +80,16 @@ public class MovementSystem extends EntitySystem {
     public static void moveInX(Entity entity, float velocity){
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
+
+        //SET DIRECTION
+
+        if(velocity > 0)
+            phys.direction = PhysicsComponent.Direction.RIGHT;
+        else if(velocity < 0)
+            phys.direction = PhysicsComponent.Direction.LEFT;
+            
+
+
     }
 
     /**
