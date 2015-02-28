@@ -16,7 +16,7 @@ public class Game extends ApplicationAdapter {
 	public void create () {
 		stateManager = new GameScreenManager();
 		stateManager.init();
-		stateManager.addState(new InGameScreen());
+		stateManager.addScreen(new InGameScreen());
 	}
 
 

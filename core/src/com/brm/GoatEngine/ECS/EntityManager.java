@@ -11,6 +11,7 @@ import java.util.*;
  */
 public class EntityManager {
 
+    //HashMap<COMPONENT_ID, HashMap<ENTITY_ID, COMPONENT_ISNTANCE>>
     private HashMap<String, HashMap<String, Component>> components = new HashMap<String, HashMap<String, Component>>();
 
     public EntityManager(){
@@ -57,6 +58,8 @@ public class EntityManager {
         componentContainer.put(entityId, component);
         this.components.put(componentId, componentContainer);
 
+        //Call on attach
+        component.onAttach();
         return this;
     }
 
@@ -69,6 +72,9 @@ public class EntityManager {
     public EntityManager removeComponent(String componentId, String entityId){
         HashMap<String, Component> componentEntry = this.components.get(componentId);
         componentEntry.remove(entityId);
+
+        //Call onDetach
+        componentEntry.get(entityId).onDetach();
         return this;
     }
 

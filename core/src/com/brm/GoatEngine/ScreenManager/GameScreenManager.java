@@ -9,13 +9,13 @@ import java.util.Stack;
  *
  * @author fireraccoon
  *
- *  We have a stack of states so we play the state at the top of the list
+ *  We have a stack of screens so we play the screen at the top of the list
  *
  */
 public class GameScreenManager {
 
     // ATTRIBUTES //
-    private Stack<GameScreen> states = new Stack<GameScreen>();
+    private Stack<GameScreen> screens = new Stack<GameScreen>();
     private boolean isRunning;
 
 
@@ -64,73 +64,73 @@ public class GameScreenManager {
     }
 
 
-    // State Management //
-    public void changeState(GameScreen state){
+    // Screen Management //
+    public void changeScreen(GameScreen screen){
 
-        if(!this.states.isEmpty()){
-            this.states.peek().cleanUp();
-            this.states.pop(); //We delete it;
+        if(!this.screens.isEmpty()){
+            this.screens.peek().cleanUp();
+            this.screens.pop(); //We delete it;
         }
-        this.states.push(state);
-        this.states.peek().init(this);
+        this.screens.push(screen);
+        this.screens.peek().init(this);
 
     }
     /**
-     * Adds a state on top of the list , so it poses the currently running state
-     * @param state
+     * Adds a screen on top of the list , so it poses the currently running screen
+     * @param screen
      */
-    public void addState(GameScreen state){
-        Logger.log("Game Engine adding State ...");
-        if(!this.states.isEmpty())
-            this.states.peek().pause();
+    public void addScreen(GameScreen screen){
+        Logger.log("Game Engine adding Screen ...");
+        if(!this.screens.isEmpty())
+            this.screens.peek().pause();
 
-        this.states.push(state);
-        this.states.peek().init(this);
-        Logger.log("Game Engine State Added");
+        this.screens.push(screen);
+        this.screens.peek().init(this);
+        Logger.log("Game Engine Screen Added");
     }
 
 
     /**
-     * delete last game state in the stack
+     * delete last game screen in the stack
      */
-    public void popState(){
+    public void popScreen(){
 
-        if(!this.states.isEmpty()){
-            this.states.peek().cleanUp();
-            this.states.pop();
+        if(!this.screens.isEmpty()){
+            this.screens.peek().cleanUp();
+            this.screens.pop();
         }
-        //if we still have another state we resume it
-        if(!this.states.isEmpty()){
-            this.states.peek().resume();
+        //if we still have another screen we resume it
+        if(!this.screens.isEmpty()){
+            this.screens.peek().resume();
         }
     }
 
 
     // LOOP //
     public void handleEvents() {
-        if(!this.states.empty()){
-            this.states.peek().handleInput(this);
+        if(!this.screens.empty()){
+            this.screens.peek().handleInput(this);
         }else{
-            this.exitWithError("Game Engine handle events::There is no state in the engine's stack.");
+            this.exitWithError("Game Engine handle events::There is no screen in the engine's stack.");
         }
 
     }
 
     public void update(float deltaTime) {
-        if(!this.states.empty()){
-            this.states.peek().update(this, deltaTime);
+        if(!this.screens.empty()){
+            this.screens.peek().update(this, deltaTime);
 
         }else{
-            this.exitWithError("Game Engine Update::There is no state in the engine's stack.");
+            this.exitWithError("Game Engine Update::There is no screen in the engine's stack.");
         }
 
     }
 
     public void draw() {
-        if(!this.states.empty()){
-            this.states.peek().draw(this);
+        if(!this.screens.empty()){
+            this.screens.peek().draw(this);
         }else{
-            this.exitWithError("Game Engine Draw::There is no state in the engine's stack.");
+            this.exitWithError("Game Engine Draw::There is no screen in the engine's stack.");
         }
     }
 

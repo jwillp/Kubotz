@@ -26,7 +26,7 @@ public abstract class GameScreen {
 
 
     public void changeState(GameScreenManager engine, GameScreen state){
-        engine.changeState(state);
+        engine.changeScreen(state);
     }
 
 
