@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
@@ -26,6 +27,7 @@ public class RobotFactory extends EntityFactory {
     private World world;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(0.5f, 0.5f);
+    private VirtualGamePad.InputSource inputSource = VirtualGamePad.InputSource.USER_INPUT;
 
     private boolean hasCamTargetComponent = false;
 
@@ -34,6 +36,10 @@ public class RobotFactory extends EntityFactory {
         this.world = world;
         this.position = position;
     }
+
+
+
+
 
 
     /**
@@ -66,6 +72,18 @@ public class RobotFactory extends EntityFactory {
         return this;
     }
 
+    /**
+     * Defines the inputSource to which the Kubotz should react;
+     * @param inputSource
+     * @return
+     */
+    public RobotFactory withInputSource(VirtualGamePad.InputSource inputSource){
+        this.inputSource = inputSource;
+        return this;
+    }
+
+
+
 
 
 
@@ -74,6 +92,56 @@ public class RobotFactory extends EntityFactory {
     public Entity build() {
         Entity character = new Entity();
         entityManager.registerEntity(character);
+
+        PhysicsComponent physics = this.buildBody(character);
+        character.addComponent(physics, PhysicsComponent.ID);
+
+        //Appearance
+        AppearanceComponent appearance = new AppearanceComponent();
+        appearance.setDebugColor(Color.GREEN);
+        character.addComponent(appearance, AppearanceComponent.ID);
+
+
+
+        //TAGS
+        TagsComponent tags = new TagsComponent();
+        tags.addTag(CONSTANTS.ENTITY_TAG_KUBOTZ);
+        character.addComponent(new TagsComponent(), TagsComponent.ID);
+
+        // JUMP
+        character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
+        character.addComponent(new JumpComponent(3), JumpComponent.ID);
+
+
+
+        //CAM
+        if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
+
+
+        /* Flying Component */
+        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+
+        /* DASH Component */
+        character.addComponent(new DashComponent(), DashComponent.ID);
+
+        /* MAGNETIC FEET */
+        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+
+        /* PUNCH Component*/
+        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+
+        //HEALTH
+        character.addComponent(new HealthComponent(100), HealthComponent.ID);
+
+        return character;
+    }
+
+
+    /**
+     * Creates a Kubotz body + a Physics Component
+     * @param character
+     */
+    private PhysicsComponent buildBody(Entity character){
 
         //Physics
         PhysicsComponent physics;
@@ -129,39 +197,18 @@ public class RobotFactory extends EntityFactory {
         // Add user data to Body
         physics.getBody().setUserData(character);
 
-        //Appearance
-        AppearanceComponent appearance = new AppearanceComponent();
-        appearance.setDebugColor(Color.GREEN);
-
-
-
-
-        character.addComponent(physics, PhysicsComponent.ID);
-        character.addComponent(appearance, AppearanceComponent.ID);
-        character.addComponent(new JumpComponent(3), JumpComponent.ID);
-        character.addComponent(new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT), VirtualGamePad.ID);
-
-        character.addComponent(new TagsComponent(), TagsComponent.ID);
-
-        if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
-
-
-        /* Flying Component */
-        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
-
-        /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
-
-        /* MAGNETIC FEET */
-        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
-
-        /* PUNCH Component*/
-        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
-
-
-
-        return character;
+        return physics;
     }
+
+
+
+
+
+
+
+
+
+
 
 
 

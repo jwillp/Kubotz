@@ -11,7 +11,8 @@ public class CONSTANTS {
 
 
 
-
+    // ENTITY TAG
+    public static String ENTITY_TAG_KUBOTZ = "KUBOTZ";
 
 
 
