@@ -1,5 +1,8 @@
 package com.brm.Kubotz;
 
+/**
+ * Contains all the Game Constants
+ */
 public class GameConstant {
 
     public final float DEFAULT_KUBOTZ_SPEED_X = 5.0f;
@@ -20,6 +23,14 @@ public class GameConstant {
 
 
 
+    // ENTITY TAG
+    public static String ENTITY_TAG_KUBOTZ = "KUBOTZ";
+
+
+
+    // FIXTURE
+    public static String FIXTURE_FEET_SENSOR = "feetSensor";
+    public static String FIXTURE_PUNCH_ATTACK = "punch";
 
 
 

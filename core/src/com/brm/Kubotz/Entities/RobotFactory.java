@@ -12,11 +12,10 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.CONSTANTS;
 import com.brm.Kubotz.Component.AppearanceComponent;
-
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.GameConstant;
 
 
 /**
@@ -105,7 +104,7 @@ public class RobotFactory extends EntityFactory {
 
         //TAGS
         TagsComponent tags = new TagsComponent();
-        tags.addTag(CONSTANTS.ENTITY_TAG_KUBOTZ);
+        tags.addTag(GameConstant.ENTITY_TAG_KUBOTZ);
         character.addComponent(new TagsComponent(), TagsComponent.ID);
 
         // JUMP
@@ -190,7 +189,7 @@ public class RobotFactory extends EntityFactory {
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;
         fixtureDef.shape = footSensor;
-        physics.getBody().createFixture(fixtureDef).setUserData(CONSTANTS.FIXTURE_FEET_SENSOR);
+        physics.getBody().createFixture(fixtureDef).setUserData(GameConstant.FIXTURE_FEET_SENSOR);
 
 
 

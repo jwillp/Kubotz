@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.Kubotz.CONSTANTS;
+import com.brm.Kubotz.GameConstant;
 
 import java.util.Stack;
 
@@ -89,7 +90,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      */
     public void testFeetSensor(Fixture fixture, boolean grounded){
         if(fixture.getUserData() != null) {
-            if (fixture.getUserData().equals(CONSTANTS.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
+            if (fixture.getUserData().equals(GameConstant.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
                 Entity entity = (Entity) fixture.getBody().getUserData();
                 ((PhysicsComponent) entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
             }
