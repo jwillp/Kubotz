@@ -8,19 +8,19 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
+import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
 
 /**
  * Used to create block entities
  */
-public class BlockBuilder extends EntityBuilder {
+public class BlockFactory extends EntityFactory {
 
     private World world;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(1,1);
 
-    public BlockBuilder(EntityManager entityManager, World world, Vector2 position){
+    public BlockFactory(EntityManager entityManager, World world, Vector2 position){
         super(entityManager);
         this.world = world;
         this.position = position;
@@ -31,7 +31,7 @@ public class BlockBuilder extends EntityBuilder {
      * Allows to set the size of the generated Block
      * @return BlockBuilder for chaining
      */
-    public BlockBuilder withSize(float witdh, float height){
+    public BlockFactory withSize(float witdh, float height){
         size.x = witdh/2; //Divide by half because box2D width equals half of shape
         size.y = height/2;
         return this;

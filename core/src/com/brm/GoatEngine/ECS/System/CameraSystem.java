@@ -10,7 +10,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.Kubotz.Entities.CameraBuilder;
+import com.brm.Kubotz.Entities.CameraFactory;
 
 /**
  * A system handling all cameras and their movements
@@ -22,7 +22,7 @@ public class CameraSystem extends EntitySystem {
     public CameraSystem(EntityManager em) {
         super(em);
         //Creation of a main Camera
-        this.mainCamera = new CameraBuilder(this.em, 30,30)
+        this.mainCamera = new CameraFactory(this.em, 30,30)
                 .withTag("mainCamera")
                 .build();
 

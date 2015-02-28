@@ -5,11 +5,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
@@ -22,13 +20,11 @@ import com.brm.GoatEngine.StateManger.GameState;
 import com.brm.GoatEngine.StateManger.GameStateManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Entities.BlockBuilder;
-import com.brm.Kubotz.Entities.RobotBuilder;
+import com.brm.Kubotz.Entities.BlockFactory;
+import com.brm.Kubotz.Entities.RobotFactory;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystem.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
-
-import java.util.Random;
 
 
 public class InGameState extends GameState {
@@ -111,13 +107,13 @@ public class InGameState extends GameState {
             Rectangle rect = obj.getRectangle();
 
             if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
-                this.player = new RobotBuilder(entityManager, physicsSystem.getWorld(),
+                this.player = new RobotFactory(entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(1.0f)
                         .withCameraTargetComponent()
                         .build();
             }else{
-                new BlockBuilder(this.entityManager, physicsSystem.getWorld(),
+                new BlockFactory(this.entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withSize(0.5f,0.5f)
                         .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
@@ -133,7 +129,7 @@ public class InGameState extends GameState {
 
         
 
-        Entity bo = new RobotBuilder(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+        Entity bo = new RobotFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);

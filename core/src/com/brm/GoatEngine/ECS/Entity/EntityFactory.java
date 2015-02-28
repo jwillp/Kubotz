@@ -5,12 +5,12 @@ import com.brm.GoatEngine.ECS.EntityManager;
 /**
  * Used to build an entity according to certain parameters
  */
-public abstract class EntityBuilder {
+public abstract class EntityFactory {
 
 
     protected EntityManager entityManager;
 
-    public EntityBuilder(EntityManager entityManager){
+    public EntityFactory(EntityManager entityManager){
         this.entityManager = entityManager;
     }
 

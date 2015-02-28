@@ -4,22 +4,20 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
+import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
-
-import java.util.ArrayList;
 
 /**
  *
  */
-public class CameraBuilder extends EntityBuilder {
+public class CameraFactory extends EntityFactory {
 
 
     private CameraComponent cameraComponent;
     private TagsComponent tagsComponent = new TagsComponent();
 
 
-    public CameraBuilder(EntityManager entityManager, int width, int height) {
+    public CameraFactory(EntityManager entityManager, int width, int height) {
         super(entityManager);
         this.cameraComponent = new CameraComponent(width, height);
     }
@@ -29,18 +27,18 @@ public class CameraBuilder extends EntityBuilder {
      * @param tag
      * @return this for chaining
      */
-    public CameraBuilder withTag(String tag){
+    public CameraFactory withTag(String tag){
         this.tagsComponent.addTag(tag);
         return this;
     }
 
 
-    public CameraBuilder withSpeed(Vector2 speed){
+    public CameraFactory withSpeed(Vector2 speed){
         this.cameraComponent.speed = speed;
         return this;
     }
 
-    public CameraBuilder withZoomSpeed(float speed){
+    public CameraFactory withZoomSpeed(float speed){
         this.cameraComponent.zoomSpeed = speed;
         return this;
     }

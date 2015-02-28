@@ -1,24 +1,15 @@
 package com.brm.Kubotz.Systems;
 
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.Components.Cameras.CameraComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.CameraSystem;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Entities.CameraBuilder;
-import com.brm.Kubotz.Renderers.BlockRenderer;
-import com.brm.Kubotz.Renderers.BoundingBoxRenderer;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 
 /**

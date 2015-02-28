@@ -8,14 +8,13 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
+import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
-import com.brm.GoatEngine.Utils.Logger;
 
 /**
  * Creates Turret
  */
-public class TurretBuilder extends EntityBuilder{
+public class TurretFactory extends EntityFactory {
 
     private World world;
     private String targetId;
@@ -28,7 +27,7 @@ public class TurretBuilder extends EntityBuilder{
      * @param world
      * @param target
      */
-    public TurretBuilder(EntityManager entityManager, World world, Entity target){
+    public TurretFactory(EntityManager entityManager, World world, Entity target){
         super(entityManager);
         this.world = world;
         this.targetId = target.getID();
@@ -41,7 +40,7 @@ public class TurretBuilder extends EntityBuilder{
      * @param world
      * @param targetId
      */
-    public TurretBuilder(EntityManager entityManager, World world, String targetId){
+    public TurretFactory(EntityManager entityManager, World world, String targetId){
         super(entityManager);
         this.world = world;
         this.targetId = targetId;
@@ -63,18 +62,18 @@ public class TurretBuilder extends EntityBuilder{
      * Allows to set the size of the generated Turret
      * @return BlockBuilder for chaining
      */
-    public TurretBuilder withSize(float witdh, float height){
+    public TurretFactory withSize(float witdh, float height){
         size.x = witdh;
         size.y = height;
         return this;
     }
 
-    public TurretBuilder withPosition(Vector2 position){
+    public TurretFactory withPosition(Vector2 position){
         this.position = position;
         return this;
     }
 
-    public TurretBuilder withDistance(Vector2 distance){
+    public TurretFactory withDistance(Vector2 distance){
         this.distance = distance;
         return this;
     }

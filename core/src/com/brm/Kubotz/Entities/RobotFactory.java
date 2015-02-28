@@ -8,21 +8,18 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityBuilder;
+import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 
-import com.brm.Kubotz.Component.Skills.Active.MagneticFeetComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 
 
 /**
  * Used to create block entities
  */
-public class RobotBuilder extends EntityBuilder{
+public class RobotFactory extends EntityFactory {
 
     private World world;
     private Vector2 position = new Vector2(0,0);
@@ -30,7 +27,7 @@ public class RobotBuilder extends EntityBuilder{
 
     private boolean hasCamTargetComponent = false;
 
-    public RobotBuilder(EntityManager entityManager, World world,  Vector2 position) {
+    public RobotFactory(EntityManager entityManager, World world, Vector2 position) {
         super(entityManager);
         this.world = world;
         this.position = position;
@@ -41,7 +38,7 @@ public class RobotBuilder extends EntityBuilder{
      * Adds a camera targetComponent to the Robot
      * @return this for chaining
      */
-    public RobotBuilder withCameraTargetComponent(){
+    public RobotFactory withCameraTargetComponent(){
         hasCamTargetComponent = true;
         return this;
     }
@@ -51,7 +48,7 @@ public class RobotBuilder extends EntityBuilder{
      * Defines the height of the Robot and the width ACCORDINGLY
      * @return this for chaining
      */
-    public RobotBuilder withHeight(float height){
+    public RobotFactory withHeight(float height){
         height /= 2; //Since box2D uses half width;
         this.size = new Vector2(height/2, height);
         return this;
@@ -61,7 +58,7 @@ public class RobotBuilder extends EntityBuilder{
      * Defines the width of the Robot and the height ACCORDINGLY
      * @return this for chaining
      */
-    public RobotBuilder withWidth(float width){
+    public RobotFactory withWidth(float width){
         width /= 2;
         this.size = new Vector2(width, width*2);
         return this;
