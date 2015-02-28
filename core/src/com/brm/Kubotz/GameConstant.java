@@ -29,7 +29,14 @@ public class GameConstant {
 
 
     // FIXTURE
+
+    public static String FIXTURE_LEGS = "legs";
+    public static String FIXTURE_TORSO = "tosro";
+    public static String FIXTURE_HEAD = "head";
     public static String FIXTURE_FEET_SENSOR = "feetSensor";
+
+
+
     public static String FIXTURE_PUNCH_ATTACK = "punch";
 
 

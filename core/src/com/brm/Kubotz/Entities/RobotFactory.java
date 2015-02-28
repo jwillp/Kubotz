@@ -159,7 +159,7 @@ public class RobotFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
-        physics.getBody().createFixture(fixtureDef);
+        physics.getBody().createFixture(fixtureDef).setUserData(GameConstant.FIXTURE_TORSO);
         polyShape.dispose();
 
         // Circle 1
@@ -169,7 +169,7 @@ public class RobotFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef);
+        physics.getBody().createFixture(fixtureDef).setUserData(GameConstant.FIXTURE_HEAD);
         circleShapeTop.dispose();
 
 
@@ -180,7 +180,7 @@ public class RobotFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeBottom;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef);
+        physics.getBody().createFixture(fixtureDef).setUserData(GameConstant.FIXTURE_LEGS);
         circleShapeBottom.dispose();
 
 

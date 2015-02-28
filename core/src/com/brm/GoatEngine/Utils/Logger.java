@@ -8,8 +8,7 @@ public class Logger {
 
     public static void log(Object message){
         DateFormat df = new SimpleDateFormat("HH:mm:ss");
-        Calendar calobj = Calendar.getInstance();
-        String time = "["+df.format(calobj.getTime())+"] ";
+        String time = "["+df.format(Calendar.getInstance().getTime())+"] ";
         System.out.println(time + message);
     }
 

@@ -3,10 +3,13 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.GameConstant;
 
 /**dd
@@ -52,6 +55,11 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
             testFeetSensor(fixtureB, true);
         }
 
+        testPunch(contact.getFixtureA(), contact.getFixtureB());
+
+
+
+
     }
 
     @Override
@@ -84,7 +92,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      * @param grounded If the test is true whether we set the body as grounded or not
      * @return returns whether or not the test was valid
      */
-    public void testFeetSensor(Fixture fixture, boolean grounded){
+    private void testFeetSensor(Fixture fixture, boolean grounded){
         if(fixture.getUserData() != null) {
             if (fixture.getUserData().equals(GameConstant.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
                 Entity entity = (Entity) fixture.getBody().getUserData();
@@ -92,6 +100,53 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
             }
         }
     }
+
+    /**
+     * Test if the contact between two bodies involves a punch
+     * @param fixtureA
+     * @param fixtureB
+     */
+    private void testPunch(Fixture fixtureA, Fixture fixtureB){
+
+        //if none of the fixture has userdata
+        if(fixtureA.getUserData() == null || fixtureB.getUserData() == null){
+            return;
+        }
+
+
+        //TEST A as Punch
+        if(fixtureA.getUserData().equals(GameConstant.FIXTURE_PUNCH_ATTACK)){
+            Entity entityB = (Entity)fixtureB.getBody().getUserData();
+            if(entityB.hasComponentEnabled(HealthComponent.ID)){
+                    handlePunch((Entity)fixtureA.getBody().getUserData(), entityB);
+            }
+        }
+
+        //TEST B as punch
+        if(fixtureB.getUserData().equals(GameConstant.FIXTURE_PUNCH_ATTACK)){
+            Entity entityA = (Entity)fixtureA.getBody().getUserData();
+            if(entityA.hasComponentEnabled(HealthComponent.ID)){
+                handlePunch((Entity)fixtureB.getBody().getUserData(), entityA);
+            }
+        }
+
+
+
+    }
+
+    /**
+     * Handles a punch between a puncher and a target
+     * @param puncher
+     * @param target
+     */
+    private void handlePunch(Entity puncher, Entity target){
+        PunchComponent punch = (PunchComponent) puncher.getComponent(PunchComponent.ID);
+        HealthComponent health = (HealthComponent)target.getComponent(HealthComponent.ID);
+        health.substractAmount(punch.damage);
+        System.out.println(health.getAmount());
+    }
+
+
 
 
 

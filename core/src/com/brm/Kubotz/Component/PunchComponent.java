@@ -8,6 +8,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.GameConstant;
 
 /**
  * Component used to let an entity punch
@@ -59,6 +60,7 @@ public class PunchComponent extends Component {
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
         this.punchFixture = this.phys.getBody().createFixture(fixtureDef);
+        this.punchFixture.setUserData(GameConstant.FIXTURE_PUNCH_ATTACK);
         circleShapeTop.dispose();
     }
 

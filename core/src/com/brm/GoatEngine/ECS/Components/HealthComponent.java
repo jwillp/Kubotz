@@ -62,7 +62,7 @@ public class HealthComponent extends Component {
      * @param amountToSub
      */
     public void substractAmount(int amountToSub){
-        this.amount = Math.max(this.amount + amountToSub, minAmount);
+        this.amount = Math.max(this.amount - amountToSub, minAmount);
     }
 
     /**
