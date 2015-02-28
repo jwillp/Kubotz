@@ -11,6 +11,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.CONSTANTS;
 import com.brm.Kubotz.Component.AppearanceComponent;
 
 import com.brm.Kubotz.Component.PunchComponent;
@@ -87,7 +88,7 @@ public class RobotFactory extends EntityFactory {
 
         ///MIDDLE
         PolygonShape polyShape = new PolygonShape();
-        polyShape.setAsBox(physics.getWidth()*0.90f, 0.5f * physics.getHeight());
+        polyShape.setAsBox(physics.getWidth() * 0.90f, 0.5f * physics.getHeight());
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
@@ -121,7 +122,7 @@ public class RobotFactory extends EntityFactory {
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;
         fixtureDef.shape = footSensor;
-        physics.getBody().createFixture(fixtureDef).setUserData("footSensor");
+        physics.getBody().createFixture(fixtureDef).setUserData(CONSTANTS.FIXTURE_FEET_SENSOR);
 
 
 
