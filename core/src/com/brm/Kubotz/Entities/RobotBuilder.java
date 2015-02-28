@@ -89,7 +89,7 @@ public class RobotBuilder extends EntityBuilder{
 
         ///MIDDLE
         PolygonShape polyShape = new PolygonShape();
-        polyShape.setAsBox(physics.getWidth(), 0.5f * physics.getHeight());
+        polyShape.setAsBox(physics.getWidth()*0.90f, 0.5f * physics.getHeight());
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
