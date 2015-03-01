@@ -102,10 +102,6 @@ public class CameraSystem extends EntitySystem {
         zoomSpeed = camComp.zoomSpeed == -1 ? camComp.speed.len() : camComp.zoomSpeed;
 
 
-
-
-
-
         //Zoom according to distance
         camComp.camera.zoom += (java.lang.Math.min(java.lang.Math.max(zoomScale, camComp.minimumZoom), camComp.maximumZoom) - camComp.camera.zoom)
                 * zoomSpeed * Gdx.graphics.getDeltaTime();
