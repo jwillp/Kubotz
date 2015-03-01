@@ -17,7 +17,7 @@ public class PunchComponent extends Component {
 
     public static final String ID = "PUNCH_COMPONENT";
 
-    public int damage = 10; //Number of damage per hit
+    public int damage = 3; //Number of damage per hit
 
     public Timer durationTimer = new Timer(20); //The Duration of the hit
     public Timer cooldown = new Timer(80); //The delay between hits
@@ -64,11 +64,6 @@ public class PunchComponent extends Component {
         circleShapeTop.dispose();
     }
 
-
-
-
-
-
     /**
      * Removes the attackBox
      */
@@ -79,4 +74,8 @@ public class PunchComponent extends Component {
     }
 
 
+    @Override
+    public void onDetach() {
+        this.hideAttackBox();
+    }
 }
