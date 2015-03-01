@@ -45,7 +45,7 @@ public class PunchSystem extends EntitySystem{
                 //Check if th punch duration is done, if so hide the punch
                 if(punchComponent.durationTimer.isDone() && punchComponent.punchFixture != null){
                    punchComponent.hideAttackBox();
-                    punchComponent.cooldown.reset();
+                   punchComponent.cooldown.reset();
                 }
         }
 

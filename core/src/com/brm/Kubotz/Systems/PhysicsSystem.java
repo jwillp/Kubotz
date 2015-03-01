@@ -8,9 +8,8 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.PunchComponent;
-import com.brm.Kubotz.GameConstant;
+import com.brm.Kubotz.Constants;
 
 /**dd
  * Responsible for checking collisions, making the entities move
@@ -56,10 +55,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         }
 
         testPunch(contact.getFixtureA(), contact.getFixtureB());
-
-
-
-
     }
 
     @Override
@@ -94,7 +89,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      */
     private void testFeetSensor(Fixture fixture, boolean grounded){
         if(fixture.getUserData() != null) {
-            if (fixture.getUserData().equals(GameConstant.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
+            if (fixture.getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
                 Entity entity = (Entity) fixture.getBody().getUserData();
                 ((PhysicsComponent) entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
             }
@@ -115,7 +110,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
         //TEST A as Punch
-        if(fixtureA.getUserData().equals(GameConstant.FIXTURE_PUNCH_ATTACK)){
+        if(fixtureA.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
             Entity entityB = (Entity)fixtureB.getBody().getUserData();
             if(entityB.hasComponentEnabled(HealthComponent.ID)){
                     handlePunch((Entity)fixtureA.getBody().getUserData(), entityB);
@@ -123,15 +118,12 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         }
 
         //TEST B as punch
-        if(fixtureB.getUserData().equals(GameConstant.FIXTURE_PUNCH_ATTACK)){
+        if(fixtureB.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
             Entity entityA = (Entity)fixtureA.getBody().getUserData();
             if(entityA.hasComponentEnabled(HealthComponent.ID)){
                 handlePunch((Entity)fixtureB.getBody().getUserData(), entityA);
             }
         }
-
-
-
     }
 
     /**
@@ -141,9 +133,29 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      */
     private void handlePunch(Entity puncher, Entity target){
         PunchComponent punch = (PunchComponent) puncher.getComponent(PunchComponent.ID);
-        HealthComponent health = (HealthComponent)target.getComponent(HealthComponent.ID);
-        health.substractAmount(punch.damage);
-        System.out.println(health.getAmount());
+
+        //DEAL DAMAGE
+        HealthComponent targetHealth = (HealthComponent)target.getComponent(HealthComponent.ID);
+        targetHealth.substractAmount(punch.damage);
+        System.out.println(targetHealth.getAmount());
+
+
+
+
+        //KNOCKBACK
+        PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
+        PhysicsComponent puncherPhys = (PhysicsComponent) puncher.getComponent(PhysicsComponent.ID);
+
+        Vector2 knockBack = punch.knockBack.cpy();
+
+        if(puncherPhys.direction == PhysicsComponent.Direction.LEFT){
+            knockBack.x *= -1;
+        }
+        targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
+                targetPhys.getPosition().x, targetPhys.getPosition().y, true);
+
+
+
     }
 
 

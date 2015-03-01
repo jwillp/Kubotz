@@ -1,14 +1,13 @@
 package com.brm.Kubotz.Component;
 
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.Utils.Timer;
-import com.brm.Kubotz.GameConstant;
+import com.brm.Kubotz.Constants;
 
 /**
  * Component used to let an entity punch
@@ -23,7 +22,10 @@ public class PunchComponent extends Component {
     public Timer cooldown = new Timer(80); //The delay between hits
     PhysicsComponent phys;
 
-    public float radius = 0.2f;
+    public Vector2 knockBack = new Vector2(0.1f, 0.1f);
+
+
+
 
     public Fixture punchFixture;
 
@@ -60,7 +62,7 @@ public class PunchComponent extends Component {
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
         this.punchFixture = this.phys.getBody().createFixture(fixtureDef);
-        this.punchFixture.setUserData(GameConstant.FIXTURE_PUNCH_ATTACK);
+        this.punchFixture.setUserData(Constants.FIXTURE_PUNCH_ATTACK);
         circleShapeTop.dispose();
     }
 

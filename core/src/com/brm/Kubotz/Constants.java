@@ -3,7 +3,7 @@ package com.brm.Kubotz;
 /**
  * Contains all the Game Constants
  */
-public class GameConstant {
+public class Constants {
 
     public final float DEFAULT_KUBOTZ_SPEED_X = 5.0f;
     public final float DEFAULT_KUBOTZ_SPEED_Y = 5.0f;
