@@ -31,8 +31,8 @@ public class BlockFactory extends EntityFactory {
      * Allows to set the size of the generated Block
      * @return BlockBuilder for chaining
      */
-    public BlockFactory withSize(float witdh, float height){
-        size.x = witdh/2; //Divide by half because box2D width equals half of shape
+    public BlockFactory withSize(float width, float height){
+        size.x = width/2; //Divide by half because box2D width equals half of shape
         size.y = height/2;
         return this;
     }

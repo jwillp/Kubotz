@@ -1,10 +1,14 @@
-package com.brm.Kubotz.GameStates;
+package com.brm.Kubotz.GameScreens;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
+import com.brm.GoatEngine.Utils.Logger;
 
 
-public class PauseGameScreen extends GameScreen {
+public class SplashScreen extends GameScreen {
+
+    protected SpriteBatch spriteBatch;
 
 
     @Override
@@ -34,6 +38,10 @@ public class PauseGameScreen extends GameScreen {
 
     @Override
     public void draw(GameScreenManager engine) {
-
+        Logger.log(" SPLASH SCREEN DRAW CALL");
     }
+
+
+
+
 }

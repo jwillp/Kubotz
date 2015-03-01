@@ -25,6 +25,8 @@ public class Constants {
 
     // ENTITY TAG
     public static String ENTITY_TAG_KUBOTZ = "KUBOTZ";
+    public static String ENTITY_TAG_BULLET = "BULLET";
+    public static String ENTITY_TAG_PUNCH = "PUNCH";
 
 
 

@@ -28,7 +28,7 @@ public class PhysicsComponent extends Component {
 
     private boolean isGrounded = false;
 
-    public Direction direction;
+    public Direction direction = Direction.LEFT;
 
 
 
@@ -52,6 +52,11 @@ public class PhysicsComponent extends Component {
     }
 
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        this.getBody().getWorld().destroyBody(this.body);
+    }
 
     /**
      * Returns the entity's BoundingBox

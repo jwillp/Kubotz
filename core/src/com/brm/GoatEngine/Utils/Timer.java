@@ -46,7 +46,7 @@ public class Timer {
 
     /**
      * Forces the timer to be done, after that method call
-     * the timer will ineitably be done
+     * the timer will inevitably be done
      */
     public void terminate(){
         this.lastCheck = 0;

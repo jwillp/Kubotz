@@ -1,4 +1,4 @@
-package com.brm.Kubotz.GameStates;
+package com.brm.Kubotz.GameScreens;
 
 
 import com.badlogic.gdx.Gdx;
@@ -37,6 +37,7 @@ public class InGameScreen extends GameScreen {
     private SkillSystem skillSystem;
     private MovementSystem movementSystem;
 
+    private LifespanSystem lifespanSystem;
 
 
     //MAP
@@ -79,7 +80,7 @@ public class InGameScreen extends GameScreen {
         this.punchSystem = new PunchSystem(this.entityManager);
 
 
-
+        this.lifespanSystem = new LifespanSystem(this.entityManager);
 
 
         // MAP
@@ -168,6 +169,7 @@ public class InGameScreen extends GameScreen {
         this.skillSystem.update();
         this.punchSystem.update();
 
+        this.lifespanSystem.update();
 
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
