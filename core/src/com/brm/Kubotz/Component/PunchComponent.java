@@ -15,7 +15,7 @@ public class PunchComponent extends Component {
 
     public int damage = 3; //Number of damage per hit
 
-    public Timer durationTimer = new Timer(20); //The Duration of the hit
+    public Timer durationTimer = new Timer(2000); //The Duration of the hit
     public Timer cooldown = new Timer(80); //The delay between hits
     PhysicsComponent phys;
 

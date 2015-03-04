@@ -15,13 +15,13 @@ public class CameraComponent extends Component {
     //For Smooth camera movement(delayed camera movement, (the higher the most direct and quick))
     public Vector2 speed = new Vector2(8.0f, 5.0f);
 
-    public float zoomSpeed = -1; //The system
+    public float zoomSpeed = -1; //The system (-1 one values means the system will decide by itself)
 
 
 
     //Zoom properties
-    public float minimumZoom = 0.5f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
-    public float maximumZoom = 1.5f; //The maximum value the camera can Zoom In/Out
+    public float minimumZoom = 0.3f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
+    public float maximumZoom = Float.MAX_VALUE; //The maximum value the camera can Zoom In/Out
 
 
 

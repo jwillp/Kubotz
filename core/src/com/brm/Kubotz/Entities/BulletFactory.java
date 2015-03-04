@@ -118,7 +118,7 @@ public class BulletFactory extends EntityFactory {
         position = new Vector2(position.x + size.x, position.y + size.y);
 
         // Physics
-        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.StaticBody, position, size.x, size.y);
+        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position, size.x, size.y);
 
         PolygonShape polyShape = new PolygonShape();
         polyShape.setAsBox(physics.getWidth(), physics.getHeight());
