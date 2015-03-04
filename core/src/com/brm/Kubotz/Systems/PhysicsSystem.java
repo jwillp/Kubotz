@@ -78,8 +78,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     public void postSolve(Contact contact, ContactImpulse impulse) {}
 
 
-
-
     /**
      * Check if a body is grounded according to it's feet sensor
      * and according to the case set it as grounded or not
