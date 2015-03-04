@@ -57,8 +57,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
         testPunch(contact.getFixtureA(), contact.getFixtureB());
 
-
-
+        contact.
 
     }
 
@@ -81,8 +80,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
     @Override
     public void postSolve(Contact contact, ContactImpulse impulse) {}
-
-
 
 
     /**

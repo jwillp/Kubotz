@@ -4,6 +4,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Entity.Entity;
+
+import java.util.ArrayList;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World
@@ -13,30 +16,38 @@ public class PhysicsComponent extends Component {
 
     public final static String ID = "PHYSICS_PROPERTY";
 
+    //The directions an entity can face
     public enum Direction{
-        UP,
-        DOWN,
         LEFT,  //RIGHT
         RIGHT, //LEFT
     }
 
 
+    private Body body;  //the physical body of the entity
+    private Vector2 acceleration = new Vector2(0,0);   // The acceleration rate
+    public final Vector2 MAX_SPEED = new Vector2(18f, 18f); //The max velocity the entity can go
 
-    private Body body;
-    private Vector2 acceleration = new Vector2(0,0);
-    public final Vector2 MAX_SPEED = new Vector2(18f, 18f);
+    private boolean isGrounded = false; //Whether or not the entity's feet touch the ground
 
-    private boolean isGrounded = false;
-
-    public Direction direction;
-
+    public Direction direction; //The direction the entity is facing
 
 
-    private float width;
-    private float height;
+    private float width;   //The width of the entity(in game units)
+    private float height;  //The height of the entity (in game units)
+
+    // List of all the contacts that recently happened to the entities.
+    public ArrayList<Contact> contacts; //A list of Box2D contacts
 
 
 
+    /**
+     * CTOR
+     * @param world
+     * @param bodyType
+     * @param position
+     * @param width
+     * @param height
+     */
     public PhysicsComponent(World world, BodyDef.BodyType bodyType, Vector2 position, float width, float height){
 
         this.setWidth(width);
@@ -47,10 +58,7 @@ public class PhysicsComponent extends Component {
         bodyDef.position.set(position.x, position.y);
 
         this.body = world.createBody(bodyDef);
-
-
     }
-
 
 
     /**
