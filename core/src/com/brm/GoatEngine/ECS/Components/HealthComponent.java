@@ -52,7 +52,7 @@ public class HealthComponent extends Component {
      * it will not be higher than the max
      * @param amountToAdd
      */
-    public void addAmount(int amountToAdd){
+    public void addAmount(float amountToAdd){
         this.amount = Math.min(this.amount + amountToAdd, maxAmount);
     }
 
@@ -61,7 +61,7 @@ public class HealthComponent extends Component {
      * it will not be lower than the min
      * @param amountToSub
      */
-    public void substractAmount(int amountToSub){
+    public void substractAmount(float amountToSub){
         this.amount = Math.max(this.amount - amountToSub, minAmount);
     }
 

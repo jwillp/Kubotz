@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.Kubotz.Component.DamageComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
 
@@ -109,51 +110,51 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         }
 
 
-        //TEST A as Punch
-        if(fixtureA.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
-            Entity entityB = (Entity)fixtureB.getBody().getUserData();
-            if(entityB.hasComponentEnabled(HealthComponent.ID)){
-                    handlePunch((Entity)fixtureA.getBody().getUserData(), entityB);
-            }
+        Entity entityA = (Entity) fixtureA.getBody().getUserData();
+        Entity entityB = (Entity) fixtureB.getBody().getUserData();
+
+        /** HANDLE DAMAGE **/
+        if(entityA.hasComponent(DamageComponent.ID) && entityB.hasComponent(HealthComponent.ID)){
+            handlePunch(entityA, entityB);
+        }else if(entityB.hasComponent(DamageComponent.ID) && entityA.hasComponent(HealthComponent.ID)){
+            handlePunch(entityB, entityA);
         }
 
-        //TEST B as punch
-        if(fixtureB.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
-            Entity entityA = (Entity)fixtureA.getBody().getUserData();
-            if(entityA.hasComponentEnabled(HealthComponent.ID)){
-                handlePunch((Entity)fixtureB.getBody().getUserData(), entityA);
-            }
-        }
+
+
+
     }
 
     /**
      * Handles a punch between a puncher and a target
-     * @param puncher
+     * @param damageAgent
      * @param target
      */
-    private void handlePunch(Entity puncher, Entity target){
-        PunchComponent punch = (PunchComponent) puncher.getComponent(PunchComponent.ID);
+    private void handlePunch(Entity damageAgent, Entity target){
+        DamageComponent damageComponent = (DamageComponent) damageAgent.getComponent(DamageComponent.ID);
+
 
         //DEAL DAMAGE
         HealthComponent targetHealth = (HealthComponent)target.getComponent(HealthComponent.ID);
-        targetHealth.substractAmount(punch.damage);
-        System.out.println(targetHealth.getAmount());
+        targetHealth.substractAmount(damageComponent.damage);
 
+        System.out.println(targetHealth.getAmount());
 
 
 
         //KNOCKBACK
         PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
-        PhysicsComponent puncherPhys = (PhysicsComponent) puncher.getComponent(PhysicsComponent.ID);
+        PhysicsComponent damagerPhys = (PhysicsComponent) damageAgent.getComponent(PhysicsComponent.ID);
 
-        Vector2 knockBack = punch.knockBack.cpy();
+        Vector2 knockBack = damageComponent.knockBack.cpy();
 
-        if(puncherPhys.direction == PhysicsComponent.Direction.LEFT){
+        if(damagerPhys.direction == PhysicsComponent.Direction.LEFT){
             knockBack.x *= -1;
         }
         targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
-                targetPhys.getPosition().x, targetPhys.getPosition().y, true);
-
+                                                targetPhys.getPosition().x,
+                                                targetPhys.getPosition().y,
+                                                true);
 
 
     }
