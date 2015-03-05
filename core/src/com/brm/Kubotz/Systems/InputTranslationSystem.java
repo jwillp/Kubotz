@@ -3,7 +3,7 @@ package com.brm.Kubotz.Systems;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Input.GameButton;

@@ -3,10 +3,12 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
@@ -34,42 +36,35 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     @Override
     public void update(float dt) {
 
+        //Update the box2D world
         world.step(1 / 60f, 6, 2);
 
+        // Since all contacts have been processed empty them all
+        //clearContacts();
+    }
+
+    /**
+     * Clears the contact for all the entities
+     * with a physics component
+     */
+    public void clearContacts(){
+       for(Component component: em.getComponents(PhysicsComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) component;
+           phys.contacts.clear();
+        }
     }
 
 
-
-
     // CONTACT LISTENING
-
     @Override
     public void beginContact(Contact contact) {
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-
-        //Feet sensor Test
-        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
-            testFeetSensor(fixtureA, true);
-            testFeetSensor(fixtureB, true);
-        }
-
-        testPunch(contact.getFixtureA(), contact.getFixtureB());
+        dispatchContactEvent(contact, EntityContact.Describer.BEGIN);
     }
 
     @Override
     public void endContact(Contact contact) {
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-
-        //Feet sensor Test
-        if(fixtureA.getBody().getType() != fixtureB.getBody().getType()){
-            // Our feet are leaving ground, we are not grounded anymore
-            testFeetSensor(fixtureA, false);
-            testFeetSensor(fixtureB, false);
-        }
+        dispatchContactEvent(contact, EntityContact.Describer.END);
     }
-
 
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {}
@@ -79,82 +74,33 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
     /**
-     * Check if a body is grounded according to it's feet sensor
-     * and according to the case set it as grounded or not
-     * @param fixture The fixture of the body to test
-     * @param grounded If the test is true whether we set the body as grounded or not
-     * @return returns whether or not the test was valid
+     * Dispatches the contact between two entities in their respective PhysicsComponent
+     * to be used by other systems, to accomplish certain tasks accordingly
+     * @param contact the contact event
+     * @param describer the describer of the event (BEGIN || END)
      */
-    private void testFeetSensor(Fixture fixture, boolean grounded){
-        if(fixture.getUserData() != null) {
-            if (fixture.getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) { //And B is logically not a Dynamic body
-                Entity entity = (Entity) fixture.getBody().getUserData();
-                ((PhysicsComponent) entity.getComponent(PhysicsComponent.ID)).setGrounded(grounded);
-            }
-        }
+    public void dispatchContactEvent(Contact contact, EntityContact.Describer describer){
+
+        //Fixtures
+        Fixture fixtureA = contact.getFixtureA();
+        Fixture fixtureB = contact.getFixtureB();
+
+        //Entities
+        Entity entityA = (Entity) fixtureA.getBody().getUserData();
+        Entity entityB = (Entity) fixtureB.getBody().getUserData();
+
+        //EntityContacts
+        EntityContact contactA = new EntityContact(fixtureA, fixtureB, describer);
+        EntityContact contactB = new EntityContact(fixtureB, fixtureA, describer);
+
+        //Dispatch
+        ((PhysicsComponent) entityA.getComponent(PhysicsComponent.ID)).contacts.add(contactA);
+        ((PhysicsComponent) entityB.getComponent(PhysicsComponent.ID)).contacts.add(contactB);
     }
 
-    /**
-     * Test if the contact between two bodies involves a punch
-     * @param fixtureA
-     * @param fixtureB
-     */
-    private void testPunch(Fixture fixtureA, Fixture fixtureB){
-
-        //if none of the fixture has userdata
-        if(fixtureA.getUserData() == null || fixtureB.getUserData() == null){
-            return;
-        }
-
-
-        //TEST A as Punch
-        if(fixtureA.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
-            Entity entityB = (Entity)fixtureB.getBody().getUserData();
-            if(entityB.hasComponentEnabled(HealthComponent.ID)){
-                    handlePunch((Entity)fixtureA.getBody().getUserData(), entityB);
-            }
-        }
-
-        //TEST B as punch
-        if(fixtureB.getUserData().equals(Constants.FIXTURE_PUNCH_ATTACK)){
-            Entity entityA = (Entity)fixtureA.getBody().getUserData();
-            if(entityA.hasComponentEnabled(HealthComponent.ID)){
-                handlePunch((Entity)fixtureB.getBody().getUserData(), entityA);
-            }
-        }
-    }
-
-    /**
-     * Handles a punch between a puncher and a target
-     * @param puncher
-     * @param target
-     */
-    private void handlePunch(Entity puncher, Entity target){
-        PunchComponent punch = (PunchComponent) puncher.getComponent(PunchComponent.ID);
-
-        //DEAL DAMAGE
-        HealthComponent targetHealth = (HealthComponent)target.getComponent(HealthComponent.ID);
-        targetHealth.substractAmount(punch.damage);
-        System.out.println(targetHealth.getAmount());
 
 
 
-
-        //KNOCKBACK
-        PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
-        PhysicsComponent puncherPhys = (PhysicsComponent) puncher.getComponent(PhysicsComponent.ID);
-
-        Vector2 knockBack = punch.knockBack.cpy();
-
-        if(puncherPhys.direction == PhysicsComponent.Direction.LEFT){
-            knockBack.x *= -1;
-        }
-        targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
-                targetPhys.getPosition().x, targetPhys.getPosition().y, true);
-
-
-
-    }
 
 
 

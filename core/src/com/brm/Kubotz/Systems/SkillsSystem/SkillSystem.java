@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 
 /**

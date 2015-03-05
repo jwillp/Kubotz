@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
 
 import java.util.ArrayList;
 
@@ -36,7 +37,8 @@ public class PhysicsComponent extends Component {
     private float height;  //The height of the entity (in game units)
 
     // List of all the contacts that recently happened to the entities.
-    public ArrayList<Contact> contacts; //A list of Box2D contacts
+    // The a entity will always be the current entity.
+    public ArrayList<EntityContact> contacts = new ArrayList<EntityContact>();
 
 
 

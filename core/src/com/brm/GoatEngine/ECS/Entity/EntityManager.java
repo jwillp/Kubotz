@@ -1,8 +1,7 @@
-package com.brm.GoatEngine.ECS;
+package com.brm.GoatEngine.ECS.Entity;
 
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
 
 import java.util.*;
 
@@ -168,6 +167,18 @@ public class EntityManager {
         return entitiesWithTag;
     }
 
+    /**
+     * Returns all the components instance of a certain type along with the Id of the entity
+     * in the form of a HashMap
+     * @param compId: the Id of the component
+     * @return HashMap<String, Component>
+     */
+    public HashMap<String, Component> getComponentsWithEntity(String compId){
+        return this.components.get(compId);
+    }
+
+
+
 
 
 
@@ -208,7 +219,20 @@ public class EntityManager {
         return entities;
     }
 
+    /**
+     * Returns all the components instance of a certain type
+     * @param compId: the Id of the component
+     * @return ArrayList of Components or an empty array list if no instance of component type exist.
+     */
+    public ArrayList<Component> getComponents(String compId){
 
+        if(this.components.containsKey(compId)){
+            return new ArrayList<Component>(this.components.get(compId).values());
+        }else{
+            return new ArrayList<Component>(); //Empty ArrayList
+        }
+
+    }
 
 
 }

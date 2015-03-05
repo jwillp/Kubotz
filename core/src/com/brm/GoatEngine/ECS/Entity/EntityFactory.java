@@ -1,7 +1,5 @@
 package com.brm.GoatEngine.ECS.Entity;
 
-import com.brm.GoatEngine.ECS.EntityManager;
-
 /**
  * Used to build an entity according to certain parameters
  */

@@ -3,7 +3,7 @@ package com.brm.Kubotz;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
-import com.brm.Kubotz.GameStates.InGameScreen;
+import com.brm.Kubotz.GameScreens.InGameScreen;
 
 
 public class Game extends ApplicationAdapter {
