@@ -5,7 +5,7 @@ import com.brm.GoatEngine.ECS.Components.Cameras.CameraComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 
 /**
  *

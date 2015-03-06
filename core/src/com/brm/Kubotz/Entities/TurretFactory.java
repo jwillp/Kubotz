@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 
 /**
  * Creates Turret

@@ -1,7 +1,6 @@
 package com.brm.GoatEngine.ECS.Entity;
 
 import com.brm.GoatEngine.ECS.Components.Component;
-import com.brm.GoatEngine.ECS.EntityManager;
 
 public class Entity {
 

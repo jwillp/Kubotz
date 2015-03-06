@@ -1,14 +1,17 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.EntityManager;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
-
+import com.brm.Kubotz.Constants;
 
 
 /**
@@ -63,11 +66,38 @@ public class MovementSystem extends EntitySystem {
 
 
     public void update(){
+
+        this.updateIsGrounded();
+
         flySystem.update();
         dashSystem.update();
         walkingSystem.update(Gdx.graphics.getDeltaTime());
+    }
+
+    /**
+     * Updates the property describing if an entity is grounded or not
+     */
+    public void updateIsGrounded(){
+
+
+        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) comp;
+            for(int i=0; i<phys.contacts.size(); i++){
+                EntityContact contact = phys.contacts.get(i);
+                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
+                    phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
+                    phys.contacts.remove(i);
+
+
+                    //REMOVE OTHER contact for other entity
+                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
+                    physB.contacts.remove(contact);
+                }
+            }
+        }
 
     }
+
 
 
 
@@ -82,14 +112,10 @@ public class MovementSystem extends EntitySystem {
         phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
 
         //SET DIRECTION
-
         if(velocity > 0)
             phys.direction = PhysicsComponent.Direction.RIGHT;
         else if(velocity < 0)
             phys.direction = PhysicsComponent.Direction.LEFT;
-            
-
-
     }
 
     /**
@@ -102,7 +128,6 @@ public class MovementSystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         phys.getBody().setLinearVelocity(phys.getVelocity().x, velocity);
     }
-
 
     /**
      * Abruptly stops an entity in X
