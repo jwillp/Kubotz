@@ -19,9 +19,10 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.PickableComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
-import com.brm.Kubotz.Entities.RobotFactory;
+import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
@@ -46,6 +47,7 @@ public class InGameScreen extends GameScreen {
     //PLAYER
     private Entity player;
     private PunchSystem punchSystem;
+    private ObjectSystem objectSystem;
 
 
     public InGameScreen() {
@@ -79,7 +81,7 @@ public class InGameScreen extends GameScreen {
         this.punchSystem = new PunchSystem(this.entityManager);
 
 
-
+        this.objectSystem = new ObjectSystem(this.entityManager);
 
 
         // MAP
@@ -107,7 +109,7 @@ public class InGameScreen extends GameScreen {
             Rectangle rect = obj.getRectangle();
 
             if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
-                this.player = new RobotFactory(entityManager, physicsSystem.getWorld(),
+                this.player = new KubotzFactory(entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(1.0f)
                         .withCameraTargetComponent()
@@ -129,10 +131,11 @@ public class InGameScreen extends GameScreen {
 
         
 
-        Entity bo = new RobotFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
+        bo.addComponent(new PickableComponent(), PickableComponent.ID);
         Logger.log("In Game State initialised");
 
 
@@ -155,6 +158,8 @@ public class InGameScreen extends GameScreen {
         this.punchSystem.handleInput();
         this.movementSystem.handleInput();
 
+        this.objectSystem.handleInput();
+
 
     }
 
@@ -167,7 +172,7 @@ public class InGameScreen extends GameScreen {
         this.trackerSystem.update();
         this.skillSystem.update();
         this.punchSystem.update();
-
+        this.objectSystem.update();
 
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();

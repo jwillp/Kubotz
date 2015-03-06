@@ -21,16 +21,17 @@ import com.brm.Kubotz.Constants;
 /**
  * Used to create block entities
  */
-public class RobotFactory extends EntityFactory {
+public class KubotzFactory extends EntityFactory {
 
     private World world;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(0.5f, 0.5f);
     private VirtualGamePad.InputSource inputSource = VirtualGamePad.InputSource.USER_INPUT;
+    private TagsComponent tagsComponent = new TagsComponent();
 
     private boolean hasCamTargetComponent = false;
 
-    public RobotFactory(EntityManager entityManager, World world, Vector2 position) {
+    public KubotzFactory(EntityManager entityManager, World world, Vector2 position) {
         super(entityManager);
         this.world = world;
         this.position = position;
@@ -45,7 +46,7 @@ public class RobotFactory extends EntityFactory {
      * Adds a camera targetComponent to the Robot
      * @return this for chaining
      */
-    public RobotFactory withCameraTargetComponent(){
+    public KubotzFactory withCameraTargetComponent(){
         hasCamTargetComponent = true;
         return this;
     }
@@ -55,7 +56,7 @@ public class RobotFactory extends EntityFactory {
      * Defines the height of the Robot and the width ACCORDINGLY
      * @return this for chaining
      */
-    public RobotFactory withHeight(float height){
+    public KubotzFactory withHeight(float height){
         height /= 2; //Since box2D uses half width;
         this.size = new Vector2(height/2, height);
         return this;
@@ -65,7 +66,7 @@ public class RobotFactory extends EntityFactory {
      * Defines the width of the Robot and the height ACCORDINGLY
      * @return this for chaining
      */
-    public RobotFactory withWidth(float width){
+    public KubotzFactory withWidth(float width){
         width /= 2;
         this.size = new Vector2(width, width*2);
         return this;
@@ -76,13 +77,16 @@ public class RobotFactory extends EntityFactory {
      * @param inputSource
      * @return
      */
-    public RobotFactory withInputSource(VirtualGamePad.InputSource inputSource){
+    public KubotzFactory withInputSource(VirtualGamePad.InputSource inputSource){
         this.inputSource = inputSource;
         return this;
     }
 
 
-
+    public KubotzFactory withTag(String tag){
+        this.tagsComponent.addTag(tag);
+        return this;
+    }
 
 
 
@@ -103,9 +107,8 @@ public class RobotFactory extends EntityFactory {
 
 
         //TAGS
-        TagsComponent tags = new TagsComponent();
-        tags.addTag(Constants.ENTITY_TAG_KUBOTZ);
-        character.addComponent(new TagsComponent(), TagsComponent.ID);
+        tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
+        character.addComponent(this.tagsComponent, TagsComponent.ID);
 
         // JUMP
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
