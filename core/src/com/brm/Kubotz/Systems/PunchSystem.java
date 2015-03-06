@@ -9,8 +9,10 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Component.PunchComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
 import com.brm.Kubotz.Input.GameButton;
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 
 /**
  * Used to handle the entities punching
@@ -70,23 +72,13 @@ public class PunchSystem extends EntitySystem{
                         PhysicsComponent bulletPhys = (PhysicsComponent)punchComponent.punchBullet.getComponent(PhysicsComponent.ID);
 
 
-                        Vector2 position = null;
-                        switch (puncherPhys.direction) {
-                            case RIGHT:
-                                position = new Vector2(puncherPhys.getWidth() + puncherPhys.getWidth() * 0.5f, 0);
-                                break;
-                            case LEFT:
-                                position = new Vector2(-puncherPhys.getWidth()-puncherPhys.getWidth() * 0.5f, 0);
-                                break;
+                        Vector2 position = new Vector2(puncherPhys.getWidth() + 0.45f, 0);
+                        if(puncherPhys.direction == PhysicsComponent.Direction.LEFT){
+                            position.x *= -1;
                         }
-                        position.add(puncherPhys.getPosition());
-                        bulletPhys.getBody().setTransform(position, 0);
-                        bulletPhys.getBody().setGravityScale(0);
 
-
-
-
-
+                        position.add(puncherPhys.getBody().getPosition());
+                        bulletPhys.getBody().setTransform(position, bulletPhys.getBody().getAngle());
                     }
                 }
         }
@@ -119,7 +111,9 @@ public class PunchSystem extends EntitySystem{
                 .withSize(phys.getWidth() * 0.5f, phys.getWidth() * 0.5f)
                 .withKnockBack(punchComponent.knockBack)
                 .withLifespan(punchComponent.durationTimer.getDelay())
+                .withTag(Constants.ENTITY_TAG_PUNCH)
                 .build();
+
 
 
     }

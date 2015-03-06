@@ -62,7 +62,7 @@ public class DamageSystem extends EntitySystem{
 
 
         //Target
-        PhysicsComponent targetPhys = (PhysicsComponent) damageAgent.getComponent(PhysicsComponent.ID);
+        PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
         HealthComponent targetHealth = (HealthComponent) target.getComponent(HealthComponent.ID);
 
 

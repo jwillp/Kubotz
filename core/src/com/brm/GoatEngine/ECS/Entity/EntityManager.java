@@ -240,4 +240,23 @@ public class EntityManager {
     }
 
 
+    /**
+     * Returns the number of entities
+     * @return
+     */
+    public int getEntityCount(){
+        return this.getEntities().size();
+    }
+
+
+    /**
+     * Deletes all the entities
+     */
+    public void clear(){
+        for(Entity e: this.getEntities()){
+            this.deleteEntity(e.getID());
+        }
+    }
+
+
 }

@@ -19,7 +19,7 @@ public class PunchComponent extends Component {
     public Timer cooldown = new Timer(80); //The delay between hits
     PhysicsComponent phys;
 
-    public Vector2 knockBack = new Vector2(0.1f, 0.1f);
+    public Vector2 knockBack = new Vector2(0.2f, 0.2f);
 
     public Entity punchBullet;
 

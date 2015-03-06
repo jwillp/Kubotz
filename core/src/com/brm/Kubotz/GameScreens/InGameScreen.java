@@ -20,6 +20,7 @@ import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.RobotFactory;
 import com.brm.Kubotz.Systems.*;
@@ -107,10 +108,6 @@ public class InGameScreen extends GameScreen {
         for(int i=0; i<mapObjects.getCount(); i++){
 
 
-
-
-
-
             RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
 
@@ -189,7 +186,7 @@ public class InGameScreen extends GameScreen {
     public void draw(GameScreenManager engine) {
         // CLEAR SCREEN
         //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-        Gdx.gl.glClearColor(0.3f, 0.2f, 0.2f, 1);
+        Gdx.gl.glClearColor(0.07f, 0.2f, 0.3f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 
@@ -214,6 +211,7 @@ public class InGameScreen extends GameScreen {
             font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
             sb.end();
         }
+        //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());
 
 
     }
