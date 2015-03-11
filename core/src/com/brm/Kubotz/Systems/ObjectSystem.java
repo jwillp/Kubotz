@@ -25,12 +25,8 @@ public class ObjectSystem extends EntitySystem{
 
     public void handleInput(){
         //FIND IF A KUBOTZ WANTS TO PICKUP AN OBJECT
-
         for(Entity kubotz: em.getEntitiesWithTag(Constants.ENTITY_TAG_KUBOTZ)){
             VirtualGamePad virtualGamePad = (VirtualGamePad) kubotz.getComponent(VirtualGamePad.ID);
-
-
-
 
             //Find if a Kubotz might be trying to pick an object up
             if(virtualGamePad.isButtonPressed(GameButton.PRIMARY_ACTION_BUTTON)){
@@ -42,14 +38,14 @@ public class ObjectSystem extends EntitySystem{
                     if(contact.getEntityB().hasComponent(PickableComponent.ID)){
                         //PICK IT UP
                         this.pickupObject(kubotz, contact.getEntityB());
+
+                        virtualGamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON); //On relache le bouton
+                        phys.contacts.remove(contact);
                     }
 
                 }
             }
         }
-
-
-
     }
 
     public void update(){
