@@ -2,6 +2,9 @@ package com.brm.GoatEngine.ECS.Entity;
 
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.Utils.Logger;
+
 
 import java.util.*;
 
@@ -13,9 +16,7 @@ public class EntityManager {
     //HashMap<COMPONENT_ID, HashMap<ENTITY_ID, COMPONENT_ISNTANCE>>
     private HashMap<String, HashMap<String, Component>> components = new HashMap<String, HashMap<String, Component>>();
 
-    public EntityManager(){
-
-    }
+    public EntityManager(){}
 
 
 
@@ -70,10 +71,13 @@ public class EntityManager {
      */
     public EntityManager removeComponent(String componentId, String entityId){
         HashMap<String, Component> componentEntry = this.components.get(componentId);
-        componentEntry.remove(entityId);
 
-        //Call onDetach
-        componentEntry.get(entityId).onDetach();
+        //Test if the entity has the component
+        if(this.hasComponent(componentId, entityId)) {
+            //Call onDetach
+            componentEntry.get(entityId).onDetach();
+            componentEntry.remove(entityId);
+        }
         return this;
     }
 
@@ -189,6 +193,7 @@ public class EntityManager {
      */
     public void deleteEntity(String entityId){
         for(String compId: this.components.keySet()){
+            this.removeComponent(compId, entityId);
             this.components.get(compId).remove(entityId);
         }
     }
@@ -232,6 +237,25 @@ public class EntityManager {
             return new ArrayList<Component>(); //Empty ArrayList
         }
 
+    }
+
+
+    /**
+     * Returns the number of entities
+     * @return
+     */
+    public int getEntityCount(){
+        return this.getEntities().size();
+    }
+
+
+    /**
+     * Deletes all the entities
+     */
+    public void clear(){
+        for(Entity e: this.getEntities()){
+            this.deleteEntity(e.getID());
+        }
     }
 
 

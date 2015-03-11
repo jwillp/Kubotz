@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.Kubotz.Component.DamageComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
 
@@ -81,32 +82,22 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      */
     public void dispatchContactEvent(Contact contact, EntityContact.Describer describer){
 
-        //Fixtures
+        //Get Fixtures
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
 
-        //Entities
+        //Get Entities
         Entity entityA = (Entity) fixtureA.getBody().getUserData();
         Entity entityB = (Entity) fixtureB.getBody().getUserData();
 
-        //EntityContacts
+        //Create EntityContacts
         EntityContact contactA = new EntityContact(fixtureA, fixtureB, describer);
         EntityContact contactB = new EntityContact(fixtureB, fixtureA, describer);
 
-        //Dispatch
+        //Dispatch Contacts
         ((PhysicsComponent) entityA.getComponent(PhysicsComponent.ID)).contacts.add(contactA);
         ((PhysicsComponent) entityB.getComponent(PhysicsComponent.ID)).contacts.add(contactB);
     }
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -30,7 +30,8 @@ public class PhysicsComponent extends Component {
 
     private boolean isGrounded = false; //Whether or not the entity's feet touch the ground
 
-    public Direction direction; //The direction the entity is facing
+    public Direction direction = Direction.LEFT;
+
 
 
     private float width;   //The width of the entity(in game units)
@@ -62,6 +63,13 @@ public class PhysicsComponent extends Component {
         this.body = world.createBody(bodyDef);
     }
 
+
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        this.getBody().getWorld().destroyBody(this.body);
+    }
 
     /**
      * Returns the entity's BoundingBox

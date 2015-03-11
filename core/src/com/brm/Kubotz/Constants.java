@@ -25,9 +25,13 @@ public class Constants {
 
 
     // ENTITY TAG
+
     public static final String ENTITY_TAG_KUBOTZ = "KUBOTZ";
     public static final String ENTITY_TAG_CAMERA = "CAMERA";
     public static final String ENTITY_TAG_TURRET = "TUERRET";
+
+    public static final String ENTITY_TAG_BULLET = "BULLET";
+    public static final String ENTITY_TAG_PUNCH = "PUNCH";
 
 
 
@@ -37,7 +41,6 @@ public class Constants {
     public static final String FIXTURE_TORSO = "tosro";
     public static final String FIXTURE_HEAD = "head";
     public static final String FIXTURE_FEET_SENSOR = "feetSensor";
-
 
     public static final String FIXTURE_PUNCH_ATTACK = "punch";
 
