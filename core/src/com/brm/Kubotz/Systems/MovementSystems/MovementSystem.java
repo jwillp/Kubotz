@@ -1,14 +1,13 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Constants;
@@ -80,7 +79,7 @@ public class MovementSystem extends EntitySystem {
     public void updateIsGrounded(){
 
 
-        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) comp;
             for(int i=0; i<phys.contacts.size(); i++){
                 EntityContact contact = phys.contacts.get(i);

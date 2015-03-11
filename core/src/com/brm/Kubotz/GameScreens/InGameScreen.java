@@ -53,6 +53,7 @@ public class InGameScreen extends GameScreen {
     private Entity player;
     private PunchSystem punchSystem;
     private ObjectSystem objectSystem;
+    private GunSystem gunSystem;
 
 
     public InGameScreen() {
@@ -93,6 +94,11 @@ public class InGameScreen extends GameScreen {
 
 
         this.damageSystem = new DamageSystem(this.entityManager);
+
+
+        this.gunSystem = new GunSystem(this.entityManager);
+
+
 
 
 
@@ -163,6 +169,7 @@ public class InGameScreen extends GameScreen {
     public void handleInput(GameScreenManager engine) {
         this.inputSystem.update();
         this.skillSystem.handleInput();
+        this.gunSystem.handleInput();
         this.punchSystem.handleInput();
         this.movementSystem.handleInput();
 

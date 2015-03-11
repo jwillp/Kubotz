@@ -3,12 +3,12 @@ package com.brm.GoatEngine.ECS.Components.Cameras;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 /**
  * Used by entities willing to be a camera
  */
-public class CameraComponent extends Component {
+public class CameraComponent extends EntityComponent {
     public final static String ID = "CAMERA_COMPONENT";
     public OrthographicCamera camera;
 

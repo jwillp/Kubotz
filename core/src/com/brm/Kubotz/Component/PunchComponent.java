@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Component;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.Utils.Timer;
@@ -9,7 +9,7 @@ import com.brm.GoatEngine.Utils.Timer;
 /**
  * Component used to let an entity punch
  */
-public class PunchComponent extends Component {
+public class PunchComponent extends EntityComponent {
 
     public static final String ID = "PUNCH_COMPONENT";
 

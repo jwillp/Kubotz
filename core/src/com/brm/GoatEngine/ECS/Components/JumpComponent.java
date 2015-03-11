@@ -1,12 +1,10 @@
 package com.brm.GoatEngine.ECS.Components;
 
 
-import com.brm.GoatEngine.ECS.Components.Component;
-
 /**
  * Allows an entity to be able to jump
  */
-public class JumpComponent extends Component {
+public class JumpComponent extends EntityComponent {
     public static final String ID = "JUMP_PROPERTY";
 
     private int nbJumpsMax = 1; //The Max number of consecutive jumps

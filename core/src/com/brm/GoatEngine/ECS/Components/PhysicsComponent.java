@@ -3,8 +3,6 @@ package com.brm.GoatEngine.ECS.Components;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.Component;
-import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 
 import java.util.ArrayList;
@@ -13,7 +11,7 @@ import java.util.ArrayList;
  * All the physical properties of the entity so it can exist in a physical World
  * Dependencie: Box2D
  */
-public class PhysicsComponent extends Component {
+public class PhysicsComponent extends EntityComponent {
 
     public final static String ID = "PHYSICS_PROPERTY";
 

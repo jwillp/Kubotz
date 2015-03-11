@@ -1,12 +1,12 @@
 package com.brm.Kubotz.Component;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 /**
  * Makes an entity die after a certain amount of time
  */
-public class LifespanComponent extends Component{
+public class LifespanComponent extends EntityComponent {
 
     public static final String ID = "LIFESPAN_COMPONENT";
 

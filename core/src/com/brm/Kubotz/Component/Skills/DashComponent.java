@@ -1,13 +1,13 @@
 package com.brm.Kubotz.Component.Skills;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 /**
  * Used to dash a character
  */
-public class DashComponent extends Component{
+public class DashComponent extends EntityComponent {
     public final static String ID = "DASH_COMPONENT";
 
     public final static int LEFT = -1;

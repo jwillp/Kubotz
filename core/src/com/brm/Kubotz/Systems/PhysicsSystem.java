@@ -3,16 +3,12 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.Component;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.Kubotz.Component.DamageComponent;
-import com.brm.Kubotz.Component.PunchComponent;
-import com.brm.Kubotz.Constants;
 
 /**dd
  * Responsible for checking collisions, making the entities move
@@ -49,7 +45,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      * with a physics component
      */
     public void clearContacts(){
-       for(Component component: em.getComponents(PhysicsComponent.ID)){
+       for(EntityComponent component: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
            phys.contacts.clear();
         }

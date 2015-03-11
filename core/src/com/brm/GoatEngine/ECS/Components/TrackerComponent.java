@@ -5,7 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 /**
  * Alllows an entity to follow another entity
  */
-public class TrackerComponent extends Component {
+public class TrackerComponent extends EntityComponent {
     public final static String ID = "TRACKER_COMPONENT";
     public String targetId;    //the id of the target
 

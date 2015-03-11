@@ -1,12 +1,12 @@
 package com.brm.Kubotz.Component;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 /**
  * Used to make an entity deal damage when it comes in contact with something
  */
-public class DamageComponent extends Component {
+public class DamageComponent extends EntityComponent {
 
     public static final String ID = "DAMAGE_COMPONENT";
 

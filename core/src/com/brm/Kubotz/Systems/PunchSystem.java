@@ -124,11 +124,5 @@ public class PunchSystem extends EntitySystem{
 
 
 
-
-
-
-
-
-
 }
 

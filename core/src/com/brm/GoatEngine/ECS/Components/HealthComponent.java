@@ -5,7 +5,7 @@ import com.brm.GoatEngine.Utils.Timer;
 /**
  * Used for a characters health
  */
-public class HealthComponent extends Component {
+public class HealthComponent extends EntityComponent {
 
     public final static String ID = "HEALTH_PROPERTY";
 

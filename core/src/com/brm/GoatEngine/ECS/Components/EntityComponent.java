@@ -3,7 +3,7 @@ package com.brm.GoatEngine.ECS.Components;
 
 
 
-public abstract class Component {
+public abstract class EntityComponent {
 
 
     private boolean isEnabled = true; //By default a component is enabled

@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.DamageComponent;
 import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Constants;
@@ -142,6 +143,13 @@ public class BulletFactory extends EntityFactory {
         physics.getBody().setUserData(bullet);
 
         physics.getAcceleration().set(this.speed);
+
+        if(direction == PhysicsComponent.Direction.LEFT){
+            physics.getBody().setLinearVelocity(-this.speed.x, this.speed.y);
+        }else{
+            Logger.log("RIGHT");
+            physics.getBody().setLinearVelocity(this.speed.x, this.speed.y);
+        }
 
 
         physics.getBody().setBullet(true);
