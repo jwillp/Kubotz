@@ -15,11 +15,11 @@ public class PunchComponent extends Component {
 
     public int damage = 3; //Number of damage per hit
 
-    public Timer durationTimer = new Timer(2000); //The Duration of the hit
+    public Timer durationTimer = new Timer(30); //The Duration of the hit
     public Timer cooldown = new Timer(80); //The delay between hits
     PhysicsComponent phys;
 
-    public Vector2 knockBack = new Vector2(0.2f, 0.2f);
+    public Vector2 knockBack = new Vector2(0.1f, 0.1f);
 
     public Entity punchBullet;
 

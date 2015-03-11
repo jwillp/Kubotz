@@ -13,6 +13,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.Kubotz.Component.DamageComponent;
 import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Constants;
+import com.sun.javafx.scene.layout.region.BorderImage;
 
 /**
  * Used to generate bullets
@@ -26,6 +27,7 @@ public class BulletFactory extends EntityFactory {
     private Vector2 size;
     private Vector2 position;
     private Vector2 speed;
+    private PhysicsComponent.Direction direction;
 
 
     public BulletFactory(EntityManager entityManager, World world, Vector2 position) {
@@ -142,6 +144,7 @@ public class BulletFactory extends EntityFactory {
 
         physics.getBody().setBullet(true);
 
+        physics.direction = this.direction;
 
         return physics;
     }
@@ -153,6 +156,16 @@ public class BulletFactory extends EntityFactory {
      */
     public BulletFactory withTag(String tag) {
         this.tagsComponent.addTag(tag);
+        return this;
+    }
+
+    /**
+     * The direction in which the bullet is going
+     * @param direction
+     * @return
+     */
+    public BulletFactory withDirection(PhysicsComponent.Direction direction) {
+        this.direction = direction;
         return this;
     }
 }

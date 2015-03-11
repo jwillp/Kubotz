@@ -98,10 +98,10 @@ public class PunchSystem extends EntitySystem{
         Vector2 position = null;
         switch (phys.direction) {
             case RIGHT:
-                position = new Vector2(phys.getWidth() + phys.getWidth() * 0.5f, 0);
+                position = new Vector2(phys.getWidth() + phys.getWidth()/2, 0);
                 break;
             case LEFT:
-                position = new Vector2(-phys.getWidth()-phys.getWidth() * 0.5f, 0);
+                position = new Vector2(-phys.getWidth()-phys.getWidth()/2, 0);
                 break;
         }
 
@@ -112,6 +112,7 @@ public class PunchSystem extends EntitySystem{
                 .withKnockBack(punchComponent.knockBack)
                 .withLifespan(punchComponent.durationTimer.getDelay())
                 .withTag(Constants.ENTITY_TAG_PUNCH)
+                .withDirection(phys.direction)
                 .build();
 
 
