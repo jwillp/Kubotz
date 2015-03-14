@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Entity.EntityContactCollection;
 
 import java.util.ArrayList;
 
@@ -37,17 +38,17 @@ public class PhysicsComponent extends EntityComponent {
 
     // List of all the contacts that recently happened to the entities.
     // The a entity will always be the current entity.
-    public ArrayList<EntityContact> contacts = new ArrayList<EntityContact>();
+    public EntityContactCollection contacts = new EntityContactCollection();
 
 
 
     /**
      * CTOR
-     * @param world
-     * @param bodyType
-     * @param position
-     * @param width
-     * @param height
+     * @param world the world in which we want to add the body
+     * @param bodyType Type of Box2D body
+     * @param position the initial position
+     * @param width the width
+     * @param height the height
      */
     public PhysicsComponent(World world, BodyDef.BodyType bodyType, Vector2 position, float width, float height){
 

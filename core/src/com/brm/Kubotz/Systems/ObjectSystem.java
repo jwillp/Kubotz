@@ -35,12 +35,14 @@ public class ObjectSystem extends EntitySystem{
                 PhysicsComponent phys = (PhysicsComponent) kubotz.getComponent(PhysicsComponent.ID);
                 for(int i =0; i < phys.contacts.size(); i++){
                     EntityContact contact = phys.contacts.get(i);
-                    if(contact.getEntityB().hasComponent(PickableComponent.ID)){
+                    if(contact.getEntityB().hasComponent(PickableComponent.ID) && contact.describer == EntityContact.Describer.BEGIN){
                         //PICK IT UP
                         this.pickupObject(kubotz, contact.getEntityB());
-
                         virtualGamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON); //On relache le bouton
-                        phys.contacts.remove(contact);
+
+                        phys.contacts.removeContactsWithEntity(contact.getEntityB());
+
+
                     }
 
                 }
