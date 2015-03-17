@@ -5,9 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 
@@ -26,7 +24,6 @@ public class Pathfinder {
     public final float NODE_SIZE = 0.4f;
 
 
-    public ArrayList<Vector2> path;
 
 
 
@@ -35,8 +32,8 @@ public class Pathfinder {
      * @param platforms
      */
     public void scanMap(ArrayList<Entity> platforms){
-        //Scan all walkable platforms
-        // All walkable tiles will be made into a node. Node connection is made
+        //Scan all isWalkable platforms
+        // All isWalkable tiles will be made into a node. Node connection is made
         // from right to left (parent_left)<-[connected]-(child_right)
         // from top to bottom (child_top)-[connected]->(parent_bottom)
         for(Entity platform: platforms){
@@ -58,8 +55,9 @@ public class Pathfinder {
 
             //Add a node for the whole length of the platform
             for(int i =0; i < rect.getWidth(); i++){
-                Node node = new Node(null, new Vector2(rect.getX() + i, rect.getY() + rect.getHeight()));
-                this.nodes.add(node);
+                Node nodeWalk = new Node(null, new Vector2(rect.getX() + i, rect.getY() + rect.getHeight()));
+                this.nodes.add(nodeWalk);
+
             }
         }
     }
@@ -83,7 +81,7 @@ public class Pathfinder {
 
 
         //Jumps and fall off nodes
-        int limit = 5;
+        int limit = 4;
         for(int x = -limit; x<limit; x++){
             for(int y = -limit; y<limit; y++){
                 Node node =  getNodeFor(new Vector2(current.x + x, current.y + y));
@@ -95,13 +93,6 @@ public class Pathfinder {
 
             }
         }
-
-
-
-
-
-
-
 
         return reachableNodes;
     }
@@ -130,15 +121,27 @@ public class Pathfinder {
      * Return the manhattan distance
      * distance between two points based on adding the horizontal distance and
      * vertical distances rather than computing the exact difference.
+     * closer to the goal == smaller number
      * THIS IS A HEURISTIC
      * @param current
      * @param target
      * @return
      */
     private int getManhattanDistance(Vector2 current, Vector2 target){
-        int dx = (int) Math.abs(target.x - current.x);
-        int dy = (int) Math.abs(target.y - current.y);
-        return dx + dy;
+        int dx = (int) Math.abs(target.x - current.x); //number of moves in x
+        int dy = (int) Math.abs(target.y - current.y); //number of moves in y
+
+
+
+        //TODO tweak the manhanttan distance to add a custom cost
+        // purely vertical movement are highly expensive
+        // diagonal a bit less expansive
+        // vertical the least expensive
+        int cost = 1;
+
+
+
+        return (dx + dy) * cost;
     }
 
 
@@ -150,7 +153,7 @@ public class Pathfinder {
      * @param end
      * @return
      */
-    public ArrayList<Vector2> findPath(Vector2 start, Vector2 end){
+    public ArrayList<Node> findPath(Vector2 start, Vector2 end){
 
         //Reset in case we have old data.
         this.openNodes.clear();
@@ -183,14 +186,13 @@ public class Pathfinder {
             //Are we done yet?
             if(current == endNode){
                 //PATH FOUND
-                this.path =  this.tracePath(startNode, endNode);
-                return this.path;
+                return this.tracePath(startNode, endNode);
             }
 
             //Get Neighbour and see which way to go
             for(Node neighbour : getReachableNodes(current.position)){
                 //if the neighbour has already been evaluated.. well we won't do it a second time right?
-                if(this.closedNodes.contains(neighbour)){
+                if(!neighbour.isWalkable || this.closedNodes.contains(neighbour)){
                    continue;
                 }
 
@@ -214,7 +216,7 @@ public class Pathfinder {
 
         }
         // No path was found ==> empty list
-        return new ArrayList<Vector2>();
+        return new ArrayList<Node>();
     }
 
 
@@ -224,11 +226,11 @@ public class Pathfinder {
      * @param end
      * @return
      */
-    private ArrayList<Vector2> tracePath(Node start, Node end){
-        ArrayList<Vector2> path = new ArrayList<Vector2>();
+    private ArrayList<Node> tracePath(Node start, Node end){
+        ArrayList<Node> path = new ArrayList<Node>();
         Node current = end;
         while(current.parent != null){
-            path.add(current.position);
+            path.add(current);
             current = current.parent;
         }
 

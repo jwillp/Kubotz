@@ -25,13 +25,14 @@ public class KubotzAISystem extends EntitySystem {
     }
     public Pathfinder pathfinder = new Pathfinder();
 
-    public ArrayList<Vector2> path;
-
+    public ArrayList<Node> path;
 
     public void update(){
 
 
         for(Entity eAI : em.getEntitiesWithComponent(KubotzAIComponent.ID)){
+
+
 
             PhysicsComponent aiPhys = (PhysicsComponent) eAI.getComponent(PhysicsComponent.ID);
             VirtualGamePad gamePad = (VirtualGamePad) eAI.getComponent(VirtualGamePad.ID);
@@ -39,39 +40,41 @@ public class KubotzAISystem extends EntitySystem {
             Entity player = em.getEntitiesWithTag("player").get(0);
             PhysicsComponent playerPhys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
 
-            ArrayList<Vector2> path = pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
-            for(Vector2 pos: path){
-                if(pos == null){
-                    continue;
-                }
+            path = pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
 
-                //LEFT OF
-                if (aiPhys.getPosition().x < pos.x ){
-                    gamePad.releaseButton(GameButton.MOVE_LEFT);
-                    gamePad.pressButton(GameButton.MOVE_RIGHT);
-                }else if (aiPhys.getPosition().x > pos.x ){  // RIGHT OF
-                    gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                    gamePad.pressButton(GameButton.MOVE_LEFT);
-                }else{
-                    gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                    gamePad.releaseButton(GameButton.MOVE_LEFT);
-                }
+            if(path.isEmpty()){
+                return;
+            }
 
+            Vector2 pos = path.get(0).position;
 
-
-                if (aiPhys.getPosition().y < pos.y ){
-                    gamePad.pressButton(GameButton.MOVE_UP);
-                }else{
-                    gamePad.releaseButton(GameButton.MOVE_DOWN);
-                }
-
+            /*//LEFT OF
+            if (aiPhys.getPosition().x < pos.x ){
+                gamePad.releaseButton(GameButton.MOVE_LEFT);
+                gamePad.pressButton(GameButton.MOVE_RIGHT);
+            }else if (aiPhys.getPosition().x > pos.x ){  // RIGHT OF
+                gamePad.releaseButton(GameButton.MOVE_RIGHT);
+                gamePad.pressButton(GameButton.MOVE_LEFT);
+            }else{
+                gamePad.releaseButton(GameButton.MOVE_RIGHT);
+                gamePad.releaseButton(GameButton.MOVE_LEFT);
             }
 
 
 
+            if (aiPhys.getPosition().y < pos.y ){
+                gamePad.pressButton(GameButton.MOVE_UP);
+            }else{
+                gamePad.releaseButton(GameButton.MOVE_DOWN);
+            }*/
 
 
-            
+
+
+
+
+
+
 
         }
 

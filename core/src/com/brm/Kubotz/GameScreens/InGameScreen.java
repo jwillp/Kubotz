@@ -257,7 +257,7 @@ public class InGameScreen extends GameScreen {
 
         //Pathfinding print
 
-       for(Node node: this.aiSystem.pathfinder.closedNodes){
+       for(Node node: this.aiSystem.path){
 
 
           /* sr.setProjectionMatrix(cam.combined);
