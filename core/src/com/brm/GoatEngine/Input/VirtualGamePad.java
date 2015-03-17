@@ -40,6 +40,18 @@ public class VirtualGamePad extends EntityComponent {
     }
 
     /**
+     * Method simulating a button press from multiple buttons at once
+     * @param buttons
+     */
+    public void pressButtons(Collection<VirtualButton> buttons){
+        for(VirtualButton btn: buttons){
+            this.pressButton(btn);
+        }
+    }
+
+
+
+    /**
      * Method simulating a button release
      */
     public void releaseButton(VirtualButton btn){

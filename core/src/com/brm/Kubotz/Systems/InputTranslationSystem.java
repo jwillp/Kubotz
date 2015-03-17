@@ -27,7 +27,8 @@ public class InputTranslationSystem extends EntitySystem {
         //find player
         for(Entity e: em.getEntitiesWithComponent(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
-            gamePad.releaseAll(); //Release for everyone so with don't attack the button :)
+            gamePad.releaseAll(); //Release for everyone so with don't attack the button
+
 
             if (gamePad.isEnabled()) {
                 //Translation of the USER INPUT

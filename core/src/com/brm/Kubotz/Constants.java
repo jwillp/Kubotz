@@ -5,6 +5,7 @@ package com.brm.Kubotz;
  */
 public class Constants {
 
+
     //DEFAULT VALUES
     public final float DEFAULT_KUBOTZ_SPEED_X = 5.0f;
     public final float DEFAULT_KUBOTZ_SPEED_Y = 5.0f;
@@ -24,7 +25,7 @@ public class Constants {
 
 
 
-    // ENTITY TAG
+    // ENTITY TAGS
 
     public static final String ENTITY_TAG_KUBOTZ = "KUBOTZ";
     public static final String ENTITY_TAG_CAMERA = "CAMERA";
@@ -32,6 +33,9 @@ public class Constants {
 
     public static final String ENTITY_TAG_BULLET = "BULLET";
     public static final String ENTITY_TAG_PUNCH = "PUNCH";
+
+    public static final String ENTITY_TAG_PLATFORM = "PLATFORM";
+
 
 
 

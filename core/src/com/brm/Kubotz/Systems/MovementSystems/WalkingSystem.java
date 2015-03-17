@@ -34,7 +34,9 @@ public class WalkingSystem extends EntitySystem {
                 jump(entity);
             } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
                 moveDown(entity); // TODO test if crouch or fall down
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            }
+
+            if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
                 moveRight(entity);
             } else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
                 moveLeft(entity);

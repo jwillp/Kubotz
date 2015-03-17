@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.Kubotz.Constants;
 
 /**
  * Used to create block entities
@@ -19,6 +20,7 @@ public class BlockFactory extends EntityFactory {
     private World world;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(1,1);
+    private TagsComponent tagsComponent = new TagsComponent();
 
     public BlockFactory(EntityManager entityManager, World world, Vector2 position){
         super(entityManager);
@@ -66,15 +68,24 @@ public class BlockFactory extends EntityFactory {
 
 
         //Tags
-        TagsComponent tagComp = new TagsComponent();
-        tagComp.addTag("block");
-
 
         block.addComponent(physics, PhysicsComponent.ID);
-        block.addComponent(tagComp, TagsComponent.ID);
+        block.addComponent(tagsComponent, TagsComponent.ID);
 
         return block;
     }
+
+    /**
+     * Adds a tag
+     * @param tag
+     * @return this for chaining
+     */
+    public BlockFactory withTag(String tag) {
+        tagsComponent.addTag(tag);
+        return this;
+    }
+
+
 
 
 }

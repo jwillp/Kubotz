@@ -2,9 +2,12 @@ package com.brm.Kubotz.GameScreens;
 
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -12,6 +15,8 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.AI.Pathfinding.Node;
+import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -19,6 +24,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.AI.KubotzAIComponent;
 import com.brm.Kubotz.Component.PickableComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
@@ -27,6 +33,9 @@ import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
+
+import java.util.ArrayList;
 
 
 public class InGameScreen extends GameScreen {
@@ -43,6 +52,7 @@ public class InGameScreen extends GameScreen {
 
     private DamageSystem damageSystem;
 
+    private KubotzAISystem aiSystem;
 
 
     //MAP
@@ -54,6 +64,8 @@ public class InGameScreen extends GameScreen {
     private PunchSystem punchSystem;
     private ObjectSystem objectSystem;
     private GunSystem gunSystem;
+
+
 
 
     public InGameScreen() {
@@ -98,7 +110,7 @@ public class InGameScreen extends GameScreen {
 
         this.gunSystem = new GunSystem(this.entityManager);
 
-
+        this.aiSystem = new KubotzAISystem(this.entityManager);
 
 
 
@@ -116,24 +128,31 @@ public class InGameScreen extends GameScreen {
         MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
 
 
+
         for(int i=0; i<mapObjects.getCount(); i++){
 
 
             RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
+            String type = (String) obj.getProperties().get("type");
 
-            if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
+            if(type.equals("PLAYER_SPAWN")){
                 this.player = new KubotzFactory(entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(1.0f)
                         .withCameraTargetComponent()
+                        .withTag("player")
                         .build();
-            }else{
-                new BlockFactory(this.entityManager, physicsSystem.getWorld(),
-                        new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withSize(0.5f,0.5f)
-                        .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
-                        .build();
+            }else {
+                if (type.equals("STATIC_PLATFORM") || type.equals("WALL") || type.equals("WARP_ZONE")) {
+                    String tag = type.equals("STATIC_PLATFORM") ? Constants.ENTITY_TAG_PLATFORM : "AUTRE";
+
+                    new BlockFactory(this.entityManager, physicsSystem.getWorld(),
+                            new Vector2(rect.getX() / tileSize, rect.getY() / tileSize))
+                            .withSize(rect.getWidth() / tileSize, rect.getHeight() / tileSize)
+                            .withTag(tag)
+                            .build();
+                }
             }
         }
 
@@ -141,18 +160,32 @@ public class InGameScreen extends GameScreen {
 
 
 
-
-
-        
-
-        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
+        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(13,2))
                 .withHeight(1.0f)
+                .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
                 .withCameraTargetComponent().build();
-        bo.disableComponent(VirtualGamePad.ID);
+        bo.addComponent(new KubotzAIComponent(), KubotzAIComponent.ID);
+        //bo.disableComponent(VirtualGamePad.ID);
+
         bo.addComponent(new PickableComponent(), PickableComponent.ID);
+
+
+
+        //PATH FINDER
+        aiSystem.pathfinder.scanMap(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
+
+
+
+
+
+
+
+
+
+
+
+
         Logger.log("In Game State initialised");
-
-
     }
 
     @Override
@@ -168,6 +201,9 @@ public class InGameScreen extends GameScreen {
     @Override
     public void handleInput(GameScreenManager engine) {
         this.inputSystem.update();
+        this.aiSystem.update();
+
+
         this.skillSystem.handleInput();
         this.gunSystem.handleInput();
         this.punchSystem.handleInput();
@@ -191,6 +227,9 @@ public class InGameScreen extends GameScreen {
         this.damageSystem.update();
         this.lifespanSystem.update();
 
+
+
+
         this.physicsSystem.update(deltaTime);
         this.renderingSystem.update();
 
@@ -209,6 +248,37 @@ public class InGameScreen extends GameScreen {
         this.renderingSystem.render(physicsSystem.getWorld());
         this.mapRenderer.setView(this.renderingSystem.getCamera());
         this.mapRenderer.render();
+
+
+        ShapeRenderer sr = this.renderingSystem.getShapeRenderer();
+        OrthographicCamera cam = this.renderingSystem.getCamera();
+
+
+
+        //Pathfinding print
+
+       for(Node node: this.aiSystem.pathfinder.nodes){
+
+
+           sr.setProjectionMatrix(cam.combined);
+           sr.begin(ShapeRenderer.ShapeType.Line);
+           sr.setColor(new Color(0,0.5f,1, 0.2f)); // RED
+           sr.rect(node.position.x, node.position.y, aiSystem.pathfinder.NODE_SIZE, aiSystem.pathfinder.NODE_SIZE);
+           sr.end();
+
+           if(node.parent != null){
+               sr.begin(ShapeRenderer.ShapeType.Line); // shape type
+               sr.setColor(1, 0, 0, 1); // line's color
+
+               float offset = aiSystem.pathfinder.NODE_SIZE/2;
+               sr.line(
+                       node.position.x + offset , node.position.y + offset,
+                       node.parent.position.x + offset, node.parent.position.y + offset
+               );
+               sr.end();
+           }
+        }
+
 
 
         // FPS
