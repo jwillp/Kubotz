@@ -9,6 +9,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * Class used to find path
@@ -22,10 +23,15 @@ public class Pathfinder {
     // Nodes already evaluated
     public ArrayList<Node> closedNodes = new ArrayList<Node>();
 
-    public final float NODE_SIZE = 0.1f;
+    public final float NODE_SIZE = 0.4f;
+
+
+    public ArrayList<Vector2> path;
+
+
 
     /**
-     * Scans the map and generate a connectivity graph
+     * Scans the map and generate waypoints on platforms
      * @param platforms
      */
     public void scanMap(ArrayList<Entity> platforms){
@@ -44,6 +50,9 @@ public class Pathfinder {
                     rect.getY() + rect.getHeight())
             );
 
+            leftEdgeNode.isLedge = true;
+            rightEdgeNode.isLedge = true;
+
             this.nodes.add(leftEdgeNode);
             this.nodes.add(rightEdgeNode);
 
@@ -57,22 +66,43 @@ public class Pathfinder {
 
 
     /**
-     * Returns a list of all the reachable tiles that
-     * are not in the closed list
+     * Returns a list of all the reachable nodes that
      * @return
      */
-    private ArrayList<Node> getReachableNodes(Vector2 current){
+    private HashSet<Node> getReachableNodes(Vector2 current){
 
-        ArrayList<Node> reachableNodes = new ArrayList<Node>();
+        HashSet<Node> reachableNodes = new HashSet<Node>();
 
+        //Left and Right neighbours
         Node left = getNodeFor(new Vector2(current.x - 1, current.y));
         Node right = getNodeFor(new Vector2(current.x + 1, current.y));
-        if(left != null){
-            reachableNodes.add(left);
+        reachableNodes.add(left);
+        reachableNodes.add(right);
+
+
+
+
+        //Jumps and fall off nodes
+        int limit = 5;
+        for(int x = -limit; x<limit; x++){
+            for(int y = -limit; y<limit; y++){
+                Node node =  getNodeFor(new Vector2(current.x + x, current.y + y));
+
+                //If jump must be ledge
+                if(node.isLedge){
+                    reachableNodes.add(node);
+                }
+
+            }
         }
-        if(right != null){
-            reachableNodes.add(right);
-        }
+
+
+
+
+
+
+
+
         return reachableNodes;
     }
 
@@ -122,48 +152,59 @@ public class Pathfinder {
      */
     public ArrayList<Vector2> findPath(Vector2 start, Vector2 end){
 
+        //Reset in case we have old data.
         this.openNodes.clear();
         this.closedNodes.clear();
         for(Node node: this.nodes){
             node.resetCost();
         }
 
+        //Get node for start and end points
         Node startNode = getNodeFor(start);
         Node endNode = getNodeFor(end);
+
+        // the starting point must be evaluated
         this.openNodes.add(startNode);
 
-
+        //While there are still nodes to evaluate as potential path nodes
         while(!this.openNodes.isEmpty()){
             Node current = this.openNodes.get(0);
-            //GET LOWEST FSCORE
+            //GET LOWEST FSCORE i.e. the best node (most likely + shortest path)
             for(Node node: this.openNodes){
-                if(node.getFCost() < current.getFCost() || node.getFCost() == current.getFCost() && node.hCost < current.hCost){
+
+                if(node.getFCost() < current.getFCost() || (node.getFCost() == current.getFCost() && node.hCost < current.hCost)){
                     current = node;
                 }
             }
+            //This node ain't to be considered now
             this.openNodes.remove(current);
             this.closedNodes.add(current);
 
-
-
-
-            if(current.position.equals(endNode.position)){
+            //Are we done yet?
+            if(current == endNode){
                 //PATH FOUND
-                return this.tracePath(startNode, endNode);
+                this.path =  this.tracePath(startNode, endNode);
+                return this.path;
             }
 
+            //Get Neighbour and see which way to go
             for(Node neighbour : getReachableNodes(current.position)){
+                //if the neighbour has already been evaluated.. well we won't do it a second time right?
                 if(this.closedNodes.contains(neighbour)){
                    continue;
                 }
 
+                //Estimate a FScore to the neighbour (from the current position to the neighbour)
                 int distToNeighbour = current.gCost + getManhattanDistance(current.position, neighbour.position);
+
+                //If the dist to neighbour is shorter than the distance from the start node to the neighbour
+                // This is more likely to be a good route OR if it is not something we already consider
                 if(distToNeighbour < neighbour.gCost || !openNodes.contains(neighbour)){
 
+                    //Determine cost
                     neighbour.gCost = distToNeighbour;
                     neighbour.hCost = getManhattanDistance(neighbour.position, endNode.position);
                     neighbour.parent = current;
-
 
                     if(!openNodes.contains(neighbour)){
                         this.openNodes.add(neighbour);
@@ -177,8 +218,12 @@ public class Pathfinder {
     }
 
 
-
-
+    /**
+     * Trace the path looking at all the connected path
+     * @param start
+     * @param end
+     * @return
+     */
     private ArrayList<Vector2> tracePath(Node start, Node end){
         ArrayList<Vector2> path = new ArrayList<Vector2>();
         Node current = end;

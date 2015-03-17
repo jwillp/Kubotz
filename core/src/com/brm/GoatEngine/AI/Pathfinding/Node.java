@@ -14,7 +14,7 @@ public class Node {
     public int gCost = 0;  //The movement cost from START to THIS node.
     public int hCost = 0;  //ESTIMATED movement cost from THIS node to the END.
 
-
+    public boolean isLedge = false; //whether it is a ledge or not
 
     public Node(Node parent, Vector2 position){
         this.position = position;
@@ -25,6 +25,7 @@ public class Node {
         gCost = 0;
         hCost = 0;
     }
+
 
     public int getFCost(){
         return gCost + hCost;

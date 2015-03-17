@@ -57,6 +57,14 @@ public class KubotzAISystem extends EntitySystem {
                     gamePad.releaseButton(GameButton.MOVE_LEFT);
                 }
 
+
+
+                if (aiPhys.getPosition().y < pos.y ){
+                    gamePad.pressButton(GameButton.MOVE_UP);
+                }else{
+                    gamePad.releaseButton(GameButton.MOVE_DOWN);
+                }
+
             }
 
 
