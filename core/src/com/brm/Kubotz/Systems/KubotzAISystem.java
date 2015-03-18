@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AI.KubotzAIComponent;
+import com.brm.Kubotz.Component.Skills.ActiveSkill;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -44,8 +45,8 @@ public class KubotzAISystem extends EntitySystem {
 
             if(!path.isEmpty()){
             //if(false){
-
-                    Vector2 pos = path.get(0).position;
+                    Node node = path.get(0);
+                    Vector2 pos = node.position;
 
                     //LEFT OF
                     if (aiPhys.getPosition().x < pos.x ){
@@ -59,12 +60,18 @@ public class KubotzAISystem extends EntitySystem {
                         gamePad.releaseButton(GameButton.MOVE_LEFT);
                     }
 
+                    //Speed dash
+                    if(node.isLedge && node.position.x == aiPhys.getPosition().x){
+                        gamePad.pressButton(GameButton.ACTIVE_SKILL_BUTTON);
+                    }
+
 
 
                     if (aiPhys.getPosition().y < pos.y ){
                         gamePad.pressButton(GameButton.MOVE_UP);
                     }else{
-                        gamePad.releaseButton(GameButton.MOVE_DOWN);
+                        gamePad.releaseButton(GameButton.MOVE_UP);
+                        //gamePad.pressButton(GameButton.MOVE_DOWN);
                     }
             }
 

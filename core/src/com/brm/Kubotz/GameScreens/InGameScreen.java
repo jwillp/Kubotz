@@ -118,7 +118,7 @@ public class InGameScreen extends GameScreen {
 
 
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load("res/maps/pathfinding.tmx");
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
@@ -160,7 +160,7 @@ public class InGameScreen extends GameScreen {
 
 
 
-        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(13,2))
+        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(13,5))
                 .withHeight(1.0f)
                 .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
                 .withCameraTargetComponent().build();
@@ -245,9 +245,10 @@ public class InGameScreen extends GameScreen {
 
 
         // DRAW WORLD
-        this.renderingSystem.render(physicsSystem.getWorld());
         this.mapRenderer.setView(this.renderingSystem.getCamera());
         this.mapRenderer.render();
+        this.renderingSystem.render(physicsSystem.getWorld());
+
 
 
         ShapeRenderer sr = this.renderingSystem.getShapeRenderer();
@@ -259,7 +260,7 @@ public class InGameScreen extends GameScreen {
 
         //Pathfinding display
 
-        /*for(Node node: this.aiSystem.pathfinder.nodes) {
+        for(Node node: this.aiSystem.pathfinder.nodes) {
             sr.setProjectionMatrix(cam.combined);
             sr.begin(ShapeRenderer.ShapeType.Line);
 
@@ -271,10 +272,10 @@ public class InGameScreen extends GameScreen {
 
             sr.rect(node.position.x, node.position.y, aiSystem.pathfinder.NODE_SIZE, aiSystem.pathfinder.NODE_SIZE);
             sr.end();
-        }*/
+        }
 
         // PATH
-       /*for(Node node: this.aiSystem.path){
+       for(Node node: this.aiSystem.path){
            if(node.parent != null){
                sr.begin(ShapeRenderer.ShapeType.Line); // shape type
                sr.setColor(1, 0, 0, 1); // line's color
@@ -286,7 +287,7 @@ public class InGameScreen extends GameScreen {
                );
                sr.end();
            }
-        }*/
+        }
 
 
 

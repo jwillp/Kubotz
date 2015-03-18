@@ -93,7 +93,7 @@ public class Pathfinder {
 
 
         //Jump
-        int jumpRadius = 4;
+        int jumpRadius = 3;
         // Check doing a circle of radius
         for(int x = -jumpRadius; x<jumpRadius; x++){
             for(int y = -jumpRadius; y<jumpRadius; y++){
