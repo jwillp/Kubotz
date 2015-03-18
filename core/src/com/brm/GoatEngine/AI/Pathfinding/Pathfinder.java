@@ -54,8 +54,12 @@ public class Pathfinder {
             this.nodes.add(rightEdgeNode);
 
             //Add a node for the whole length of the platform
+
             for(int i =0; i < rect.getWidth(); i++){
                 Node nodeWalk = new Node(null, new Vector2(rect.getX() + i, rect.getY() + rect.getHeight()));
+                //Node nodeBlock = new Node(null, new Vector2(rect.getX() + i, rect.getY()));
+                //nodeBlock.isWalkable = false;
+                //this.nodes.add(nodeBlock);
                 this.nodes.add(nodeWalk);
 
             }
@@ -64,35 +68,100 @@ public class Pathfinder {
 
 
     /**
-     * Returns a list of all the reachable nodes that
-     * @return
+     * Returns a list of all the reachable nodes from
+     * a current node
+     * @return list of all the reachable nodes
      */
-    private HashSet<Node> getReachableNodes(Vector2 current){
+    private HashSet<Node> getReachableNodes(Node currentNode){
 
         HashSet<Node> reachableNodes = new HashSet<Node>();
 
-        //Left and Right neighbours
-        Node left = getNodeFor(new Vector2(current.x - 1, current.y));
-        Node right = getNodeFor(new Vector2(current.x + 1, current.y));
+
+        // Find direct left and right neighbours
+        Node left = getNodeFor(new Vector2(currentNode.position.x - 1, currentNode.position.y));
+        Node right = getNodeFor(new Vector2(currentNode.position.x + 1, currentNode.position.y));
         reachableNodes.add(left);
         reachableNodes.add(right);
 
 
 
 
-        //Jumps and fall off nodes
-        int limit = 4;
-        for(int x = -limit; x<limit; x++){
-            for(int y = -limit; y<limit; y++){
-                Node node =  getNodeFor(new Vector2(current.x + x, current.y + y));
+        // If we were to try to jump or fall down what would the nodes be
 
-                //If jump must be ledge
-                if(node.isLedge){
-                    reachableNodes.add(node);
+
+
+
+
+        //Jump
+        int jumpRadius = 4;
+        // Check doing a circle of radius
+        for(int x = -jumpRadius; x<jumpRadius; x++){
+            for(int y = -jumpRadius; y<jumpRadius; y++){
+                Node node =  getNodeFor(new Vector2(currentNode.position.x + x, currentNode.position.y + y));
+                //We only want to consider the node if it is a ledge because you can only fall down from a ledge
+                // or jump towards a ledge
+                if(!node.isLedge){
+                    continue;
+                }
+                //When going in in the opposite of the gravity when can never have two consecutive ledges
+                if(currentNode.position.y < node.position.y){
+                    if(currentNode.isLedge /*&& node.isLedge*/){
+                        continue;
+                    }
                 }
 
+
+                //When going in in the opposite of the gravity when can never have two consecutive ledges
+                int MAX_JUMP_LENGTH = 3;
+                if( Math.abs(currentNode.position.x - node.position.x) > MAX_JUMP_LENGTH ){
+                    if(currentNode.isLedge /*&& node.isLedge*/){
+                        continue;
+                    }
+                }
+
+
+
+
+
+                //if the NEXT_NODE is at the right of the CURRENT_NOD AND that NEXT_NODE is the RIGHT edge of a platform
+                //That could not make a working movement so we need to discard that possibility
+                // in other words if the side of the next node (relatively from us) is a platform's particular side
+                // don't consider it
+
+                //node RIGHT OF current
+                /*if ((currentNode.position.x < node.position.x)){
+                    if ((getNodeFor(new Vector2(node.position.x - 1, node.position.y)) != null)) {
+                        continue;
+                    }
+                }
+
+                //node LEFT OF current
+                if ((currentNode.position.x > node.position.x)){
+                    if ((getNodeFor(new Vector2(node.position.x + 1, node.position.y)) != null)) {
+                        //continue;
+                    }
+                }*/
+                reachableNodes.add(node);
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         return reachableNodes;
     }
@@ -131,20 +200,21 @@ public class Pathfinder {
         int dx = (int) Math.abs(target.x - current.x); //number of moves in x
         int dy = (int) Math.abs(target.y - current.y); //number of moves in y
 
+        return dx + dy;
+    }
+
+
+
+    private int getHeuristic(Vector2 current, Vector2 target){
 
 
         //TODO tweak the manhanttan distance to add a custom cost
         // purely vertical movement are highly expensive
         // diagonal a bit less expansive
         // vertical the least expensive
-        int cost = 1;
 
-
-
-        return (dx + dy) * cost;
+        return getManhattanDistance(current, target);
     }
-
-
 
 
     /**
@@ -190,14 +260,14 @@ public class Pathfinder {
             }
 
             //Get Neighbour and see which way to go
-            for(Node neighbour : getReachableNodes(current.position)){
+            for(Node neighbour : getReachableNodes(current)){
                 //if the neighbour has already been evaluated.. well we won't do it a second time right?
                 if(!neighbour.isWalkable || this.closedNodes.contains(neighbour)){
                    continue;
                 }
 
                 //Estimate a FScore to the neighbour (from the current position to the neighbour)
-                int distToNeighbour = current.gCost + getManhattanDistance(current.position, neighbour.position);
+                int distToNeighbour = current.gCost + getHeuristic(current.position, neighbour.position);
 
                 //If the dist to neighbour is shorter than the distance from the start node to the neighbour
                 // This is more likely to be a good route OR if it is not something we already consider
@@ -205,7 +275,7 @@ public class Pathfinder {
 
                     //Determine cost
                     neighbour.gCost = distToNeighbour;
-                    neighbour.hCost = getManhattanDistance(neighbour.position, endNode.position);
+                    neighbour.hCost = getHeuristic(neighbour.position, endNode.position);
                     neighbour.parent = current;
 
                     if(!openNodes.contains(neighbour)){

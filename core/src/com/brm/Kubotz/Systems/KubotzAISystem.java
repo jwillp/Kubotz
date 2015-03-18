@@ -42,33 +42,31 @@ public class KubotzAISystem extends EntitySystem {
 
             path = pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
 
-            if(path.isEmpty()){
-                return;
+            if(!path.isEmpty()){
+            //if(false){
+
+                    Vector2 pos = path.get(0).position;
+
+                    //LEFT OF
+                    if (aiPhys.getPosition().x < pos.x ){
+                        gamePad.releaseButton(GameButton.MOVE_LEFT);
+                        gamePad.pressButton(GameButton.MOVE_RIGHT);
+                    }else if (aiPhys.getPosition().x > pos.x ){  // RIGHT OF
+                        gamePad.releaseButton(GameButton.MOVE_RIGHT);
+                        gamePad.pressButton(GameButton.MOVE_LEFT);
+                    }else{
+                        gamePad.releaseButton(GameButton.MOVE_RIGHT);
+                        gamePad.releaseButton(GameButton.MOVE_LEFT);
+                    }
+
+
+
+                    if (aiPhys.getPosition().y < pos.y ){
+                        gamePad.pressButton(GameButton.MOVE_UP);
+                    }else{
+                        gamePad.releaseButton(GameButton.MOVE_DOWN);
+                    }
             }
-
-            Vector2 pos = path.get(0).position;
-
-            /*//LEFT OF
-            if (aiPhys.getPosition().x < pos.x ){
-                gamePad.releaseButton(GameButton.MOVE_LEFT);
-                gamePad.pressButton(GameButton.MOVE_RIGHT);
-            }else if (aiPhys.getPosition().x > pos.x ){  // RIGHT OF
-                gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                gamePad.pressButton(GameButton.MOVE_LEFT);
-            }else{
-                gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                gamePad.releaseButton(GameButton.MOVE_LEFT);
-            }
-
-
-
-            if (aiPhys.getPosition().y < pos.y ){
-                gamePad.pressButton(GameButton.MOVE_UP);
-            }else{
-                gamePad.releaseButton(GameButton.MOVE_DOWN);
-            }*/
-
-
 
 
 

@@ -255,17 +255,26 @@ public class InGameScreen extends GameScreen {
 
 
 
-        //Pathfinding print
-
-       for(Node node: this.aiSystem.path){
 
 
-          /* sr.setProjectionMatrix(cam.combined);
-           sr.begin(ShapeRenderer.ShapeType.Line);
-           sr.setColor(new Color(0,0.5f,1, 0.2f)); // RED
-           sr.rect(node.position.x, node.position.y, aiSystem.pathfinder.NODE_SIZE, aiSystem.pathfinder.NODE_SIZE);
-           sr.end();*/
+        //Pathfinding display
 
+        /*for(Node node: this.aiSystem.pathfinder.nodes) {
+            sr.setProjectionMatrix(cam.combined);
+            sr.begin(ShapeRenderer.ShapeType.Line);
+
+            if (node.isWalkable)
+                sr.setColor(Color.RED); // RED
+            else
+                sr.setColor(Color.BLACK);
+
+
+            sr.rect(node.position.x, node.position.y, aiSystem.pathfinder.NODE_SIZE, aiSystem.pathfinder.NODE_SIZE);
+            sr.end();
+        }*/
+
+        // PATH
+       /*for(Node node: this.aiSystem.path){
            if(node.parent != null){
                sr.begin(ShapeRenderer.ShapeType.Line); // shape type
                sr.setColor(1, 0, 0, 1); // line's color
@@ -277,7 +286,7 @@ public class InGameScreen extends GameScreen {
                );
                sr.end();
            }
-        }
+        }*/
 
 
 
