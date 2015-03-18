@@ -159,19 +159,7 @@ public class InGameScreen extends GameScreen {
 
 
 
-
-        Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(13,5))
-                .withHeight(1.0f)
-                .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
-                .withCameraTargetComponent().build();
-        bo.addComponent(new KubotzAIComponent(), KubotzAIComponent.ID);
-        //bo.disableComponent(VirtualGamePad.ID);
-
-        bo.addComponent(new PickableComponent(), PickableComponent.ID);
-
-
-
-        for(int i=0; i<10; i++){
+        for(int i=0; i<1; i++){
             Entity ba = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(5 + i,7))
                     .withHeight(1.0f)
                     .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
