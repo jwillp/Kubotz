@@ -171,8 +171,17 @@ public class InGameScreen extends GameScreen {
 
 
 
-        //PATH FINDER
-        aiSystem.pathfinder.scanMap(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
+        for(int i=0; i<10; i++){
+            Entity ba = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(5 + i,7))
+                    .withHeight(1.0f)
+                    .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
+                    .withCameraTargetComponent().build();
+            ba.addComponent(new KubotzAIComponent(), KubotzAIComponent.ID);
+            //bo.disableComponent(VirtualGamePad.ID);
+
+            ba.addComponent(new PickableComponent(), PickableComponent.ID);
+
+        }
 
 
 
@@ -259,35 +268,42 @@ public class InGameScreen extends GameScreen {
 
 
         //Pathfinding display
+        for(Entity e: this.entityManager.getEntitiesWithComponent(KubotzAIComponent.ID)){
 
-        for(Node node: this.aiSystem.pathfinder.nodes) {
-            sr.setProjectionMatrix(cam.combined);
-            sr.begin(ShapeRenderer.ShapeType.Line);
+            KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
 
-            if (node.isWalkable)
-                sr.setColor(Color.RED); // RED
-            else
-                sr.setColor(Color.BLACK);
+            /*for(Node node: aiComp.pathfinder.nodes) {
+                sr.setProjectionMatrix(cam.combined);
+                sr.begin(ShapeRenderer.ShapeType.Line);
+
+                if (node.isWalkable)
+                    sr.setColor(Color.RED); // RED
+                else
+                    sr.setColor(Color.BLACK);
 
 
-            sr.rect(node.position.x, node.position.y, aiSystem.pathfinder.NODE_SIZE, aiSystem.pathfinder.NODE_SIZE);
-            sr.end();
+                sr.rect(node.position.x, node.position.y, aiComp.pathfinder.NODE_SIZE, aiComp.pathfinder.NODE_SIZE);
+                sr.end();
+            }*/
+
+            // PATH
+           for(Node node: aiComp.pathfinder.path){
+               if(node.parent != null){
+                   sr.begin(ShapeRenderer.ShapeType.Line); // shape type
+                   sr.setColor(1, 0, 0, 1); // line's color
+
+                   float offset = aiComp.pathfinder.NODE_SIZE/2;
+                   sr.line(
+                           node.position.x + offset , node.position.y + offset,
+                           node.parent.position.x + offset, node.parent.position.y + offset
+                   );
+                   sr.end();
+               }
+            }
+
+
         }
 
-        // PATH
-       for(Node node: this.aiSystem.path){
-           if(node.parent != null){
-               sr.begin(ShapeRenderer.ShapeType.Line); // shape type
-               sr.setColor(1, 0, 0, 1); // line's color
-
-               float offset = aiSystem.pathfinder.NODE_SIZE/2;
-               sr.line(
-                       node.position.x + offset , node.position.y + offset,
-                       node.parent.position.x + offset, node.parent.position.y + offset
-               );
-               sr.end();
-           }
-        }
 
 
 

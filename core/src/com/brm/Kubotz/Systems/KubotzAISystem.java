@@ -24,16 +24,14 @@ public class KubotzAISystem extends EntitySystem {
     public KubotzAISystem(EntityManager em) {
         super(em);
     }
-    public Pathfinder pathfinder = new Pathfinder();
 
-    public ArrayList<Node> path;
+
 
     public void update(){
 
 
         for(Entity eAI : em.getEntitiesWithComponent(KubotzAIComponent.ID)){
-
-
+            KubotzAIComponent aiComp = (KubotzAIComponent) eAI.getComponent(KubotzAIComponent.ID);
 
             PhysicsComponent aiPhys = (PhysicsComponent) eAI.getComponent(PhysicsComponent.ID);
             VirtualGamePad gamePad = (VirtualGamePad) eAI.getComponent(VirtualGamePad.ID);
@@ -41,11 +39,14 @@ public class KubotzAISystem extends EntitySystem {
             Entity player = em.getEntitiesWithTag("player").get(0);
             PhysicsComponent playerPhys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
 
-            path = pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
+            aiComp.pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
+            aiComp.pathfinder.path = aiComp.pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
 
-            if(!path.isEmpty()){
+
+
+            if(!aiComp.pathfinder.path.isEmpty()){
             //if(false){
-                    Node node = path.get(0);
+                    Node node = aiComp.pathfinder.path.get(0);
                     Vector2 pos = node.position;
 
                     //LEFT OF
