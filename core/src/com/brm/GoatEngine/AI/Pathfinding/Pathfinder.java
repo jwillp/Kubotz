@@ -187,8 +187,8 @@ public class Pathfinder {
     }
 
     /**
-     * Return the manhattan distance
-     * distance between two points based on adding the horizontal distance and
+     * Return the manhattan euclidianDistance
+     * euclidianDistance between two points based on adding the horizontal euclidianDistance and
      * vertical distances rather than computing the exact difference.
      * closer to the goal == smaller number
      * THIS IS A HEURISTIC
@@ -208,7 +208,7 @@ public class Pathfinder {
     private int getHeuristic(Vector2 current, Vector2 target){
 
 
-        //TODO tweak the manhanttan distance to add a custom cost
+        //TODO tweak the manhanttan euclidianDistance to add a custom cost
         // purely vertical movement are highly expensive
         // diagonal a bit less expansive
         // vertical the least expensive
@@ -269,7 +269,7 @@ public class Pathfinder {
                 //Estimate a FScore to the neighbour (from the current position to the neighbour)
                 int distToNeighbour = current.gCost + getHeuristic(current.position, neighbour.position);
 
-                //If the dist to neighbour is shorter than the distance from the start node to the neighbour
+                //If the dist to neighbour is shorter than the euclidianDistance from the start node to the neighbour
                 // This is more likely to be a good route OR if it is not something we already consider
                 if(distToNeighbour < neighbour.gCost || !openNodes.contains(neighbour)){
 

@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.Kubotz.Entities.CameraFactory;
 
 /**
@@ -50,7 +50,7 @@ public class CameraSystem extends EntitySystem {
             // Find the center point between between the two entities
             updatePosition(camEntity, leftMost, rightMost);
 
-            //ZOOM IN/OUT according to the distance between the two entities
+            //ZOOM IN/OUT according to the euclidianDistance between the two entities
             updateZoom(camEntity, leftMost, rightMost);
 
             //Update the camera
@@ -95,14 +95,14 @@ public class CameraSystem extends EntitySystem {
      */
     private void updateZoom(Entity cam, Vector2 leftMost, Vector2 rightMost){
         CameraComponent camComp = (CameraComponent)cam.getComponent(CameraComponent.ID);
-        //Pythagorean distance
-        float zoomScale = (float) (GameMath.distance(leftMost, rightMost)/10.0f);
+        //Pythagorean euclidianDistance
+        float zoomScale = (float) (Vectors.euclidianDistance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
         zoomSpeed = camComp.zoomSpeed == -1 ? camComp.speed.len() : camComp.zoomSpeed;
 
 
-        //Zoom according to distance
+        //Zoom according to euclidianDistance
         camComp.camera.zoom += (java.lang.Math.min(java.lang.Math.max(zoomScale, camComp.minimumZoom), camComp.maximumZoom) - camComp.camera.zoom)
                 * zoomSpeed * Gdx.graphics.getDeltaTime();
 

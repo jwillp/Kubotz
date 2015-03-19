@@ -118,7 +118,7 @@ public class InGameScreen extends GameScreen {
 
 
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("res/maps/pathfinding.tmx");
+        tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
@@ -253,62 +253,6 @@ public class InGameScreen extends GameScreen {
 
 
 
-
-
-        //Pathfinding display
-        for(Entity e: this.entityManager.getEntitiesWithComponent(KubotzAIComponent.ID)){
-
-            KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
-
-            /*for(Node node: aiComp.pathfinder.nodes) {
-                sr.setProjectionMatrix(cam.combined);
-                sr.begin(ShapeRenderer.ShapeType.Line);
-
-                if (node.isWalkable)
-                    sr.setColor(Color.RED); // RED
-                else
-                    sr.setColor(Color.BLACK);
-
-
-                sr.rect(node.position.x, node.position.y, aiComp.pathfinder.NODE_SIZE, aiComp.pathfinder.NODE_SIZE);
-                sr.end();
-            }*/
-
-            // PATH
-           for(Node node: aiComp.pathfinder.path){
-               if(node.parent != null){
-                   sr.begin(ShapeRenderer.ShapeType.Line); // shape type
-                   sr.setColor(1, 0, 0, 1); // line's color
-
-                   float offset = aiComp.pathfinder.NODE_SIZE/2;
-                   sr.line(
-                           node.position.x + offset , node.position.y + offset,
-                           node.parent.position.x + offset, node.parent.position.y + offset
-                   );
-                   sr.end();
-               }
-            }
-
-
-        }
-
-
-
-
-        // FPS
-        if(Config.DEBUG_RENDERING_ENABLED) {
-            SpriteBatch sb = this.renderingSystem.getSpriteBatch();
-            BitmapFont font = new BitmapFont();
-            sb.begin();
-            font.draw(sb, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
-            font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
-
-
-            String velText = "Velocity: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getVelocity();
-
-            font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
-            sb.end();
-        }
         //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());
 
 
