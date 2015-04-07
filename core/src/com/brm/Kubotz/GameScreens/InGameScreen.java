@@ -3,6 +3,7 @@ package com.brm.Kubotz.GameScreens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObjects;
@@ -12,6 +13,8 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -24,6 +27,7 @@ import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
+import com.brm.Kubotz.HUD;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
@@ -53,6 +57,14 @@ public class InGameScreen extends GameScreen {
     private Entity player;
     private PunchSystem punchSystem;
     private ObjectSystem objectSystem;
+
+
+
+    private HUD hud;
+
+
+
+
 
 
     public InGameScreen() {
@@ -147,7 +159,14 @@ public class InGameScreen extends GameScreen {
         Logger.log("In Game State initialised");
 
 
+        this.hud = new HUD();
+
     }
+
+
+
+
+
 
     @Override
     public void cleanUp() {
@@ -219,6 +238,8 @@ public class InGameScreen extends GameScreen {
             sb.end();
         }
         //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());
+
+        this.hud.draw(this.renderingSystem.getSpriteBatch());
 
 
     }
