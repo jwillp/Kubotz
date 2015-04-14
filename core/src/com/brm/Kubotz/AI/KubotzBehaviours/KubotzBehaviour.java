@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.AI.KubotzPathFinder;
@@ -17,6 +18,7 @@ import com.brm.Kubotz.Input.GameButton;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Random;
 
 /**
  * The Behaviour tree nodes for a KubotzBehaviour
@@ -92,7 +94,6 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-            Logger.log("LOCATE");
             EntityManager em = (EntityManager) this.blackBoard.get("entityManager");
 
 
@@ -114,9 +115,6 @@ public class KubotzBehaviour extends Selector{
                 }
             }
 
-            Logger.log(smallestDistance);
-
-
             if(smallestDistance == Integer.MAX_VALUE){
                 return State.FAILED;
             }
@@ -137,12 +135,20 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-            Logger.log("CALCULATE");
+            KubotzPathFinder pathfinder = (KubotzPathFinder) this.blackBoard.get("pathfinder");
+            Entity enemy = (Entity)this.blackBoard.get("enemy");
+            PhysicsComponent enemyPhys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
 
-            Entity enemy = (Entity) this.blackBoard.get("enemy");
-            PhysicsComponent phys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
-            this.blackBoard.put("destination", phys.getPosition());
 
+            //Choose a random point in the map far enough from the enemy
+            com.brm.GoatEngine.AI.Pathfinding.Node node;
+            do{
+               node = pathfinder.nodes.get(new Random().nextInt(pathfinder.nodes.size()));
+            }while ( Vectors.manhattanDistance(enemyPhys.getPosition(), node.position) <= 20);
+
+
+            //Set as destination
+            this.blackBoard.put("destination", node.position);
 
             return State.SUCCESS;
         }
@@ -163,7 +169,15 @@ public class KubotzBehaviour extends Selector{
          */
         @Override
         public boolean precondition() {
-            return super.precondition();
+
+            Entity enemy = (Entity)this.blackBoard.get("enemy");
+            PhysicsComponent enemyPhys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
+
+            Entity agent = (Entity)this.blackBoard.get("agent");
+            PhysicsComponent agentPhys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
+
+
+            return Vectors.manhattanDistance(agentPhys.getPosition(), enemyPhys.getPosition()) <= 7;
         }
     }
 
@@ -186,12 +200,9 @@ public class KubotzBehaviour extends Selector{
         @Override
         public State update() {
 
-            Logger.log("MOOVE");
-
-
-            //Kubotz
-            Entity kubotz = (Entity) this.blackBoard.get("agent");
-            PhysicsComponent phys = (PhysicsComponent) kubotz.getComponent(PhysicsComponent.ID);
+            //Agent
+            Entity agent = (Entity) this.blackBoard.get("agent");
+            PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
 
             // Determine path with pathfinder
@@ -205,7 +216,7 @@ public class KubotzBehaviour extends Selector{
             // Move in the direction of the destination
             if(!path.isEmpty()){
                 //if(false){
-                VirtualGamePad gamePad = (VirtualGamePad) kubotz.getComponent(VirtualGamePad.ID);
+                VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
                 com.brm.GoatEngine.AI.Pathfinding.Node node = path.get(0);
                 Vector2 pos = node.position;
 
@@ -255,7 +266,7 @@ public class KubotzBehaviour extends Selector{
 
 
     /**
-     * Stops at destination
+     * Stops at destination if it has arrived at the destination
      */
     public class StopAtDestination extends Node{
 
@@ -265,9 +276,19 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-            Logger.log("STOP");
-            //this.blackBoard.remove("destination");
-            return State.SUCCESS;
+
+            Entity agent = (Entity) this.blackBoard.get("agent");
+            PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
+
+            Vector2 destination = (Vector2)this.blackBoard.get("destination");
+
+            if(GameMath.isAround(phys.getPosition().x, destination.x, 2) &&
+                    GameMath.isAround(phys.getPosition().y, destination.y, 2)
+            ){
+                this.blackBoard.remove("destination");
+                return State.SUCCESS;
+            }
+            return State.RUNNING;
         }
     }
 
