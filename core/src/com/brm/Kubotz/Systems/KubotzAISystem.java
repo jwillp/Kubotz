@@ -39,7 +39,7 @@ public class KubotzAISystem extends EntitySystem {
         for(Entity eAI : em.getEntitiesWithComponent(KubotzAIComponent.ID)){
             KubotzAIComponent aiComp = (KubotzAIComponent) eAI.getComponent(KubotzAIComponent.ID);
 
-            Logger.log(aiComp.behaviourTree.tick());
+            aiComp.behaviourTree.tick();
 
 
 

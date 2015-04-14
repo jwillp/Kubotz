@@ -49,14 +49,16 @@ public class KubotzBehaviour extends Selector{
                                 .addNode(new FleeBehaviour(this.blackBoard)
                                         .addNode(new CalculateFleeDestination(this.blackBoard))
                                         .addNode(new MoveToDestination(this.blackBoard))
-                                        .addNode(new StopAtDestination(this.blackBoard))))
+                                        .addNode(new StopAtDestination(this.blackBoard))
+                                )
+                        )
 
-                                //Heal
-                        .addNode(new Sequence(this.blackBoard)
+                        //Heal
+                        /*.addNode(new Sequence(this.blackBoard)
                                         .addNode(new LocateNearestHealthBonus(this.blackBoard))
                                         .addNode(new MoveToDestination(this.blackBoard))
                                         .addNode(new TakeObject(this.blackBoard))
-                        )
+                        )*/
         );
 
 
@@ -90,6 +92,7 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
+            Logger.log("LOCATE");
             EntityManager em = (EntityManager) this.blackBoard.get("entityManager");
 
 
@@ -134,7 +137,7 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-
+            Logger.log("CALCULATE");
 
             Entity enemy = (Entity) this.blackBoard.get("enemy");
             PhysicsComponent phys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
@@ -262,7 +265,8 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-            this.blackBoard.remove("destination");
+            Logger.log("STOP");
+            //this.blackBoard.remove("destination");
             return State.SUCCESS;
         }
     }

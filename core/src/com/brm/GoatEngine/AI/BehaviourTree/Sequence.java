@@ -13,29 +13,21 @@ import java.util.Hashtable;
 * */
 public class Sequence extends Composite {
 
-    public Sequence(){
-        this.currentNode = 0;
-    }
-
     public Sequence(Hashtable<String, Object> blackBoard){
-        this.currentNode = 0;
         this.setBlackBoard(blackBoard);
     }
     
     public State update() {
-        
-        State state = State.RUNNING;
-        while(state == State.RUNNING){
-            state = this.children.get(currentNode).tick();
-            if(state != State.SUCCESS) {
-                this.currentNode = 0; //reset
-                return state;
+
+        State state;
+        for(Node node: this.children){
+            state = node.tick();
+            if(state == State.RUNNING){
+                return State.RUNNING;
+            }else if(state == State.FAILED){
+                return  State.FAILED;
             }
-            
-             if( (currentNode + 1) != children.size() ){
-                 currentNode++;
-             } else { break; }
-        } 
+        }
         return State.SUCCESS;
     }
     

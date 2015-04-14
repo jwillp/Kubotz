@@ -14,36 +14,20 @@ import java.util.Hashtable;
 **/
 public class Selector extends Composite {
     
-    
-    public Selector(){
-      currentNode = 0;
-    }
-
+    public Selector(){}
     public Selector(Hashtable<String, Object> blackBoard){
         this.setBlackBoard(blackBoard);
-        currentNode = 0;
     }
 
     @Override
     public State update() {
-        
-        State state = State.RUNNING;
-        
-        while(state == State.RUNNING){
-            state = children.get(currentNode).tick();
-            
-            if(state == State.SUCCESS || state == State.RUNNING ) {
-                this.currentNode = 0; //reset
+
+        for(Node node: this.children){
+            state = node.tick();
+            if(state == State.RUNNING || state == State.SUCCESS){
                 return state;
-            } 
-            
-           
-            if( (currentNode + 1) != children.size() ){
-                currentNode++;
-            } else { break; }
+            }
         }
-        
-        
         return State.FAILED;
     }
     
