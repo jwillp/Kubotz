@@ -24,9 +24,9 @@ public abstract class Vectors {
     }
 
     /**
-     * Return the manhattan euclidianDistance
-     * euclidianDistance between two points based on adding the horizontal euclidianDistance and
-     * vertical distances rather than computing the exact difference.
+     * Return the manhattan Distance
+     * Distance between two points based on adding the horizontal and
+     * vertical distances rather than computing the exact difference. (faster than manhanttan distance)
      * @param a
      * @param b
      * @return

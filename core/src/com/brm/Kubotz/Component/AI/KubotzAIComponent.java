@@ -1,7 +1,10 @@
 package com.brm.Kubotz.Component.AI;
 
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.AI.KubotzBehaviours.KubotzBehaviour;
 import com.brm.Kubotz.AI.KubotzPathFinder;
 
 /**
@@ -12,10 +15,16 @@ public class KubotzAIComponent extends EntityComponent {
 
     public Timer reactionTime = new Timer(500); //The time it will take for the AI to execute
 
-    public KubotzPathFinder pathfinder = new KubotzPathFinder();
+    public KubotzBehaviour behaviourTree;
 
 
-    public KubotzAIComponent(){
+    /**
+     * Ctor
+     * @param em Entity Manager
+     * @param entity the entity this component is attached to
+     */
+    public KubotzAIComponent(EntityManager em, Entity entity, KubotzPathFinder pathfinder){
+        behaviourTree  = new KubotzBehaviour(em, entity, pathfinder);
         reactionTime.start();
     }
 

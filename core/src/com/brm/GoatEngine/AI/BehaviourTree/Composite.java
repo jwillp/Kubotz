@@ -1,6 +1,9 @@
 package com.brm.GoatEngine.AI.BehaviourTree;
 
+import com.brm.GoatEngine.Utils.Logger;
+
 import java.util.ArrayList;
+import java.util.Hashtable;
 
 /**
 * Selectors, Sequences etc... 
@@ -16,12 +19,25 @@ public abstract class Composite extends Node {
         currentNode = 0;
     }
 
+
+    public Composite(Hashtable<String, Object> blackBoard){
+        children = new ArrayList<Node>();
+        currentNode = 0;
+        this.setBlackBoard(blackBoard);
+    }
+
+
+
+
     /**
      * Adds a node to the current composite
      * @param node
+     * @return this for chaining
      */
-    public void addNode(Node node){
+    public Composite addNode(Node node){
+        node.setBlackBoard(this.blackBoard);
         children.add(node);
+        return this;
     }
 
     /**

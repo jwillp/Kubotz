@@ -1,5 +1,7 @@
 package com.brm.GoatEngine.AI.BehaviourTree;
 
+import java.util.Hashtable;
+
 /**
 *  Check which child to run in priority order until the
 *  first one succeeds or returns that it is running.
@@ -14,7 +16,12 @@ public class Selector extends Composite {
     
     
     public Selector(){
-      currentNode = (0);
+      currentNode = 0;
+    }
+
+    public Selector(Hashtable<String, Object> blackBoard){
+        this.setBlackBoard(blackBoard);
+        currentNode = 0;
     }
 
     @Override

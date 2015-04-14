@@ -8,6 +8,8 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.AI.KubotzPathFinder;
 import com.brm.Kubotz.Component.AI.KubotzAIComponent;
 import com.brm.Kubotz.Component.Skills.ActiveSkill;
 import com.brm.Kubotz.Constants;
@@ -25,60 +27,19 @@ public class KubotzAISystem extends EntitySystem {
         super(em);
     }
 
+    public KubotzPathFinder pathfinder = new KubotzPathFinder();
 
 
     public void update(){
 
+        // UPDATE PATHFINDER (RESCAN MAP)
+        this.pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
 
+        // UPDATE BEHAVIOUR TREES OF KUBOTZ
         for(Entity eAI : em.getEntitiesWithComponent(KubotzAIComponent.ID)){
             KubotzAIComponent aiComp = (KubotzAIComponent) eAI.getComponent(KubotzAIComponent.ID);
 
-            PhysicsComponent aiPhys = (PhysicsComponent) eAI.getComponent(PhysicsComponent.ID);
-            VirtualGamePad gamePad = (VirtualGamePad) eAI.getComponent(VirtualGamePad.ID);
-
-            Entity player = em.getEntitiesWithTag("player").get(0);
-            PhysicsComponent playerPhys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
-
-            aiComp.pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
-            aiComp.pathfinder.path = aiComp.pathfinder.findPath(aiPhys.getPosition(), playerPhys.getPosition());
-
-
-
-            if(!aiComp.pathfinder.path.isEmpty()){
-            //if(false){
-                    Node node = aiComp.pathfinder.path.get(0);
-                    Vector2 pos = node.position;
-
-                    //LEFT OF
-                    if (aiPhys.getPosition().x < pos.x ){
-                        gamePad.releaseButton(GameButton.MOVE_LEFT);
-                        gamePad.pressButton(GameButton.MOVE_RIGHT);
-                    }else if (aiPhys.getPosition().x > pos.x ){  // RIGHT OF
-                        gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                        gamePad.pressButton(GameButton.MOVE_LEFT);
-                    }else{
-                        gamePad.releaseButton(GameButton.MOVE_RIGHT);
-                        gamePad.releaseButton(GameButton.MOVE_LEFT);
-                    }
-
-                    //Speed dash
-                    if(node.isLedge && node.position.x == aiPhys.getPosition().x){
-                        gamePad.pressButton(GameButton.ACTIVE_SKILL_BUTTON);
-                    }
-
-
-
-                    if (aiPhys.getPosition().y < pos.y ){
-                        gamePad.pressButton(GameButton.MOVE_UP);
-                    }else{
-                        gamePad.releaseButton(GameButton.MOVE_UP);
-                        //gamePad.pressButton(GameButton.MOVE_DOWN);
-                    }
-            }
-
-
-
-
+            Logger.log(aiComp.behaviourTree.tick());
 
 
 

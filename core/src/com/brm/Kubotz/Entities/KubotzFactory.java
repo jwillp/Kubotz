@@ -111,8 +111,10 @@ public class KubotzFactory extends EntityFactory {
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
 
-        // JUMP
+
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
+
+        // JUMP
         character.addComponent(new JumpComponent(3), JumpComponent.ID);
 
 

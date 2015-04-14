@@ -22,6 +22,13 @@ public abstract class Node {
     protected  State state;
     protected Hashtable<String, Object> blackBoard = new Hashtable<String, Object>();
 
+    protected Node(){}
+
+    protected Node(Hashtable<String, Object> blackBoard){
+        this.setBlackBoard(blackBoard);
+    }
+
+
     /**
      * Updates the state of a node
      * @return

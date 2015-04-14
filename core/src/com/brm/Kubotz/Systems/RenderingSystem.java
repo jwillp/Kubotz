@@ -90,7 +90,7 @@ public class RenderingSystem extends EntitySystem {
 
         /** PATHFINDING DEBUG **/
         //Pathfinding display
-        for(Entity e: this.em.getEntitiesWithComponent(KubotzAIComponent.ID)){
+       /* for(Entity e: this.em.getEntitiesWithComponent(KubotzAIComponent.ID)){
 
             KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
 
@@ -126,7 +126,7 @@ public class RenderingSystem extends EntitySystem {
                     shapeRenderer.end();
                 }
             }
-        }
+        }*/
 
 
 

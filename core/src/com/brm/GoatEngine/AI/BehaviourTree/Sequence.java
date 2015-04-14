@@ -1,5 +1,7 @@
 package com.brm.GoatEngine.AI.BehaviourTree;
 
+import java.util.Hashtable;
+
 /**
 * Child are evaluated one by one (from left to right)
 * When it is finished, the next one is validated and executed
@@ -13,6 +15,11 @@ public class Sequence extends Composite {
 
     public Sequence(){
         this.currentNode = 0;
+    }
+
+    public Sequence(Hashtable<String, Object> blackBoard){
+        this.currentNode = 0;
+        this.setBlackBoard(blackBoard);
     }
     
     public State update() {

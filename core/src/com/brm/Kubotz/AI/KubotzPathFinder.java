@@ -136,8 +136,6 @@ public class KubotzPathFinder {
 
 
 
-
-
                 //if the NEXT_NODE is at the right of the CURRENT_NOD AND that NEXT_NODE is the RIGHT edge of a platform
                 //That could not make a working movement so we need to discard that possibility
                 // in other words if the side of the next node (relatively from us) is a platform's particular side
@@ -271,6 +269,83 @@ public class KubotzPathFinder {
         // No path was found ==> empty list
         return new ArrayList<Node>();
     }
+
+
+    /**
+     * Returns a Path
+     * @param start
+     * @param danger: Position of the threat we want to flee from
+     * @return
+     */
+    public ArrayList<Node> findFleePath(Vector2 start, Vector2 danger){
+
+        //Reset in case we have old data.
+        this.openNodes.clear();
+        this.closedNodes.clear();
+        for(Node node: this.nodes){
+            node.resetCost();
+        }
+
+        //Get node for start and end points
+        Node startNode = getNodeFor(start);
+        Node endNode = getNodeFor(danger);
+
+        // the starting point must be evaluated
+        this.openNodes.add(startNode);
+
+        //While there are still nodes to evaluate as potential path nodes
+        while(!this.openNodes.isEmpty()){
+            Node current = this.openNodes.get(0);
+            //GET LOWEST FSCORE i.e. the best node (most likely + shortest path)
+            for(Node node: this.openNodes){
+
+                if(node.getFCost() > current.getFCost() || (node.getFCost() == current.getFCost() && node.hCost > current.hCost)){
+                    current = node;
+                }
+            }
+            //This node ain't to be considered now
+            this.openNodes.remove(current);
+            this.closedNodes.add(current);
+
+            //Are we done yet?
+            if(current == endNode){
+                //PATH FOUND
+                return this.tracePath(startNode, endNode);
+            }
+
+            //Get Neighbour and see which way to go
+            for(Node neighbour : getReachableNodes(current)){
+                //if the neighbour has already been evaluated.. well we won't do it a second time right?
+                if(!neighbour.isWalkable || this.closedNodes.contains(neighbour)){
+                    continue;
+                }
+
+                //Estimate a FScore to the neighbour (from the current position to the neighbour)
+                int distToNeighbour = current.gCost + getHeuristic(current.position, neighbour.position);
+
+                //If the dist to neighbour is shorter than the euclidianDistance from the start node to the neighbour
+                // This is more likely to be a good route OR if it is not something we already consider
+                if(distToNeighbour < neighbour.gCost || !openNodes.contains(neighbour)){
+
+                    //Determine cost
+                    neighbour.gCost = distToNeighbour;
+                    neighbour.hCost = getHeuristic(neighbour.position, endNode.position);
+                    neighbour.parent = current;
+
+                    if(!openNodes.contains(neighbour)){
+                        this.openNodes.add(neighbour);
+                    }
+                }
+            }
+
+        }
+        // No path was found ==> empty list
+        return new ArrayList<Node>();
+    }
+
+
+
+
 
 
     /**

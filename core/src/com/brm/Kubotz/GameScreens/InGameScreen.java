@@ -164,7 +164,7 @@ public class InGameScreen extends GameScreen {
                     .withHeight(1.0f)
                     .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
                     .withCameraTargetComponent().build();
-            ba.addComponent(new KubotzAIComponent(), KubotzAIComponent.ID);
+            ba.addComponent(new KubotzAIComponent(this.entityManager, ba, this.aiSystem.pathfinder), KubotzAIComponent.ID);
             //bo.disableComponent(VirtualGamePad.ID);
 
             ba.addComponent(new PickableComponent(), PickableComponent.ID);
