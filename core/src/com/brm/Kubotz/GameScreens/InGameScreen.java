@@ -21,11 +21,11 @@ import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.PickableComponent;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Systems.RenderingSystem.RenderingSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
 
 
@@ -133,18 +133,40 @@ public class InGameScreen extends GameScreen {
 
 
 
-
-
-
-
-        
-
         Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
         bo.addComponent(new PickableComponent(), PickableComponent.ID);
         Logger.log("In Game State initialised");
+
+
+
+
+
+
+        //LOAD ANIMATIONS
+        int FRAME_COLS = 8;
+        int FRAME_ROWS = 8;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     }
