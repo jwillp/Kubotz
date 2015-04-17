@@ -1,5 +1,8 @@
 package com.brm.Kubotz.Component.AI;
 
+import java.util.ArrayList;
+
+import com.brm.GoatEngine.AI.Pathfinding.Node;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -16,6 +19,8 @@ public class KubotzAIComponent extends EntityComponent {
     public Timer reactionTime = new Timer(500); //The time it will take for the AI to execute
 
     public KubotzBehaviour behaviourTree;
+    
+    public ArrayList<Node> currentPath; //Current pathfinding path
 
 
     /**

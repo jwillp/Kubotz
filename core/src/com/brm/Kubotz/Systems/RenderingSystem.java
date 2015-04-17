@@ -49,6 +49,8 @@ public class RenderingSystem extends EntitySystem {
     public void render(World world){
         if(Config.DEBUG_RENDERING_ENABLED) {
             this.renderDebug(world);
+
+            this.renderPathfinding();
         }
 
         if(Config.TEXTURE_RENDERING_ENABLED){
@@ -58,7 +60,59 @@ public class RenderingSystem extends EntitySystem {
 
     }
 
+    
     /**
+     * Debug method to render the path and nodes of AI
+     */
+    private void renderPathfinding() {
+		float NODE_SIZE = 0.4f;
+    	
+    	 //Pathfinding display
+        for(Entity e: this.em.getEntitiesWithComponent(KubotzAIComponent.ID)){
+
+            KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
+
+            for(Node node: aiComp.currentPath) {
+            	shapeRenderer.setProjectionMatrix(this.getCamera().combined);
+            	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                if (node.isWalkable)
+                	shapeRenderer.setColor(Color.RED);
+                if(aiComp.currentPath.indexOf(node) == 0)
+                	shapeRenderer.setColor(Color.GREEN);
+                if(aiComp.currentPath.indexOf(node) == aiComp.currentPath.size()-1)
+                	shapeRenderer.setColor(Color.MAGENTA);
+                shapeRenderer.rect(node.position.x, node.position.y, NODE_SIZE, NODE_SIZE);
+                shapeRenderer.end();
+                
+                
+                
+                
+                
+            }
+
+            // PATH
+           for(Node node: aiComp.currentPath){
+               if(node.parent != null){
+            	   shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // shape type
+            	   shapeRenderer.setColor(1, 0, 0, 1); // line's color
+
+                   float offset = NODE_SIZE/2;
+                   shapeRenderer.line(
+                           node.position.x + offset , node.position.y + offset,
+                           node.parent.position.x + offset, node.parent.position.y + offset
+                   );
+                   shapeRenderer.end();
+               }
+            }
+
+
+        }
+
+		
+	}
+
+
+	/**
      * Renders the texture of all the entities
      */
     private void renderTextures(){
