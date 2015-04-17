@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems.RenderingSystem;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -38,9 +39,21 @@ public class AnimationSystem extends EntitySystem {
 
             //Update the sprite according to the current animation frame
 
-            if(spriteComp.sprite == null){
-                spriteComp.sprite = this.textureAtlas.createSprite("running_");
-                spriteComp.animation = new Animation(1/15f, textureAtlas.getRegions());
+            if(spriteComp.currentFrame == null){
+
+                spriteComp.animation = new Animation(1/62f, textureAtlas.findRegions("running_"));
+                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+            }
+
+
+            if(!phys.isGrounded()){
+                if(phys.getVelocity().y > 0){
+                    spriteComp.animation = new Animation(1/62f, textureAtlas.findRegions("jumping_"));
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
+                }
+
+            }else{
+                spriteComp.animation = new Animation(1/128f, textureAtlas.findRegions("running_"));
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
@@ -48,14 +61,15 @@ public class AnimationSystem extends EntitySystem {
             spriteComp.stateTime += Gdx.graphics.getDeltaTime();
 
 
-            TextureRegion frame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
-
+            spriteComp.currentFrame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
             if(phys.direction == PhysicsComponent.Direction.RIGHT){
-                frame.isFlipX();
+                spriteComp.currentFrame.flip(true, false);
+            }else{
+                if(spriteComp.currentFrame.isFlipX()){
+                    spriteComp.currentFrame.flip(true,false);
+                }
             }
 
-
-            spriteComp.sprite.setRegion(frame);
 
 
 

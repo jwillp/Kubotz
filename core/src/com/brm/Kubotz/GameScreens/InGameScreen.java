@@ -119,7 +119,7 @@ public class InGameScreen extends GameScreen {
             if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
                 this.player = new KubotzFactory(entityManager, physicsSystem.getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withHeight(1.0f)
+                        .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();
             }else{
@@ -134,7 +134,7 @@ public class InGameScreen extends GameScreen {
 
 
         Entity bo = new KubotzFactory(entityManager, physicsSystem.getWorld(), new Vector2(7,2))
-                .withHeight(1.0f)
+                .withHeight(2.5f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
         bo.addComponent(new PickableComponent(), PickableComponent.ID);

@@ -81,22 +81,19 @@ public class RenderingSystem extends EntitySystem {
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
-            spriteComp.sprite.setPosition(phys.getPosition().x,phys.getPosition().y);
-            spriteComp.sprite.setOrigin(spriteComp.sprite.getWidth()/2, spriteComp.sprite.getHeight()/2);
-            spriteComp.sprite.setRotation(phys.getBody().getAngle()* MathUtils.radiansToDegrees);
-            spriteComp.sprite.draw(spriteBatch);
 
 
             TextureRegion frame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
-            if(phys.direction == PhysicsComponent.Direction.RIGHT){
-                frame.isFlipX();
-                Logger.log("FLIP");
-            }
 
-            spriteBatch.draw(frame,
-                    phys.getPosition().x-phys.getWidth(), phys.getPosition().y-phys.getHeight(),
-                    phys.getWidth()*2, phys.getHeight()*2.2f
+
+            float height = phys.getHeight()*2;
+            float width = height * (frame.getRegionHeight()/frame.getRegionWidth());
+
+            spriteBatch.draw(frame, phys.getPosition().x-phys.getWidth()*2, phys.getPosition().y-phys.getHeight(),
+                    width, height
             );
+
+
 
 
 

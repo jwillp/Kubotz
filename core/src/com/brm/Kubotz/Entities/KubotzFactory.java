@@ -101,9 +101,7 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(physics, PhysicsComponent.ID);
 
         //Appearance
-        AppearanceComponent appearance = new AppearanceComponent();
-        appearance.setDebugColor(Color.GREEN);
-        character.addComponent(appearance, AppearanceComponent.ID);
+        character.addComponent(new AppearanceComponent(), AppearanceComponent.ID);
 
 
 

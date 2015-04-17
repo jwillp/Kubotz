@@ -7,7 +7,7 @@ public class Config {
     public static final int V_HEIGHT = 480;
     public static final int FPS = 1/60; // in milliseconds
 
-    public static boolean DEBUG_RENDERING_ENABLED = false;
+    public static boolean DEBUG_RENDERING_ENABLED = true;
 
     public static boolean TEXTURE_RENDERING_ENABLED = true;
 
