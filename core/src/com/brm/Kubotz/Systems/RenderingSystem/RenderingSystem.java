@@ -83,13 +83,13 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-            TextureRegion frame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
+
 
 
             float height = phys.getHeight()*2;
-            float width = height * (frame.getRegionHeight()/frame.getRegionWidth());
+            float width = height * (spriteComp.currentFrame.getRegionHeight()/spriteComp.currentFrame.getRegionWidth());
 
-            spriteBatch.draw(frame, phys.getPosition().x-phys.getWidth()*2, phys.getPosition().y-phys.getHeight(),
+            spriteBatch.draw(spriteComp.currentFrame, phys.getPosition().x-phys.getWidth()*2, phys.getPosition().y-phys.getHeight(),
                     width, height
             );
 
