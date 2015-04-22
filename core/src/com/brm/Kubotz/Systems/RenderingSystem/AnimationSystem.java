@@ -41,20 +41,26 @@ public class AnimationSystem extends EntitySystem {
 
             if(spriteComp.currentFrame == null){
 
-                spriteComp.animation = new Animation(1/62f, textureAtlas.findRegions("running_"));
+                spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("idle_"));
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
 
             if(!phys.isGrounded()){
                 if(phys.getVelocity().y > 0){
-                    spriteComp.animation = new Animation(1/62f, textureAtlas.findRegions("jumping_"));
+                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("jumping_"));
                     spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
                 }
 
             }else{
-                spriteComp.animation = new Animation(1/128f, textureAtlas.findRegions("running_"));
-                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                if(phys.getVelocity().x != 0){
+                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("running_"));
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                }else{
+                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("idle_"));
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                }
+
             }
 
 
