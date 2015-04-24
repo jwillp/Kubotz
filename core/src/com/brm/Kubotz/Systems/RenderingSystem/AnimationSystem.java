@@ -5,12 +5,16 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
+import com.badlogic.gdx.utils.Array;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.SpriteComponent;
+import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.Component.Skills.DashComponent.Phase;
 
 /**
  * Responsible for managing Animations
@@ -45,7 +49,10 @@ public class AnimationSystem extends EntitySystem {
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
-
+           
+            
+            
+            
             if(!phys.isGrounded()){
                 if(phys.getVelocity().y > 0){
                     spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("jumping_"));
@@ -61,6 +68,19 @@ public class AnimationSystem extends EntitySystem {
                     spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
 
+            }
+            
+            
+            if(entity.hasComponent(DashComponent.ID)){
+            	DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
+            	if(dashComp.phase == Phase.MOVEMENT){
+            		for(AtlasRegion regi: textureAtlas.getRegions())
+            			Logger.log(regi.name);
+            		 Array<AtlasRegion> reg = textureAtlas.findRegions("dashing_");
+            		
+            		spriteComp.animation = new Animation(1/74f, reg);
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+            	}
             }
 
 
