@@ -83,9 +83,7 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-            TextureRegion currentFrame = spriteComp.animation.getCurrentFrame();
-
-
+            TextureRegion currentFrame = spriteComp.currentFrame;
             float height = phys.getHeight()*3;
             float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
             float posX = phys.getPosition().x-width/2;

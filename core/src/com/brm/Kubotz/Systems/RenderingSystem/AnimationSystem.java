@@ -2,20 +2,12 @@ package com.brm.Kubotz.Systems.RenderingSystem;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion;
-import com.badlogic.gdx.utils.Array;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.SpriteComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent.Phase;
-import com.brm.Kubotz.SpriteAnimation;
 
 /**
  * Responsible for managing Animations
@@ -23,8 +15,9 @@ import com.brm.Kubotz.SpriteAnimation;
 public class AnimationSystem extends EntitySystem {
 
 
-    SpriteAnimation idle = new SpriteAnimation("textures/idle.png", 1/15f);
-    SpriteAnimation running = new SpriteAnimation("textures/running.png", 1/15f);
+    AnimationSheet idle = new AnimationSheet("textures/idle.png", 1/15f);
+    AnimationSheet running = new AnimationSheet("textures/running.png", 1/15f);
+    AnimationSheet jumping = new AnimationSheet("textures/running.png", 1/15f);
 
     public AnimationSystem(EntityManager em) {
         super(em);
@@ -46,7 +39,7 @@ public class AnimationSystem extends EntitySystem {
 
             if(spriteComp.animation == null){
 
-                spriteComp.animation = idle;
+                spriteComp.animation = idle.generateAnimation();
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
@@ -56,13 +49,13 @@ public class AnimationSystem extends EntitySystem {
 
             if(!phys.isGrounded()){
                 if(phys.getVelocity().y > 0){
-                    spriteComp.animation = new SpriteAnimation("textures/jumping.png", 1/15f);
+                    spriteComp.animation = jumping.generateAnimation();
                     spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
                 }
 
             }else{
                 if(phys.getVelocity().x != 0){
-                    spriteComp.animation = this.running;
+                    spriteComp.animation = running.generateAnimation();
                     spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
 
@@ -73,8 +66,9 @@ public class AnimationSystem extends EntitySystem {
 
 
             spriteComp.stateTime += Gdx.graphics.getDeltaTime();
-            spriteComp.animation.update(spriteComp.stateTime);
-            TextureRegion currentFrame = spriteComp.animation.getCurrentFrame();
+            spriteComp.currentFrame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
+
+            TextureRegion currentFrame = spriteComp.currentFrame;
             if(phys.direction == PhysicsComponent.Direction.RIGHT){
                 currentFrame.flip(true, false);
             }else{
