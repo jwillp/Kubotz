@@ -17,7 +17,6 @@ import com.brm.Kubotz.Component.AI.KubotzAIComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
 
@@ -45,7 +44,7 @@ public class KubotzBehaviour extends Selector{
     public void buildTree(){
         this.children.clear();
         //PASSIVE
-        this.addNode(new PassiveBehaviour(this.blackBoard)
+        this.addNode(new DefensiveBehaviour(this.blackBoard)
                         //Avoid Combat
                         .addNode(new Sequence(this.blackBoard)
                                 .addNode(new LocateNearestEnemy(this.blackBoard))
@@ -68,12 +67,18 @@ public class KubotzBehaviour extends Selector{
         
         
         //ACTIVE
-        this.addNode(new ActiveBehaviour(this.blackBoard)
-					.addNode(new Sequence(this.blackBoard)
+        this.addNode(new OffensiveBehaviour(this.blackBoard)
+					.addNode(new Sequence(this.blackBoard) //Chase
 							.addNode(new LocateNearestEnemy(this.blackBoard))
 							.addNode(new SetEnemyAsTarget(this.blackBoard))
 							.addNode(new MoveToDestination(this.blackBoard))
-							.addNode(new StopAtDestination(this.blackBoard))	
+							.addNode(new StopAtDestination(this.blackBoard))
+                            .addNode(new Sequence(this.blackBoard)
+                                    .addNode(new AttackWithMeleeWeapon(this.blackBoard))
+
+
+
+                            )
 					)
        );
 
@@ -81,8 +86,8 @@ public class KubotzBehaviour extends Selector{
 
     }
 
-    public class PassiveBehaviour extends Selector{
-        public PassiveBehaviour(Hashtable<String, Object> blackBoard) {
+    public class DefensiveBehaviour extends Selector{
+        public DefensiveBehaviour(Hashtable<String, Object> blackBoard) {
             super(blackBoard);
         }
 
@@ -295,8 +300,12 @@ public class KubotzBehaviour extends Selector{
 
             Vector2 destination = (Vector2)this.blackBoard.get("destination");
 
-            if(GameMath.isAround(phys.getPosition().x, destination.x, 2) &&
-                    GameMath.isAround(phys.getPosition().y, destination.y, 2)
+            Logger.log(destination);
+
+
+
+            if(GameMath.isMoreOrLess(phys.getPosition().x, destination.x, 2.0f) &&
+                    GameMath.isMoreOrLess(phys.getPosition().y, destination.y, 2.0f)
             ){
                 this.blackBoard.remove("destination");
                 return State.SUCCESS;
@@ -368,15 +377,15 @@ public class KubotzBehaviour extends Selector{
 
 
 
-    public class ActiveBehaviour extends Selector{
-        public ActiveBehaviour(Hashtable<String, Object> blackBoard) {
+    public class OffensiveBehaviour extends Selector{
+        public OffensiveBehaviour(Hashtable<String, Object> blackBoard) {
 			super(blackBoard);
 		}
 
 		@Override
         public boolean precondition() {
 			 float health = ((HealthComponent)((Entity)this.blackBoard.get("agent"))
-	                    .getComponent(HealthComponent.ID)).getAmount();
+                             .getComponent(HealthComponent.ID)).getAmount();
             return health >= 25;
         }
     }
@@ -389,7 +398,10 @@ public class KubotzBehaviour extends Selector{
 
         @Override
         public State update() {
-            return null;
+
+
+
+            return State.SUCCESS;
         }
     }
 
@@ -398,9 +410,20 @@ public class KubotzBehaviour extends Selector{
      */
     public class AttackWithMeleeWeapon extends Node{
 
+        public AttackWithMeleeWeapon(Hashtable<String, Object> blackBoard) {
+            this.blackBoard = blackBoard;
+        }
+
         @Override
         public State update() {
-            return null;
+
+            Entity agent = (Entity) this.blackBoard.get("agent");
+            VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
+
+            gamePad.pressButton(GameButton.PRIMARY_ACTION_BUTTON);
+
+
+            return State.SUCCESS;
         }
     }
 
