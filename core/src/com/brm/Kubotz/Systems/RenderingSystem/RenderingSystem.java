@@ -42,7 +42,6 @@ public class RenderingSystem extends EntitySystem {
 
         debugRenderer = new Box2DDebugRenderer();
 
-        this.textureAtlas = new TextureAtlas(Gdx.files.internal("textures/textures.atlas"), Gdx.files.internal("textures"));
     }
 
 
@@ -84,14 +83,14 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-
+            TextureRegion currentFrame = spriteComp.animation.getCurrentFrame();
 
 
             float height = phys.getHeight()*3;
-            float width = height * ((float)spriteComp.currentFrame.getRegionWidth()/(float)spriteComp.currentFrame.getRegionHeight());
+            float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
             float posX = phys.getPosition().x-width/2;
             float posY =  phys.getPosition().y-height/2;
-            spriteBatch.draw(spriteComp.currentFrame, posX, posY, width,height);
+            spriteBatch.draw(currentFrame, posX, posY, width,height);
 
 
             /*spriteBatch.draw(spriteComp.currentFrame.getTexture(), 5, 5,

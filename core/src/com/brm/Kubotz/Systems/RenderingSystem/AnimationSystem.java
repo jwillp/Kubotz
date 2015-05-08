@@ -15,19 +15,20 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.SpriteComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent.Phase;
+import com.brm.Kubotz.SpriteAnimation;
 
 /**
  * Responsible for managing Animations
  */
 public class AnimationSystem extends EntitySystem {
 
-    TextureAtlas textureAtlas;
+
+    SpriteAnimation idle = new SpriteAnimation("textures/idle.png", 1/15f);
+    SpriteAnimation running = new SpriteAnimation("textures/running.png", 1/15f);
+
     public AnimationSystem(EntityManager em) {
         super(em);
-        this.textureAtlas = new TextureAtlas(Gdx.files.internal("textures/textures.atlas"), Gdx.files.internal("textures"));
     }
-
-
 
 
     public void update(){
@@ -43,56 +44,42 @@ public class AnimationSystem extends EntitySystem {
 
             //Update the sprite according to the current animation frame
 
-            if(spriteComp.currentFrame == null){
+            if(spriteComp.animation == null){
 
-                spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("idle_"));
+                spriteComp.animation = idle;
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
-           
-            
-            
-            
+
+
+
+
             if(!phys.isGrounded()){
                 if(phys.getVelocity().y > 0){
-                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("jumping_"));
+                    spriteComp.animation = new SpriteAnimation("textures/jumping.png", 1/15f);
                     spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
                 }
 
             }else{
                 if(phys.getVelocity().x != 0){
-                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("running_"));
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
-                }else{
-                    spriteComp.animation = new Animation(1/74f, textureAtlas.findRegions("idle_"));
+                    spriteComp.animation = this.running;
                     spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
 
             }
-            
-            
-            if(entity.hasComponent(DashComponent.ID)){
-            	DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-            	if(dashComp.phase == Phase.MOVEMENT){
-            		for(AtlasRegion regi: textureAtlas.getRegions())
-            			Logger.log(regi.name);
-            		 Array<AtlasRegion> reg = textureAtlas.findRegions("dashing_");
-            		
-            		spriteComp.animation = new Animation(1/74f, reg);
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
-            	}
-            }
+
+
+
 
 
             spriteComp.stateTime += Gdx.graphics.getDeltaTime();
-
-
-            spriteComp.currentFrame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
+            spriteComp.animation.update(spriteComp.stateTime);
+            TextureRegion currentFrame = spriteComp.animation.getCurrentFrame();
             if(phys.direction == PhysicsComponent.Direction.RIGHT){
-                spriteComp.currentFrame.flip(true, false);
+                currentFrame.flip(true, false);
             }else{
-                if(spriteComp.currentFrame.isFlipX()){
-                    spriteComp.currentFrame.flip(true,false);
+                if(currentFrame.isFlipX()){
+                    currentFrame.flip(true,false);
                 }
             }
 
