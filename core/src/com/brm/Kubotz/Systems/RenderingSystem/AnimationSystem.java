@@ -17,7 +17,8 @@ public class AnimationSystem extends EntitySystem {
 
     AnimationSheet idle = new AnimationSheet("textures/idle.png", 1/15f);
     AnimationSheet running = new AnimationSheet("textures/running.png", 1/15f);
-    AnimationSheet jumping = new AnimationSheet("textures/running.png", 1/15f);
+    AnimationSheet jumping = new AnimationSheet("textures/jumping.png", 1/15f);
+    AnimationSheet falling = new AnimationSheet("textures/falling.png", 1/15f);
 
     public AnimationSystem(EntityManager em) {
         super(em);
@@ -51,11 +52,17 @@ public class AnimationSystem extends EntitySystem {
                 if(phys.getVelocity().y > 0){
                     spriteComp.animation = jumping.generateAnimation();
                     spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
+                }else{
+                    spriteComp.animation = falling.generateAnimation();
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
                 }
 
             }else{
                 if(phys.getVelocity().x != 0){
                     spriteComp.animation = running.generateAnimation();
+                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                }else{
+                    spriteComp.animation = idle.generateAnimation();
                     spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
 
@@ -66,7 +73,7 @@ public class AnimationSystem extends EntitySystem {
 
 
             spriteComp.stateTime += Gdx.graphics.getDeltaTime();
-            spriteComp.currentFrame = spriteComp.animation.getKeyFrame(spriteComp.stateTime, true);
+            spriteComp.currentFrame = new TextureRegion(spriteComp.animation.getKeyFrame(spriteComp.stateTime, true));
 
             TextureRegion currentFrame = spriteComp.currentFrame;
             if(phys.direction == PhysicsComponent.Direction.RIGHT){
