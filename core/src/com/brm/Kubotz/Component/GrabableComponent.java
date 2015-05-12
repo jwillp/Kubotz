@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Components.Component;
  */
 public class GrabableComponent extends Component{
 
-    public final static String ID = "PICKABLE";
+    public final static String ID = "GRABABLE_COMPONENT";
 
 
 }
