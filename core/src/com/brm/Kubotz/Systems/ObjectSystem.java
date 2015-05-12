@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.PickableComponent;
+import com.brm.Kubotz.Component.GrabableComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -35,7 +35,7 @@ public class ObjectSystem extends EntitySystem{
                 PhysicsComponent phys = (PhysicsComponent) kubotz.getComponent(PhysicsComponent.ID);
                 for(int i =0; i < phys.contacts.size(); i++){
                     EntityContact contact = phys.contacts.get(i);
-                    if(contact.getEntityB().hasComponent(PickableComponent.ID)){
+                    if(contact.getEntityB().hasComponent(GrabableComponent.ID)){
                         //PICK IT UP
                         this.pickupObject(kubotz, contact.getEntityB());
 

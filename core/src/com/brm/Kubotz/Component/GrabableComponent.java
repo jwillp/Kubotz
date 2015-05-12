@@ -5,7 +5,7 @@ import com.brm.GoatEngine.ECS.Components.Component;
 /**
  * Makes an object pickable
  */
-public class PickableComponent extends Component{
+public class GrabableComponent extends Component{
 
     public final static String ID = "PICKABLE";
 

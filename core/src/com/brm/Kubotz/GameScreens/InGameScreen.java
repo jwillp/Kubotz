@@ -19,9 +19,8 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.PickableComponent;
+import com.brm.Kubotz.Component.GrabableComponent;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
@@ -143,7 +142,7 @@ public class InGameScreen extends GameScreen {
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
-        bo.addComponent(new PickableComponent(), PickableComponent.ID);
+        bo.addComponent(new GrabableComponent(), GrabableComponent.ID);
         Logger.log("In Game State initialised");
 
 
