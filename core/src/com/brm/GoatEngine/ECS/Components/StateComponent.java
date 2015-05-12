@@ -19,10 +19,8 @@ public class StateComponent extends Component {
     public EntityState state;
 
 
-
+    //TODO see if a HashSet could be useful
     /*protected HashSet<EntityState> states = new HashSet<EntityState>();
-
-
 
     public boolean hasState(EntityState state){
         return states.contains(state);

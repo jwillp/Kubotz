@@ -71,7 +71,7 @@ public class MovementSystem extends EntitySystem {
 
         flySystem.update();
         dashSystem.update();
-        walkingSystem.update(Gdx.graphics.getDeltaTime());
+        walkingSystem.update();
     }
 
     /**
@@ -87,7 +87,6 @@ public class MovementSystem extends EntitySystem {
                 if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
                     phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
                     phys.contacts.remove(i);
-
 
                     //REMOVE OTHER contact for other entity
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);

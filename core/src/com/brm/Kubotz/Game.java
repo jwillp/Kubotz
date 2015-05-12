@@ -9,22 +9,22 @@ import com.brm.Kubotz.GameScreens.InGameScreen;
 public class Game extends ApplicationAdapter {
 
 
-	private GameScreenManager stateManager;
+	private GameScreenManager screenManager;
 	private int accum;
 
 	@Override
 	public void create () {
-		stateManager = new GameScreenManager();
-		stateManager.init();
-		stateManager.addScreen(new InGameScreen());
+		screenManager = new GameScreenManager();
+		screenManager.init();
+		screenManager.addScreen(new InGameScreen());
 	}
 
 
 	@Override
 	public void render () {
-		stateManager.handleEvents();
-		stateManager.update(Gdx.graphics.getDeltaTime());
-		stateManager.draw();
+		screenManager.handleEvents();
+		screenManager.update(Gdx.graphics.getDeltaTime());
+		screenManager.draw();
 
 	}
 

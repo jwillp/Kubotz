@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.Kubotz.Component.Charac.MovementStatesComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -36,6 +37,7 @@ public class DashSystem extends EntitySystem{
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
             DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+            MovementStatesComponent movSt = (MovementStatesComponent)entity.getComponent(MovementStatesComponent.ID);
 
 
 
@@ -44,12 +46,20 @@ public class DashSystem extends EntitySystem{
             //Find dash direction
             if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
                 dashComp.direction.x = DashComponent.RIGHT;
+                movSt.state = MovementStatesComponent.State.DASHING_RIGHT;
+
             }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
                 dashComp.direction.x = DashComponent.LEFT;
+                movSt.state = MovementStatesComponent.State.DASHING_LEFT;
+
             }else if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
                 dashComp.direction.y = DashComponent.UP;
+                movSt.state = MovementStatesComponent.State.DASHING_UP;
+
             }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
                 dashComp.direction.y = DashComponent.DOWN;
+                movSt.state = MovementStatesComponent.State.DASHING_DOWN;
+
             }else{
                 isDashValid = false;
             }

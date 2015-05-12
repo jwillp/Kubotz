@@ -7,6 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.Charac.MovementStatesComponent;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -27,17 +28,26 @@ public class FlySystem extends EntitySystem {
     public void handleInput(Entity entity){
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+        MovementStatesComponent movSt = (MovementStatesComponent)entity.getComponent(MovementStatesComponent.ID);
 
         if(flyComponent.isEnabled()){
             if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                movSt.state = MovementStatesComponent.State.FLYING_UP;
                 flyUp(entity);
+
             }else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
+                movSt.state = MovementStatesComponent.State.FLYING_DOWN;
                 flyDown(entity);
 
+
             }else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+                movSt.state = MovementStatesComponent.State.FLYING_RIGHT;
                 flyRight(entity);
+
             }else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+                movSt.state = MovementStatesComponent.State.FLYING_LEFT;
                 flyLeft(entity);
+
             }else if (gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)) {
                 //STOP REQUESTED
                 onStopFlyRequest(entity);
