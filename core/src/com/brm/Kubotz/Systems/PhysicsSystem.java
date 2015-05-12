@@ -40,6 +40,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         //Update the box2D world
         world.step(1 / 60f, 6, 2);
 
+
         // Since all contacts have been processed empty them all
         //clearContacts();
     }

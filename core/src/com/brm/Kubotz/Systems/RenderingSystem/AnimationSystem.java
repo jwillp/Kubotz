@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.AnimationComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.SpriteComponent;
 
@@ -36,9 +37,10 @@ public class AnimationSystem extends EntitySystem {
     public void update(){
 
         for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
-            SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
-            PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
+            PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
+            SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
+            AnimationComponent animComp = (AnimationComponent)entity.getComponent(AnimationComponent.ID);
 
 
 
@@ -49,26 +51,26 @@ public class AnimationSystem extends EntitySystem {
 
             //IDLE
             if(phys.getVelocity().isZero()){
-                spriteComp.animation = idle.generateAnimation();
-                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.animation = idle.generateAnimation();
+                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //RUNNING
             if(phys.getVelocity().x != 0 && phys.isGrounded()){
-                spriteComp.animation = running.generateAnimation();
-                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.animation = running.generateAnimation();
+                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //JUMPING TODO Opposite of gravity scale
             if(phys.getVelocity().y > 0){
-                spriteComp.animation = jumping.generateAnimation();
-                spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
+                animComp.animation = jumping.generateAnimation();
+                animComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
             }
 
             //FALLING TODO same gravity scale
             if(phys.getVelocity().y < 0){
-                spriteComp.animation = falling.generateAnimation();
-                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.animation = falling.generateAnimation();
+                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //LANDING
@@ -83,25 +85,25 @@ public class AnimationSystem extends EntitySystem {
                 DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
 
                 if(dashComp.phase == DashComponent.Phase.PREPARATION){
-                    spriteComp.animation = dashingPrep.generateAnimation();
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                    animComp.animation = dashingPrep.generateAnimation();
+                    animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
 
                 if(dashComp.phase == DashComponent.Phase.MOVEMENT){
-                    spriteComp.animation = dashing.generateAnimation();
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                    animComp.animation = dashing.generateAnimation();
+                    animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
             }
 
 
 
-
-            spriteComp.stateTime += Gdx.graphics.getDeltaTime();
-            spriteComp.currentFrame = new TextureRegion(spriteComp.animation.getKeyFrame(spriteComp.stateTime, true));
+            //Set the sprite for the current animation frame
+            animComp.stateTime += Gdx.graphics.getDeltaTime();
+            spriteComp.currentSprite = new TextureRegion(animComp.animation.getKeyFrame(animComp.stateTime, true));
 
             //Flip image according to direction
-            if (phys.direction == PhysicsComponent.Direction.RIGHT || spriteComp.currentFrame.isFlipX()) {
-                spriteComp.currentFrame.flip(true, false);
+            if (phys.direction == PhysicsComponent.Direction.RIGHT || spriteComp.currentSprite.isFlipX()) {
+                spriteComp.currentSprite.flip(true, false);
             }
 
 

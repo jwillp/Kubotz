@@ -11,10 +11,8 @@ public class SpriteComponent extends Component{
 
     public final static String ID = "SPRITE_COMPONENT";
 
-    public Animation animation;
-    public TextureRegion currentFrame;
+    public TextureRegion currentSprite;
 
-    public float stateTime; //The amount of time the entity has been with that particular state (animation)
 
 
 }

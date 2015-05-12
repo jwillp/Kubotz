@@ -1,13 +1,11 @@
 package com.brm.Kubotz.Systems.RenderingSystem;
 
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -15,7 +13,6 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.CameraSystem;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.SpriteComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
@@ -83,7 +80,7 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-            TextureRegion currentFrame = spriteComp.currentFrame;
+            TextureRegion currentFrame = spriteComp.currentSprite;
             float height = phys.getHeight()*3;
             float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
             float posX = phys.getPosition().x-width/2;
@@ -91,7 +88,7 @@ public class RenderingSystem extends EntitySystem {
             spriteBatch.draw(currentFrame, posX, posY, width,height);
 
 
-            /*spriteBatch.draw(spriteComp.currentFrame.getTexture(), 5, 5,
+            /*spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
                     15, 15
             );*/
 
