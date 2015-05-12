@@ -51,26 +51,26 @@ public class AnimationSystem extends EntitySystem {
 
             //IDLE
             if(phys.getVelocity().isZero()){
-                animComp.animation = idle.generateAnimation();
-                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.setCurrentAnimation(idle.generateAnimation());
+                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //RUNNING
             if(phys.getVelocity().x != 0 && phys.isGrounded()){
-                animComp.animation = running.generateAnimation();
-                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.setCurrentAnimation(running.generateAnimation());
+                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //JUMPING TODO Opposite of gravity scale
             if(phys.getVelocity().y > 0){
-                animComp.animation = jumping.generateAnimation();
-                animComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
+                animComp.setCurrentAnimation(jumping.generateAnimation());
+                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.NORMAL);
             }
 
             //FALLING TODO same gravity scale
             if(phys.getVelocity().y < 0){
-                animComp.animation = falling.generateAnimation();
-                animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                animComp.setCurrentAnimation(falling.generateAnimation());
+                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
             }
 
             //LANDING
@@ -85,13 +85,13 @@ public class AnimationSystem extends EntitySystem {
                 DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
 
                 if(dashComp.phase == DashComponent.Phase.PREPARATION){
-                    animComp.animation = dashingPrep.generateAnimation();
-                    animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                    animComp.setCurrentAnimation(dashingPrep.generateAnimation());
+                    animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
                 }
 
                 if(dashComp.phase == DashComponent.Phase.MOVEMENT){
-                    animComp.animation = dashing.generateAnimation();
-                    animComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+                    animComp.setCurrentAnimation(dashing.generateAnimation());
+                    animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
                 }
             }
 
@@ -99,13 +99,11 @@ public class AnimationSystem extends EntitySystem {
 
             //Set the sprite for the current animation frame
             animComp.stateTime += Gdx.graphics.getDeltaTime();
-            spriteComp.currentSprite = new TextureRegion(animComp.animation.getKeyFrame(animComp.stateTime, true));
-
+            spriteComp.currentSprite = new TextureRegion(animComp.getCurrentAnimation().getKeyFrame(animComp.stateTime, true));
             //Flip image according to direction
             if (phys.direction == PhysicsComponent.Direction.RIGHT || spriteComp.currentSprite.isFlipX()) {
                 spriteComp.currentSprite.flip(true, false);
             }
-
 
 
 
