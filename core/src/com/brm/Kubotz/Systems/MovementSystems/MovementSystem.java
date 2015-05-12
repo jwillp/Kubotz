@@ -1,6 +1,5 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
-import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -8,7 +7,6 @@ import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Constants;
@@ -72,6 +70,10 @@ public class MovementSystem extends EntitySystem {
         flySystem.update();
         dashSystem.update();
         walkingSystem.update();
+
+
+
+
     }
 
     /**

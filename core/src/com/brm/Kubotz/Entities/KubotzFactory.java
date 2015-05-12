@@ -1,17 +1,16 @@
 package com.brm.Kubotz.Entities;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.*;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.Components.JumpComponent;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.Kubotz.Component.Charac.ActionStateComponent;
-import com.brm.Kubotz.Component.Charac.MovementStatesComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.SpriteComponent;
@@ -99,11 +98,6 @@ public class KubotzFactory extends EntityFactory {
         PhysicsComponent physics = this.buildBody(character);
         character.addComponent(physics, PhysicsComponent.ID);
 
-        //Appearance
-        character.addComponent(new AppearanceComponent(), AppearanceComponent.ID);
-
-
-
         //TAGS
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
@@ -136,11 +130,6 @@ public class KubotzFactory extends EntityFactory {
 
         // SPRITE Component
         character.addComponent(new SpriteComponent(), SpriteComponent.ID);
-
-
-        //State Machines
-        character.addComponent(new ActionStateComponent(), ActionStateComponent.ID);
-        character.addComponent(new MovementStatesComponent(), MovementStatesComponent.ID);
 
 
 

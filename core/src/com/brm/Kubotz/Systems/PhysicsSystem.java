@@ -51,7 +51,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     public void clearContacts(){
        for(Component component: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
-           phys.contacts.clear();
+            phys.contacts.clear();
         }
     }
 

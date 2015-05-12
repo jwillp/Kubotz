@@ -6,13 +6,11 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
 import com.brm.Kubotz.Input.GameButton;
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.Const;
 
 /**
  * Used to handle the entities punching
@@ -31,11 +29,14 @@ public class PunchSystem extends EntitySystem{
         for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             PunchComponent punchComponent = (PunchComponent)entity.getComponent(PunchComponent.ID);
-            PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+
 
             //Triggers the punch
             if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
               if(punchComponent.cooldown.isDone() && punchComponent.punchBullet == null){
+                  PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
 
                   //CREATE A "PUNCH BULLET"
                   Entity bullet = this.createBullet(physicsComponent, punchComponent);

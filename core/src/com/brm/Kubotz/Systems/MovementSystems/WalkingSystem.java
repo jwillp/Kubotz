@@ -7,7 +7,6 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Charac.MovementStatesComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -27,27 +26,20 @@ public class WalkingSystem extends EntitySystem {
      */
     public void handleInput(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        MovementStatesComponent movSt = (MovementStatesComponent)entity.getComponent(MovementStatesComponent.ID);
 
 
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
             if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
-                movSt.state = MovementStatesComponent.State.JUMPING;
                 jump(entity);
-
             } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
                 moveDown(entity);
 
             } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
-                movSt.state = MovementStatesComponent.State.RUNNING_RIGHT;
                 moveRight(entity);
-
             } else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
-                movSt.state = MovementStatesComponent.State.RUNNING_LEFT;
                 moveLeft(entity);
-
             } else {
                 //No movement made we decelerate
                 decelerate(entity);
@@ -143,35 +135,7 @@ public class WalkingSystem extends EntitySystem {
 
 
 
-
-
-
-
-
-    public void update(){
-
-
-        for(Entity entity : em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
-            MovementStatesComponent movSt = (MovementStatesComponent)entity.getComponent(MovementStatesComponent.ID);
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-
-
-        }
-
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-
+    public void update(){}
 
 
 }

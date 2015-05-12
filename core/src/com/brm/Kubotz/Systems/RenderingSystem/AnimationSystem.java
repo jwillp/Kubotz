@@ -7,8 +7,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.Kubotz.Component.Charac.ActionStateComponent;
-import com.brm.Kubotz.Component.Charac.MovementStatesComponent;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.SpriteComponent;
 
@@ -39,51 +38,47 @@ public class AnimationSystem extends EntitySystem {
         for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
-            MovementStatesComponent movSt = (MovementStatesComponent)entity.getComponent(MovementStatesComponent.ID);
-            ActionStateComponent actSt = (ActionStateComponent)entity.getComponent(ActionStateComponent.ID);
-            //Change Animation according to State
+
+
+
 
 
 
             //Update the sprite according to the current animation frame
 
-            if(spriteComp.animation == null){
+
+            //IDLE
+            if(phys.getVelocity().isZero()){
                 spriteComp.animation = idle.generateAnimation();
                 spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
 
-
-            if(movSt.state == MovementStatesComponent.State.RUNNING_LEFT || movSt.state == MovementStatesComponent.State.RUNNING_RIGHT){
+            //RUNNING
+            if(phys.getVelocity().x != 0 && phys.isGrounded()){
                 spriteComp.animation = running.generateAnimation();
+                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
             }
-            if(movSt.state == MovementStatesComponent.State.JUMPING){
+
+            //JUMPING TODO Opposite of gravity scale
+            if(phys.getVelocity().y > 0){
                 spriteComp.animation = jumping.generateAnimation();
+                spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
             }
 
-            /*if(!phys.isGrounded()){
-                if(phys.getVelocity().y > 0){
-                    spriteComp.animation = jumping.generateAnimation();
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.NORMAL);
-                }else{
-                    spriteComp.animation = falling.generateAnimation();
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
-                }
+            //FALLING TODO same gravity scale
+            if(phys.getVelocity().y < 0){
+                spriteComp.animation = falling.generateAnimation();
+                spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
+            }
 
-            }else{
-                if(phys.getVelocity().x != 0){
-                    float duration = running.duration; /* 1/Math.abs(phys.getVelocity().x);
-                    Logger.log(duration);
-                    spriteComp.animation = new Animation(duration, running.frames);
-
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
-                }else{
-                    spriteComp.animation = idle.generateAnimation();
-                    spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
-                }
-
-            }*/
+            //LANDING
+            if(phys.getVelocity().y < 0 && phys.isGrounded()){
+                Logger.log("LANDING");
+            }
 
 
+
+            //DASH ANIM
             if(entity.hasComponent(DashComponent.ID)){
                 DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
 
@@ -97,8 +92,6 @@ public class AnimationSystem extends EntitySystem {
                     spriteComp.animation.setPlayMode(Animation.PlayMode.LOOP);
                 }
             }
-
-
 
 
 
