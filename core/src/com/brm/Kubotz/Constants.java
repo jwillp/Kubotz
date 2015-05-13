@@ -38,6 +38,8 @@ public class Constants {
     public static final String ENTITY_TAG_BULLET = "BULLET";
     public static final String ENTITY_TAG_PUNCH = "PUNCH";
 
+    public static final String ENTITY_TAG_POWERUP = "POWERUP";
+
 
 
     // FIXTURE

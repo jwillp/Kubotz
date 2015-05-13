@@ -15,25 +15,18 @@ public class PowerUpComponent extends Component {
 
     public static final String ID = "POWERUP_COMPONENT";
 
-    public enum Type{
-
-        HealthModifier,
-        EnergyModifier,
-        SpeedModifier,
-
-        InvincibilityProvider,      // NO DAMAMGE
-        ShieldProvider,
-        InvisibilityProvider,       // NO visible
+    private PowerUp powerUp;
 
 
+    public PowerUpComponent(PowerUp powerUp){
+        this.powerUp = powerUp;
     }
 
-    public Type type;
+    public PowerUp getPowerUp() {
+        return powerUp;
+    }
 
-    public PowerUpEffect effect;
-
-    public Timer effectTimer;
-
-
-
+    public void setPowerUp(PowerUp powerUp) {
+        this.powerUp = powerUp;
+    }
 }

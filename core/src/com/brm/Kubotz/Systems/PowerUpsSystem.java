@@ -8,7 +8,9 @@ import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.Powerups.PowerUp;
 import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
 import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
+import com.brm.Kubotz.Component.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Entities.PowerUpFactory;
 
 /**
  * Processes the PowerUps of all the entities
@@ -47,7 +49,7 @@ public class PowerUpsSystem extends EntitySystem {
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) entity.getComponent(PowerUpsContainerComponent.ID);
             for(PowerUp powerUp: container.getPowerUps()){
-                if(powerUp.effectTimer.isDone()){
+                if(powerUp.effectDuration.isDone()){
                     powerUp.effect.onFinish(entity);
                     container.removePowerUp(powerUp);
                 }
@@ -74,6 +76,18 @@ public class PowerUpsSystem extends EntitySystem {
      */
     private void spawnPowerUp(){
        //TODO Make a Random Bonus
+        for(Entity entity: em.getEntitiesWithComponent(SpawnPointComponent.ID)){
+            SpawnPointComponent spawn = (SpawnPointComponent)entity.getComponent(SpawnPointComponent.ID);
+
+            // Make a random PowerUp
+            //PowerUpFactory factory = new PowerUpFactory(em,);
+
+
+
+
+        }
+
+
     }
 
 

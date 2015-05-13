@@ -21,11 +21,15 @@ public class PowerUp {
 
     public PowerUpEffect effect;
 
-    public Timer effectTimer;
+    public Timer effectDuration;
 
 
     public PowerUp(PowerUpEffect effect){
         this.effect = effect;
-        effectTimer.start();
+        effectDuration.start();
     }
+
+
+
+
 }
