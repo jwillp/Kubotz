@@ -10,21 +10,13 @@ import java.util.ArrayList;
  */
 public class EntityContact {
 
-    //The moment at which the contact info where generated (At the beginning of the contact or the end of the contact)
-    public enum Describer {
-        BEGIN,
-        END
-    }
 
     public Fixture fixtureA;
     public Fixture fixtureB;
-    public final Describer describer; //Describes the beginning or the end of the contact
 
-
-    public EntityContact(Fixture fixtureA, Fixture fixtureB, Describer describer){
+    public EntityContact(Fixture fixtureA, Fixture fixtureB){
         this.fixtureA = fixtureA;
         this.fixtureB = fixtureB;
-        this.describer = describer;
     }
 
 

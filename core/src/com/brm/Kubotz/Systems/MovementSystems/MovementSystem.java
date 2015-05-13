@@ -85,7 +85,7 @@ public class MovementSystem extends EntitySystem {
             for(int i=0; i<phys.contacts.size(); i++){
                 EntityContact contact = phys.contacts.get(i);
                 if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
-                    phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
+                    phys.setGrounded(true);
                     phys.contacts.remove(i);
 
                     //REMOVE OTHER contact for other entity

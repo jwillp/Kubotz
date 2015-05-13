@@ -92,15 +92,13 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
         //Create EntityContacts
-        EntityContact contactA = new EntityContact(fixtureA, fixtureB, EntityContact.Describer.BEGIN);
-        EntityContact contactB = new EntityContact(fixtureB, fixtureA, EntityContact.Describer.BEGIN);
+        EntityContact contactA = new EntityContact(fixtureA, fixtureB);
+        EntityContact contactB = new EntityContact(fixtureB, fixtureA);
 
 
         //Dispatch Contacts
-        if(contact.isTouching()){
-            physA.contacts.add(contactA);
-            physB.contacts.add(contactB);
-        }
+        physA.contacts.add(contactA);
+        physB.contacts.add(contactB);
 
 
     }
@@ -131,44 +129,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
     @Override
     public void postSolve(Contact contact, ContactImpulse impulse) {}
-
-
-    /**
-     * Dispatches the contact between two entities in their respective PhysicsComponent
-     * to be used by other systems, to accomplish certain tasks accordingly
-     * @param contact the contact event
-     * @param describer the describer of the event (BEGIN || END)
-     */
-    public void dispatchContactEvent(Contact contact, EntityContact.Describer describer){
-
-        //Get Fixtures
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-
-        //Get Entities
-        Entity entityA = (Entity) fixtureA.getBody().getUserData();
-        Entity entityB = (Entity) fixtureB.getBody().getUserData();
-
-       //Get Phys
-        PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
-        PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
-
-        // TODO Test over time
-       /* if(physA.contacts.hasContactWithEntity(entityB) || physB.contacts.hasContactWithEntity(entityA)){
-            return;
-        }*/
-
-        //Create EntityContacts
-        EntityContact contactA = new EntityContact(fixtureA, fixtureB, describer);
-        EntityContact contactB = new EntityContact(fixtureB, fixtureA, describer);
-
-
-        //Dispatch Contacts
-        physA.contacts.add(contactA);
-        physB.contacts.add(contactB);
-    }
-
-
 
 
     // GETTERS AND SETTERS //
