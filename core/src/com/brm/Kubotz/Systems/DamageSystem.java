@@ -1,7 +1,6 @@
 package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -11,8 +10,7 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.DamageComponent;
 import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
-import com.brm.Kubotz.Component.Powerups.InvicibilityComponent;
-import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Component.Powerups.InvincibilityComponent;
 
 /**
  * USed to deal damage and process Health Bonuses
@@ -70,7 +68,7 @@ public class DamageSystem extends EntitySystem{
 
         //Damage Health
         //Invinvible
-        if(target.hasComponent(InvicibilityComponent.ID)){
+        if(target.hasComponent(InvincibilityComponent.ID)){
             return;
         }//Energetic Shield
         else if(target.hasComponent(EnergeticShieldComponent.ID)){

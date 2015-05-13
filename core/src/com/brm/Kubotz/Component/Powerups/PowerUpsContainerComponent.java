@@ -1,12 +1,15 @@
 package com.brm.Kubotz.Component.Powerups;
 
+import com.brm.GoatEngine.ECS.Components.Component;
+
 import java.util.ArrayList;
 
 /**
  * Used for an entity to have PowerUps
  */
-public class PowerUpsContainerComponent {
+public class PowerUpsContainerComponent extends Component {
 
+    public static final String ID = "POWER_UPS_CONTAINER_COMPONENT";
 
     ArrayList<PowerUp> powerUps = new ArrayList<PowerUp>();
 
@@ -24,4 +27,8 @@ public class PowerUpsContainerComponent {
         this.powerUps.remove(p);
     }
 
+
+    public ArrayList<PowerUp> getPowerUps() {
+        return powerUps;
+    }
 }

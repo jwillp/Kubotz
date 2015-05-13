@@ -14,16 +14,16 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 public abstract class PowerUpEffect {
 
     /**
-     * Called when the effect is ACTIVATED
+     * Called when the effect is STARTED
      * @param entity the entity on which to apply the effect
      */
-    public abstract void onActivate(Entity entity);
+    public abstract void onStart(Entity entity);
 
     /**
-     * Called when the effect is DEACTIVATED
+     * Called when the effect is FINISHED
      * @param entity the entity on which to apply the effect
      */
-    public abstract void onDeactivate(Entity entity);
+    public abstract void onFinish(Entity entity);
 
 
     //////////// MODIFIERS ///////////
@@ -37,13 +37,13 @@ public abstract class PowerUpEffect {
         private float percentage = 50; //50%
 
         @Override
-        public void onActivate(Entity entity){
+        public void onStart(Entity entity){
             HealthComponent health = (HealthComponent) entity.getComponent(HealthComponent.ID);
             health.addAmount(health.maxAmount * 1/this.percentage);
         }
 
         @Override
-        public void onDeactivate(Entity entity){}
+        public void onFinish(Entity entity){}
     }
 
     /**
@@ -57,13 +57,13 @@ public abstract class PowerUpEffect {
         }
 
         @Override
-        public void onActivate(Entity entity){
+        public void onStart(Entity entity){
             ManaComponent energy = (ManaComponent) entity.getComponent(ManaComponent.ID);
             energy.addAmount(energy.maxAmount * 1/this.percentage);
         }
 
         @Override
-        public void onDeactivate(Entity entity) {}
+        public void onFinish(Entity entity) {}
     }
 
 
@@ -77,7 +77,7 @@ public abstract class PowerUpEffect {
         public Vector2 oldSpeed;
 
         @Override
-        public void onActivate(Entity entity){
+        public void onStart(Entity entity){
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             this.oldSpeed = phys.getAcceleration().cpy();
 
@@ -88,7 +88,7 @@ public abstract class PowerUpEffect {
         }
 
         @Override
-        public void onDeactivate(Entity entity){
+        public void onFinish(Entity entity){
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             phys.getAcceleration().set(oldSpeed);
         }
@@ -101,13 +101,13 @@ public abstract class PowerUpEffect {
     public class JumpModifier extends PowerUpEffect{
 
         @Override
-        public void onActivate(Entity entity) {
+        public void onStart(Entity entity) {
             JumpComponent jump = (JumpComponent) entity.getComponent(JumpComponent.ID);
             jump.setNbJumpsMax(jump.getNbJumpsMax()+1);
         }
 
         @Override
-        public void onDeactivate(Entity entity) {
+        public void onFinish(Entity entity) {
             JumpComponent jump = (JumpComponent) entity.getComponent(JumpComponent.ID);
             jump.setNbJumpsMax(jump.getNbJumpsMax()-1);
         }
@@ -125,13 +125,13 @@ public abstract class PowerUpEffect {
     public class InvicibilityProvider extends PowerUpEffect{
 
         @Override
-        public void onActivate(Entity entity) {
-            entity.addComponent(new InvicibilityComponent(), InvicibilityComponent.ID);
+        public void onStart(Entity entity) {
+            entity.addComponent(new InvincibilityComponent(), InvincibilityComponent.ID);
         }
 
         @Override
-        public void onDeactivate(Entity entity) {
-            entity.removeComponent(InvicibilityComponent.ID);
+        public void onFinish(Entity entity) {
+            entity.removeComponent(InvincibilityComponent.ID);
         }
     }
 
@@ -141,12 +141,12 @@ public abstract class PowerUpEffect {
     public class ShieldProvider extends PowerUpEffect{
 
         @Override
-        public void onActivate(Entity entity) {
+        public void onStart(Entity entity) {
             entity.addComponent(new EnergeticShieldComponent(), EnergeticShieldComponent.ID);
         }
 
         @Override
-        public void onDeactivate(Entity entity) {
+        public void onFinish(Entity entity) {
             //Shield will be deleted from entity when it dies
         }
     }
@@ -157,12 +157,12 @@ public abstract class PowerUpEffect {
     public class InvisibilityProvider extends PowerUpEffect{
 
         @Override
-        public void onActivate(Entity entity) {
+        public void onStart(Entity entity) {
             entity.addComponent(new InvisibilityComponent(), InvisibilityComponent.ID);
         }
 
         @Override
-        public void onDeactivate(Entity entity) {
+        public void onFinish(Entity entity) {
             entity.removeComponent(InvisibilityComponent.ID);
         }
     }

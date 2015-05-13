@@ -5,6 +5,6 @@ import com.brm.GoatEngine.ECS.Components.Component;
 /**
  * Makes an entity Invicible
  */
-public class InvicibilityComponent extends Component {
+public class InvincibilityComponent extends Component {
     public final static String ID = "INVINCIBLE";
 }

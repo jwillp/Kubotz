@@ -24,4 +24,8 @@ public class PowerUp {
     public Timer effectTimer;
 
 
+    public PowerUp(PowerUpEffect effect){
+        this.effect = effect;
+        effectTimer.start();
+    }
 }
