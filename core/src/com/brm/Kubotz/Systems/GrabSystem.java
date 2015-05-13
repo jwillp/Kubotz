@@ -42,9 +42,8 @@ public class GrabSystem extends EntitySystem{
                     if(contact.getEntityB().hasComponent(GrabbableComponent.ID)){
                         //PICK IT UP
                         this.pickupObject(entity, contact.getEntityB());
-
+                        phys.contacts.removeContactsWithEntity(contact.getEntityB());
                         virtualGamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON); //Realease Button
-                        phys.contacts.remove(contact);
                     }
 
                 }

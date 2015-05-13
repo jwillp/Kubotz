@@ -224,6 +224,8 @@ public class InGameScreen extends GameScreen {
 
             font.draw(sb, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).nbJujmps, 0, Gdx.graphics.getHeight() - 80);
             font.draw(sb, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
+            font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).contacts.size(), 0, Gdx.graphics.getHeight() - 120);
+
             sb.end();
         }
         //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());

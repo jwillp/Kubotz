@@ -81,7 +81,7 @@ public class PowerUpsSystem extends EntitySystem {
      * Spawns a new PowerUp
      */
     private void spawnPowerUp(){
-       //TODO Make a Random Bonus
+
 
         //Get PowerUps Spawns
         ArrayList<Component> spawns = em.getComponents(SpawnPointComponent.ID);
@@ -101,15 +101,17 @@ public class PowerUpsSystem extends EntitySystem {
         pos.x = MathUtils.random(pos.x-0.1f, pos.x+0.1f);
         pos.y = MathUtils.random(pos.y-0.1f, pos.y+0.1f);
 
+        //TODO RANDOMIZE EFFECT
+        PowerUpEffect effect = new PowerUpEffect.JumpModifier();
+
+
         // Make a random PowerUp
         new PowerUpFactory(em, this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
-            .withEffect(new PowerUpEffect.JumpModifier())
-            .withDuration(Timer.TEN_SECONDS)
+            .withEffect(effect)
+            .withDuration(Timer.TEN_SECONDS * 3)
             .withLifeTime(Timer.TEN_SECONDS * 2)
             .withPosition(pos)
             .build();
-
-
     }
 
 
