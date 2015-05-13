@@ -69,14 +69,61 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
     // CONTACT LISTENING
+
+    /**
+     * Dispatches the contact between two entities in their respective PhysicsComponent
+     * to be used by other systems, to accomplish certain tasks accordingly
+     * @param contact
+     */
     @Override
     public void beginContact(Contact contact) {
-        dispatchContactEvent(contact, EntityContact.Describer.BEGIN);
+        //Get Fixtures
+        Fixture fixtureA = contact.getFixtureA();
+        Fixture fixtureB = contact.getFixtureB();
+
+        //Get Entities
+        Entity entityA = (Entity) fixtureA.getBody().getUserData();
+        Entity entityB = (Entity) fixtureB.getBody().getUserData();
+
+        //Get Phys
+        PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
+        PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
+
+
+
+        //Create EntityContacts
+        EntityContact contactA = new EntityContact(fixtureA, fixtureB, EntityContact.Describer.BEGIN);
+        EntityContact contactB = new EntityContact(fixtureB, fixtureA, EntityContact.Describer.BEGIN);
+
+
+        //Dispatch Contacts
+        if(contact.isTouching()){
+            physA.contacts.add(contactA);
+            physB.contacts.add(contactB);
+        }
+
+
     }
 
+    /**
+     * Removes the contact between two entities in their respective PhysicsComponent
+     * @param contact
+     */
     @Override
     public void endContact(Contact contact) {
-        dispatchContactEvent(contact, EntityContact.Describer.END);
+
+        //Get Entities
+        Entity entityA = (Entity) contact.getFixtureA().getBody().getUserData();
+        Entity entityB = (Entity) contact.getFixtureB().getBody().getUserData();
+
+        //Get Phys
+        PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
+        PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
+
+        //Remove Contacts
+        physA.contacts.removeContactsWithEntity(entityB);
+        physB.contacts.removeContactsWithEntity(entityA);
+
     }
 
     @Override
