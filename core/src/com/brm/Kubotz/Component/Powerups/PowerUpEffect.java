@@ -168,4 +168,39 @@ public abstract class PowerUpEffect {
     }
 
 
+
+
+
+    public class  LaserGunMkIProvider extends PowerUpEffect{
+
+
+        @Override
+        public void onStart(Entity entity) {
+
+        }
+
+        @Override
+        public void onFinish(Entity entity) {
+
+        }
+    }
+
+
+    public class LaserGunMkIIProvider extends PowerUpEffect{
+
+        @Override
+        public void onStart(Entity entity) {
+
+        }
+
+        @Override
+        public void onFinish(Entity entity) {
+
+        }
+    }
+
+
+
+
+
 }

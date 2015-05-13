@@ -1,6 +1,8 @@
 package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
@@ -13,6 +15,8 @@ import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Component.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.PowerUpFactory;
+
+import java.util.ArrayList;
 
 /**
  * Processes the PowerUps of all the entities
@@ -47,8 +51,10 @@ public class PowerUpsSystem extends EntitySystem {
         for(Entity entity: em.getEntitiesWithComponent(PowerUpsContainerComponent.ID)){
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) entity.getComponent(PowerUpsContainerComponent.ID);
-            for(PowerUp powerUp: container.getPowerUps()){
-                if(powerUp.effectDuration.isDone()){
+            ArrayList<PowerUp> powerUps = container.getPowerUps();
+            for (int i = 0; i < powerUps.size(); i++) {
+                PowerUp powerUp = powerUps.get(i);
+                if (powerUp.effectDuration.isDone()) {
                     powerUp.effect.onFinish(entity);
                     container.removePowerUp(powerUp);
                 }
@@ -77,19 +83,30 @@ public class PowerUpsSystem extends EntitySystem {
     private void spawnPowerUp(){
        //TODO Make a Random Bonus
 
+        //Get PowerUps Spawns
+        ArrayList<Component> spawns = em.getComponents(SpawnPointComponent.ID);
+        for (int i = 0, spawnsSize = spawns.size(); i < spawnsSize; i++) {
+            if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.PowerUp) {
+                spawns.remove(i);
+            }
+        }
+
         //Get a Random Spawn Point
-        int index = MathUtils.random(em.getEntitiesWithComponent(SpawnPointComponent.ID).size()-1);
+        int index = MathUtils.random(spawns.size()-1);
         Entity entity = em.getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
         SpawnPointComponent spawn = (SpawnPointComponent)entity.getComponent(SpawnPointComponent.ID);
 
+        //Randomize position
+        Vector2 pos = spawn.getPosition();
+        pos.x = MathUtils.random(pos.x-0.1f, pos.x+0.1f);
+        pos.y = MathUtils.random(pos.y-0.1f, pos.y+0.1f);
 
         // Make a random PowerUp
-        PowerUpFactory factory;
         new PowerUpFactory(em, this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
             .withEffect(new PowerUpEffect.JumpModifier())
             .withDuration(Timer.TEN_SECONDS)
             .withLifeTime(Timer.TEN_SECONDS * 2)
-            .withPosition(spawn.getPosition())
+            .withPosition(pos)
             .build();
 
 

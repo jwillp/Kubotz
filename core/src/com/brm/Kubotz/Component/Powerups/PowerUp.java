@@ -7,18 +7,6 @@ import com.brm.GoatEngine.Utils.Timer;
  */
 public class PowerUp {
 
-    public enum Type{
-
-        HealthModifier,
-        EnergyModifier,
-        SpeedModifier,
-
-        InvincibilityProvider,      // NO DAMAMGE
-        ShieldProvider,
-        InvisibilityProvider,       // NO visible
-    }
-    public Type type;
-
     public PowerUpEffect effect;
 
     public Timer effectDuration = new Timer(Timer.FIVE_SECONDS);
@@ -28,8 +16,5 @@ public class PowerUp {
         this.effect = effect;
         effectDuration.start();
     }
-
-
-
 
 }

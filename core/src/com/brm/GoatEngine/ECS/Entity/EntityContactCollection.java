@@ -55,6 +55,16 @@ public class EntityContactCollection extends ArrayList<EntityContact> {
         }
     }
 
+    /**
+     * Removes all the contact with a null entity
+     */
+    public void cleanContacts(){
+        for(int i=0; i< this.size(); i++){
+            if(this.get(i).getEntityB() == null){
+                this.remove(i);
+            }
+        }
+    }
 
     /**
      * Returns a list of contacts with describer

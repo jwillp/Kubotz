@@ -13,6 +13,8 @@ import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
+import com.brm.Kubotz.Component.GrabComponent;
+import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Constants;
@@ -134,6 +136,12 @@ public class KubotzFactory extends EntityFactory {
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
+
+        //GRAB
+        character.addComponent(new GrabComponent(), GrabComponent.ID);
+
+        //PowerUps
+        character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
 
         return character;
     }

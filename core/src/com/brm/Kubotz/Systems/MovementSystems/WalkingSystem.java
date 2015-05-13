@@ -32,6 +32,7 @@ public class WalkingSystem extends EntitySystem {
         } else {
             if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
                 jump(entity);
+                gamePad.releaseButton(GameButton.MOVE_UP);
             } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
                 moveDown(entity); // TODO test if crouch or fall down
             } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
@@ -80,20 +81,20 @@ public class WalkingSystem extends EntitySystem {
      * Makes the entity jump
      */
     private void jump(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        JumpComponent jp;
         if(entity.hasComponent(JumpComponent.ID)){
-            jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
-            if(phys.isGrounded() || jp.nbJujmps < jp.getNbJumpsMax()){
-                if(phys.isGrounded()){ //Reset jump number
-                    jp.nbJujmps = 0;
+            if(jp.nbJujmps < jp.getNbJumpsMax()){
+                if(jp.cooldown.isDone()){
+                    float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
+                    MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
+                    phys.setGrounded(false);
+                    jp.nbJujmps++;
+                    jp.cooldown.reset();
                 }
 
-                float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
-                MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
-                phys.setGrounded(false);
-                jp.nbJujmps++;
+
             }
         }
     }
@@ -130,4 +131,19 @@ public class WalkingSystem extends EntitySystem {
             MovementSystem.moveInX(entity, finalVel);
         }
     }
+
+
+    @Override
+    public void update(float dt) {
+
+        //RESET JUMPS
+        for(Entity entity: em.getEntitiesWithComponent(JumpComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+                if(phys.isGrounded()){
+                        jp.nbJujmps = 0;
+                }
+        }
+    }
+
 }

@@ -9,7 +9,10 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.GrabComponent;
 import com.brm.Kubotz.Component.GrabbableComponent;
+import com.brm.Kubotz.Component.LifespanComponent;
+import com.brm.Kubotz.Component.Powerups.PowerUp;
 import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
+import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -52,34 +55,29 @@ public class GrabSystem extends EntitySystem{
     public void update(){
 
 
-
     }
 
     /**
      * Makes an entity pickup an object
-     * @param entity the entity that will pick the object up
+     * @param agent the entity that will pick the object up
      * @param grabbable the object to be picked up
      */
-    private void pickupObject(Entity entity, Entity grabbable){
+    private void pickupObject(Entity agent, Entity grabbable){
         Logger.log("PICK IT UP");
 
         //Perform correct acction according to the grabbed object
 
         //Grab PowerUp
         if(grabbable.hasComponent(PowerUpComponent.ID)){
-
-
-
+            PowerUpComponent powerUpComp = (PowerUpComponent) grabbable.getComponent(PowerUpComponent.ID);
+            PowerUpsContainerComponent container;
+            container = (PowerUpsContainerComponent) agent.getComponent(PowerUpsContainerComponent.ID);
+            container.addPowerUp(powerUpComp.getPowerUp());
+            powerUpComp.getPowerUp().effect.onStart(agent);
         }
 
 
-        //Grab Weapon
-
         //Grab Ennemy
-
-
-
-
 
 
     }

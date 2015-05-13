@@ -6,6 +6,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.Kubotz.Component.GrabbableComponent;
 import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Component.Powerups.PowerUp;
 import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
@@ -87,6 +88,8 @@ public class PowerUpFactory extends EntityFactory {
         powerUp.addComponent(powerUpComponent, PowerUpComponent.ID);
         powerUp.addComponent(lifespanComp, LifespanComponent.ID);
         powerUp.addComponent(buildBody(powerUp), PhysicsComponent.ID);
+        powerUp.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
+
 
         //TODO Sprite + Animation Component
 
@@ -108,7 +111,7 @@ public class PowerUpFactory extends EntityFactory {
 
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShape;
-        fixtureDef.density = 0.1f;
+        fixtureDef.density = 0.8f;
         fixtureDef.restitution = 0.5f;
 
         fixtureDef.isSensor = false;

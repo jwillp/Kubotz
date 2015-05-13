@@ -41,7 +41,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         world.step(1 / 60f, 6, 2);
 
         // Since all contacts have been processed empty them all
-        //clearContacts();
+        cleanContacts();
     }
 
     /**
@@ -54,6 +54,18 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
             phys.contacts.clear();
         }
     }
+
+    /**
+     * Makes a cleanup of the contacts of the entities
+     * that would be colliding tih null entities
+     */
+    public void cleanContacts(){
+        for(Component component: em.getComponents(PhysicsComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) component;
+            phys.contacts.cleanContacts();
+        }
+    }
+
 
 
     // CONTACT LISTENING
