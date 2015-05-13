@@ -8,4 +8,6 @@ import com.brm.GoatEngine.ECS.Components.Component;
  */
 public class GrabComponent extends Component {
     public  final static String ID = "GRAB_COMPONENT";
+
+    //TODO grab radius?
 }

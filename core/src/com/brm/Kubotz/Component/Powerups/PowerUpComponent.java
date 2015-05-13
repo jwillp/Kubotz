@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Component;
+package com.brm.Kubotz.Component.Powerups;
 
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.Utils.Timer;
@@ -12,6 +12,8 @@ import com.brm.GoatEngine.Utils.Timer;
  *
  */
 public class PowerUpComponent extends Component {
+
+    public static final String ID = "POWERUP_COMPONENT";
 
     public enum Type{
 
@@ -28,10 +30,9 @@ public class PowerUpComponent extends Component {
 
     public Type type;
 
-    public float value = 0;     // In the case of a modifier
+    public PowerUpEffect effect;
 
     public Timer effectTimer;
-
 
 
 

@@ -51,7 +51,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     public void clearContacts(){
        for(Component component: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
-           phys.contacts.clear();
+            phys.contacts.clear();
         }
     }
 
@@ -95,9 +95,9 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
 
         // TODO Test over time
-        if(physA.contacts.hasContactWithEntity(entityB) || physB.contacts.hasContactWithEntity(entityA)){
+       /* if(physA.contacts.hasContactWithEntity(entityB) || physB.contacts.hasContactWithEntity(entityA)){
             return;
-        }
+        }*/
 
         //Create EntityContacts
         EntityContact contactA = new EntityContact(fixtureA, fixtureB, describer);

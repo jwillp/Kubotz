@@ -19,7 +19,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.GrabableComponent;
+import com.brm.Kubotz.Component.GrabbableComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
@@ -51,7 +51,7 @@ public class InGameScreen extends GameScreen {
     //PLAYER
     private Entity player;
     private PunchSystem punchSystem;
-    private ObjectSystem objectSystem;
+    private GrabSystem grabSystem;
 
 
     public InGameScreen() {
@@ -86,7 +86,7 @@ public class InGameScreen extends GameScreen {
 
 
 
-        this.objectSystem = new ObjectSystem(this.entityManager);
+        this.grabSystem = new GrabSystem(this.entityManager);
 
         this.lifespanSystem = new LifespanSystem(this.entityManager);
 
@@ -142,7 +142,7 @@ public class InGameScreen extends GameScreen {
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
-        bo.addComponent(new GrabableComponent(), GrabableComponent.ID);
+        bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
         Logger.log("In Game State initialised");
 
 
@@ -165,7 +165,7 @@ public class InGameScreen extends GameScreen {
         this.punchSystem.handleInput();
         this.movementSystem.handleInput();
 
-        this.objectSystem.handleInput();
+        this.grabSystem.handleInput();
 
 
     }
@@ -179,7 +179,7 @@ public class InGameScreen extends GameScreen {
         this.trackerSystem.update();
         this.skillSystem.update();
         this.punchSystem.update();
-        this.objectSystem.update();
+        this.grabSystem.update();
         this.damageSystem.update();
         this.lifespanSystem.update();
 

@@ -88,7 +88,6 @@ public class MovementSystem extends EntitySystem {
                     phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
                     phys.contacts.remove(i);
 
-
                     //REMOVE OTHER contact for other entity
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
                     physB.contacts.remove(contact);

@@ -10,6 +10,8 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.DamageComponent;
+import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
+import com.brm.Kubotz.Component.Powerups.InvicibilityComponent;
 import com.brm.Kubotz.Constants;
 
 /**
@@ -67,23 +69,37 @@ public class DamageSystem extends EntitySystem{
 
 
         //Damage Health
+        //Invinvible
+        if(target.hasComponent(InvicibilityComponent.ID)){
+            return;
+        }//Energetic Shield
+        else if(target.hasComponent(EnergeticShieldComponent.ID)){
+            EnergeticShieldComponent shield = (EnergeticShieldComponent) target.getComponent(EnergeticShieldComponent.ID);
+            shield.takeDamage(damageComp.damage);
+
+            //Is shield dead? If so remove it
+            if(shield.isDead()){
+                target.removeComponent(EnergeticShieldComponent.ID);
+            }
 
 
-        targetHealth.substractAmount(damageComp.damage);
+        }else{
+            targetHealth.substractAmount(damageComp.damage);
+
+            //KnockBack
+            Vector2 knockBack = damageComp.knockBack.cpy();
+            if(damagerPhys.direction == PhysicsComponent.Direction.LEFT){
+                knockBack.x *= -1;
+            }
+
+            targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
+                    targetPhys.getPosition().x,
+                    targetPhys.getPosition().y,
+                    true);
+
+        }
         Logger.log(targetHealth.getAmount());
 
-
-
-        //KnockBack
-        Vector2 knockBack = damageComp.knockBack.cpy();
-        if(damagerPhys.direction == PhysicsComponent.Direction.LEFT){
-            knockBack.x *= -1;
-        }
-
-        targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
-                targetPhys.getPosition().x,
-                targetPhys.getPosition().y,
-                true);
 
     }
 
