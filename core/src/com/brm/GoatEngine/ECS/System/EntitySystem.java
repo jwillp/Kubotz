@@ -8,6 +8,7 @@ public abstract class EntitySystem {
 
     protected EntityManager em;
 
+    private EntitySystemManager systemManager;
 
     public EntitySystem(EntityManager em){
         this.em = em;
@@ -42,4 +43,17 @@ public abstract class EntitySystem {
      */
     public void deInit(){}
 
+    /**
+     * Renders only if needed
+     * @param deltaTime
+     */
+    public void render(float deltaTime){}
+
+    public EntitySystemManager getSystemManager() {
+        return systemManager;
+    }
+
+    public void setSystemManager(EntitySystemManager systemManager) {
+        this.systemManager = systemManager;
+    }
 }
