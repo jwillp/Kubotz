@@ -21,7 +21,7 @@ public class PowerUp {
 
     public PowerUpEffect effect;
 
-    public Timer effectDuration;
+    public Timer effectDuration = new Timer(Timer.FIVE_SECONDS);
 
 
     public PowerUp(PowerUpEffect effect){

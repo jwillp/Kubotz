@@ -22,7 +22,7 @@ public class PowerUpFactory extends EntityFactory {
     private PowerUpComponent powerUpComponent;
     private LifespanComponent lifespanComp;
     private Vector2 position;
-    private Vector2 size = new Vector2(1,1);
+    private Vector2 size = new Vector2(0.3f,0.3f);
     private final World world;
 
 
@@ -58,11 +58,11 @@ public class PowerUpFactory extends EntityFactory {
     /**
      * The Powerup has a lifetime, if not taken within this
      * time frame it disappears
-     * @param duration
+     * @param lifetime
      * @return
      */
-    public PowerUpFactory withLifeTime(int duration){
-        lifespanComp.counter.setDelay(duration);
+    public PowerUpFactory withLifeTime(int lifetime){
+        lifespanComp.counter.setDelay(lifetime);
         return this;
     }
 
@@ -86,20 +86,22 @@ public class PowerUpFactory extends EntityFactory {
 
         powerUp.addComponent(powerUpComponent, PowerUpComponent.ID);
         powerUp.addComponent(lifespanComp, LifespanComponent.ID);
+        powerUp.addComponent(buildBody(powerUp), PhysicsComponent.ID);
 
         //TODO Sprite + Animation Component
 
+        lifespanComp.counter.start();
 
         return powerUp;
     }
 
 
-    private PhysicsComponent buildBody(Entity bullet){
+    private PhysicsComponent buildBody(Entity powerUp){
         //Readjust position so it is not positioned according to the middle, but rather the bottom left corner
         position = new Vector2(position.x + size.x, position.y + size.y);
 
         // Physics
-        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.KinematicBody, position, size.x, size.y);
+        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position, size.x, size.y);
 
         CircleShape circleShape = new CircleShape();
         circleShape.setRadius(physics.getWidth());
@@ -109,14 +111,13 @@ public class PowerUpFactory extends EntityFactory {
         fixtureDef.density = 0.1f;
         fixtureDef.restitution = 0.5f;
 
-        fixtureDef.isSensor = true;
+        fixtureDef.isSensor = false;
 
         physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_POWERUP);
         circleShape.dispose();
 
 
-        physics.getBody().setUserData(bullet);
-
+        physics.getBody().setUserData(powerUp);
 
         return physics;
     }

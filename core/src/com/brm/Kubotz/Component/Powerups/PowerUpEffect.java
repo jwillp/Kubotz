@@ -31,10 +31,10 @@ public abstract class PowerUpEffect {
     /**
      * Gives a Health bonus of 50%
      */
-    public class HealthModifier extends PowerUpEffect {
+    public static class HealthModifier extends PowerUpEffect {
 
 
-        private float percentage = 50; //50%
+        private final float percentage = 50; //50%
 
         @Override
         public void onStart(Entity entity){
@@ -49,9 +49,9 @@ public abstract class PowerUpEffect {
     /**
      * Gives an Energy Boost of 50%
      */
-    public class EnergyModifier extends PowerUpEffect {
+    public static class EnergyModifier extends PowerUpEffect {
 
-        private float percentage = 50;
+        private final float percentage = 50; //50%
 
         public EnergyModifier(){
         }
@@ -71,9 +71,9 @@ public abstract class PowerUpEffect {
      * A Speed Boost for an entity's walking speed and Jump Speed
      * of 10%
      */
-    public class SpeedModifier extends PowerUpEffect {
+    public static class SpeedModifier extends PowerUpEffect {
 
-        public float percentage = 10;
+        public final float percentage = 10; //10%
         public Vector2 oldSpeed;
 
         @Override
@@ -98,7 +98,7 @@ public abstract class PowerUpEffect {
     /**
      * Adds a +1 Jump to the jump component of an entity
      */
-    public class JumpModifier extends PowerUpEffect{
+    public static class JumpModifier extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {

@@ -30,10 +30,10 @@
   <object id="63" type="STATIC_PLATFORM" x="1472" y="896" width="448" height="64"/>
   <object id="64" type="STATIC_PLATFORM" x="960" y="576" width="512" height="64"/>
   <object id="70" type="PLAYER_SPAWN" x="1152" y="1088" width="64" height="64"/>
-  <object id="76" type="OBJECT_SPAWN" x="704" y="704" width="64" height="64"/>
-  <object id="77" type="OBJECT_SPAWN" x="1664" y="704" width="64" height="64"/>
-  <object id="78" type="OBJECT_SPAWN" x="640" y="1280" width="64" height="64"/>
-  <object id="79" type="OBJECT_SPAWN" x="1728" y="1280" width="64" height="64"/>
+  <object id="76" type="BONUS_SPAWN" x="704" y="704" width="64" height="64"/>
+  <object id="77" type="BONUS_SPAWN" x="1664" y="704" width="64" height="64"/>
+  <object id="78" type="BONUS_SPAWN" x="640" y="1280" width="64" height="64"/>
+  <object id="79" type="BONUS_SPAWN" x="1728" y="1280" width="64" height="64"/>
   <object id="82" type="WALL" x="0" y="640" width="320" height="128"/>
   <object id="86" type="WALL" x="2112" y="640" width="320" height="128"/>
   <object id="87" type="WALL" x="2112" y="1088" width="320" height="128"/>

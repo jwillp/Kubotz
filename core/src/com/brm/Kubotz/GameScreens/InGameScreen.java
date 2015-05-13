@@ -24,6 +24,7 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.GrabbableComponent;
 import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
 import com.brm.Kubotz.Component.Powerups.InvincibilityComponent;
+import com.brm.Kubotz.Component.SpawnPointComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
@@ -79,6 +80,10 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(DamageSystem.class, new DamageSystem(this.entityManager));
 
+        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
+
+
+
 
         // MAP
 
@@ -99,13 +104,23 @@ public class InGameScreen extends GameScreen {
 
             RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
+            String objType = (String) obj.getProperties().get("type");
+            Vector2 position = new Vector2(rect.getX()/tileSize, rect.getY()/tileSize);
 
-            if(obj.getProperties().get("type").equals("PLAYER_SPAWN")){
+
+            if(objType.equals("PLAYER_SPAWN")){
                 this.player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(1.0f)
                         .withCameraTargetComponent()
                         .build();
+            }else if(objType.equals("BONUS_SPAWN")){
+                Entity entity = new Entity();
+                entityManager.registerEntity(entity);
+                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
+                        SpawnPointComponent.Type.PowerUp), SpawnPointComponent.ID);
+
+
             }else{
                 new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
@@ -176,6 +191,7 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).update();
 
+        systemManager.getSystem(PowerUpsSystem.class).update();
     }
 
     @Override
