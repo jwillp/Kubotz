@@ -39,6 +39,7 @@ public class PhysicsComponent extends Component {
     private float height;  //The height of the entity (in game units)
 
     // List of all the contacts that recently happened to the entities.
+
     // The "A entity" will always be the current entity.
     public EntityContactCollection contacts = new EntityContactCollection();
 
@@ -46,11 +47,11 @@ public class PhysicsComponent extends Component {
 
     /**
      * CTOR
-     * @param world
-     * @param bodyType
-     * @param position
-     * @param width
-     * @param height
+     * @param world the world in which we want to add the body
+     * @param bodyType Type of Box2D body
+     * @param position the initial position
+     * @param width the width
+     * @param height the height
      */
     public PhysicsComponent(World world, BodyDef.BodyType bodyType, Vector2 position, float width, float height){
 

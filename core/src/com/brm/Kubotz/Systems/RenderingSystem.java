@@ -38,7 +38,8 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-    public void render(World world){
+    public void render(){
+        World world = getSystemManager().getSystem(PhysicsSystem.class).getWorld();
         if(Config.DEBUG_RENDERING_ENABLED) {
             this.renderDebug(world);
         }
