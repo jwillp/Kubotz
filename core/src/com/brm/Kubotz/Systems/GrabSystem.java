@@ -73,8 +73,9 @@ public class GrabSystem extends EntitySystem{
             container = (PowerUpsContainerComponent) agent.getComponent(PowerUpsContainerComponent.ID);
             container.addPowerUp(powerUpComp.getPowerUp());
             powerUpComp.getPowerUp().effect.onStart(agent);
+            LifespanComponent life = (LifespanComponent) grabbable.getComponent(LifespanComponent.ID);
+            life.counter.terminate();
         }
-
 
         //Grab Ennemy
 

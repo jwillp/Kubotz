@@ -6,6 +6,7 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.ManaComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.Utils.Logger;
 
 /**
  * The effect of a PowerUp. It is an action to perform

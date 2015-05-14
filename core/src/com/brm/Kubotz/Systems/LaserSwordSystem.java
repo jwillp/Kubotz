@@ -22,7 +22,6 @@ public class LaserSwordSystem extends EntitySystem{
     }
 
 
-
     @Override
     public void handleInput() {
 
@@ -80,7 +79,6 @@ public class LaserSwordSystem extends EntitySystem{
                 }
             }
         }
-
     }
 
 
@@ -111,7 +109,6 @@ public class LaserSwordSystem extends EntitySystem{
                 break;
         }
 
-
         position.add(agentPhys.getPosition());
         return new BulletFactory(this.em, agentPhys.getBody().getWorld(), position)
                 .withDamage(laserSwordComponent.damage)
@@ -122,10 +119,5 @@ public class LaserSwordSystem extends EntitySystem{
                 .withDirection(agentPhys.direction)
                 .build();
     }
-
-
-
-
-
 }
 

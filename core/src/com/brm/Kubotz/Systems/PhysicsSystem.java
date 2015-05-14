@@ -110,6 +110,11 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     @Override
     public void endContact(Contact contact) {
 
+        //Remove contact only if it was a touching contact (otherwise the contacts would always delete themselves)
+        if(!contact.isTouching()){
+            return;
+        }
+
         //Get Entities
         Entity entityA = (Entity) contact.getFixtureA().getBody().getUserData();
         Entity entityB = (Entity) contact.getFixtureB().getBody().getUserData();
@@ -117,6 +122,8 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         //Get Phys
         PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
         PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
+
+
 
         //Remove Contacts
         physA.contacts.removeContactsWithEntity(entityB);
