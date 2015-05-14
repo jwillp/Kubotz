@@ -14,7 +14,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystemManager;
@@ -23,8 +22,6 @@ import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.GrabbableComponent;
-import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
-import com.brm.Kubotz.Component.Powerups.InvincibilityComponent;
 import com.brm.Kubotz.Component.SpawnPointComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
@@ -83,7 +80,7 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
 
-
+        systemManager.addSystem(LaserSwordSystem.class, new LaserSwordSystem(this.entityManager));
 
 
         // MAP
@@ -168,11 +165,11 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(InputTranslationSystem.class).update();
         systemManager.getSystem(GrabSystem.class).handleInput();
         systemManager.getSystem(SkillSystem.class).handleInput();
+
         systemManager.getSystem(PunchSystem.class).handleInput();
+        systemManager.getSystem(LaserSwordSystem.class).handleInput();
+
         systemManager.getSystem(MovementSystem.class).handleInput();
-
-
-
 
     }
 
@@ -184,7 +181,10 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(MovementSystem.class).update();
         systemManager.getSystem(TrackerSystem.class).update();
         systemManager.getSystem(SkillSystem.class).update();
+
         systemManager.getSystem(PunchSystem.class).update();
+        systemManager.getSystem(LaserSwordSystem.class).update();
+
         systemManager.getSystem(GrabSystem.class).update();
         systemManager.getSystem(DamageSystem.class).update();
         systemManager.getSystem(LifespanSystem.class).update();
@@ -228,7 +228,7 @@ public class InGameScreen extends GameScreen {
 
             sb.end();
         }
-        //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());
+
 
 
     }

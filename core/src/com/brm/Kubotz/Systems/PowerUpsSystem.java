@@ -102,7 +102,7 @@ public class PowerUpsSystem extends EntitySystem {
         pos.y = MathUtils.random(pos.y-0.1f, pos.y+0.1f);
 
         //TODO RANDOMIZE EFFECT
-        PowerUpEffect effect = new PowerUpEffect.JumpModifier();
+        PowerUpEffect effect = new PowerUpEffect.LaserSwordProvider();
 
 
         // Make a random PowerUp

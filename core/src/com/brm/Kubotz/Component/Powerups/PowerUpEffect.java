@@ -170,9 +170,8 @@ public abstract class PowerUpEffect {
 
 
 
-
+    // TODO Complete
     public class  LaserGunMkIProvider extends PowerUpEffect{
-
 
         @Override
         public void onStart(Entity entity) {
@@ -185,7 +184,7 @@ public abstract class PowerUpEffect {
         }
     }
 
-
+    // TODO Complete
     public class LaserGunMkIIProvider extends PowerUpEffect{
 
         @Override
@@ -199,6 +198,22 @@ public abstract class PowerUpEffect {
         }
     }
 
+    /**
+     * Gives to an entity a Laser Sword
+     */
+    public static class LaserSwordProvider extends PowerUpEffect{
+
+
+        @Override
+        public void onStart(Entity entity) {
+            entity.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
+        }
+
+        @Override
+        public void onFinish(Entity entity) {
+            entity.removeComponent(LaserSwordComponent.ID);
+        }
+    }
 
 
 
