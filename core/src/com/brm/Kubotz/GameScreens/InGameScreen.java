@@ -239,7 +239,7 @@ public class InGameScreen extends GameScreen {
         }
         //Logger.log(this.entityManager.getEntitiesWithTag(Constants.ENTITY_TAG_PUNCH).size());
 
-        this.hud.draw(this.renderingSystem.getSpriteBatch());
+        //this.hud.draw(this.renderingSystem.getSpriteBatch());
 
 
     }

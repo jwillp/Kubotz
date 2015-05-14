@@ -15,6 +15,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.Component.UIHealthComponent;
 import com.brm.Kubotz.Constants;
 
 
@@ -134,6 +135,9 @@ public class KubotzFactory extends EntityFactory {
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
+
+        character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
+
 
         return character;
     }
