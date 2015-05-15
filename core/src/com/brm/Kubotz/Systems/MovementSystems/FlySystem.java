@@ -20,17 +20,14 @@ public class FlySystem extends EntitySystem {
         super(em);
     }
 
-
     @Override
     public void handleInput(){
-
         for(Entity entity: em.getEntitiesWithComponent(FlyComponent.ID)){
            if(entity.hasComponent(VirtualGamePad.ID)){
                handleInputForEntity(entity);
            }
         }
     }
-
 
     /**
      * Handles the Input for an entity
@@ -54,7 +51,6 @@ public class FlySystem extends EntitySystem {
             }
         }
     }
-
 
     @Override
     public void update(float dt) {
@@ -135,7 +131,6 @@ public class FlySystem extends EntitySystem {
         flyInX(entity, resultingVelocity);
     }
 
-
     /**
      * Decelerates an entity
      * @param entity
@@ -153,7 +148,6 @@ public class FlySystem extends EntitySystem {
                 Math.max(vel.y - flyComp.deceleration.y, 0.0f) : Math.min(vel.y + flyComp.deceleration.y, 0.0f);
         flyInY(entity, finalVelY);
     }
-
 
     /**
      * Makes an entity fly horizontally i.e. on the X axis
@@ -188,7 +182,5 @@ public class FlySystem extends EntitySystem {
     private void stopY(Entity entity){
         flyInY(entity, 0);
     }
-
-
 
 }

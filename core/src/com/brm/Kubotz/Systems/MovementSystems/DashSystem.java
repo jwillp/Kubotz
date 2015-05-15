@@ -13,7 +13,7 @@ import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
- * Used to handle dashes
+ * Handles Dash Movements
  */
 public class DashSystem extends EntitySystem{
 
@@ -31,13 +31,16 @@ public class DashSystem extends EntitySystem{
         }
     }
 
-    public void handleInput(Entity entity){
-        VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);
-        if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
-            DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
+    /**
+     * Handles the Input for an entity
+     * having Input i.e. with a VirtualGamePad
+     */
+    private void handleInputForEntity(Entity entity){
+        DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
+        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
+        if(dashComp.phase == DashComponent.Phase.NONE){
 
             boolean isDashValid = true;
 
@@ -54,36 +57,18 @@ public class DashSystem extends EntitySystem{
                 isDashValid = false;
             }
 
-            //Request a Dash
             if(isDashValid){
-                onDashRequest(entity);
+                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+
+                // Put the entity in preparation Phase
+                dashComp.phase = DashComponent.Phase.PREPARATION;
+                dashComp.getPreparationDuration().reset();
+                dashComp.startPosition = phys.getPosition().cpy();
             }
-
         }
-
     }
 
-    /**
-     * Method called when the entity requested to dash
-     * @param entity the entity to process
-     */
-    private void onDashRequest(Entity entity){
-        DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
 
-
-        //We want to dash! Can we?
-       /* if(dashComp.isDisabled() && dashComp.getCoolDownTimer().isDone()){
-
-            //Put component in preparing phase
-            dashComp.phase = DashComponent.Phase.PREPARATION;
-
-            dashComp.setEnabled(true);
-            dashComp.getPreparationDuration().reset();
-            dashComp.getTravelDuration().reset();
-            dashComp.startPosition = phys.getPosition().cpy();
-        }*/
-    }
 
     /**
      * Checks whether or not an entity is still allowed to dash
@@ -94,22 +79,17 @@ public class DashSystem extends EntitySystem{
         for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
-          /*  if (dashComp.isEnabled()) {
+            if (dashComp.isEnabled()) {
                 //Are We Done with the preparing phase?
                 if(dashComp.phase == DashComponent.Phase.PREPARATION){
                    updatePreparationPhase(entity);
-
-                } else if(dashComp.phase == DashComponent.Phase.MOVEMENT){
-                    updateMovementPhase(entity);
-
+                } else if(dashComp.phase == DashComponent.Phase.TRAVEL){
+                    updateTravelPhase(entity);
                 }else if(dashComp.phase == DashComponent.Phase.DECELERATION){
                     updateDecelerationPhase(entity);
-
-                }else if(dashComp.phase == DashComponent.Phase.RECOVERY){
-                    updateRecoveryPhase(entity);
                 }
 
-            }*/
+            }
         }
 
     }
@@ -124,10 +104,10 @@ public class DashSystem extends EntitySystem{
 
         if(dashComp.getPreparationDuration().isDone()){
             //We can now proceed to dashing in whatever direction
-            dashComp.phase = DashComponent.Phase.MOVEMENT;
+            dashComp.phase = DashComponent.Phase.TRAVEL;
+            dashComp.getTravelDuration().reset();
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             phys.getBody().setGravityScale(0);
-
         }else{
             MovementSystem.stopXY(entity);
         }
@@ -135,10 +115,10 @@ public class DashSystem extends EntitySystem{
     }
 
     /**
-     * Updates an entity when it is in MOVEMENT phase
+     * Updates an entity when it is in TRAVEL phase
      * @param entity the entity to update
      */
-    private void updateMovementPhase(Entity entity){
+    private void updateTravelPhase(Entity entity){
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
@@ -184,36 +164,14 @@ public class DashSystem extends EntitySystem{
         }
 
         // Is the entity done decelerating
-        /*if(phys.getVelocity().x == 0){
+        if(phys.getVelocity().x == 0){
             phys.getBody().setGravityScale(1);
-            dashComp.phase = DashComponent.Phase.RECOVERY;
-
-        }*/
-
-    }
-
-    /**
-     * Updates an entity when it is in RECOVERY phase
-     * @param entity
-     */
-    private void updateRecoveryPhase(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-        JumpComponent jumpComponent = (JumpComponent) entity.getComponent(JumpComponent.ID);
-        DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
-
-        //If the entity is not grounded ==> we cannot jump
-        jumpComponent.setEnabled(phys.isGrounded());
-
-        /*if(phys.isGrounded()){
-            jumpComponent.setEnabled(true);
             dashComp.phase = DashComponent.Phase.NONE;
-            dashComp.setEnabled(false);
-            dashComp.direction.set(0,0);
-        }*/
-
-
+        }
 
     }
+
+
 
 
 

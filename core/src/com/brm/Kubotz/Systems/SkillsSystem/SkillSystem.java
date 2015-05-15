@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.Kubotz.Component.Parts.DashBootsComponent;
 
 /**
  * Used to process Skills... most active skills
@@ -11,16 +12,14 @@ public class SkillSystem extends EntitySystem {
 
     MagneticBootsSystem magneticBootsSystem;
     FlyingBootsSystem flyingBootsSystem;
+    DashBootsSystem dashBootsSystem;
 
     public SkillSystem(EntityManager em) {
         super(em);
 
         magneticBootsSystem = new MagneticBootsSystem(em);
         flyingBootsSystem = new FlyingBootsSystem(em);
-
-
-
-
+        dashBootsSystem = new DashBootsSystem(em);
 
     }
 
@@ -32,7 +31,7 @@ public class SkillSystem extends EntitySystem {
 
         flyingBootsSystem.handleInput();
         magneticBootsSystem.handleInput();
-
+        dashBootsSystem.handleInput();
 
     }
 
@@ -42,6 +41,7 @@ public class SkillSystem extends EntitySystem {
     public void update(){
         magneticBootsSystem.update(0); //TODO Change that
         flyingBootsSystem.update(0);
+        dashBootsSystem.update(0);
     }
 
 

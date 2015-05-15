@@ -14,6 +14,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Component.Parts.DashBootsComponent;
 import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
@@ -125,10 +126,10 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+        //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashComponent(), DashComponent.ID);
+        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);

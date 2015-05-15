@@ -27,27 +27,23 @@ public class MovementSystem extends EntitySystem {
     public MovementSystem(EntityManager em) {
         super(em);
         flySystem = new FlySystem(em);
-        runningSystem = new RunningSystem(em);
         dashSystem = new DashSystem(em);
+        runningSystem = new RunningSystem(em);
     }
 
 
     public void handleInput(){
-
         flySystem.handleInput();
+        dashSystem.handleInput();
         runningSystem.handleInput();
-
-
-
     }
 
 
 
     public void update(){
-
-        runningSystem.update(Gdx.graphics.getDeltaTime());
         flySystem.update(Gdx.graphics.getDeltaTime());
         dashSystem.update(Gdx.graphics.getDeltaTime());
+        runningSystem.update(Gdx.graphics.getDeltaTime());
     }
 
 

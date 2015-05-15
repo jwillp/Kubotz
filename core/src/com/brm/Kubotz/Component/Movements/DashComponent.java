@@ -23,8 +23,9 @@ public class DashComponent extends Component{
 
     public enum Phase{
         PREPARATION,
-        MOVEMENT,
+        TRAVEL,
         DECELERATION,
+        NONE,
     }
 
     public Phase phase;
@@ -52,7 +53,6 @@ public class DashComponent extends Component{
         preparationDuration.start();
         travelDuration.start();
         recoveryDuration.start();
-        this.setEnabled(false);
     }
 
 
