@@ -9,6 +9,12 @@ public abstract class Component {
     private boolean isEnabled = true; //By default a component is enabled
 
 
+    public Component(){}
+
+    public Component(boolean isEnabled){
+        this.setEnabled(isEnabled);
+    }
+
     /**
      * Called when the component is attached to an entity
      */

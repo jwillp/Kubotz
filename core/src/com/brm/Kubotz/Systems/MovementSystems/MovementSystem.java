@@ -8,9 +8,8 @@ import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Component.Movements.FlyComponent;
 import com.brm.Kubotz.Constants;
 
 
@@ -20,7 +19,7 @@ import com.brm.Kubotz.Constants;
 public class MovementSystem extends EntitySystem {
 
     FlySystem flySystem;
-    WalkingSystem walkingSystem;
+    RunningSystem runningSystem;
     DashSystem dashSystem;
 
 
@@ -28,34 +27,22 @@ public class MovementSystem extends EntitySystem {
     public MovementSystem(EntityManager em) {
         super(em);
         flySystem = new FlySystem(em);
-        walkingSystem = new WalkingSystem(em);
+        runningSystem = new RunningSystem(em);
         dashSystem = new DashSystem(em);
     }
 
 
     public void handleInput(){
         for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
-            boolean useDefaultBehaviour = true; //Whether or not we will walk
+
+            // Handle Input according to the walking mode
 
             // Fly Component
-            if(entity.hasComponent(FlyComponent.ID)){
-                FlyComponent flyComp = (FlyComponent) entity.getComponent(FlyComponent.ID);
+            if(entity.hasComponentEnabled(FlyComponent.ID)){
                 flySystem.handleInput(entity);
-                if(flyComp.isEnabled()){
-                    useDefaultBehaviour = false;
-                }
-            // Dash Component
-            }else if(entity.hasComponent(DashComponent.ID)){
-                DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
-                dashSystem.handleInput(entity);
-                if(dashComp.isEnabled()){
-                    useDefaultBehaviour = dashComp.phase == DashComponent.Phase.RECOVERY;
-                }
-            }
-
-            //Whether or not we should use the walking behaviour (which is walking)
-            if(useDefaultBehaviour){
-                walkingSystem.handleInput(entity);
+            // Running Component
+            }else if(entity.hasComponentEnabled(RunningComponent.ID)){
+                runningSystem.handleInput(entity);
             }
         }
 
@@ -67,18 +54,17 @@ public class MovementSystem extends EntitySystem {
 
     public void update(){
 
-        this.updateIsGrounded();
+        updateIsGrounded();
 
         flySystem.update();
         dashSystem.update();
-        walkingSystem.update(Gdx.graphics.getDeltaTime());
+        runningSystem.update(Gdx.graphics.getDeltaTime());
     }
 
     /**
      * Updates the property describing if an entity is grounded or not
      */
     public void updateIsGrounded(){
-
 
         for(Component comp: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) comp;

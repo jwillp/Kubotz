@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Component.Skills.Active;
+package com.brm.Kubotz.Component.Movements;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.Kubotz.Component.Skills.DurationBasedSkill;

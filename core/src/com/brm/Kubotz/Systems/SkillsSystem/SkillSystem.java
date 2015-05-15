@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
 public class SkillSystem extends EntitySystem {
 
     MagneticFeetSystem magneticFeetSystem;
+    FlyingBootsSystem flyingBootsSystem;
 
     public SkillSystem(EntityManager em) {
         super(em);

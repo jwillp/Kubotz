@@ -1,17 +1,17 @@
-package com.brm.Kubotz.Component.Skills.Active;
+package com.brm.Kubotz.Component.Parts;
 
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Component.Skills.DurationBasedSkill;
 
 /**
- * Magnetic Feet
+ * Boots giving a Kubotz the ability to reverse the effect of gravity on itself
  */
-public class MagneticFeetComponent extends DurationBasedSkill {
+public class MagneticBootsComponent extends DurationBasedSkill {
     public static final String ID = "MAGNETIC_FIELD";
 
     public float startingAngle; //In DEGREE
 
-    public MagneticFeetComponent() {
+    public MagneticBootsComponent() {
         super(0, 0);
         this.setEnabled(false);
     }
@@ -19,7 +19,6 @@ public class MagneticFeetComponent extends DurationBasedSkill {
     public Timer getRotationTimer(){
         return this.effectDurationTimer;
     }
-
 
 
 }

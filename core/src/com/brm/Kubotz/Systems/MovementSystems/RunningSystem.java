@@ -10,12 +10,12 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
- * On Ground Movement System: Walking + Jumping
+ * On Ground Movement System: Running + Jumping
  */
-public class WalkingSystem extends EntitySystem {
+public class RunningSystem extends EntitySystem {
 
 
-    public WalkingSystem(EntityManager em) {
+    public RunningSystem(EntityManager em) {
         super(em);
     }
 

@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
+import com.brm.Kubotz.Component.Movements.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -33,7 +33,6 @@ public class FlySystem extends EntitySystem {
                 flyUp(entity);
             }else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
                 flyDown(entity);
-
             }else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
                 flyRight(entity);
             }else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {

@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.Active.MagneticFeetComponent;
+import com.brm.Kubotz.Component.Parts.MagneticBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -24,7 +24,7 @@ public class MagneticFeetSystem extends EntitySystem{
      * Handles the input for every magnetic feet entities
      */
     public void handleInput() {
-        for (Entity entity : em.getEntitiesWithComponent(MagneticFeetComponent.ID)) {
+        for (Entity entity : em.getEntitiesWithComponent(MagneticBootsComponent.ID)) {
             handleInput(entity);
         }
     }
@@ -36,7 +36,7 @@ public class MagneticFeetSystem extends EntitySystem{
      */
     public void handleInput(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        MagneticFeetComponent magnoFeet = (MagneticFeetComponent)entity.getComponent(MagneticFeetComponent.ID);
+        MagneticBootsComponent magnoFeet = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
 
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
 
@@ -62,7 +62,7 @@ public class MagneticFeetSystem extends EntitySystem{
      */
     public void processMagno(Entity entity, boolean isEnabled){
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-        MagneticFeetComponent mag = (MagneticFeetComponent) entity.getComponent(MagneticFeetComponent.ID);
+        MagneticBootsComponent mag = (MagneticBootsComponent) entity.getComponent(MagneticBootsComponent.ID);
         mag.setEnabled(isEnabled);
 
         phys.getBody().setGravityScale(phys.getBody().getGravityScale() * -1); //Invert gravity
@@ -91,7 +91,7 @@ public class MagneticFeetSystem extends EntitySystem{
 
 
     public void update(float deltaTime){
-        for(Entity entity: em.getEntitiesWithComponent(MagneticFeetComponent.ID)){
+        for(Entity entity: em.getEntitiesWithComponent(MagneticBootsComponent.ID)){
             update(entity);
         }
     }

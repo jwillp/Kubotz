@@ -28,11 +28,4 @@ public abstract class ActiveSkill extends SkillComponent {
     }
 
 
-
-
-
-
-
-
-
 }

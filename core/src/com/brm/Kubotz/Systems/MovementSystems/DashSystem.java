@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -73,16 +73,16 @@ public class DashSystem extends EntitySystem{
 
 
         //We want to dash! Can we?
-        if(dashComp.isDisabled() && dashComp.getCoolDownTimer().isDone()){
+       /* if(dashComp.isDisabled() && dashComp.getCoolDownTimer().isDone()){
 
             //Put component in preparing phase
             dashComp.phase = DashComponent.Phase.PREPARATION;
 
             dashComp.setEnabled(true);
-            dashComp.getPreparationTimer().reset();
-            dashComp.getEffectDurationTimer().reset();
+            dashComp.getPreparationDuration().reset();
+            dashComp.getTravelDuration().reset();
             dashComp.startPosition = phys.getPosition().cpy();
-        }
+        }*/
     }
 
     /**
@@ -94,7 +94,7 @@ public class DashSystem extends EntitySystem{
         for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
-            if (dashComp.isEnabled()) {
+          /*  if (dashComp.isEnabled()) {
                 //Are We Done with the preparing phase?
                 if(dashComp.phase == DashComponent.Phase.PREPARATION){
                    updatePreparationPhase(entity);
@@ -109,7 +109,7 @@ public class DashSystem extends EntitySystem{
                     updateRecoveryPhase(entity);
                 }
 
-            }
+            }*/
         }
 
     }
@@ -122,7 +122,7 @@ public class DashSystem extends EntitySystem{
     private void updatePreparationPhase(Entity entity){
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
-        if(dashComp.getPreparationTimer().isDone()){
+        if(dashComp.getPreparationDuration().isDone()){
             //We can now proceed to dashing in whatever direction
             dashComp.phase = DashComponent.Phase.MOVEMENT;
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
@@ -143,7 +143,7 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
         // Do we need to disable?
-        if (GameMath.distance(phys.getPosition(), dashComp.startPosition) >= dashComp.distance.x || dashComp.getEffectDurationTimer().isDone()) {
+        if (GameMath.distance(phys.getPosition(), dashComp.startPosition) >= dashComp.distance.x || dashComp.getTravelDuration().isDone()) {
             dashComp.phase = DashComponent.Phase.DECELERATION;
         }else{
             Vector2 velocity = new Vector2();
@@ -184,11 +184,11 @@ public class DashSystem extends EntitySystem{
         }
 
         // Is the entity done decelerating
-        if(phys.getVelocity().x == 0){
+        /*if(phys.getVelocity().x == 0){
             phys.getBody().setGravityScale(1);
             dashComp.phase = DashComponent.Phase.RECOVERY;
 
-        }
+        }*/
 
     }
 
@@ -204,12 +204,12 @@ public class DashSystem extends EntitySystem{
         //If the entity is not grounded ==> we cannot jump
         jumpComponent.setEnabled(phys.isGrounded());
 
-        if(phys.isGrounded()){
+        /*if(phys.isGrounded()){
             jumpComponent.setEnabled(true);
             dashComp.phase = DashComponent.Phase.NONE;
             dashComp.setEnabled(false);
             dashComp.direction.set(0,0);
-        }
+        }*/
 
 
 
