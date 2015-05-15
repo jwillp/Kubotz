@@ -20,6 +20,15 @@ public class Entity {
         this.manager = manager;
     }
 
+
+    public Entity(){}
+
+    public Entity(String id){
+        this.setID(id);
+    }
+
+
+
     // Wrapper methods //
     /**
      * WRAPPER METHOD adds a component to the entity in the entity manager

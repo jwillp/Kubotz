@@ -13,10 +13,10 @@ import com.brm.Kubotz.Input.GameButton;
 /**
  * MagneticBoot
  */
-public class MagneticFeetSystem extends EntitySystem{
+public class MagneticBootsSystem extends EntitySystem{
 
 
-    public MagneticFeetSystem(EntityManager em) {
+    public MagneticBootsSystem(EntityManager em) {
         super(em);
     }
 
@@ -69,7 +69,7 @@ public class MagneticFeetSystem extends EntitySystem{
         mag.startingAngle = phys.getBody().getAngle()*MathUtils.radDeg;
         Logger.log("START ANGLE" + mag.startingAngle);
         Logger.log("Entity" + entity.getID() + " ==> MAGNO MODE " + mag.isEnabled());
-        mag.getRotationTimer().reset();
+        //mag.getRotationTimer().reset();
 
 
         float newAngle = (phys.getBody().getAngle() == 0) ? 180: 0;

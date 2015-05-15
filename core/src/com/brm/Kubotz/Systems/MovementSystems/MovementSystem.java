@@ -33,18 +33,9 @@ public class MovementSystem extends EntitySystem {
 
 
     public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
 
-            // Handle Input according to the walking mode
-
-            // Fly Component
-            if(entity.hasComponentEnabled(FlyComponent.ID)){
-                flySystem.handleInput(entity);
-            // Running Component
-            }else if(entity.hasComponentEnabled(RunningComponent.ID)){
-                runningSystem.handleInput(entity);
-            }
-        }
+        flySystem.handleInput();
+        runningSystem.handleInput();
 
 
 
@@ -54,35 +45,11 @@ public class MovementSystem extends EntitySystem {
 
     public void update(){
 
-        updateIsGrounded();
-
-        flySystem.update();
-        dashSystem.update();
         runningSystem.update(Gdx.graphics.getDeltaTime());
+        flySystem.update(Gdx.graphics.getDeltaTime());
+        dashSystem.update(Gdx.graphics.getDeltaTime());
     }
 
-    /**
-     * Updates the property describing if an entity is grounded or not
-     */
-    public void updateIsGrounded(){
-
-        for(Component comp: em.getComponents(PhysicsComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
-                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
-                    phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
-                    phys.contacts.remove(i);
-
-
-                    //REMOVE OTHER contact for other entity
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
-                }
-            }
-        }
-
-    }
 
 
 

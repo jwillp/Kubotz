@@ -20,14 +20,25 @@ public class FlySystem extends EntitySystem {
         super(em);
     }
 
+
+    @Override
+    public void handleInput(){
+
+        for(Entity entity: em.getEntitiesWithComponent(FlyComponent.ID)){
+           if(entity.hasComponent(VirtualGamePad.ID)){
+               handleInputForEntity(entity);
+           }
+        }
+    }
+
+
     /**
-     * Handles the Input for en entity
+     * Handles the Input for an entity
      * having Input i.e. with a VirtualGamePad
      */
-    public void handleInput(Entity entity){
+    private void handleInputForEntity(Entity entity){
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-
         if(flyComponent.isEnabled()){
             if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
                 flyUp(entity);
@@ -37,78 +48,24 @@ public class FlySystem extends EntitySystem {
                 flyRight(entity);
             }else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
                 flyLeft(entity);
-            }else if (gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)) {
-                //STOP REQUESTED
-                onStopFlyRequest(entity);
-            }else{ //No movement made? we decelerate
+            }else{
+                //No movement made? we decelerate
                 decelerate(entity);
             }
-
-        }else{ // Disabled
-            //Fly Request
-            if (gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
-                onFlyRequest(entity);
-            }
-        }
-    }
-
-    /**
-     * Method called when the entity requested to fly
-     * @param entity
-     */
-    private void onFlyRequest(Entity entity) {
-        //Double Check
-        if(entity.hasComponent(FlyComponent.ID)) {
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
-            // We want to fly
-            if (!flyComponent.isEnabled() && flyComponent.getCoolDownTimer().isDone()) {
-                flyComponent.setEnabled(true);
-                phys.getBody().setGravityScale(0);
-                flyComponent.getEffectDurationTimer().reset();
-                Logger.log("Entity" + entity.getID() + " ==> FLYING MODE ENABLED");
-            }
         }
     }
 
 
-    /**
-     * Method called then an entity requests to stop flying
-     * @param entity
-     */
-    private void onStopFlyRequest(Entity entity){
-        FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
-        if (flyComponent.isEnabled() && !flyComponent.getEffectDurationTimer().isDone()) {
-            flyComponent.getEffectDurationTimer().terminate();
-        } //The real dissabling will be done during the update
-    }
+    @Override
+    public void update(float dt) {
+        for(Entity entity: em.getEntitiesWithComponent(FlyComponent.ID)){
 
-    /**
-     * Checks whether or not an entity the entity still has the "right" to fly
-     * Basically tries to disable it under the right conditions
-     * Checks all entities with flyingComponent
-     */
-    public void update(){
-        for(Entity entity : this.em.getEntitiesWithComponent(VirtualGamePad.ID)) {
-            if (entity.hasComponent(FlyComponent.ID)) {
-                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
+            // Make sure gravity does not affect entities with FlyComp
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+            phys.getBody().setGravityScale(0);
 
-                //Do we need to disable?
-                if (flyComponent.isEnabled() && flyComponent.getEffectDurationTimer().isDone()) {
-                    flyComponent.setEnabled(false);
-                    this.stopY(entity);
-                    phys.getBody().setGravityScale(1);
-                    flyComponent.getCoolDownTimer().reset();
-                    Logger.log("Entity" + entity.getID() + " ==> FLYING MODE DISABLED");
-                }
-            }
         }
     }
-
-
-
-
 
     /**
      * Makes an entity fly upwards
@@ -179,9 +136,6 @@ public class FlySystem extends EntitySystem {
     }
 
 
-
-
-
     /**
      * Decelerates an entity
      * @param entity
@@ -190,8 +144,6 @@ public class FlySystem extends EntitySystem {
         FlyComponent flyComp = (FlyComponent)entity.getComponent(FlyComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
-
-
 
         float finalVelX = (vel.x > 0) ?
                 Math.max(vel.x - flyComp.deceleration.x, 0.0f) : Math.min(vel.x + flyComp.deceleration.x, 0.0f);

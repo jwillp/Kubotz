@@ -36,7 +36,7 @@ public class PunchComponent extends Component {
 
 
     @Override
-    public void onDetach() {
+    public void onDetach(Entity entity) {
         //DELETE BULLET?
         PhysicsComponent phys = (PhysicsComponent) punchBullet.getComponent(PhysicsComponent.ID);
         phys.getBody().getWorld().destroyBody(phys.getBody());

@@ -1,12 +1,16 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -21,12 +25,24 @@ public class RunningSystem extends EntitySystem {
 
 
 
+    @Override
+    public void handleInput(){
+        for(Entity entity: em.getEntitiesWithComponentEnabled(RunningComponent.ID)){
+            if(entity.hasComponent(VirtualGamePad.ID)){
+                handleInputForEntity(entity);
+            }
+        }
+    }
+
+
+
+
+
     /**
      * Process a Movement Button for the entities
      */
-    public void handleInput(Entity entity){
+    private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
@@ -40,8 +56,49 @@ public class RunningSystem extends EntitySystem {
                 moveLeft(entity);
             } else {
                 //No movement made we decelerate
-                decelerate(entity);
+                decelerate(entity); //TODO Is this really needed? see a few lines above
             }
+        }
+    }
+
+
+    @Override
+    public void update(float dt) {
+        updateIsGrounded();
+        updateGravity();
+    }
+
+
+
+
+    /**
+     * Updates the property describing if an entity is grounded or not
+     */
+    private void updateIsGrounded(){
+        // TODO only do it for Running Entities
+        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) comp;
+            for(int i=0; i<phys.contacts.size(); i++){
+                EntityContact contact = phys.contacts.get(i);
+                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
+                    phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
+                    phys.contacts.remove(i);
+
+                    //REMOVE OTHER contact for other entity
+                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
+                    physB.contacts.remove(contact);
+                }
+            }
+        }
+    }
+
+    /**
+     * Makes sure all entities with RunningComponent are affected by Gravity
+     */
+    private void updateGravity(){
+        for(Entity entity: em.getEntitiesWithComponent(RunningComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            phys.getBody().setGravityScale(1);
         }
     }
 

@@ -9,13 +9,14 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
  */
 public class SkillSystem extends EntitySystem {
 
-    MagneticFeetSystem magneticFeetSystem;
+    MagneticBootsSystem magneticBootsSystem;
     FlyingBootsSystem flyingBootsSystem;
 
     public SkillSystem(EntityManager em) {
         super(em);
 
-        magneticFeetSystem = new MagneticFeetSystem(em);
+        magneticBootsSystem = new MagneticBootsSystem(em);
+        flyingBootsSystem = new FlyingBootsSystem(em);
 
 
 
@@ -29,8 +30,8 @@ public class SkillSystem extends EntitySystem {
      */
     public void handleInput(){
 
-        magneticFeetSystem.handleInput();
-        
+        flyingBootsSystem.handleInput();
+        magneticBootsSystem.handleInput();
 
 
     }
@@ -39,7 +40,8 @@ public class SkillSystem extends EntitySystem {
      * Updates the input for the skills
      */
     public void update(){
-        magneticFeetSystem.update(0); //TODO Change that
+        magneticBootsSystem.update(0); //TODO Change that
+        flyingBootsSystem.update(0);
     }
 
 

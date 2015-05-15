@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.ECS.Components;
 
 
-
+import com.brm.GoatEngine.ECS.Entity.Entity;
 
 public abstract class Component {
 
@@ -18,12 +18,12 @@ public abstract class Component {
     /**
      * Called when the component is attached to an entity
      */
-    public void onAttach(){}
+    public void onAttach(Entity entity){}
 
     /**
      * Called when the component is detached from an entity
      */
-    public void onDetach(){}
+    public void onDetach(Entity entity){}
 
 
 

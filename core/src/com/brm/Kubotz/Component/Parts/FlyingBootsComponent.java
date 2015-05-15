@@ -10,10 +10,20 @@ public class FlyingBootsComponent extends Component{
     public static String ID = "FLY_BOOTS_COMPONENT";
 
 
-    private Timer effectDuration = new Timer(Timer.FIVE_SECONDS);
+    private Timer effectDuration = new Timer(Timer.FIVE_SECONDS);   // The duration of the flight
+    private Timer cooldown = new Timer(Timer.FIVE_SECONDS);     // Min amount of time needed between uses of skill
 
+
+    public FlyingBootsComponent(){
+        effectDuration.start();
+        cooldown.start();
+    }
 
     public Timer getEffectDuration() {
         return effectDuration;
+    }
+
+    public Timer getCooldown() {
+        return cooldown;
     }
 }

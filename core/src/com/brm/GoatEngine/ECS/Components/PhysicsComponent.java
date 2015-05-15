@@ -67,8 +67,8 @@ public class PhysicsComponent extends Component {
 
 
     @Override
-    public void onDetach() {
-        super.onDetach();
+    public void onDetach(Entity entity) {
+        super.onDetach(entity);
         this.getBody().getWorld().destroyBody(this.body);
     }
 
