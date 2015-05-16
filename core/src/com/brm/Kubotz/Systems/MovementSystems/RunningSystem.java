@@ -66,7 +66,6 @@ public class RunningSystem extends EntitySystem {
     @Override
     public void update(float dt) {
         updateIsGrounded();
-        updateGravity();
     }
 
 
@@ -93,15 +92,7 @@ public class RunningSystem extends EntitySystem {
         }
     }
 
-    /**
-     * Makes sure all entities with RunningComponent are affected by Gravity
-     */
-    private void updateGravity(){
-        for(Entity entity: em.getEntitiesWithComponent(RunningComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            //phys.getBody().setGravityScale(1);
-        }
-    }
+
 
 
     /***
@@ -147,9 +138,7 @@ public class RunningSystem extends EntitySystem {
                 if(phys.isGrounded()){ //Reset jump number
                     jp.nbJujmps = 0;
                 }
-
                 float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
-                Logger.log(resultingVelocity);
                 MovementSystem.moveInY(entity, resultingVelocity);
                 phys.setGrounded(false);
                 jp.nbJujmps++;

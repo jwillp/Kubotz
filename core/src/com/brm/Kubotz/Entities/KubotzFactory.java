@@ -128,13 +128,13 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
         //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
-        character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
+        //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);

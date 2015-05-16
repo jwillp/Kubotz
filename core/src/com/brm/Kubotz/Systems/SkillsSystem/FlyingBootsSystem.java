@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
@@ -63,6 +64,9 @@ public class FlyingBootsSystem extends EntitySystem{
 
         //Reset cooldown timer
         ((FlyingBootsComponent)entity.getComponent(FlyingBootsComponent.ID)).getCooldown().reset();
+
+        //Gravity reaffects entity
+        ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).getBody().setGravityScale(1);
 
         Logger.log("FLY MODE OFF");
     }
