@@ -17,6 +17,7 @@ import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
 import com.brm.Kubotz.Component.Parts.DashBootsComponent;
 import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
+import com.brm.Kubotz.Component.Parts.MagneticBootsComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
 
@@ -130,10 +131,10 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
-        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);

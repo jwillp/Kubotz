@@ -7,7 +7,7 @@ import com.brm.GoatEngine.Utils.Timer;
  * Boots giving a Kubotz the ability to reverse the effect of gravity on itself
  */
 public class MagneticBootsComponent extends Component {
-    public static final String ID = "MAGNETIC_FIELD";
+    public static final String ID = "MAGNETIC_BOOTS_COMPONENT";
 
     public float startingAngle; //In DEGREE
 

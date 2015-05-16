@@ -7,6 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.Movements.FlyComponent;
 import com.brm.Kubotz.Component.Parts.MagneticBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -21,11 +22,13 @@ public class MagneticBootsSystem extends EntitySystem{
     }
 
     /**
-     * Handles the input for every magnetic feet entities
+     * Handles the input for every entity with magnetic boots
      */
     public void handleInput() {
         for (Entity entity : em.getEntitiesWithComponent(MagneticBootsComponent.ID)) {
-            handleInput(entity);
+            if(entity.hasComponent(VirtualGamePad.ID)){
+                handleInputForEntity(entity);
+            }
         }
     }
 
@@ -34,13 +37,13 @@ public class MagneticBootsSystem extends EntitySystem{
      * Handles the input for a single entity
      * @param entity the entity to handle
      */
-    public void handleInput(Entity entity){
+    private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        MagneticBootsComponent magnoFeet = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
+        MagneticBootsComponent boots = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
 
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
 
-            if(magnoFeet.isEnabled()){
+            if(boots.isEnabled()){
                 processMagno(entity, false);
             }else{
                 processMagno(entity, true);

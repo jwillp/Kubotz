@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
@@ -98,7 +99,7 @@ public class RunningSystem extends EntitySystem {
     private void updateGravity(){
         for(Entity entity: em.getEntitiesWithComponent(RunningComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            phys.getBody().setGravityScale(1);
+            //phys.getBody().setGravityScale(1);
         }
     }
 
@@ -148,7 +149,8 @@ public class RunningSystem extends EntitySystem {
                 }
 
                 float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
-                MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
+                Logger.log(resultingVelocity);
+                MovementSystem.moveInY(entity, resultingVelocity);
                 phys.setGrounded(false);
                 jp.nbJujmps++;
             }
@@ -166,7 +168,7 @@ public class RunningSystem extends EntitySystem {
         if(Math.abs(vel.y) > phys.MAX_SPEED.y){
             vel.y = -phys.MAX_SPEED.y;
         }
-        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f;
+        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f * phys.getBody().getGravityScale();
         resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);
         // it's half a jump
         MovementSystem.moveInY(entity, resultingVelocity);
