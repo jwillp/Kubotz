@@ -14,10 +14,12 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.GrabComponent;
+import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
 import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Component.PunchComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Constants;
+
 
 
 /**
@@ -112,8 +114,11 @@ public class KubotzFactory extends EntityFactory {
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
 
-        // JUMP
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
+
+
+        // JUMP
+        character.addComponent(new RunningComponent(), RunningComponent.ID);
         character.addComponent(new JumpComponent(3), JumpComponent.ID);
 
 
@@ -123,13 +128,13 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
+        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
-        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);

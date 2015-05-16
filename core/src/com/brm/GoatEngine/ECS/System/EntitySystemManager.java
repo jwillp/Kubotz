@@ -2,6 +2,7 @@ package com.brm.GoatEngine.ECS.System;
 
 import com.badlogic.gdx.Gdx;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 /**
@@ -43,8 +44,8 @@ public class EntitySystemManager {
      * Inits all systems in order
      */
     public void initSystems(){
-        for(EntitySystem system: systems.values()){
-            system.init();
+        for (Object system : systems.values().toArray()) {
+            ((EntitySystem)system).init();
         }
     }
 

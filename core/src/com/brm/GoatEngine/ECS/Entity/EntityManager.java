@@ -59,7 +59,7 @@ public class EntityManager {
         this.components.put(componentId, componentContainer);
 
         //Call on attach
-        component.onAttach();
+        component.onAttach(new Entity(entityId));
         return this;
     }
 
@@ -75,7 +75,7 @@ public class EntityManager {
         //Test if the entity has the component
         if(this.hasComponent(componentId, entityId)) {
             //Call onDetach
-            componentEntry.get(entityId).onDetach();
+            componentEntry.get(entityId).onDetach(new Entity(entityId));
             componentEntry.remove(entityId);
         }
         return this;

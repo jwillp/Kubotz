@@ -1,40 +1,55 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
- * On Ground Movement System: Walking + Jumping
+ * On Ground Movement System: Running + Jumping
  */
-public class WalkingSystem extends EntitySystem {
+public class RunningSystem extends EntitySystem {
 
 
-    public WalkingSystem(EntityManager em) {
+    public RunningSystem(EntityManager em){
         super(em);
     }
 
     @Override
-    public void init() {}
+    public void init(){}
+
+
+    @Override
+    public void handleInput(){
+        for(Entity entity: em.getEntitiesWithComponentEnabled(RunningComponent.ID)){
+            if(entity.hasComponent(VirtualGamePad.ID)){
+                handleInputForEntity(entity);
+            }
+        }
+    }
+
+
+
 
 
     /**
      * Process a Movement Button for the entities
      */
-    public void handleInput(Entity entity){
+    private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
             if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
                 jump(entity);
-                gamePad.releaseButton(GameButton.MOVE_UP);
             } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
                 moveDown(entity); // TODO test if crouch or fall down
             } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
@@ -43,10 +58,52 @@ public class WalkingSystem extends EntitySystem {
                 moveLeft(entity);
             } else {
                 //No movement made we decelerate
-                decelerate(entity);
+                decelerate(entity); //TODO Is this really needed? see a few lines above
             }
         }
     }
+
+
+    @Override
+    public void update(float dt) {
+        updateIsGrounded();
+        updateJumps();
+    }
+
+
+    private void updateJumps(){
+
+        for(Entity entity: em.getEntitiesWithComponent(JumpComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+            if(phys.isGrounded()){ //Reset jump number
+                jp.nbJujmps = 0;
+            }
+        }
+    }
+
+
+    /**
+     * Updates the property describing if an entity is grounded or not
+     */
+    private void updateIsGrounded(){
+        // TODO only do it for Running Entities
+        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+            PhysicsComponent phys = (PhysicsComponent) comp;
+            for(int i=0; i<phys.contacts.size(); i++){
+                EntityContact contact = phys.contacts.get(i);
+                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
+                    phys.setGrounded(true);
+                    phys.contacts.remove(i);
+                    //REMOVE OTHER contact for other entity
+                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
+                    physB.contacts.remove(contact);
+                }
+            }
+        }
+    }
+
+
 
 
     /***
@@ -83,18 +140,19 @@ public class WalkingSystem extends EntitySystem {
      * Makes the entity jump
      */
     private void jump(Entity entity){
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        JumpComponent jp;
         if(entity.hasComponent(JumpComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+            jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
-            if(jp.nbJujmps < jp.getNbJumpsMax()){
-                if(jp.cooldown.isDone()){
-                    float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
-                    MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
-                    phys.setGrounded(false);
-                    jp.nbJujmps++;
-                    jp.cooldown.reset();
+            if(phys.isGrounded() || jp.nbJujmps < jp.getNbJumpsMax()){
+                if(phys.isGrounded()){ //Reset jump number
+                    jp.nbJujmps = 0;
                 }
+                float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
+                MovementSystem.moveInY(entity, resultingVelocity);
+                phys.setGrounded(false);
+                jp.nbJujmps++;
             }
         }
     }
@@ -110,7 +168,7 @@ public class WalkingSystem extends EntitySystem {
         if(Math.abs(vel.y) > phys.MAX_SPEED.y){
             vel.y = -phys.MAX_SPEED.y;
         }
-        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f;
+        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f * phys.getBody().getGravityScale();
         resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);
         // it's half a jump
         MovementSystem.moveInY(entity, resultingVelocity);
@@ -131,19 +189,4 @@ public class WalkingSystem extends EntitySystem {
             MovementSystem.moveInX(entity, finalVel);
         }
     }
-
-
-    @Override
-    public void update(float dt) {
-
-        //RESET JUMPS
-        for(Entity entity: em.getEntitiesWithComponent(JumpComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-                if(phys.isGrounded()){
-                        jp.nbJujmps = 0;
-                }
-        }
-    }
-
 }

@@ -30,7 +30,7 @@ import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
-import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
+import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
 
 
 public class InGameScreen extends GameScreen {
@@ -71,11 +71,11 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(GrabSystem.class, new GrabSystem(this.entityManager));
 
-        systemManager.addSystem(SkillSystem.class, new SkillSystem(this.entityManager));
+        systemManager.addSystem(SkillsSystem.class, new SkillsSystem(this.entityManager));
 
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
-        
+
         systemManager.addSystem(PunchSystem.class, new PunchSystem(this.entityManager));
 
         systemManager.addSystem(LifespanSystem.class, new LifespanSystem(this.entityManager));
@@ -171,12 +171,11 @@ public class InGameScreen extends GameScreen {
 
 
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
+        systemManager.getSystem(MovementSystem.class).handleInput();
         systemManager.getSystem(GrabSystem.class).handleInput();
-        systemManager.getSystem(SkillSystem.class).handleInput();
-
+        systemManager.getSystem(SkillsSystem.class).handleInput();
         systemManager.getSystem(AttackSystem.class).handleInput();
 
-        systemManager.getSystem(MovementSystem.class).handleInput();
 
     }
 
@@ -187,7 +186,7 @@ public class InGameScreen extends GameScreen {
 
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
         systemManager.getSystem(TrackerSystem.class).update(deltaTime);
-        systemManager.getSystem(SkillSystem.class).update(deltaTime);
+        systemManager.getSystem(SkillsSystem.class).update(deltaTime);
 
         systemManager.getSystem(AttackSystem.class).update(deltaTime);
 

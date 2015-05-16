@@ -7,16 +7,17 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Skills.Active.MagneticFeetComponent;
+import com.brm.Kubotz.Component.Movements.FlyComponent;
+import com.brm.Kubotz.Component.Parts.MagneticBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
  * MagneticBoot
  */
-public class MagneticFeetSystem extends EntitySystem{
+public class MagneticBootsSystem extends EntitySystem{
 
 
-    public MagneticFeetSystem(EntityManager em) {
+    public MagneticBootsSystem(EntityManager em) {
         super(em);
     }
 
@@ -24,11 +25,13 @@ public class MagneticFeetSystem extends EntitySystem{
     public void init() {}
 
     /**
-     * Handles the input for every magnetic feet entities
+     * Handles the input for every entity with magnetic boots
      */
     public void handleInput() {
-        for (Entity entity : em.getEntitiesWithComponent(MagneticFeetComponent.ID)) {
-            handleInput(entity);
+        for (Entity entity : em.getEntitiesWithComponent(MagneticBootsComponent.ID)) {
+            if(entity.hasComponent(VirtualGamePad.ID)){
+                handleInputForEntity(entity);
+            }
         }
     }
 
@@ -37,13 +40,13 @@ public class MagneticFeetSystem extends EntitySystem{
      * Handles the input for a single entity
      * @param entity the entity to handle
      */
-    public void handleInput(Entity entity){
+    private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        MagneticFeetComponent magnoFeet = (MagneticFeetComponent)entity.getComponent(MagneticFeetComponent.ID);
+        MagneticBootsComponent boots = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
 
         if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
 
-            if(magnoFeet.isEnabled()){
+            if(boots.isEnabled()){
                 processMagno(entity, false);
             }else{
                 processMagno(entity, true);
@@ -57,6 +60,8 @@ public class MagneticFeetSystem extends EntitySystem{
 
 
 
+    public void update(float deltaTime){}
+
 
     /**
      * processes An entity's magnetic feet
@@ -65,14 +70,14 @@ public class MagneticFeetSystem extends EntitySystem{
      */
     public void processMagno(Entity entity, boolean isEnabled){
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-        MagneticFeetComponent mag = (MagneticFeetComponent) entity.getComponent(MagneticFeetComponent.ID);
+        MagneticBootsComponent mag = (MagneticBootsComponent) entity.getComponent(MagneticBootsComponent.ID);
         mag.setEnabled(isEnabled);
 
         phys.getBody().setGravityScale(phys.getBody().getGravityScale() * -1); //Invert gravity
         mag.startingAngle = phys.getBody().getAngle()*MathUtils.radDeg;
         Logger.log("START ANGLE" + mag.startingAngle);
         Logger.log("Entity" + entity.getID() + " ==> MAGNO MODE " + mag.isEnabled());
-        mag.getRotationTimer().reset();
+        //mag.getRotationTimer().reset();
 
 
         float newAngle = (phys.getBody().getAngle() == 0) ? 180: 0;
@@ -82,10 +87,5 @@ public class MagneticFeetSystem extends EntitySystem{
 
 
 
-    public void update(float deltaTime){
-        for(Entity entity: em.getEntitiesWithComponent(MagneticFeetComponent.ID)){
-
-        }
-    }
 
 }
