@@ -40,7 +40,7 @@ public class LaserSwordSystem extends EntitySystem{
                     //CREATE A "PUNCH BULLET"
                     Entity box = this.createHitBox(physicsComponent, laserSwordComponent);
                     laserSwordComponent.laserBox = box;
-                    ((LifespanComponent)box.getComponent(LifespanComponent.ID)).starLife();
+                    ((LifespanComponent)box.getComponent(LifespanComponent.ID)).startLife();
                     laserSwordComponent.durationTimer.reset();
 
                 }

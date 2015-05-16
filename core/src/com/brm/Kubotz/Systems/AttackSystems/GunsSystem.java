@@ -60,7 +60,7 @@ public class GunsSystem extends EntitySystem {
                     Logger.log("SHOOT");
                     //CREATE A BULLET
                     Entity bullet = this.createBullet(physicsComponent, gunComponent);
-                    ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).starLife();
+                    ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).startLife();
                     gunComponent.getCooldown().reset();
 
                     //Move the bullet
@@ -88,7 +88,7 @@ public class GunsSystem extends EntitySystem {
                 position = new Vector2(phys.getWidth() + phys.getWidth()/2, 0);
                 break;
             case LEFT:
-                position = new Vector2(phys.getWidth() - phys.getWidth() - 1, 0);
+                position = new Vector2(phys.getWidth() - phys.getWidth() - 2, 0); //TODO Clean this up! This is messy!
                 break;
         }
 
@@ -97,7 +97,7 @@ public class GunsSystem extends EntitySystem {
                 .withDamage(gunComponent.getDamage())
                 .withSize(1, phys.getWidth() * 0.5f)
                 .withKnockBack(gunComponent.getKnockBack())
-                .withLifespan(Timer.INFINITE)
+                .withLifespan(Timer.FIVE_SECONDS)
                 .withTag(Constants.ENTITY_TAG_PUNCH)
                 .withDirection(phys.direction)
                 .withSpeed(gunComponent.getBulletSpeed())

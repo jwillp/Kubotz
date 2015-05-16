@@ -33,7 +33,7 @@ public class LifespanComponent extends Component{
     /**
      * Starts the life counter
      */
-    public void starLife(){
+    public void startLife(){
         this.counter.start();
     }
 

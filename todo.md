@@ -26,4 +26,37 @@
 
 ## Multiplayer
 	 At least to real players should be able to play
-	 
+
+
+## Disable Punch
+	Disable PunchComponent
+	When using a picked up weapon or some of the active skills
+
+## Clean GunSystem + Bullet
+	ProjectileComponent? Le GunSystème est pas très propre.. il y a des petits hacks un peu partout.
+
+## A TeamComponent
+	Pour les dommages! Genre, si tes dans la même team et que le Friendly Fire est OFF ne pas appliquer les dommages.
+
+
+## A ScoreComponent
+	Pour inscrire le nombre de kill et de mort. Et le nombre total de vie
+
+
+## CheckFor Enabling Disabling
+	Regarder si tous les sytèmes update des entités avec la composante ENABLED. Documenter les Composantes dont le Enabling et disabling est improtant
+
+
+## Extraire PositionComopnent, VelocityComponent, CollisionComponent From PhysicsComponent
+	Ça pourrait devenir util dans le cas où il y aurait des entités avec des positions sans avoir de corps physique. À VOIR
+
+
+## Système de Respawn
+	Il faut bien qu'après une mort on puisse recommencer à jouer
+
+## Vérifier les boutons pour chacun des skills 
+	Vérifier à ce que le punch soit sur le bon bouton lancer un objet ramasser etc
+
+## Se débarasser d'un objet
+	Ouep... pfff..
+

@@ -52,7 +52,7 @@ public class PunchSystem extends EntitySystem{
                 //CREATE A "PUNCH BULLET"
                 Entity bullet = this.createBullet(physicsComponent, punchComponent);
                 punchComponent.punchBullet = bullet;
-                ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).starLife();
+                ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).startLife();
                 punchComponent.durationTimer.reset();
 
             }
