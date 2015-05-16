@@ -70,16 +70,20 @@ public class RunningSystem extends EntitySystem {
         updateJumps();
     }
 
-
+    /**
+     * If an entity is Grounded resets the number of jumps to 0
+     */
     private void updateJumps(){
 
+        //RESET JUMPS
         for(Entity entity: em.getEntitiesWithComponent(JumpComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-            if(phys.isGrounded()){ //Reset jump number
+            if(phys.isGrounded()){
                 jp.nbJujmps = 0;
             }
         }
+
     }
 
 
@@ -136,23 +140,24 @@ public class RunningSystem extends EntitySystem {
     }
 
 
+
+
     /**
      * Makes the entity jump
      */
     private void jump(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        JumpComponent jp;
         if(entity.hasComponent(JumpComponent.ID)){
-            jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
-            if(phys.isGrounded() || jp.nbJujmps < jp.getNbJumpsMax()){
-                if(phys.isGrounded()){ //Reset jump number
-                    jp.nbJujmps = 0;
+            if(jp.nbJujmps < jp.getNbJumpsMax()){
+                if(jp.cooldown.isDone()){
+                    float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
+                    MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
+                    phys.setGrounded(false);
+                    jp.nbJujmps++;
+                    jp.cooldown.reset();
                 }
-                float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
-                MovementSystem.moveInY(entity, resultingVelocity);
-                phys.setGrounded(false);
-                jp.nbJujmps++;
             }
         }
     }
