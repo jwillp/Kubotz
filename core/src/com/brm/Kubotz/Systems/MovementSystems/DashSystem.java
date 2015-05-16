@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -25,7 +26,7 @@ public class DashSystem extends EntitySystem{
     public void handleInput(){
         for(Entity entity : em.getEntitiesWithComponent(DashComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
-                this.handleInput(entity);
+                this.handleInputForEntity(entity);
             }
 
         }
@@ -59,7 +60,6 @@ public class DashSystem extends EntitySystem{
 
             if(isDashValid){
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-
                 // Put the entity in preparation Phase
                 dashComp.phase = DashComponent.Phase.PREPARATION;
                 dashComp.getPreparationDuration().reset();
@@ -75,7 +75,7 @@ public class DashSystem extends EntitySystem{
      * Basically tries to disable it under the right conditions
      * Checks all entities with DashComponent
      */
-    public void update(){
+    public void update(float dt){
         for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
@@ -87,6 +87,8 @@ public class DashSystem extends EntitySystem{
                     updateTravelPhase(entity);
                 }else if(dashComp.phase == DashComponent.Phase.DECELERATION){
                     updateDecelerationPhase(entity);
+                }else if(dashComp.phase == DashComponent.Phase.DONE){
+                    dashComp.phase = DashComponent.Phase.NONE; //Reset
                 }
 
             }
@@ -165,8 +167,9 @@ public class DashSystem extends EntitySystem{
 
         // Is the entity done decelerating
         if(phys.getVelocity().x == 0){
+            dashComp.direction.set(0,0);
             phys.getBody().setGravityScale(1);
-            dashComp.phase = DashComponent.Phase.NONE;
+            dashComp.phase = DashComponent.Phase.DONE;
         }
 
     }

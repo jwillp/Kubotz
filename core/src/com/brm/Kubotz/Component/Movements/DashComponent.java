@@ -25,10 +25,11 @@ public class DashComponent extends Component{
         PREPARATION,
         TRAVEL,
         DECELERATION,
-        NONE,
+        DONE,   // The dash executed successfully
+        NONE, // The dash has not been started
     }
 
-    public Phase phase;
+    public Phase phase = Phase.NONE;
 
     public Vector2 distance = new Vector2(10,10); // The distance in nb of game units a Dash can travel
     public Vector2 speed = new Vector2(2000,2000);    // The Speed of the Dash

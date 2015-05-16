@@ -13,6 +13,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
+import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
 import com.brm.Kubotz.Component.Parts.DashBootsComponent;
 import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;

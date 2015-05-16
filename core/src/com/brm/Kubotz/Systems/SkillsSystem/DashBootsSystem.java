@@ -6,8 +6,10 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Movements.DashComponent;
 import com.brm.Kubotz.Component.Movements.FlyComponent;
+import com.brm.Kubotz.Component.Movements.RunningComponent;
 import com.brm.Kubotz.Component.Parts.DashBootsComponent;
 import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
@@ -32,8 +34,10 @@ public class DashBootsSystem extends EntitySystem {
             DashBootsComponent boots = (DashBootsComponent) entity.getComponent(DashBootsComponent.ID);
 
             if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+
                 //Can we Dash?
-                if(!entity.hasComponent(DashBootsComponent.ID)) {
+                if(!entity.hasComponent(DashComponent.ID)) {
+                    Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
                     if (boots.getCooldown().isDone())
                         turnDashOn(entity);
                 }
@@ -46,8 +50,17 @@ public class DashBootsSystem extends EntitySystem {
      * @param entity
      */
     private void turnDashOn(Entity entity) {
+        Logger.log("DASH ON");
+        //Remove Running Component + Jumping Component //TODO maybe disabling would be more suited
+        //entity.removeComponent(RunningComponent.ID);
+        entity.getComponent(JumpComponent.ID).setEnabled(false);
+
+        // Give a Dash Component to the entity
+        entity.addComponent(new DashComponent(), DashComponent.ID);
 
     }
+
+
 
 
     @Override
@@ -56,21 +69,25 @@ public class DashBootsSystem extends EntitySystem {
         //Check if we need to put any Dashing entity in recovery mode
         for(Entity entity: em.getEntitiesWithComponent(DashBootsComponent.ID)){
             DashBootsComponent boots = (DashBootsComponent)entity.getComponent(DashBootsComponent.ID);
-            DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
-            // DO we need to put the entity in RECOVERY MODE?
-            // Is the entity done decelerating (last phase of dash)
-            if(dashComp.phase == DashComponent.Phase.DECELERATION){
-                if(phys.getVelocity().x == 0){
-                    phys.getBody().setGravityScale(1);
-                    boots.setInRecovery(true);
+            if(entity.hasComponent(DashComponent.ID)){
+                DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
+                PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+
+                Logger.log(dashComp.phase);
+                // DO we need to put the entity in RECOVERY MODE?
+                // Is the entity done decelerating (last phase of dash)
+                if(dashComp.phase == DashComponent.Phase.DONE){
+                        phys.getBody().setGravityScale(1);
+                        boots.setInRecovery(true);
                 }
             }
 
             if(boots.isInRecovery()){
                 updateRecoveryPhase(entity);
             }
+
 
         }
 
@@ -83,17 +100,21 @@ public class DashBootsSystem extends EntitySystem {
      * @param entity
      */
     private void updateRecoveryPhase(Entity entity){
+        DashBootsComponent boots = (DashBootsComponent)entity.getComponent(DashBootsComponent.ID);
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-        JumpComponent jumpComponent = (JumpComponent) entity.getComponent(JumpComponent.ID);
-        DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
+
+
+        // The dash is Done we can remove it
+        entity.removeComponent(DashComponent.ID);
 
         //If the entity is not grounded ==> we cannot jump
-        jumpComponent.setEnabled(phys.isGrounded());
+        entity.getComponent(JumpComponent.ID).setEnabled(phys.isGrounded());
 
+        //RECOVERY DONE?
         if(phys.isGrounded()){
-            jumpComponent.setEnabled(true);
-            dashComp.setEnabled(false);
-            dashComp.direction.set(0,0);
+            //entity.getComponent(JumpComponent.ID).setEnabled(true);
+            boots.getCooldown().reset();
+            boots.setInRecovery(false);
         }
     }
 

@@ -70,7 +70,10 @@ public class Entity {
         try {
             return manager.getComponent(componentId, getID());
         } catch (NullPointerException e) {
-            throw new UnregisteredEntityException();
+            if(manager == null)
+                throw new UnregisteredEntityException();
+            else
+                throw new EntityComponentNotFoundException(componentId);
         }
     }
 
@@ -124,6 +127,20 @@ public class Entity {
         public UnregisteredEntityException(){
             super("The Entity is not registered to any EntityManager");
         }
+    }
+
+
+    /**
+     * Exception thrown when the game engine tries to use a component from an entity
+     * that does not poses that particular component
+     */
+    public static class EntityComponentNotFoundException extends RuntimeException{
+
+        //Constructor that accepts a message
+        public EntityComponentNotFoundException(String componentName){
+            super("The Component \"" + componentName + "\" was not found in Entity");
+        }
+
     }
 
 }

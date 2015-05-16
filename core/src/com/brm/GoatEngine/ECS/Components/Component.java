@@ -50,18 +50,7 @@ public abstract class Component {
 
 
 
-    /**
-     * Exception thrown when the game engine tries to use a component from an entity
-     * that does not posses that particular component
-     */
-    public static class EntityComponentNotFoundException extends RuntimeException{
 
-        //Constructor that accepts a message
-        public EntityComponentNotFoundException(String propertyName){
-            super("The Component \"" + propertyName + "\" was not found in Entity");
-        }
-
-    }
 
 
 
