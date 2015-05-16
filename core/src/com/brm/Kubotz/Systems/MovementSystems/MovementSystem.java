@@ -32,6 +32,18 @@ public class MovementSystem extends EntitySystem {
         dashSystem = new DashSystem(em);
     }
 
+    @Override
+    public void init() {}
+
+    @Override
+    public void update(float dt) {
+        this.updateIsGrounded();
+
+        flySystem.update(dt);
+        dashSystem.update(dt);
+        walkingSystem.update(Gdx.graphics.getDeltaTime());
+    }
+
 
     public void handleInput(){
         for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
@@ -64,15 +76,6 @@ public class MovementSystem extends EntitySystem {
     }
 
 
-
-    public void update(){
-
-        this.updateIsGrounded();
-
-        flySystem.update();
-        dashSystem.update();
-        walkingSystem.update(Gdx.graphics.getDeltaTime());
-    }
 
     /**
      * Updates the property describing if an entity is grounded or not

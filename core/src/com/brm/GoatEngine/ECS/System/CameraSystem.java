@@ -28,10 +28,13 @@ public class CameraSystem extends EntitySystem {
 
     }
 
+    @Override
+    public void init() {}
 
 
 
-    public void update(){
+    @Override
+    public void update(float dt){
         for(Entity camEntity: this.em.getEntitiesWithComponent(CameraComponent.ID)){
             Vector2 leftMost = new Vector2(Integer.MAX_VALUE,Float.MAX_VALUE);
             Vector2 rightMost = new Vector2(Integer.MIN_VALUE, Integer.MIN_VALUE);

@@ -21,6 +21,10 @@ public class DashSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init(){}
+
+
 
     public void handleInput(){
         for(Entity entity : em.getEntitiesWithComponent(DashComponent.ID)){
@@ -90,7 +94,8 @@ public class DashSystem extends EntitySystem{
      * Basically tries to disable it under the right conditions
      * Checks all entities with DashComponent
      */
-    public void update(){
+    @Override
+    public void update(float dt){
         for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 

@@ -20,6 +20,13 @@ public class FlySystem extends EntitySystem {
         super(em);
     }
 
+    @Override
+    public void init() {
+
+    }
+
+
+
     /**
      * Handles the Input for en entity
      * having Input i.e. with a VirtualGamePad
@@ -89,7 +96,8 @@ public class FlySystem extends EntitySystem {
      * Basically tries to disable it under the right conditions
      * Checks all entities with flyingComponent
      */
-    public void update(){
+    @Override
+    public void update(float dt){
         for(Entity entity : this.em.getEntitiesWithComponent(VirtualGamePad.ID)) {
             if (entity.hasComponent(FlyComponent.ID)) {
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);

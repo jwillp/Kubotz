@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems;
+package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -20,6 +20,9 @@ public class LaserSwordSystem extends EntitySystem{
     public LaserSwordSystem(EntityManager em) {
         super(em);
     }
+
+    @Override
+    public void init(){}
 
 
     @Override
@@ -47,8 +50,8 @@ public class LaserSwordSystem extends EntitySystem{
     }
 
 
-
-    public void update() {
+    @Override
+    public void update(float dt) {
         // See if punch duration is over
         // Update the punch's position according to the puncher's position
 

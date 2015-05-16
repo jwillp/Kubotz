@@ -5,7 +5,6 @@ import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.Utils.Timer;
-import com.brm.Kubotz.Systems.LaserSwordSystem;
 
 /**
  * Laser Sword

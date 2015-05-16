@@ -25,6 +25,11 @@ public class GrabSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init(){}
+
+    @Override
+    public void update(float dt) {}
 
 
     public void handleInput(){
@@ -51,10 +56,6 @@ public class GrabSystem extends EntitySystem{
         }
     }
 
-    public void update(){
-
-
-    }
 
     /**
      * Makes an entity pickup an object
@@ -78,8 +79,7 @@ public class GrabSystem extends EntitySystem{
         }
 
         //Grab Ennemy
-
-
+        // TODO Grab ennemy
     }
 
 

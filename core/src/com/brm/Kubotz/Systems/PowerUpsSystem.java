@@ -25,20 +25,22 @@ import java.util.ArrayList;
  */
 public class PowerUpsSystem extends EntitySystem {
 
+    private Timer spawnTimer; //Timer responsible to determine whether or not we should spawn a new power up
+
     public PowerUpsSystem(EntityManager em) {
         super(em);
-        super.init();
         int delay = MathUtils.random(Constants.MIN_DELAY_BONUS_SPAWN, Constants.MAX_DELAY_BONUS_SPAWN);
         spawnTimer = new Timer(delay);
         spawnTimer.start();
     }
 
 
-    private Timer spawnTimer; //Timer responsible to determine whether or not we should spawn a new power up
+    @Override
+    public void init() {}
 
 
-
-    public void update(){
+    @Override
+    public void update(float dt){
         updatePowerUps();
         updateSpawns();
     }

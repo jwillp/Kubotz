@@ -1,0 +1,43 @@
+package com.brm.Kubotz.Systems.AttackSystems;
+
+import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.Utils.Logger;
+
+/**
+ * Global systems for sub systems of attacks
+ */
+public class AttackSystem extends EntitySystem {
+
+    public AttackSystem(EntityManager em) {
+        super(em);
+
+
+
+
+    }
+
+    @Override
+    public void init() {
+        this.getSystemManager().addSystem(PunchSystem.class, new PunchSystem(em));
+        this.getSystemManager().addSystem(LaserSwordSystem.class, new LaserSwordSystem(em));
+    }
+
+    @Override
+    public void handleInput() {
+        this.getSystemManager().getSystem(PunchSystem.class).handleInput();
+        this.getSystemManager().getSystem(LaserSwordSystem.class).handleInput();
+    }
+
+
+    @Override
+    public void update(float dt) {
+        this.getSystemManager().getSystem(PunchSystem.class).update(dt);
+        this.getSystemManager().getSystem(LaserSwordSystem.class).update(dt);
+    }
+
+
+
+
+
+}

@@ -42,7 +42,7 @@ public class EntitySystemManager {
     /**
      * Inits all systems in order
      */
-    public void init(){
+    public void initSystems(){
         for(EntitySystem system: systems.values()){
             system.init();
         }
@@ -52,7 +52,7 @@ public class EntitySystemManager {
     /**
      * Deinits all systems in order
      */
-    public void deInit(){
+    public void deInitSystems(){
         for(EntitySystem system: systems.values()){
             system.deInit();
         }

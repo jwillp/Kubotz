@@ -22,14 +22,12 @@ public class DamageSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init() {}
+
 
     @Override
-    public void update(float dt) {
-        super.update(dt);
-    }
-
-
-    public void update(){
+    public void update(float dt){
         //Process collisions
         for(Entity e: em.getEntitiesWithComponent(DamageComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);

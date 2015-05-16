@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems;
+package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -21,35 +21,47 @@ public class PunchSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init(){}
 
 
     @Override
     public void handleInput() {
 
-        for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)){
-            VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-            PunchComponent punchComponent = (PunchComponent)entity.getComponent(PunchComponent.ID);
-            PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-
-            //Triggers the punch
-            if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
-              if(punchComponent.cooldown.isDone() && punchComponent.punchBullet == null){
-
-                  //CREATE A "PUNCH BULLET"
-                  Entity bullet = this.createBullet(physicsComponent, punchComponent);
-                  punchComponent.punchBullet = bullet;
-                  ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).starLife();
-                  punchComponent.durationTimer.reset();
-
-              }
+        for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)) {
+            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
+                handleInputForEntity(entity);
             }
         }
+
 
     }
 
 
 
-    public void update() {
+
+    private void handleInputForEntity(Entity entity){
+        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+        PunchComponent punchComponent = (PunchComponent)entity.getComponent(PunchComponent.ID);
+        PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+        //Triggers the punch
+        if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
+            if(punchComponent.cooldown.isDone() && punchComponent.punchBullet == null){
+
+                //CREATE A "PUNCH BULLET"
+                Entity bullet = this.createBullet(physicsComponent, punchComponent);
+                punchComponent.punchBullet = bullet;
+                ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).starLife();
+                punchComponent.durationTimer.reset();
+
+            }
+        }
+    }
+
+
+
+    public void update(float dt) {
         // See if punch duration is over
         // Update the punch's position according to the puncher's position
 

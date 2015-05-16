@@ -18,14 +18,16 @@ public class TrackerSystem extends EntitySystem {
         super(em);
     }
 
+    @Override
+    public void init(){}
 
-    public void update(){
+    @Override
+    public void update(float dt){
         // Track
         for(Entity tracker: em.getEntitiesWithComponent(TrackerComponent.ID)){
             TrackerComponent trackComp = (TrackerComponent) tracker.getComponent(TrackerComponent.ID);
             trackTarget(tracker, em.getEntity(trackComp.targetId));
         }
-
     }
 
 

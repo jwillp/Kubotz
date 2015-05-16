@@ -19,6 +19,8 @@ public class WalkingSystem extends EntitySystem {
         super(em);
     }
 
+    @Override
+    public void init() {}
 
 
     /**
@@ -93,8 +95,6 @@ public class WalkingSystem extends EntitySystem {
                     jp.nbJujmps++;
                     jp.cooldown.reset();
                 }
-
-
             }
         }
     }

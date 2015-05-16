@@ -17,13 +17,13 @@ public abstract class EntitySystem {
     /**
      * Used to initialise the system
      */
-    public void init(){}
+    public abstract void init();
 
     /**
      * Called once per game frame
      * @param dt
      */
-    public void update(float dt){}
+    public abstract void update(float dt);
 
 
     /**
@@ -35,7 +35,7 @@ public abstract class EntitySystem {
     /**
      * Handles the input for a given entity
      */
-    public void handleInput(Entity entity){}
+    private void handleInputForEntity(Entity entity){}
 
 
     /**

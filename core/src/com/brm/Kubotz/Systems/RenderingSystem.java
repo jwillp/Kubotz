@@ -28,9 +28,14 @@ public class RenderingSystem extends EntitySystem {
         debugRenderer = new Box2DDebugRenderer();
     }
 
+    @Override
+    public void init() {
 
-    public void update(){
-        this.cameraSystem.update();
+    }
+
+    @Override
+    public void update(float dt){
+        this.cameraSystem.update(dt);
     }
 
 

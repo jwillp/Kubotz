@@ -20,6 +20,9 @@ public class MagneticFeetSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init() {}
+
     /**
      * Handles the input for every magnetic feet entities
      */
@@ -79,20 +82,9 @@ public class MagneticFeetSystem extends EntitySystem{
 
 
 
-
-    /**
-     * See if the entity can still use that skill
-     */
-    public void update(Entity entity){
-
-
-
-    }
-
-
     public void update(float deltaTime){
         for(Entity entity: em.getEntitiesWithComponent(MagneticFeetComponent.ID)){
-            update(entity);
+
         }
     }
 

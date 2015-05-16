@@ -27,6 +27,8 @@ import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
+import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
+import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillSystem;
 
@@ -72,15 +74,21 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(SkillSystem.class, new SkillSystem(this.entityManager));
 
 
+        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
+        
         systemManager.addSystem(PunchSystem.class, new PunchSystem(this.entityManager));
 
         systemManager.addSystem(LifespanSystem.class, new LifespanSystem(this.entityManager));
 
         systemManager.addSystem(DamageSystem.class, new DamageSystem(this.entityManager));
 
-        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
+        systemManager.addSystem(AttackSystem.class, new AttackSystem(this.entityManager));
 
-        systemManager.addSystem(LaserSwordSystem.class, new LaserSwordSystem(this.entityManager));
+
+
+        //INIT SYSTEMS
+        systemManager.initSystems();
+
 
 
         // MAP
@@ -162,12 +170,11 @@ public class InGameScreen extends GameScreen {
     public void handleInput(GameScreenManager engine) {
 
 
-        systemManager.getSystem(InputTranslationSystem.class).update();
+        systemManager.getSystem(InputTranslationSystem.class).handleInput();
         systemManager.getSystem(GrabSystem.class).handleInput();
         systemManager.getSystem(SkillSystem.class).handleInput();
 
-        systemManager.getSystem(PunchSystem.class).handleInput();
-        systemManager.getSystem(LaserSwordSystem.class).handleInput();
+        systemManager.getSystem(AttackSystem.class).handleInput();
 
         systemManager.getSystem(MovementSystem.class).handleInput();
 
@@ -178,21 +185,20 @@ public class InGameScreen extends GameScreen {
 
 
 
-        systemManager.getSystem(MovementSystem.class).update();
-        systemManager.getSystem(TrackerSystem.class).update();
-        systemManager.getSystem(SkillSystem.class).update();
+        systemManager.getSystem(MovementSystem.class).update(deltaTime);
+        systemManager.getSystem(TrackerSystem.class).update(deltaTime);
+        systemManager.getSystem(SkillSystem.class).update(deltaTime);
 
-        systemManager.getSystem(PunchSystem.class).update();
-        systemManager.getSystem(LaserSwordSystem.class).update();
+        systemManager.getSystem(AttackSystem.class).update(deltaTime);
 
-        systemManager.getSystem(GrabSystem.class).update();
-        systemManager.getSystem(DamageSystem.class).update();
-        systemManager.getSystem(LifespanSystem.class).update();
+        systemManager.getSystem(GrabSystem.class).update(deltaTime);
+        systemManager.getSystem(DamageSystem.class).update(deltaTime);
+        systemManager.getSystem(LifespanSystem.class).update(deltaTime);
 
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
-        systemManager.getSystem(RenderingSystem.class).update();
+        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
 
-        systemManager.getSystem(PowerUpsSystem.class).update();
+        systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
     }
 
     @Override
@@ -201,7 +207,6 @@ public class InGameScreen extends GameScreen {
         //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
         Gdx.gl.glClearColor(0.07f, 0.2f, 0.3f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
 
 
         // DRAW WORLD

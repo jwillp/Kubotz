@@ -15,12 +15,10 @@ public class SkillSystem extends EntitySystem {
         super(em);
 
         magneticFeetSystem = new MagneticFeetSystem(em);
-
-
-
-
-
     }
+
+    @Override
+    public void init(){}
 
 
     /**
@@ -31,13 +29,12 @@ public class SkillSystem extends EntitySystem {
         magneticFeetSystem.handleInput();
         
 
-
     }
 
     /**
      * Updates the input for the skills
      */
-    public void update(){
+    public void update(float dt){
         magneticFeetSystem.update(0); //TODO Change that
     }
 

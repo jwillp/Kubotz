@@ -33,6 +33,9 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
     }
 
+    @Override
+    public void init(){}
+
 
     @Override
     public void update(float dt) {
