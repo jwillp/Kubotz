@@ -21,12 +21,14 @@ public class AttackSystem extends EntitySystem {
     public void init() {
         this.getSystemManager().addSystem(PunchSystem.class, new PunchSystem(em));
         this.getSystemManager().addSystem(LaserSwordSystem.class, new LaserSwordSystem(em));
+        this.getSystemManager().addSystem(GunsSystem.class, new GunsSystem(em));
     }
 
     @Override
     public void handleInput() {
         this.getSystemManager().getSystem(PunchSystem.class).handleInput();
         this.getSystemManager().getSystem(LaserSwordSystem.class).handleInput();
+        this.getSystemManager().getSystem(GunsSystem.class).handleInput();
     }
 
 
@@ -34,6 +36,7 @@ public class AttackSystem extends EntitySystem {
     public void update(float dt) {
         this.getSystemManager().getSystem(PunchSystem.class).update(dt);
         this.getSystemManager().getSystem(LaserSwordSystem.class).update(dt);
+        this.getSystemManager().getSystem(GunsSystem.class).update(dt);
     }
 
 

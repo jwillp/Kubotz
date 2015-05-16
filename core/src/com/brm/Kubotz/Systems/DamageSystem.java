@@ -13,7 +13,7 @@ import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
 import com.brm.Kubotz.Component.Powerups.InvincibilityComponent;
 
 /**
- * USed to deal damage and process Health Bonuses
+ * Used to deal damage and process Health Bonuses
  */
 public class DamageSystem extends EntitySystem{
 
@@ -77,8 +77,6 @@ public class DamageSystem extends EntitySystem{
             if(shield.isDead()){
                 target.removeComponent(EnergeticShieldComponent.ID);
             }
-
-
         }else{
             targetHealth.substractAmount(damageComp.damage);
 

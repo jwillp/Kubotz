@@ -8,10 +8,7 @@ import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.Movements.DashComponent;
-import com.brm.Kubotz.Component.Movements.FlyComponent;
-import com.brm.Kubotz.Component.Movements.RunningComponent;
-import com.brm.Kubotz.Component.Parts.DashBootsComponent;
-import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
+import com.brm.Kubotz.Component.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**

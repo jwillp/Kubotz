@@ -29,8 +29,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         Box2D.init();
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(this);
-
-
     }
 
     @Override

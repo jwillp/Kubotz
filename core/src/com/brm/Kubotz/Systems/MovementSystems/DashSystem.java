@@ -23,7 +23,9 @@ public class DashSystem extends EntitySystem{
     }
 
     @Override
-    public void init(){}
+    public void init(){
+
+    }
 
 
 

@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Component.Parts;
+package com.brm.Kubotz.Component.Parts.Boots;
 
 import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.Utils.Timer;

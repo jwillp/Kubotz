@@ -6,7 +6,9 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.ManaComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Component.Parts.Weapons.LaserGunMkIComponent;
+import com.brm.Kubotz.Component.Parts.Weapons.LaserGunMkIIComponent;
+import com.brm.Kubotz.Component.Parts.Weapons.LaserSwordComponent;
 
 /**
  * The effect of a PowerUp. It is an action to perform
@@ -172,30 +174,30 @@ public abstract class PowerUpEffect {
 
 
     // TODO Complete
-    public class  LaserGunMkIProvider extends PowerUpEffect{
+    public static class LaserGunMkIProvider extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {
-
+            entity.addComponent(new LaserGunMkIComponent(), LaserGunMkIComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
-
+            entity.removeComponent(LaserGunMkIComponent.ID);
         }
     }
 
     // TODO Complete
-    public class LaserGunMkIIProvider extends PowerUpEffect{
+    public static class LaserGunMkIIProvider extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {
-
+            entity.addComponent(new LaserGunMkIIComponent(), LaserGunMkIIComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
-
+            entity.removeComponent(LaserGunMkIIComponent.ID);
         }
     }
 

@@ -15,7 +15,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.GrabComponent;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
-import com.brm.Kubotz.Component.Parts.FlyingBootsComponent;
+import com.brm.Kubotz.Component.Parts.Boots.FlyingBootsComponent;
 import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;

@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.System.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.LifespanComponent;
-import com.brm.Kubotz.Component.Powerups.LaserSwordComponent;
+import com.brm.Kubotz.Component.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
 import com.brm.Kubotz.Input.GameButton;

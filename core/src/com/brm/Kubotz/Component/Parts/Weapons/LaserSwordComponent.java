@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Component.Powerups;
+package com.brm.Kubotz.Component.Parts.Weapons;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.Component;
