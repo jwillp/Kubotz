@@ -22,3 +22,8 @@
 	C'est juste vraiment plus simple à utiliser par la suite et ça rend le code plus cours et plus lisible.
 	**ATTENTION** Ne pas oublier de LAISSER LE CHAMPS STATIC ID dans chacune des Components; Ça pourrait être utile un jours...
 
+
+
+## Multiplayer
+	 At least to real players should be able to play
+	 

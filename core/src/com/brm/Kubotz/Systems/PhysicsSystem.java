@@ -46,17 +46,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     }
 
     /**
-     * Clears the contact for all the entities
-     * with a physics component
-     */
-    public void clearContacts(){
-       for(Component component: em.getComponents(PhysicsComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) component;
-            phys.contacts.clear();
-        }
-    }
-
-    /**
      * Makes a cleanup of the contacts of the entities
      * that would be colliding tih null entities
      */

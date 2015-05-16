@@ -14,8 +14,8 @@ public class GunComponent extends Component {
     // TYPES OF GUN
     public enum Type{
 
-        LASER_MK_I,
-        LASER_MK_II,
+        LASER_MK_I,   //MEDIUM POWER GUN
+        LASER_MK_II,  //HIGH POWER GUN
 
     }
 

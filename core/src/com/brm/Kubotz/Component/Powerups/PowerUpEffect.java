@@ -6,8 +6,7 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.ManaComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.Kubotz.Component.Parts.Weapons.LaserGunMkIComponent;
-import com.brm.Kubotz.Component.Parts.Weapons.LaserGunMkIIComponent;
+import com.brm.Kubotz.Component.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Component.Parts.Weapons.LaserSwordComponent;
 
 /**
@@ -178,12 +177,12 @@ public abstract class PowerUpEffect {
 
         @Override
         public void onStart(Entity entity) {
-            entity.addComponent(new LaserGunMkIComponent(), LaserGunMkIComponent.ID);
+            entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
-            entity.removeComponent(LaserGunMkIComponent.ID);
+            entity.removeComponent(GunComponent.ID);
         }
     }
 
@@ -192,12 +191,12 @@ public abstract class PowerUpEffect {
 
         @Override
         public void onStart(Entity entity) {
-            entity.addComponent(new LaserGunMkIIComponent(), LaserGunMkIIComponent.ID);
+            entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_II), GunComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
-            entity.removeComponent(LaserGunMkIIComponent.ID);
+            entity.removeComponent(GunComponent.ID);
         }
     }
 

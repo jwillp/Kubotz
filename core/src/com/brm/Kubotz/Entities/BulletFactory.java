@@ -148,8 +148,6 @@ public class BulletFactory extends EntityFactory {
 
         physics.direction = this.direction;
 
-
-
         return physics;
     }
 

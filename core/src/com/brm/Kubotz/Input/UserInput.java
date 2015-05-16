@@ -5,7 +5,9 @@ import com.badlogic.gdx.Input;
 /**
  * Used to inquire for the input of the user
  * this is done on a physical game pad and not a virtual one.
- * This is the place to change controls settings
+ * This is the place to change controls settings.
+ * This maps the buttons to intent variables.
+ * This intent can later be
  */
 public class UserInput {
 

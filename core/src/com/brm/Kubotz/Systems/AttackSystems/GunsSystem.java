@@ -15,6 +15,7 @@ import com.brm.Kubotz.Component.LifespanComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
 import com.brm.Kubotz.Input.GameButton;
+import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 
 /**
  * Used to update entities using a gun
@@ -36,21 +37,24 @@ public class GunsSystem extends EntitySystem {
     @Override
     public void handleInput() {
 
-        for(Entity entity: em.getEntitiesWithComponent(GunComponent.ID){
+        for(Entity entity: em.getEntitiesWithComponent(GunComponent.ID)){
+            if(entity.hasComponentEnabled(VirtualGamePad.ID)){
+                handleInputForEntity(entity);
+            }
+
+        }
 
     }
 
 
 
     private void handleInputForEntity(Entity entity){
-        for(Entity entity: em.getEntitiesWithComponent(GunComponent.getId())){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             GunComponent gunComponent = (GunComponent) entity.getComponent(GunComponent.getId());
             PhysicsComponent physicsComponent = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
 
-            if(gamePad.isButtonPressed(GameButton.PRIMARY_ACTION_BUTTON)){
-                Logger.log("SHOOT");
-                gamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON);
+            if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
+                gamePad.releaseButton(GameButton.PUNCH_BUTTON);
                 //can we shoot?
                 if(gunComponent.getCooldown().isDone()){
                     Logger.log("SHOOT");
@@ -59,13 +63,13 @@ public class GunsSystem extends EntitySystem {
                     ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).starLife();
                     gunComponent.getCooldown().reset();
 
+                    //Move the bullet
+                    int direction = (physicsComponent.direction == PhysicsComponent.Direction.RIGHT) ? 1 : -1;
+                    MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
+                    MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
                 }
-
             }
-        }
-
     }
-
 
 
 
@@ -84,7 +88,7 @@ public class GunsSystem extends EntitySystem {
                 position = new Vector2(phys.getWidth() + phys.getWidth()/2, 0);
                 break;
             case LEFT:
-                position = new Vector2(-phys.getWidth()-phys.getWidth()/2, 0);
+                position = new Vector2(phys.getWidth() - phys.getWidth() - 1, 0);
                 break;
         }
 
@@ -98,6 +102,7 @@ public class GunsSystem extends EntitySystem {
                 .withDirection(phys.direction)
                 .withSpeed(gunComponent.getBulletSpeed())
                 .build();
+
     }
 
 

@@ -16,10 +16,12 @@ import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.Kubotz.Component.GrabComponent;
 import com.brm.Kubotz.Component.Movements.RunningComponent;
 import com.brm.Kubotz.Component.Parts.Boots.FlyingBootsComponent;
+import com.brm.Kubotz.Component.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Component.PunchComponent;
 import com.brm.Kubotz.Constants;
 
+import javax.sound.sampled.AudioFileFormat;
 
 
 /**
@@ -137,7 +139,9 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
-        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+        //character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+
+        //character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
