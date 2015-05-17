@@ -14,9 +14,11 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
@@ -26,6 +28,7 @@ import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
+import com.brm.Kubotz.Scripts.TestScript;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
@@ -84,6 +87,8 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(AttackSystem.class, new AttackSystem(this.entityManager));
 
+        systemManager.addSystem(ScriptSystem.class, new ScriptSystem(this.entityManager));
+
 
 
         //INIT SYSTEMS
@@ -138,17 +143,21 @@ public class InGameScreen extends GameScreen {
 
 
 
-
-
-
-
-        
-
         Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,2))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
         bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
+
+
+
+        // TEST SCRIPT
+
+
+        ScriptComponent scriptComponent = new ScriptComponent();
+        scriptComponent.addScript(new TestScript(), this.player, entityManager);
+        this.player.addComponent(scriptComponent, ScriptComponent.ID);
+
 
 
         Logger.log("In Game State initialised");
@@ -171,6 +180,7 @@ public class InGameScreen extends GameScreen {
 
 
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
+        systemManager.getSystem(ScriptSystem.class).handleInput();
         systemManager.getSystem(MovementSystem.class).handleInput();
         systemManager.getSystem(GrabSystem.class).handleInput();
         systemManager.getSystem(SkillsSystem.class).handleInput();
@@ -193,11 +203,13 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(GrabSystem.class).update(deltaTime);
         systemManager.getSystem(DamageSystem.class).update(deltaTime);
         systemManager.getSystem(LifespanSystem.class).update(deltaTime);
+        systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
 
+        systemManager.getSystem(ScriptSystem.class).update(deltaTime);
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
 
-        systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
+
     }
 
     @Override

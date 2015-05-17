@@ -18,7 +18,7 @@
 * [ ] Se débarasser d'un objet
 * [ ] Script Component
 * [ ] Ne pas oublier l'implémentation de l'audio
-* [ ] Un Doc Propre
+* [ ] Une Doc Propre
 * [ ] IN CODE TODO
 
 
@@ -92,11 +92,11 @@ Une composante permettant d'éxécuter un script pour une entité donnée. Un sc
 Il est conseillé de laisser les différents systèmes jouer l'audio désiré selon les évènement est appelant le "ServiceAudio". Ainsi la gestion du son ne se fait pas dans l'architecture ECS
 
 
-## [] Un Doc Propre
+## [] Une Doc Propre
 Faire une vraie doc toute propre sur le projet. Doc au sens : Comment le ECS est fait, comment les inputs sont gérés, quels boutons font quoi etc...
 
 
-## IN CODE TODO
+## [] IN CODE TODO
 Faut bien les terminer eux aussis
 
 

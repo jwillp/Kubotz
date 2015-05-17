@@ -97,9 +97,9 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     public void endContact(Contact contact) {
 
         //Remove contact only if it was a touching contact (otherwise the contacts would always delete themselves)
-        if(!contact.isTouching()){
+       /* if(!contact.isTouching()){
             return;
-        }
+        }*/
 
         //Get Entities
         Entity entityA = (Entity) contact.getFixtureA().getBody().getUserData();
