@@ -7,8 +7,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.CameraSystem;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.CameraSystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 

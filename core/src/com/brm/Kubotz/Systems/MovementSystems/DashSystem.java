@@ -2,15 +2,13 @@ package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Movements.DashComponent;
+import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -47,19 +45,19 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-        if(dashComp.phase == DashComponent.Phase.NONE){
+        if(dashComp.getPhase() == DashComponent.Phase.NONE){
 
             boolean isDashValid = true;
 
             //Find dash direction
             if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
-                dashComp.direction.x = DashComponent.RIGHT;
+                dashComp.getDirection().x = DashComponent.RIGHT;
             }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
-                dashComp.direction.x = DashComponent.LEFT;
+                dashComp.getDirection().x = DashComponent.LEFT;
             }else if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
-                dashComp.direction.y = DashComponent.UP;
+                dashComp.getDirection().y = DashComponent.UP;
             }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
-                dashComp.direction.y = DashComponent.DOWN;
+                dashComp.getDirection().y = DashComponent.DOWN;
             }else{
                 isDashValid = false;
             }
@@ -67,9 +65,9 @@ public class DashSystem extends EntitySystem{
             if(isDashValid){
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
                 // Put the entity in preparation Phase
-                dashComp.phase = DashComponent.Phase.PREPARATION;
+                dashComp.setPhase(DashComponent.Phase.PREPARATION);
                 dashComp.getPreparationDuration().reset();
-                dashComp.startPosition = phys.getPosition().cpy();
+                dashComp.setStartPosition(phys.getPosition().cpy());
             }
         }
     }
@@ -88,14 +86,14 @@ public class DashSystem extends EntitySystem{
 
             if (dashComp.isEnabled()) {
                 //Are We Done with the preparing phase?
-                if(dashComp.phase == DashComponent.Phase.PREPARATION){
+                if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
                    updatePreparationPhase(entity);
-                } else if(dashComp.phase == DashComponent.Phase.TRAVEL){
+                } else if(dashComp.getPhase() == DashComponent.Phase.TRAVEL){
                     updateTravelPhase(entity);
-                }else if(dashComp.phase == DashComponent.Phase.DECELERATION){
+                }else if(dashComp.getPhase() == DashComponent.Phase.DECELERATION){
                     updateDecelerationPhase(entity);
-                }else if(dashComp.phase == DashComponent.Phase.DONE){
-                    dashComp.phase = DashComponent.Phase.NONE; //Reset
+                }else if(dashComp.getPhase() == DashComponent.Phase.DONE){
+                    dashComp.setPhase(DashComponent.Phase.NONE); //Reset
                 }
 
             }
@@ -113,7 +111,7 @@ public class DashSystem extends EntitySystem{
 
         if(dashComp.getPreparationDuration().isDone()){
             //We can now proceed to dashing in whatever direction
-            dashComp.phase = DashComponent.Phase.TRAVEL;
+            dashComp.setPhase(DashComponent.Phase.TRAVEL);
             dashComp.getTravelDuration().reset();
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             phys.getBody().setGravityScale(0);
@@ -132,12 +130,12 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
         // Do we need to disable?
-        if (GameMath.distance(phys.getPosition(), dashComp.startPosition) >= dashComp.distance.x || dashComp.getTravelDuration().isDone()) {
-            dashComp.phase = DashComponent.Phase.DECELERATION;
+        if (GameMath.distance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x || dashComp.getTravelDuration().isDone()) {
+            dashComp.setPhase(DashComponent.Phase.DECELERATION);
         }else{
             Vector2 velocity = new Vector2();
-            velocity.x = dashComp.direction.x * (phys.getVelocity().x + dashComp.speed.x) * Gdx.graphics.getDeltaTime();
-            velocity.y = dashComp.direction.y * (phys.getVelocity().y + dashComp.speed.y) * Gdx.graphics.getDeltaTime();
+            velocity.x = dashComp.getDirection().x * (phys.getVelocity().x + dashComp.getSpeed().x) * Gdx.graphics.getDeltaTime();
+            velocity.y = dashComp.getDirection().y * (phys.getVelocity().y + dashComp.getSpeed().y) * Gdx.graphics.getDeltaTime();
             MovementSystem.moveInX(entity, velocity.x);
             MovementSystem.moveInY(entity, velocity.y);
 
@@ -157,26 +155,26 @@ public class DashSystem extends EntitySystem{
 
 
         //DECELERATION IN X //TODO Tweak for a smoother transition
-        if(dashComp.direction.x != 0){
+        if(dashComp.getDirection().x != 0){
             decelVel.x = (phys.getVelocity().x > 0) ?
-                    Math.max(phys.getVelocity().x - dashComp.speed.x, 0):
-                    Math.min(phys.getVelocity().x + dashComp.speed.x, 0);
+                    Math.max(phys.getVelocity().x - dashComp.getSpeed().x, 0):
+                    Math.min(phys.getVelocity().x + dashComp.getSpeed().x, 0);
             MovementSystem.moveInX(entity, decelVel.x * Gdx.graphics.getDeltaTime());
         }
 
 
-        if (dashComp.direction.y != 0) {
+        if (dashComp.getDirection().y != 0) {
             decelVel.y = (phys.getVelocity().y > 0) ?
-                    Math.max(phys.getVelocity().y - dashComp.speed.y, 0):
-                    Math.min(phys.getVelocity().y + dashComp.speed.y, 0);
+                    Math.max(phys.getVelocity().y - dashComp.getSpeed().y, 0):
+                    Math.min(phys.getVelocity().y + dashComp.getSpeed().y, 0);
             MovementSystem.moveInY(entity, decelVel.y * Gdx.graphics.getDeltaTime());
         }
 
         // Is the entity done decelerating
         if(phys.getVelocity().x == 0){
-            dashComp.direction.set(0,0);
+            dashComp.getDirection().set(0, 0);
             phys.getBody().setGravityScale(1);
-            dashComp.phase = DashComponent.Phase.DONE;
+            dashComp.setPhase(DashComponent.Phase.DONE);
         }
 
     }

@@ -3,16 +3,12 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.Component;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.Kubotz.Component.DamageComponent;
-import com.brm.Kubotz.Component.PunchComponent;
-import com.brm.Kubotz.Constants;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 
 /**dd
  * Responsible for checking collisions, making the entities move
@@ -50,9 +46,9 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      * that would be colliding tih null entities
      */
     public void cleanContacts(){
-        for(Component component: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent component: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
-            phys.contacts.cleanContacts();
+            phys.getContacts().cleanContacts();
         }
     }
 
@@ -87,8 +83,8 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
         //Dispatch Contacts
-        physA.contacts.add(contactA);
-        physB.contacts.add(contactB);
+        physA.getContacts().add(contactA);
+        physB.getContacts().add(contactB);
 
 
     }
@@ -116,8 +112,8 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
         //Remove Contacts
-        physA.contacts.removeContactsWithEntity(entityB);
-        physB.contacts.removeContactsWithEntity(entityA);
+        physA.getContacts().removeContactsWithEntity(entityB);
+        physB.getContacts().removeContactsWithEntity(entityA);
 
     }
 

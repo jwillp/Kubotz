@@ -16,13 +16,13 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystemManager;
+import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.GrabbableComponent;
-import com.brm.Kubotz.Component.SpawnPointComponent;
+import com.brm.Kubotz.Components.GrabbableComponent;
+import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
@@ -226,9 +226,9 @@ public class InGameScreen extends GameScreen {
             String velText = "Velocity: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getVelocity();
             font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
 
-            font.draw(sb, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).nbJujmps, 0, Gdx.graphics.getHeight() - 80);
+            font.draw(sb, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJujmps(), 0, Gdx.graphics.getHeight() - 80);
             font.draw(sb, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
-            font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).contacts.size(), 0, Gdx.graphics.getHeight() - 120);
+            font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);
 
             sb.end();
         }

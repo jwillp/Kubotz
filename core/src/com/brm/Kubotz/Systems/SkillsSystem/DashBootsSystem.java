@@ -4,11 +4,11 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Movements.DashComponent;
-import com.brm.Kubotz.Component.Parts.Boots.DashBootsComponent;
+import com.brm.Kubotz.Components.Movements.DashComponent;
+import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -74,10 +74,10 @@ public class DashBootsSystem extends EntitySystem {
                 PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
 
-                Logger.log(dashComp.phase);
+                Logger.log(dashComp.getPhase());
                 // DO we need to put the entity in RECOVERY MODE?
                 // Is the entity done decelerating (last phase of dash)
-                if(dashComp.phase == DashComponent.Phase.DONE){
+                if(dashComp.getPhase() == DashComponent.Phase.DONE){
                         phys.getBody().setGravityScale(1);
                         boots.setInRecovery(true);
                 }

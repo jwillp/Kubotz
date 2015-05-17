@@ -1,20 +1,19 @@
 package com.brm.GoatEngine.ECS.Components;
 
 
-import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.Utils.Timer;
 
 /**
  * Allows an entity to be able to jump
  */
-public class JumpComponent extends Component {
+public class JumpComponent extends EntityComponent {
     public static final String ID = "JUMP_PROPERTY";
 
     private int nbJumpsMax = 1; //The Max number of consecutive jumps
-    public int nbJujmps;   //The number of consecutive jumps executed so far
+    private int nbJujmps;   //The number of consecutive jumps executed so far
 
 
-    public Timer cooldown = new Timer(500); //Cooldown between jumps
+    private Timer cooldown = new Timer(500); //Cooldown between jumps
 
     /**
      * Defaults the number of jumps to 1
@@ -41,5 +40,21 @@ public class JumpComponent extends Component {
 
     public void setNbJumpsMax(int nbJumpsMax) {
         this.nbJumpsMax = nbJumpsMax;
+    }
+
+    public int getNbJujmps() {
+        return nbJujmps;
+    }
+
+    public void setNbJujmps(int nbJujmps) {
+        this.nbJujmps = nbJujmps;
+    }
+
+    public Timer getCooldown() {
+        return cooldown;
+    }
+
+    public void setCooldown(Timer cooldown) {
+        this.cooldown = cooldown;
     }
 }

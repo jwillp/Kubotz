@@ -4,15 +4,14 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.GrabComponent;
-import com.brm.Kubotz.Component.GrabbableComponent;
-import com.brm.Kubotz.Component.LifespanComponent;
-import com.brm.Kubotz.Component.Powerups.PowerUp;
-import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
-import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
+import com.brm.Kubotz.Components.GrabComponent;
+import com.brm.Kubotz.Components.GrabbableComponent;
+import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -42,12 +41,12 @@ public class GrabSystem extends EntitySystem{
                 Logger.log("CHECK");
                 //is the entity colliding with a pick-able object
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                for(int i =0; i < phys.contacts.size(); i++){
-                    EntityContact contact = phys.contacts.get(i);
+                for(int i =0; i < phys.getContacts().size(); i++){
+                    EntityContact contact = phys.getContacts().get(i);
                     if(contact.getEntityB().hasComponent(GrabbableComponent.ID)){
                         //PICK IT UP
                         this.pickupObject(entity, contact.getEntityB());
-                        phys.contacts.removeContactsWithEntity(contact.getEntityB());
+                        phys.getContacts().removeContactsWithEntity(contact.getEntityB());
                         virtualGamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON); //Realease Button
                     }
 
@@ -73,9 +72,9 @@ public class GrabSystem extends EntitySystem{
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) agent.getComponent(PowerUpsContainerComponent.ID);
             container.addPowerUp(powerUpComp.getPowerUp());
-            powerUpComp.getPowerUp().effect.onStart(agent);
+            powerUpComp.getPowerUp().getEffect().onStart(agent);
             LifespanComponent life = (LifespanComponent) grabbable.getComponent(LifespanComponent.ID);
-            life.counter.terminate();
+            life.getCounter().terminate();
         }
 
         //Grab Ennemy

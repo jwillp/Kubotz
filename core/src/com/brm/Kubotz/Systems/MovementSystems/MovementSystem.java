@@ -1,15 +1,11 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
-import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Movements.RunningComponent;
-import com.brm.Kubotz.Component.Movements.FlyComponent;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Constants;
 
 
@@ -49,17 +45,17 @@ public class MovementSystem extends EntitySystem {
     public void updateIsGrounded(){
 
 
-        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
+            for(int i=0; i< phys.getContacts().size(); i++){
+                EntityContact contact = phys.getContacts().get(i);
                 if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
                     phys.setGrounded(true);
-                    phys.contacts.remove(i);
+                    phys.getContacts().remove(i);
 
                     //REMOVE OTHER contact for other entity
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
+                    physB.getContacts().remove(contact);
                 }
             }
         }
@@ -90,9 +86,9 @@ public class MovementSystem extends EntitySystem {
 
         //SET DIRECTION
         if(velocity > 0)
-            phys.direction = PhysicsComponent.Direction.RIGHT;
+            phys.setDirection(PhysicsComponent.Direction.RIGHT);
         else if(velocity < 0)
-            phys.direction = PhysicsComponent.Direction.LEFT;
+            phys.setDirection(PhysicsComponent.Direction.LEFT);
     }
 
     /**

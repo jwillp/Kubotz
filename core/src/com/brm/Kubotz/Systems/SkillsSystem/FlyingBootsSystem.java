@@ -3,12 +3,12 @@ package com.brm.Kubotz.Systems.SkillsSystem;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Movements.FlyComponent;
-import com.brm.Kubotz.Component.Movements.RunningComponent;
-import com.brm.Kubotz.Component.Parts.Boots.FlyingBootsComponent;
+import com.brm.Kubotz.Components.Movements.FlyComponent;
+import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Components.Parts.Boots.FlyingBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**

@@ -1,15 +1,15 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Movements.RunningComponent;
+import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -80,7 +80,7 @@ public class RunningSystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
             if(phys.isGrounded()){
-                jp.nbJujmps = 0;
+                jp.setNbJujmps(0);
             }
         }
 
@@ -92,16 +92,16 @@ public class RunningSystem extends EntitySystem {
      */
     private void updateIsGrounded(){
         // TODO only do it for Running Entities
-        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
+            for(int i=0; i< phys.getContacts().size(); i++){
+                EntityContact contact = phys.getContacts().get(i);
                 if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
                     phys.setGrounded(true);
-                    phys.contacts.remove(i);
+                    phys.getContacts().remove(i);
                     //REMOVE OTHER contact for other entity
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
+                    physB.getContacts().remove(contact);
                 }
             }
         }
@@ -119,8 +119,8 @@ public class RunningSystem extends EntitySystem {
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x - phys.getAcceleration().x;
 
-        if(Math.abs(resultingVelocity) > phys.MAX_SPEED.x){
-            resultingVelocity = -phys.MAX_SPEED.x;
+        if(Math.abs(resultingVelocity) > phys.getMaxSpeed().x){
+            resultingVelocity = -phys.getMaxSpeed().x;
         }
 
         MovementSystem.moveInX(entity, resultingVelocity);
@@ -133,8 +133,8 @@ public class RunningSystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x + phys.getAcceleration().x;
-        if(resultingVelocity > phys.MAX_SPEED.x){
-            resultingVelocity = phys.MAX_SPEED.x;
+        if(resultingVelocity > phys.getMaxSpeed().x){
+            resultingVelocity = phys.getMaxSpeed().x;
         }
         MovementSystem.moveInX(entity, resultingVelocity);
     }
@@ -150,13 +150,13 @@ public class RunningSystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
-            if(jp.nbJujmps < jp.getNbJumpsMax()){
-                if(jp.cooldown.isDone()){
+            if(jp.getNbJujmps() < jp.getNbJumpsMax()){
+                if(jp.getCooldown().isDone()){
                     float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
                     MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                     phys.setGrounded(false);
-                    jp.nbJujmps++;
-                    jp.cooldown.reset();
+                    jp.setNbJujmps(jp.getNbJujmps() + 1);
+                    jp.getCooldown().reset();
                 }
             }
         }
@@ -170,8 +170,8 @@ public class RunningSystem extends EntitySystem {
         Vector2 vel = phys.getVelocity().cpy();
 
 
-        if(Math.abs(vel.y) > phys.MAX_SPEED.y){
-            vel.y = -phys.MAX_SPEED.y;
+        if(Math.abs(vel.y) > phys.getMaxSpeed().y){
+            vel.y = -phys.getMaxSpeed().y;
         }
         float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f * phys.getBody().getGravityScale();
         resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);

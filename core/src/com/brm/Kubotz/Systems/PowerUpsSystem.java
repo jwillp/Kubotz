@@ -2,17 +2,16 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Timer;
-import com.brm.Kubotz.Component.Powerups.PowerUp;
-import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
-import com.brm.Kubotz.Component.Powerups.PowerUpEffect;
-import com.brm.Kubotz.Component.Powerups.PowerUpsContainerComponent;
-import com.brm.Kubotz.Component.SpawnPointComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUp;
+import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUpEffect;
+import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
+import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.PowerUpFactory;
 
@@ -56,8 +55,8 @@ public class PowerUpsSystem extends EntitySystem {
             ArrayList<PowerUp> powerUps = container.getPowerUps();
             for (int i = 0; i < powerUps.size(); i++) {
                 PowerUp powerUp = powerUps.get(i);
-                if (powerUp.effectDuration.isDone()) {
-                    powerUp.effect.onFinish(entity);
+                if (powerUp.getEffectDuration().isDone()) {
+                    powerUp.getEffect().onFinish(entity);
                     container.removePowerUp(powerUp);
                 }
             }
@@ -86,7 +85,7 @@ public class PowerUpsSystem extends EntitySystem {
 
 
         //Get PowerUps Spawns
-        ArrayList<Component> spawns = em.getComponents(SpawnPointComponent.ID);
+        ArrayList<EntityComponent> spawns = em.getComponents(SpawnPointComponent.ID);
         for (int i = 0, spawnsSize = spawns.size(); i < spawnsSize; i++) {
             if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.PowerUp) {
                 spawns.remove(i);

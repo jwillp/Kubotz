@@ -1,6 +1,6 @@
 package com.brm.GoatEngine.ECS.Entity;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 public class Entity {
 
@@ -36,7 +36,7 @@ public class Entity {
      * @param compId
      * @return this for chaining
      */
-    public Entity addComponent(Component cp, String compId){
+    public Entity addComponent(EntityComponent cp, String compId){
 
         try{
             manager.addComponent(compId, cp, getID());
@@ -66,7 +66,7 @@ public class Entity {
      * @param componentId
      * @return
      */
-    public Component getComponent(String componentId){
+    public EntityComponent getComponent(String componentId){
         try {
             return manager.getComponent(componentId, getID());
         } catch (NullPointerException e) {

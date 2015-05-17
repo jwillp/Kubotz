@@ -1,8 +1,7 @@
 package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 
 /**
  * Global systems for sub systems of attacks

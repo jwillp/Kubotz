@@ -4,10 +4,10 @@ import com.badlogic.gdx.math.MathUtils;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Parts.Boots.MagneticBootsComponent;
+import com.brm.Kubotz.Components.Parts.Boots.MagneticBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -73,8 +73,8 @@ public class MagneticBootsSystem extends EntitySystem{
         mag.setEnabled(isEnabled);
 
         phys.getBody().setGravityScale(phys.getBody().getGravityScale() * -1); //Invert gravity
-        mag.startingAngle = phys.getBody().getAngle()*MathUtils.radDeg;
-        Logger.log("START ANGLE" + mag.startingAngle);
+        mag.setStartingAngle(phys.getBody().getAngle()*MathUtils.radDeg);
+        Logger.log("START ANGLE" + mag.getStartingAngle());
         Logger.log("Entity" + entity.getID() + " ==> MAGNO MODE " + mag.isEnabled());
         //mag.getRotationTimer().reset();
 

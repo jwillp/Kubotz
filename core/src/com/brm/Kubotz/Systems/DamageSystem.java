@@ -6,11 +6,11 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.DamageComponent;
-import com.brm.Kubotz.Component.Powerups.EnergeticShieldComponent;
-import com.brm.Kubotz.Component.Powerups.InvincibilityComponent;
+import com.brm.Kubotz.Components.DamageComponent;
+import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
+import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
 
 /**
  * Used to deal damage and process Health Bonuses
@@ -32,16 +32,16 @@ public class DamageSystem extends EntitySystem{
         for(Entity e: em.getEntitiesWithComponent(DamageComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
 
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
+            for(int i=0; i< phys.getContacts().size(); i++){
+                EntityContact contact = phys.getContacts().get(i);
                 //The the other entity can be Hit handle damage
                 if(contact.getEntityB().hasComponent(HealthComponent.ID)){
 
                     handleDamage(contact.getEntityA(), contact.getEntityB());
                     //REMOVE CONTACTS
-                    phys.contacts.remove(i);
+                    phys.getContacts().remove(i);
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
+                    physB.getContacts().remove(contact);
                 }
             }
         }
@@ -71,18 +71,18 @@ public class DamageSystem extends EntitySystem{
         }//Energetic Shield
         else if(target.hasComponent(EnergeticShieldComponent.ID)){
             EnergeticShieldComponent shield = (EnergeticShieldComponent) target.getComponent(EnergeticShieldComponent.ID);
-            shield.takeDamage(damageComp.damage);
+            shield.takeDamage(damageComp.getDamage());
 
             //Is shield dead? If so remove it
             if(shield.isDead()){
                 target.removeComponent(EnergeticShieldComponent.ID);
             }
         }else{
-            targetHealth.substractAmount(damageComp.damage);
+            targetHealth.substractAmount(damageComp.getDamage());
 
             //KnockBack
-            Vector2 knockBack = damageComp.knockBack.cpy();
-            if(damagerPhys.direction == PhysicsComponent.Direction.LEFT){
+            Vector2 knockBack = damageComp.getKnockBack().cpy();
+            if(damagerPhys.getDirection() == PhysicsComponent.Direction.LEFT){
                 knockBack.x *= -1;
             }
 

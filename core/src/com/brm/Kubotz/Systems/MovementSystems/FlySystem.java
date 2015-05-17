@@ -4,10 +4,9 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.Movements.FlyComponent;
+import com.brm.Kubotz.Components.Movements.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -79,9 +78,9 @@ public class FlySystem extends EntitySystem {
         PhysicsComponent phys = ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID));
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.y + flyComp.acceleration.y;
-        if(resultingVelocity > flyComp.MAX_SPEED.y){
-            resultingVelocity = flyComp.MAX_SPEED.y;
+        float resultingVelocity = vel.y + flyComp.getAcceleration().y;
+        if(resultingVelocity > flyComp.getMaxSpeed().y){
+            resultingVelocity = flyComp.getMaxSpeed().y;
         }
         flyInY(entity, resultingVelocity);
 
@@ -97,9 +96,9 @@ public class FlySystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.y - flyComp.acceleration.y;
-        if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.y){
-            resultingVelocity = -flyComp.MAX_SPEED.y;
+        float resultingVelocity = vel.y - flyComp.getAcceleration().y;
+        if(Math.abs(resultingVelocity) > flyComp.getMaxSpeed().y){
+            resultingVelocity = -flyComp.getMaxSpeed().y;
         }
 
         this.flyInY(entity, resultingVelocity);
@@ -114,9 +113,9 @@ public class FlySystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.x - flyComp.acceleration.x;
-        if(Math.abs(resultingVelocity) > flyComp.MAX_SPEED.x){
-            resultingVelocity = -flyComp.MAX_SPEED.x;
+        float resultingVelocity = vel.x - flyComp.getAcceleration().x;
+        if(Math.abs(resultingVelocity) > flyComp.getMaxSpeed().x){
+            resultingVelocity = -flyComp.getMaxSpeed().x;
         }
         flyInX(entity, resultingVelocity);
     }
@@ -130,9 +129,9 @@ public class FlySystem extends EntitySystem {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
 
-        float resultingVelocity = vel.x + flyComp.acceleration.x;
-        if(resultingVelocity > flyComp.MAX_SPEED.x){
-            resultingVelocity = flyComp.MAX_SPEED.x;
+        float resultingVelocity = vel.x + flyComp.getAcceleration().x;
+        if(resultingVelocity > flyComp.getMaxSpeed().x){
+            resultingVelocity = flyComp.getMaxSpeed().x;
         }
         flyInX(entity, resultingVelocity);
     }
@@ -147,11 +146,11 @@ public class FlySystem extends EntitySystem {
         Vector2 vel = phys.getVelocity();
 
         float finalVelX = (vel.x > 0) ?
-                Math.max(vel.x - flyComp.deceleration.x, 0.0f) : Math.min(vel.x + flyComp.deceleration.x, 0.0f);
+                Math.max(vel.x - flyComp.getDeceleration().x, 0.0f) : Math.min(vel.x + flyComp.getDeceleration().x, 0.0f);
         flyInX(entity, finalVelX);
 
         float finalVelY = (vel.y > 0) ?
-                Math.max(vel.y - flyComp.deceleration.y, 0.0f) : Math.min(vel.y + flyComp.deceleration.y, 0.0f);
+                Math.max(vel.y - flyComp.getDeceleration().y, 0.0f) : Math.min(vel.y + flyComp.getDeceleration().y, 0.0f);
         flyInY(entity, finalVelY);
     }
 

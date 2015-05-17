@@ -6,13 +6,12 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.Kubotz.Component.GrabbableComponent;
-import com.brm.Kubotz.Component.LifespanComponent;
-import com.brm.Kubotz.Component.Powerups.PowerUp;
-import com.brm.Kubotz.Component.Powerups.PowerUpComponent;
-import com.brm.Kubotz.Component.Powerups.PowerUpEffect;
+import com.brm.Kubotz.Components.GrabbableComponent;
+import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUp;
+import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUpEffect;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Systems.LifespanSystem;
 
 /**
  * Used to Create PowerUps
@@ -41,7 +40,7 @@ public class PowerUpFactory extends EntityFactory {
      * @return
      */
     public PowerUpFactory withEffect(PowerUpEffect effect){
-        powerUpComponent.getPowerUp().effect = effect;
+        powerUpComponent.getPowerUp().setEffect(effect);
         return this;
     }
 
@@ -51,7 +50,7 @@ public class PowerUpFactory extends EntityFactory {
      * @return
      */
     public PowerUpFactory withDuration(int duration){
-        powerUpComponent.getPowerUp().effectDuration.setDelay(duration);
+        powerUpComponent.getPowerUp().getEffectDuration().setDelay(duration);
         return this;
     }
 
@@ -63,7 +62,7 @@ public class PowerUpFactory extends EntityFactory {
      * @return
      */
     public PowerUpFactory withLifeTime(int lifetime){
-        lifespanComp.counter.setDelay(lifetime);
+        lifespanComp.getCounter().setDelay(lifetime);
         return this;
     }
 
@@ -93,7 +92,7 @@ public class PowerUpFactory extends EntityFactory {
 
         //TODO Sprite + Animation Component
 
-        lifespanComp.counter.start();
+        lifespanComp.getCounter().start();
 
         return powerUp;
     }
