@@ -9,8 +9,9 @@
 * [ ] Multiplayer
 * [ ] Disable Punch
 * [ ] Clean GunSystem + Bullet
-* [ ] A TeamComponent
-* [ ] A ScoreComponent
+* [x] A TeamComponent
+
+* [x] A PlayerScoreComponent
 * [ ] CheckFor Enabling Disabling
 * [ ] Extraire PositionComopnent, VelocityComponent, CollisionComponent From PhysicsComponent
 * [ ] Système de Respawn
@@ -62,7 +63,7 @@ ProjectileComponent? Le GunSystème est pas très propre.. il y a des petits hac
 Pour les dommages! Genre, si tes dans la même team et que le Friendly Fire est OFF ne pas appliquer les dommages.
 
 
-## [] A ScoreComponent
+## [] A PlayerScoreComponent
 Pour inscrire le nombre de kill et de mort. Et le nombre total de vie
 
 
