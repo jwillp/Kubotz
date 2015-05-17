@@ -1,6 +1,6 @@
 package com.brm.GoatEngine.ECS.Entity;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 public class Entity {
 
@@ -20,6 +20,15 @@ public class Entity {
         this.manager = manager;
     }
 
+
+    public Entity(){}
+
+    public Entity(String id){
+        this.setID(id);
+    }
+
+
+
     // Wrapper methods //
     /**
      * WRAPPER METHOD adds a component to the entity in the entity manager
@@ -27,7 +36,7 @@ public class Entity {
      * @param compId
      * @return this for chaining
      */
-    public Entity addComponent(Component cp, String compId){
+    public Entity addComponent(EntityComponent cp, String compId){
 
         try{
             manager.addComponent(compId, cp, getID());
@@ -57,11 +66,14 @@ public class Entity {
      * @param componentId
      * @return
      */
-    public Component getComponent(String componentId){
+    public EntityComponent getComponent(String componentId){
         try {
             return manager.getComponent(componentId, getID());
         } catch (NullPointerException e) {
-            throw new UnregisteredEntityException();
+            if(manager == null)
+                throw new UnregisteredEntityException();
+            else
+                throw new EntityComponentNotFoundException(componentId);
         }
     }
 
@@ -115,6 +127,20 @@ public class Entity {
         public UnregisteredEntityException(){
             super("The Entity is not registered to any EntityManager");
         }
+    }
+
+
+    /**
+     * Exception thrown when the game engine tries to use a component from an entity
+     * that does not poses that particular component
+     */
+    public static class EntityComponentNotFoundException extends RuntimeException{
+
+        //Constructor that accepts a message
+        public EntityComponentNotFoundException(String componentName){
+            super("The Component \"" + componentName + "\" was not found in Entity");
+        }
+
     }
 
 }

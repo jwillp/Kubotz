@@ -5,7 +5,7 @@ import java.util.HashSet;
 /**
  * Used to add tags to an entity
  */
-public class TagsComponent extends Component {
+public class TagsComponent extends EntityComponent {
 
     public static final String ID = "TAGS_COMPONENT";
     private HashSet<String> tags = new HashSet<String>();

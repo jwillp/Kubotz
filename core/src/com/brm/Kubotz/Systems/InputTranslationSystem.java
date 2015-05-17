@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Input.UserInput;
@@ -20,10 +20,16 @@ public class InputTranslationSystem extends EntitySystem {
         super(em);
     }
 
+    @Override
+    public void init(){}
+
+
+
     /**
      * Translates the Input to GameActions
      */
-    public void update(){
+    @Override
+    public void handleInput(){
         //find player
         for(Entity e: em.getEntitiesWithComponent(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
@@ -41,7 +47,7 @@ public class InputTranslationSystem extends EntitySystem {
                         gamePad.pressButton(GameButton.MOVE_DOWN);
                     }
 
-                    // left XOR right ==> prevalance of left
+                    // left XOR right ==> prevalence of left
                     if (Gdx.input.isKeyPressed(UserInput.MOVE_LEFT)) {
                         gamePad.pressButton(GameButton.MOVE_LEFT);
                     } else if (Gdx.input.isKeyPressed(UserInput.MOVE_RIGHT)) {
@@ -73,5 +79,8 @@ public class InputTranslationSystem extends EntitySystem {
         }
     }
 
+
+    @Override
+    public void update(float dt) {}
 
 }

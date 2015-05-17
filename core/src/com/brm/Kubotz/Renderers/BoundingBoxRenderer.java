@@ -4,9 +4,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.Kubotz.Component.AppearanceComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
 
 /**
  * Used to render a Bounding Box.

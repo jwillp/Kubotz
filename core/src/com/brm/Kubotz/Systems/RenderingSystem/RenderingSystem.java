@@ -11,11 +11,12 @@ import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.CameraSystem;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.CameraSystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Component.SpriteComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
+import com.brm.Kubotz.Systems.PhysicsSystem;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -41,11 +42,13 @@ public class RenderingSystem extends EntitySystem {
 
     }
 
+    @Override
+    public void init() {}
 
-
-    public void update(){
-        this.cameraSystem.update();
-        this.animationSystem.update();
+    @Override
+    public void update(float dt){
+        this.cameraSystem.update(dt);
+            this.animationSystem.update(dt);
     }
 
 
@@ -53,7 +56,8 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-    public void render(World world){
+    public void render(){
+        World world = getSystemManager().getSystem(PhysicsSystem.class).getWorld();
         if(Config.DEBUG_RENDERING_ENABLED) {
             this.renderDebug(world);
         }

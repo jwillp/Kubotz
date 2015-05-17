@@ -6,11 +6,11 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.AnimationComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
 import com.brm.Kubotz.Component.SpriteComponent;
+import com.brm.Kubotz.Components.Movements.DashComponent;
 
 /**
  * Responsible for managing Animations
@@ -33,8 +33,14 @@ public class AnimationSystem extends EntitySystem {
         super(em);
     }
 
+    @Override
+    public void init() {
 
-    public void update(){
+    }
+
+
+    @Override
+    public void update(float dt){
 
         for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
 
@@ -84,12 +90,12 @@ public class AnimationSystem extends EntitySystem {
             if(entity.hasComponent(DashComponent.ID)){
                 DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
 
-                if(dashComp.phase == DashComponent.Phase.PREPARATION){
+                if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
                     animComp.setCurrentAnimation(dashingPrep.generateAnimation());
                     animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
                 }
 
-                if(dashComp.phase == DashComponent.Phase.MOVEMENT){
+                if(dashComp.getPhase() == DashComponent.Phase.TRAVEL){
                     animComp.setCurrentAnimation(dashing.generateAnimation());
                     animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
                 }
@@ -101,7 +107,7 @@ public class AnimationSystem extends EntitySystem {
             animComp.stateTime += Gdx.graphics.getDeltaTime();
             spriteComp.currentSprite = new TextureRegion(animComp.getCurrentAnimation().getKeyFrame(animComp.stateTime, true));
             //Flip image according to direction
-            if (phys.direction == PhysicsComponent.Direction.RIGHT || spriteComp.currentSprite.isFlipX()) {
+            if (phys.getDirection() == PhysicsComponent.Direction.RIGHT || spriteComp.currentSprite.isFlipX()) {
                 spriteComp.currentSprite.flip(true, false);
             }
 

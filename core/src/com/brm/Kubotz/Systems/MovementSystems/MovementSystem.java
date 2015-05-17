@@ -1,14 +1,12 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.Skills.Active.FlyComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Constants;
 
 
@@ -17,64 +15,28 @@ import com.brm.Kubotz.Constants;
  */
 public class MovementSystem extends EntitySystem {
 
-    FlySystem flySystem;
-    WalkingSystem walkingSystem;
-    DashSystem dashSystem;
-
-
 
     public MovementSystem(EntityManager em) {
         super(em);
-        flySystem = new FlySystem(em);
-        walkingSystem = new WalkingSystem(em);
-        dashSystem = new DashSystem(em);
+
+
     }
+
+    @Override
+    public void init() {
+        getSystemManager().addSystem(RunningSystem.class, new RunningSystem(em));
+        getSystemManager().addSystem(FlySystem.class, new FlySystem(em));
+        getSystemManager().addSystem(DashSystem.class, new DashSystem(em));
+    }
+
 
 
     public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
-            boolean useDefaultBehaviour = true; //Whether or not we will walk
-
-            // Fly Component
-            if(entity.hasComponent(FlyComponent.ID)){
-                FlyComponent flyComp = (FlyComponent) entity.getComponent(FlyComponent.ID);
-                flySystem.handleInput(entity);
-                if(flyComp.isEnabled()){
-                    useDefaultBehaviour = false;
-                }
-            // Dash Component
-            }else if(entity.hasComponent(DashComponent.ID)){
-                DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
-                dashSystem.handleInput(entity);
-                if(dashComp.isEnabled()){
-                    useDefaultBehaviour = dashComp.phase == DashComponent.Phase.RECOVERY;
-                }
-            }
-
-            //Whether or not we should use the walking behaviour (which is walking)
-            if(useDefaultBehaviour){
-                walkingSystem.handleInput(entity);
-            }
-        }
-
-
-
+        getSystemManager().getSystem(FlySystem.class).handleInput();
+        getSystemManager().getSystem(DashSystem.class).handleInput();
+        getSystemManager().getSystem(RunningSystem.class).handleInput();
     }
 
-
-
-    public void update(){
-
-        this.updateIsGrounded();
-
-        flySystem.update();
-        dashSystem.update();
-        walkingSystem.update();
-
-
-
-
-    }
 
     /**
      * Updates the property describing if an entity is grounded or not
@@ -82,24 +44,33 @@ public class MovementSystem extends EntitySystem {
     public void updateIsGrounded(){
 
 
-        for(Component comp: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
+            for(int i=0; i< phys.getContacts().size(); i++){
+                EntityContact contact = phys.getContacts().get(i);
                 if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
-                    phys.setGrounded(contact.describer == EntityContact.Describer.BEGIN);
-                    phys.contacts.remove(i);
+                    phys.setGrounded(true);
+                    phys.getContacts().remove(i);
 
                     //REMOVE OTHER contact for other entity
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
+                    physB.getContacts().remove(contact);
                 }
             }
         }
 
     }
 
+    @Override
+    public void update(float dt){
+        getSystemManager().getSystem(FlySystem.class).update(dt);
+        getSystemManager().getSystem(DashSystem.class).update(dt);
+        getSystemManager().getSystem(RunningSystem.class).update(dt);
+    }
 
+
+
+    ///////////////// HELPER METHODS //////////////////////
 
 
     /**
@@ -114,9 +85,9 @@ public class MovementSystem extends EntitySystem {
 
         //SET DIRECTION
         if(velocity > 0)
-            phys.direction = PhysicsComponent.Direction.RIGHT;
+            phys.setDirection(PhysicsComponent.Direction.RIGHT);
         else if(velocity < 0)
-            phys.direction = PhysicsComponent.Direction.LEFT;
+            phys.setDirection(PhysicsComponent.Direction.LEFT);
     }
 
     /**

@@ -3,25 +3,25 @@ package com.brm.GoatEngine.ECS.Components.Cameras;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 /**
  * Used by entities willing to be a camera
  */
-public class CameraComponent extends Component {
+public class CameraComponent extends EntityComponent {
     public final static String ID = "CAMERA_COMPONENT";
-    public OrthographicCamera camera;
+    private OrthographicCamera camera;
 
     //For Smooth camera movement(delayed camera movement, (the higher the most direct and quick))
-    public Vector2 speed = new Vector2(8.0f, 5.0f);
+    private Vector2 speed = new Vector2(8.0f, 5.0f);
 
-    public float zoomSpeed = -1; //The system (-1 one values means the system will decide by itself)
+    private float zoomSpeed = -1; //The system (-1 one values means the system will decide by itself)
 
 
 
     //Zoom properties
-    public float minimumZoom = 0.3f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
-    public float maximumZoom = Float.MAX_VALUE; //The maximum value the camera can Zoom In/Out
+    private float minimumZoom = 0.3f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
+    private float maximumZoom = Float.MAX_VALUE; //The maximum value the camera can Zoom In/Out
 
 
 
@@ -43,4 +43,43 @@ public class CameraComponent extends Component {
     }
 
 
+    public OrthographicCamera getCamera() {
+        return camera;
+    }
+
+    public void setCamera(OrthographicCamera camera) {
+        this.camera = camera;
+    }
+
+    public Vector2 getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(Vector2 speed) {
+        this.speed = speed;
+    }
+
+    public float getZoomSpeed() {
+        return zoomSpeed;
+    }
+
+    public void setZoomSpeed(float zoomSpeed) {
+        this.zoomSpeed = zoomSpeed;
+    }
+
+    public float getMinimumZoom() {
+        return minimumZoom;
+    }
+
+    public void setMinimumZoom(float minimumZoom) {
+        this.minimumZoom = minimumZoom;
+    }
+
+    public float getMaximumZoom() {
+        return maximumZoom;
+    }
+
+    public void setMaximumZoom(float maximumZoom) {
+        this.maximumZoom = maximumZoom;
+    }
 }

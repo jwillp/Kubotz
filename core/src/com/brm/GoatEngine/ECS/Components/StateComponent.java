@@ -5,7 +5,7 @@ package com.brm.GoatEngine.ECS.Components;
  * (useful for the animation system to determine
  * the animation according to the state)
  */
-public class StateComponent extends Component {
+public class StateComponent extends EntityComponent {
 
 
     public static String ID = "STATE_COMPONENT";

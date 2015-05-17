@@ -1,12 +1,12 @@
 package com.brm.Kubotz.Component;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
 /**
  * Used to add an currentAnimation to an entity
  */
-public class AnimationComponent extends Component {
+public class AnimationComponent extends EntityComponent {
 
     public final static String ID = "ANIMATION_COMPONENT";
 
