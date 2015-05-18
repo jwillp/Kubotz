@@ -238,10 +238,6 @@ public class KubotzBehaviourScript extends EntityScript{
                 PathNode node = aiComp.getCurrentPath().get(0);
                 Vector2 pos = node.position;
 
-
-
-
-
                 //LEFT OF
                 if (phys.getPosition().x < pos.x ){
                     gamePad.releaseButton(GameButton.MOVE_LEFT);
@@ -267,9 +263,6 @@ public class KubotzBehaviourScript extends EntityScript{
                     //gamePad.pressButton(GameButton.MOVE_DOWN);
                 }
 
-                if(gamePad.getInputSource() == VirtualGamePad.InputSource.AI_INPUT){
-                    Logger.log(gamePad.getPressedButtons());
-                }
             }
 
             return State.SUCCESS;
