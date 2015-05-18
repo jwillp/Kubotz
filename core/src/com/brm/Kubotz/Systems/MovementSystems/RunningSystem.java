@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
@@ -45,6 +46,7 @@ public class RunningSystem extends EntitySystem {
      */
     private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
@@ -62,6 +64,7 @@ public class RunningSystem extends EntitySystem {
                 //No movement made we decelerate
                 decelerate(entity); //TODO Is this really needed? see a few lines above
             }
+
         }
     }
 

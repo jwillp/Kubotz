@@ -5,7 +5,6 @@ import com.brm.GoatEngine.AI.BehaviourTree.Node;
 import com.brm.GoatEngine.AI.BehaviourTree.Selector;
 import com.brm.GoatEngine.AI.BehaviourTree.Sequence;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
-import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -16,6 +15,7 @@ import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.AI.AIComponent;
+import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Systems.AISystem;
@@ -219,6 +219,7 @@ public class KubotzBehaviourScript extends EntityScript{
 
             //Agent
             Entity agent = (Entity) blackBoard.get("agent");
+
             AIComponent aiComp = (AIComponent) agent.getComponent(AIComponent.ID);
             PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
@@ -229,13 +230,17 @@ public class KubotzBehaviourScript extends EntityScript{
                     (Vector2) blackBoard.get("destination")
             ));
 
-            Logger.log("MOVE!");
+
             // Move in the direction of the destination
             if(!aiComp.getCurrentPath().isEmpty()){
                 //if(false){
                 VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
                 PathNode node = aiComp.getCurrentPath().get(0);
                 Vector2 pos = node.position;
+
+
+
+
 
                 //LEFT OF
                 if (phys.getPosition().x < pos.x ){
@@ -261,6 +266,10 @@ public class KubotzBehaviourScript extends EntityScript{
                     gamePad.releaseButton(GameButton.MOVE_UP);
                     //gamePad.pressButton(GameButton.MOVE_DOWN);
                 }
+
+                if(gamePad.getInputSource() == VirtualGamePad.InputSource.AI_INPUT){
+                    Logger.log(gamePad.getPressedButtons());
+                }
             }
 
             return State.SUCCESS;
@@ -281,10 +290,6 @@ public class KubotzBehaviourScript extends EntityScript{
             PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
             Vector2 destination = (Vector2)blackBoard.get("destination");
-            Logger.log("============================");
-            Logger.log(phys.getPosition());
-            Logger.log(destination);
-            Logger.log("============================");
 
             if(GameMath.isMoreOrLess(phys.getPosition().x, destination.x, 2.0f) &&
                     GameMath.isMoreOrLess(phys.getPosition().y, destination.y, 2.0f)
@@ -380,38 +385,5 @@ public class KubotzBehaviourScript extends EntityScript{
             return State.SUCCESS;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

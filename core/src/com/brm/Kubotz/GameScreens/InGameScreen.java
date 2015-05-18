@@ -137,7 +137,7 @@ public class InGameScreen extends GameScreen {
                         .withTag("player")
                         .build();
             }else if (objType.equals("STATIC_PLATFORM") || objType.equals("WALL") || objType.equals("WARP_ZONE")) {
-                    String tag = objType.equals("STATIC_PLATFORM") ? Constants.ENTITY_TAG_PLATFORM : "AUTRE";
+                    String tag = objType.equals("STATIC_PLATFORM") ? Constants.ENTITY_TAG_PLATFORM : Constants.ENTITY_TAG_PLATFORM;
 
                     new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                             new Vector2(rect.getX() / tileSize, rect.getY() / tileSize))
@@ -162,16 +162,17 @@ public class InGameScreen extends GameScreen {
 
 
         for(int i=0; i<1; i++){
-            Entity ba = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(5 + i,7))
+            Entity ba = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(8 + i,7))
                     .withHeight(1.0f)
                     .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
                     .withCameraTargetComponent().build();
             ba.addComponent(new AIComponent(), AIComponent.ID);
 
+            //Scripts
             ScriptComponent script = new ScriptComponent();
             script.addScript(new KubotzBehaviourScript(), ba, entityManager);
             ba.addComponent(script, script.ID);
-            //bo.disableComponent(VirtualGamePad.ID);
+
             ba.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
 
         }
@@ -195,6 +196,9 @@ public class InGameScreen extends GameScreen {
 
 
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
+
+        //Since Scripts Can produce Input during their update phase
+        systemManager.getSystem(ScriptSystem.class).update(0);
 
         systemManager.getSystem(ScriptSystem.class).handleInput();
         systemManager.getSystem(MovementSystem.class).handleInput();
@@ -221,7 +225,7 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(LifespanSystem.class).update(deltaTime);
         systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
 
-        systemManager.getSystem(ScriptSystem.class).update(deltaTime);
+
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
 

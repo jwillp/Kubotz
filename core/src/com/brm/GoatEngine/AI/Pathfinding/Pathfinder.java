@@ -204,6 +204,11 @@ public class Pathfinder {
      */
     public ArrayList<PathNode> findPath(Vector2 start, Vector2 end){
 
+        //Are there any nodes to process?
+        if(this.nodes.isEmpty()){
+            return new ArrayList<PathNode>(); //Return empty path
+        }
+
         //Reset in case we have old data.
         this.openNodes.clear();
         this.closedNodes.clear();

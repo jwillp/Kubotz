@@ -13,7 +13,7 @@ import java.util.Hashtable;
 public class AIComponent extends EntityComponent {
     public static final String ID = "KUBOTZ_AI_COMPONENT";
 
-    private Timer reactionTime = new Timer(500); //The delay between AI logic updates
+    private Timer reactionTime = new Timer(5); //The delay between AI logic updates
 
     private Hashtable<String, Object> blackboard = new Hashtable<String, Object>();
     

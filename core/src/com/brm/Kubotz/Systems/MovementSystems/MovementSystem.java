@@ -7,6 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Constants;
 
 
