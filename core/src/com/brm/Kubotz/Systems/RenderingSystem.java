@@ -76,21 +76,21 @@ public class RenderingSystem extends EntitySystem {
 
             AIComponent aiComp = (AIComponent) e.getComponent(AIComponent.ID);
 
-            for(PathNode node: aiComp.currentPath) {
+            for(PathNode node: aiComp.getCurrentPath()) {
             	shapeRenderer.setProjectionMatrix(this.getCamera().combined);
             	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
                 if (node.isWalkable)
                 	shapeRenderer.setColor(Color.RED);
-                if(aiComp.currentPath.indexOf(node) == 0)
+                if(aiComp.getCurrentPath().indexOf(node) == 0)
                 	shapeRenderer.setColor(Color.GREEN);
-                if(aiComp.currentPath.indexOf(node) == aiComp.currentPath.size()-1)
+                if(aiComp.getCurrentPath().indexOf(node) == aiComp.getCurrentPath().size()-1)
                 	shapeRenderer.setColor(Color.MAGENTA);
                 shapeRenderer.rect(node.position.x, node.position.y, NODE_SIZE, NODE_SIZE);
                 shapeRenderer.end();
             }
 
             // PATH
-           for(PathNode node: aiComp.currentPath){
+           for(PathNode node: aiComp.getCurrentPath()){
                if(node.parent != null){
             	   shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // shape type
             	   shapeRenderer.setColor(1, 0, 0, 1); // line's color

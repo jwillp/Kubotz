@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Scripts;
+package com.brm.Kubotz.Scripts.AI;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.AI.BehaviourTree.Node;
@@ -9,10 +9,8 @@ import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
-import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
@@ -20,47 +18,50 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.AI.AIComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
+import com.brm.Kubotz.Systems.AISystem;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
 
 /**
  * AI Behaviour for Kubotz
+ * TODO Share a single instance of the script
  */
 public class KubotzBehaviourScript extends EntityScript{
+
+    // We want a single instance of the Behaviour Tree
+    private static Selector behaviourTree = null;
+
     @Override
     public void onInit(Entity entity, EntityManager manager) {
+        AIComponent aiComponent = (AIComponent) entity.getComponent(AIComponent.ID);
+        aiComponent.getBlackboard().put("entityManager", manager);
+        aiComponent.getBlackboard().put("agent", entity);
+
+        KubotzBehaviourScript.buildTree();
+
 
     }
 
     @Override
     public void onUpdate(Entity entity, EntityManager manager) {
-
-    }
-
-    @Override
-    public void onInput(Entity entity, EntityManager manager, ArrayList<VirtualButton> pressedButtons) {
-
-    }
-
-    @Override
-    public void onCollision(EntityContact contact) {
-
-    }
-
-    @Override
-    public void onDetach(Entity entity, EntityManager manager) {
-
+        AIComponent aiComponent = (AIComponent) entity.getComponent(AIComponent.ID);
+        if(aiComponent.getReactionTime().isDone()){
+            KubotzBehaviourScript.behaviourTree.tick(aiComponent.getBlackboard());
+            aiComponent.getReactionTime().reset();
+        }
     }
 
 
-    // BEHAVIOUR TREE
 
 
+    ///////////////////////////// BEHAVIOUR TREE ////////////////////////////////
 
+    public static void buildTree(){
+        if(KubotzBehaviourScript.behaviourTree != null){
+            return;
+        }
 
-    public void buildTree(){
         Selector root = new Selector();
         //DEFENSIVE
         root.addNode(new DefensiveBehaviour()
@@ -82,9 +83,6 @@ public class KubotzBehaviourScript extends EntityScript{
                         )*/
         );
 
-
-
-
         //OFFENSIVE
         root.addNode(new OffensiveBehaviour()
                         .addNode(new Sequence() //Chase
@@ -97,12 +95,11 @@ public class KubotzBehaviourScript extends EntityScript{
                                         )
                         )
         );
-
-
-
+        Logger.log("Kubotz BTree Created");
+        KubotzBehaviourScript.behaviourTree = root;
     }
 
-    public class DefensiveBehaviour extends Selector {
+    public static class DefensiveBehaviour extends Selector {
 
         @Override
         public boolean precondition(Hashtable<String, Object> blackBoard) {
@@ -116,7 +113,7 @@ public class KubotzBehaviourScript extends EntityScript{
     /**
      * Finds the nearest enemy in the map
      */
-    public class LocateNearestEnemy extends Node {
+    public static class LocateNearestEnemy extends Node {
 
 
         @Override
@@ -152,7 +149,7 @@ public class KubotzBehaviourScript extends EntityScript{
     /**
      * Calculates a destination far enough from the enemy
      */
-    public class CalculateFleeDestination extends Node{
+    public static class CalculateFleeDestination extends Node{
 
 
         @Override
@@ -162,7 +159,6 @@ public class KubotzBehaviourScript extends EntityScript{
                 return State.SUCCESS;
             }
 
-            Pathfinder pathfinder = (Pathfinder)blackBoard.get("pathfinder");
             Entity enemy = (Entity)blackBoard.get("enemy");
             PhysicsComponent enemyPhys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
 
@@ -170,7 +166,7 @@ public class KubotzBehaviourScript extends EntityScript{
             //Choose a random point in the map far enough from the enemy
             PathNode node;
             do{
-                node = pathfinder.nodes.get(new Random().nextInt(pathfinder.nodes.size()));
+                node = AISystem.pathfinder.nodes.get(new Random().nextInt(AISystem.pathfinder.nodes.size()));
             }while ( Vectors.manhattanDistance(enemyPhys.getPosition(), node.position) <= MIN_SAFE_DISTANCE);
 
 
@@ -184,7 +180,7 @@ public class KubotzBehaviourScript extends EntityScript{
     /**
      * Flee behaviour
      */
-    public class FleeBehaviour extends Sequence{
+    public static class FleeBehaviour extends Sequence{
 
         /**
          * If distance between the agent and the enemy is smaller than a MIN DISTANCE
@@ -211,7 +207,7 @@ public class KubotzBehaviourScript extends EntityScript{
      * Moves towards a destination
      * Using foot (not fly nor dash)
      */
-    public class MoveToDestination extends Node{
+    public static class MoveToDestination extends Node{
 
         @Override
         public boolean precondition(Hashtable<String, Object> blackBoard) {
@@ -228,18 +224,17 @@ public class KubotzBehaviourScript extends EntityScript{
 
 
             // Determine path with pathfinder
-            Pathfinder pathfinder = (Pathfinder)blackBoard.get("pathfinder");
-            aiComp.currentPath = pathfinder.findPath(
+            aiComp.setCurrentPath(AISystem.pathfinder.findPath(
                     phys.getPosition(),
                     (Vector2) blackBoard.get("destination")
-            );
+            ));
 
-
+            Logger.log("MOVE!");
             // Move in the direction of the destination
-            if(!aiComp.currentPath.isEmpty()){
+            if(!aiComp.getCurrentPath().isEmpty()){
                 //if(false){
                 VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
-                PathNode node = aiComp.currentPath.get(0);
+                PathNode node = aiComp.getCurrentPath().get(0);
                 Vector2 pos = node.position;
 
                 //LEFT OF
@@ -277,7 +272,7 @@ public class KubotzBehaviourScript extends EntityScript{
     /**
      * Stops at destination if it has arrived at the destination
      */
-    public class StopAtDestination extends Node{
+    public static class StopAtDestination extends Node{
 
         @Override
         public State update(Hashtable<String, Object> blackBoard) {
@@ -286,10 +281,10 @@ public class KubotzBehaviourScript extends EntityScript{
             PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
             Vector2 destination = (Vector2)blackBoard.get("destination");
-
+            Logger.log("============================");
+            Logger.log(phys.getPosition());
             Logger.log(destination);
-
-
+            Logger.log("============================");
 
             if(GameMath.isMoreOrLess(phys.getPosition().x, destination.x, 2.0f) &&
                     GameMath.isMoreOrLess(phys.getPosition().y, destination.y, 2.0f)
@@ -319,7 +314,7 @@ public class KubotzBehaviourScript extends EntityScript{
      * @author TECH
      *
      */
-    public class SetEnemyAsTarget extends Node{
+    public static class SetEnemyAsTarget extends Node{
         @Override
         public State update(Hashtable<String, Object> blackBoard) {
 
@@ -349,7 +344,7 @@ public class KubotzBehaviourScript extends EntityScript{
 
 
 
-    public class OffensiveBehaviour extends Selector{
+    public static class OffensiveBehaviour extends Selector{
         @Override
         public boolean precondition(Hashtable<String, Object> blackBoard) {
             float health = ((HealthComponent)((Entity)blackBoard.get("agent"))
@@ -373,7 +368,7 @@ public class KubotzBehaviourScript extends EntityScript{
     /**
      * Attacks an enemy with a melee weapon
      */
-    public class AttackWithMeleeWeapon extends Node{
+    public static class AttackWithMeleeWeapon extends Node{
         @Override
         public State update(Hashtable<String, Object> blackBoard) {
 

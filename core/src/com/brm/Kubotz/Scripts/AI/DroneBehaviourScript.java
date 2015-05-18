@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Scripts;
+package com.brm.Kubotz.Scripts.AI;
 
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;

@@ -17,7 +17,7 @@ public class AISystem extends EntitySystem {
 
 
 
-    public Pathfinder pathfinder = new Pathfinder();
+    public static Pathfinder pathfinder = new Pathfinder();
 
 
 
@@ -27,7 +27,7 @@ public class AISystem extends EntitySystem {
     @Override
     public void update(float dt) {
         // UPDATE PATHFINDER (RESCAN MAP) //TODO Maybe not rescan all the time (or maybe yes for bullets)
-        this.pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
+        pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
 
 
     }

@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
@@ -29,6 +30,7 @@ import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
+import com.brm.Kubotz.Scripts.AI.KubotzBehaviourScript;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
@@ -165,6 +167,10 @@ public class InGameScreen extends GameScreen {
                     .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
                     .withCameraTargetComponent().build();
             ba.addComponent(new AIComponent(), AIComponent.ID);
+
+            ScriptComponent script = new ScriptComponent();
+            script.addScript(new KubotzBehaviourScript(), ba, entityManager);
+            ba.addComponent(script, script.ID);
             //bo.disableComponent(VirtualGamePad.ID);
             ba.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
 

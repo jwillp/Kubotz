@@ -18,9 +18,7 @@ public abstract class EntityScript{
     /**
      * Called when a script is added to an entity
      */
-    public abstract void onInit(Entity entity, EntityManager manager);
-
-
+    public void onInit(Entity entity, EntityManager manager){}
 
     /**
      * Called every frame
@@ -35,7 +33,7 @@ public abstract class EntityScript{
      * @param manager   the entity manager
      * @param pressedButtons the buttons that were pressed
      */
-    public abstract void onInput(Entity entity, EntityManager manager, ArrayList<VirtualButton> pressedButtons);
+    public void onInput(Entity entity, EntityManager manager, ArrayList<VirtualButton> pressedButtons){}
 
 
     /**
@@ -43,12 +41,12 @@ public abstract class EntityScript{
      * two entities touch
      * @param contact
      */
-    public abstract void onCollision(EntityContact contact);
+    public void onCollision(EntityContact contact){}
 
     /**
      * Called when the script is detached from the entity
      */
-    public abstract void onDetach(Entity entity, EntityManager manager);
+    public void onDetach(Entity entity, EntityManager manager){}
 
 
 

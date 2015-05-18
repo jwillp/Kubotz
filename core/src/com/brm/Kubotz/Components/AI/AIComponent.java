@@ -5,7 +5,7 @@ import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Hashtable;
 
 /**
  * Component to make to Store AI information on an entity
@@ -13,11 +13,11 @@ import java.util.HashMap;
 public class AIComponent extends EntityComponent {
     public static final String ID = "KUBOTZ_AI_COMPONENT";
 
-    public Timer reactionTime = new Timer(500); //The delay between AI logic updates
+    private Timer reactionTime = new Timer(500); //The delay between AI logic updates
 
-    public HashMap<String, Object> blackboard = new HashMap<String, Object>();
+    private Hashtable<String, Object> blackboard = new Hashtable<String, Object>();
     
-    public ArrayList<PathNode> currentPath = new ArrayList<PathNode>(); //Current pathfinding path (if any)
+    private ArrayList<PathNode> currentPath = new ArrayList<PathNode>(); //Current pathfinding path (if any)
 
 
     public AIComponent(){
@@ -25,4 +25,19 @@ public class AIComponent extends EntityComponent {
     }
 
 
+    public Timer getReactionTime() {
+        return reactionTime;
+    }
+
+    public Hashtable<String, Object> getBlackboard() {
+        return blackboard;
+    }
+
+    public ArrayList<PathNode> getCurrentPath() {
+        return currentPath;
+    }
+
+    public void setCurrentPath(ArrayList<PathNode> currentPath) {
+        this.currentPath = currentPath;
+    }
 }
