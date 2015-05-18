@@ -40,8 +40,7 @@ public class KubotzBehaviourScript extends EntityScript{
 
         KubotzBehaviourScript.buildTree();
 
-        //TEST //TODO REMOVE
-        entity.addComponent(new SensorComponent(3), SensorComponent.ID);
+
 
 
 

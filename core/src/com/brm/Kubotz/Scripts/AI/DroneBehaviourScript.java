@@ -10,8 +10,10 @@ import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.AIComponent;
+import com.brm.Kubotz.Components.SensorComponent;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 /**
  * AI Behaviour for Drones
@@ -32,24 +34,31 @@ public class DroneBehaviourScript extends EntityScript {
         Entity master = manager.getEntity((String)aiComponent.getBlackboard().get("master"));
         PhysicsComponent masterPhys = (PhysicsComponent) master.getComponent(PhysicsComponent.ID);
 
+
+
         // Find closest enemy to the Master within a radius
-        Logger.log("FIND ENEMY");
-
-        // Move closer to that enemy
-
-        //Shoot (Make sure at the moment of shooting the bullet wont hurt the player)
+        SensorComponent sensor = (SensorComponent) master.getComponent(SensorComponent.ID);
+        this.identifyThreat(sensor.getDetectedEntities(), entity.getID(), aiComponent);
 
 
-        //if no enemy in sight follow player
-        Vector2 speed = dronePhys.getAcceleration();
-        Vector2 distance =(Vector2) aiComponent.getBlackboard().get("minMasterDistance");
+        // Move closer to that enemy (if any)
+        if(aiComponent.getBlackboard().containsKey("threat")){
+            PhysicsComponent threatPhys = (PhysicsComponent) manager.getComponent(
+                    PhysicsComponent.ID,
+                    (String) aiComponent.getBlackboard().get("threat")
+            );
+            this.moveToDestination(dronePhys, threatPhys.getPosition());
 
-        float posX = (masterPhys.getPosition().x - dronePhys.getPosition().x + distance.x)
-                * speed.x * Gdx.graphics.getDeltaTime();
-        float posY = (masterPhys.getPosition().y - dronePhys.getPosition().y + distance.y)
-                * speed.y * Gdx.graphics.getDeltaTime();
+            //Shoot (Make sure at the moment of shooting the bullet wont hurt the player)
 
-        dronePhys.getBody().setLinearVelocity(new Vector2(posX, posY));
+
+
+        }else{
+            //if no enemy in sight follow player
+            this.moveToDestination(dronePhys, masterPhys.getPosition());
+        }
+
+
 
 
     }
@@ -60,10 +69,43 @@ public class DroneBehaviourScript extends EntityScript {
 
     }
 
+    /**
+     * Identifies a threat
+     */
+    private void identifyThreat(ArrayList<String> potentielThreats, String droneId, AIComponent aiComponent){
+
+        if(potentielThreats.isEmpty()){
+            return; // No threat in sight
+        }
+
+        //TODO Check Teams Instead
+        String threat = potentielThreats.get(0);
+        if(threat.equals(droneId)){
+            return;
+        }
+        aiComponent.getBlackboard().put("threat", threat);
 
 
-    private void moveCloserToEnnemy(Vector2 ennemyPosition){
+    }
 
+
+
+
+    /**
+     * Moves the drone smoothly to a destination
+     * @param phys The Physics Component of the drone
+     * @param destination The desired destination
+     */
+    private void moveToDestination(PhysicsComponent phys, Vector2 destination){
+        Vector2 speed = phys.getAcceleration();
+        Vector2 distance = new Vector2(2,2); //TODO Constant
+
+        float dX = (destination.x - phys.getPosition().x + distance.x)
+                * speed.x * Gdx.graphics.getDeltaTime();
+        float dY = (destination.y - phys.getPosition().y + distance.y)
+                * speed.y * Gdx.graphics.getDeltaTime();
+
+        phys.getBody().setLinearVelocity(new Vector2(dX, dY));
     }
 
 

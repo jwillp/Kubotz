@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -9,8 +10,11 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Parts.Weapons.DroneGauntletComponent;
+import com.brm.Kubotz.Components.SensorComponent;
 import com.brm.Kubotz.Entities.DroneFactory;
 import com.brm.Kubotz.Input.GameButton;
+
+import java.awt.*;
 
 /**
  * Turret Gauntlet System
@@ -45,16 +49,48 @@ public class DroneGauntletSystem extends EntitySystem {
             gamePad.releaseButton(GameButton.ACTIVE_SKILL_BUTTON);
             //can we spawn a turret?
             if(gauntlet.getCooldown().isDone()){
-                Logger.log("TURRET UPDATE");
-                //CREATE A BULLET
-                Entity turret = this.spawnTurret(physicsComponent, entity);
-                gauntlet.getCooldown().reset();
+                String droneId = this.spawnDrone(physicsComponent, entity).getID();
+                gauntlet.addDrone(droneId);
 
+                entity.addComponent(new SensorComponent(3), SensorComponent.ID);
+
+
+                gauntlet.getCooldown().reset();
             }
         }
     }
 
-    private Entity spawnTurret(PhysicsComponent physicsComponent, Entity master){
+
+    @Override
+    public void update(float dt) {
+
+        for(Entity entity: em.getEntitiesWithComponent(DroneGauntletComponent.ID)){
+            DroneGauntletComponent droneComp = (DroneGauntletComponent) entity.getComponent(DroneGauntletComponent.ID);
+
+            // Untrack Dead Drones
+            for(String drone: droneComp.getDrones()){
+                if(em.getEntity(drone) == null){
+                    droneComp.removeDrone(drone);
+                }
+            }
+
+            if(droneComp.getDrones().isEmpty()){
+                //Remove tracker Comp
+                entity.removeComponent(SensorComponent.ID);
+
+            }
+
+        }
+    }
+
+
+
+
+
+
+
+
+    private Entity spawnDrone(PhysicsComponent physicsComponent, Entity master){
         Logger.log("SPAWN");
         Entity turret = new DroneFactory(em,  physicsComponent.getBody().getWorld(), master)
                 .withPosition(new Vector2(physicsComponent.getPosition().x - 1, physicsComponent.getPosition().y + 1))
@@ -65,8 +101,15 @@ public class DroneGauntletSystem extends EntitySystem {
     }
 
 
-    @Override
-    public void update(float dt) {
 
-    }
+
+
+
+
+
+
+
+
+
+
 }

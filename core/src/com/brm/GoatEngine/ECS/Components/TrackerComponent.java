@@ -3,7 +3,7 @@ package com.brm.GoatEngine.ECS.Components;
 import com.badlogic.gdx.math.Vector2;
 
 /**
- * Alllows an entity to follow another entity
+ * Allows an entity to follow another entity
  */
 public class TrackerComponent extends EntityComponent {
     public final static String ID = "TRACKER_COMPONENT";

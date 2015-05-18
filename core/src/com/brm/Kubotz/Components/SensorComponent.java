@@ -39,6 +39,13 @@ public class SensorComponent extends EntityComponent{
     }
 
 
+    public ArrayList<String> getDetectedEntities(){
+        return this.entities;
+    }
+
+
+
+
     @Override
     public void onAttach(Entity entity) {
        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
