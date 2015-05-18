@@ -20,22 +20,12 @@ public abstract class Composite extends Node {
     }
 
 
-    public Composite(Hashtable<String, Object> blackBoard){
-        children = new ArrayList<Node>();
-        currentNode = 0;
-        this.setBlackBoard(blackBoard);
-    }
-
-
-
-
     /**
      * Adds a node to the current composite
      * @param node
      * @return this for chaining
      */
     public Composite addNode(Node node){
-        node.setBlackBoard(this.blackBoard);
         children.add(node);
         return this;
     }

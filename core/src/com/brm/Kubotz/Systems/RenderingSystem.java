@@ -9,12 +9,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.AI.Pathfinding.Node;
+import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.CameraSystem;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.Kubotz.Components.AI.KubotzAIComponent;
+import com.brm.Kubotz.Components.AI.AIComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 
@@ -72,11 +72,11 @@ public class RenderingSystem extends EntitySystem {
 		float NODE_SIZE = 0.4f;
     	
     	 //Pathfinding display
-        for(Entity e: this.em.getEntitiesWithComponent(KubotzAIComponent.ID)){
+        for(Entity e: this.em.getEntitiesWithComponent(AIComponent.ID)){
 
-            KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
+            AIComponent aiComp = (AIComponent) e.getComponent(AIComponent.ID);
 
-            for(Node node: aiComp.currentPath) {
+            for(PathNode node: aiComp.currentPath) {
             	shapeRenderer.setProjectionMatrix(this.getCamera().combined);
             	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
                 if (node.isWalkable)
@@ -90,7 +90,7 @@ public class RenderingSystem extends EntitySystem {
             }
 
             // PATH
-           for(Node node: aiComp.currentPath){
+           for(PathNode node: aiComp.currentPath){
                if(node.parent != null){
             	   shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // shape type
             	   shapeRenderer.setColor(1, 0, 0, 1); // line's color

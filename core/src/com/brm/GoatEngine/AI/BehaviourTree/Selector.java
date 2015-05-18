@@ -13,17 +13,12 @@ import java.util.Hashtable;
 *  RUNNING : as soon as any of the children returns RUNNING
 **/
 public class Selector extends Composite {
-    
-    public Selector(){}
-    public Selector(Hashtable<String, Object> blackBoard){
-        this.setBlackBoard(blackBoard);
-    }
 
     @Override
-    public State update() {
+    public State update(Hashtable<String, Object> blackBoard) {
 
         for(Node node: this.children){
-            state = node.tick();
+            state = node.tick(blackBoard);
             if(state == State.RUNNING || state == State.SUCCESS){
                 return state;
             }

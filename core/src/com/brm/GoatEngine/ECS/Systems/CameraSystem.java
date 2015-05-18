@@ -53,7 +53,7 @@ public class CameraSystem extends EntitySystem {
             // Find the center point between between the two entities
             updatePosition(camEntity, leftMost, rightMost);
 
-            //ZOOM IN/OUT according to the euclidianDistance between the two entities
+            //ZOOM IN/OUT according to the euclideanDistance between the two entities
             updateZoom(camEntity, leftMost, rightMost);
 
             //Update the camera
@@ -98,14 +98,14 @@ public class CameraSystem extends EntitySystem {
      */
     private void updateZoom(Entity cam, Vector2 leftMost, Vector2 rightMost){
         CameraComponent camComp = (CameraComponent)cam.getComponent(CameraComponent.ID);
-        //Pythagorean euclidianDistance
-        float zoomScale = (float) (Vectors.euclidianDistance(leftMost, rightMost)/10.0f);
+        //Pythagorean euclideanDistance
+        float zoomScale = (float) (Vectors.euclideanDistance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
         zoomSpeed = camComp.getZoomSpeed() == -1 ? camComp.getSpeed().len() : camComp.getZoomSpeed();
 
 
-        //Zoom according to euclidianDistance
+        //Zoom according to euclideanDistance
         camComp.getCamera().zoom += (java.lang.Math.min(java.lang.Math.max(zoomScale, camComp.getMinimumZoom()), camComp.getMaximumZoom()) - camComp.getCamera().zoom);
 
 

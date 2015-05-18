@@ -1,99 +1,112 @@
-package com.brm.Kubotz.AI.KubotzBehaviours;
+package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.AI.BehaviourTree.Node;
 import com.brm.GoatEngine.AI.BehaviourTree.Selector;
 import com.brm.GoatEngine.AI.BehaviourTree.Sequence;
+import com.brm.GoatEngine.AI.Pathfinding.PathNode;
+import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.Scripts.EntityScript;
+import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.AI.KubotzPathFinder;
-import com.brm.Kubotz.Components.AI.KubotzAIComponent;
+import com.brm.Kubotz.Components.AI.AIComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Random;
 
 /**
- * The Behaviour tree nodes for a KubotzBehaviour
+ * AI Behaviour for Kubotz
  */
-public class KubotzBehaviour extends Selector{
+public class KubotzBehaviourScript extends EntityScript{
+    @Override
+    public void onInit(Entity entity, EntityManager manager) {
 
+    }
 
-    /**
-     * Builds a Kubotz behaviour tree
-     * @param em the Entity Manager
-     * @param agent the agent of the tree
-     */
-    public KubotzBehaviour(EntityManager em, Entity agent, KubotzPathFinder pathfinder){
-        this.blackBoard.put("entityManager", em);
-        this.blackBoard.put("agent", agent);
-        this.blackBoard.put("pathfinder", pathfinder);
+    @Override
+    public void onUpdate(Entity entity, EntityManager manager) {
 
-        this.buildTree();
+    }
+
+    @Override
+    public void onInput(Entity entity, EntityManager manager, ArrayList<VirtualButton> pressedButtons) {
+
+    }
+
+    @Override
+    public void onCollision(EntityContact contact) {
+
+    }
+
+    @Override
+    public void onDetach(Entity entity, EntityManager manager) {
 
     }
 
 
+    // BEHAVIOUR TREE
+
+
+
+
     public void buildTree(){
-        this.children.clear();
-        //PASSIVE
-        this.addNode(new DefensiveBehaviour(this.blackBoard)
+        Selector root = new Selector();
+        //DEFENSIVE
+        root.addNode(new DefensiveBehaviour()
                         //Avoid Combat
-                        .addNode(new Sequence(this.blackBoard)
-                                .addNode(new LocateNearestEnemy(this.blackBoard))
-                                .addNode(new FleeBehaviour(this.blackBoard)
-                                        .addNode(new CalculateFleeDestination(this.blackBoard))
-                                        .addNode(new MoveToDestination(this.blackBoard))
-                                        .addNode(new StopAtDestination(this.blackBoard))
-                                )
+                        .addNode(new Sequence()
+                                        .addNode(new LocateNearestEnemy())
+                                        .addNode(new FleeBehaviour()
+                                                        .addNode(new CalculateFleeDestination())
+                                                        .addNode(new MoveToDestination())
+                                                        .addNode(new StopAtDestination())
+                                        )
                         )
 
-                        //Heal
-                        /*.addNode(new Sequence(this.blackBoard)
-                                        .addNode(new LocateNearestHealthBonus(this.blackBoard))
-                                        .addNode(new MoveToDestination(this.blackBoard))
-                                        .addNode(new TakeObject(this.blackBoard))
+                //Heal
+                        /*.addNode(new Sequence()
+                                        .addNode(new LocateNearestHealthBonus())
+                                        .addNode(new MoveToDestination())
+                                        .addNode(new TakeObject())
                         )*/
         );
 
 
-        
-        
-        //ACTIVE
-        this.addNode(new OffensiveBehaviour(this.blackBoard)
-					.addNode(new Sequence(this.blackBoard) //Chase
-							.addNode(new LocateNearestEnemy(this.blackBoard))
-							.addNode(new SetEnemyAsTarget(this.blackBoard))
-							.addNode(new MoveToDestination(this.blackBoard))
-							.addNode(new StopAtDestination(this.blackBoard))
-                            .addNode(new Sequence(this.blackBoard)
-                                    .addNode(new AttackWithMeleeWeapon(this.blackBoard))
 
 
-
-                            )
-					)
-       );
+        //OFFENSIVE
+        root.addNode(new OffensiveBehaviour()
+                        .addNode(new Sequence() //Chase
+                                        .addNode(new LocateNearestEnemy())
+                                        .addNode(new SetEnemyAsTarget())
+                                        .addNode(new MoveToDestination())
+                                        .addNode(new StopAtDestination())
+                                        .addNode(new Sequence()
+                                                        .addNode(new AttackWithMeleeWeapon())
+                                        )
+                        )
+        );
 
 
 
     }
 
-    public class DefensiveBehaviour extends Selector{
-        public DefensiveBehaviour(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
+    public class DefensiveBehaviour extends Selector {
 
         @Override
-        public boolean precondition() {
-            float health = ((HealthComponent)((Entity)this.blackBoard.get("agent"))
+        public boolean precondition(Hashtable<String, Object> blackBoard) {
+            float health = ((HealthComponent)((Entity)blackBoard.get("agent"))
                     .getComponent(HealthComponent.ID)).getAmount();
             return health <= 25;
         }
@@ -103,20 +116,15 @@ public class KubotzBehaviour extends Selector{
     /**
      * Finds the nearest enemy in the map
      */
-    public class LocateNearestEnemy extends Node{
+    public class LocateNearestEnemy extends Node {
 
-        public LocateNearestEnemy(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
 
         @Override
-        public State update() {
-            EntityManager em = (EntityManager) this.blackBoard.get("entityManager");
+        public State update(Hashtable<String, Object> blackBoard) {
+            EntityManager em = (EntityManager) blackBoard.get("entityManager");
 
-
-
-            PhysicsComponent myPhys = (PhysicsComponent)((Entity)this.blackBoard.get("agent"))
-                                        .getComponent(PhysicsComponent.ID);
+            PhysicsComponent myPhys = (PhysicsComponent)((Entity)blackBoard.get("agent"))
+                    .getComponent(PhysicsComponent.ID);
 
             int smallestDistance = Integer.MAX_VALUE;
 
@@ -128,7 +136,7 @@ public class KubotzBehaviour extends Selector{
 
                 if(dist <= smallestDistance && dist != 0){
                     smallestDistance = dist;
-                    this.blackBoard.put("enemy", entity);
+                    blackBoard.put("enemy", entity);
                 }
             }
 
@@ -146,31 +154,28 @@ public class KubotzBehaviour extends Selector{
      */
     public class CalculateFleeDestination extends Node{
 
-        public CalculateFleeDestination(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
 
         @Override
-        public State update() {
-        	float MIN_SAFE_DISTANCE = 20;
-        	if(this.blackBoard.containsKey("destination")){
-        		return State.SUCCESS;
-        	}
-        	
-            KubotzPathFinder pathfinder = (KubotzPathFinder) this.blackBoard.get("pathfinder");
-            Entity enemy = (Entity)this.blackBoard.get("enemy");
+        public State update(Hashtable<String, Object> blackBoard) {
+            float MIN_SAFE_DISTANCE = 20;
+            if(blackBoard.containsKey("destination")){
+                return State.SUCCESS;
+            }
+
+            Pathfinder pathfinder = (Pathfinder)blackBoard.get("pathfinder");
+            Entity enemy = (Entity)blackBoard.get("enemy");
             PhysicsComponent enemyPhys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
 
 
             //Choose a random point in the map far enough from the enemy
-            com.brm.GoatEngine.AI.Pathfinding.Node node;
+            PathNode node;
             do{
-               node = pathfinder.nodes.get(new Random().nextInt(pathfinder.nodes.size()));
+                node = pathfinder.nodes.get(new Random().nextInt(pathfinder.nodes.size()));
             }while ( Vectors.manhattanDistance(enemyPhys.getPosition(), node.position) <= MIN_SAFE_DISTANCE);
 
 
             //Set as destination
-            this.blackBoard.put("destination", node.position);
+            blackBoard.put("destination", node.position);
 
             return State.SUCCESS;
         }
@@ -181,23 +186,19 @@ public class KubotzBehaviour extends Selector{
      */
     public class FleeBehaviour extends Sequence{
 
-        public FleeBehaviour(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
-
         /**
          * If distance between the agent and the enemy is smaller than a MIN DISTANCE
          * @return
          */
         @Override
-        public boolean precondition() {
-        	
-        	float MIN_DISTANCE = 7;
+        public boolean precondition(Hashtable<String, Object> blackBoard) {
 
-            Entity enemy = (Entity)this.blackBoard.get("enemy");
+            float MIN_DISTANCE = 7;
+
+            Entity enemy = (Entity)blackBoard.get("enemy");
             PhysicsComponent enemyPhys = (PhysicsComponent) enemy.getComponent(PhysicsComponent.ID);
 
-            Entity agent = (Entity)this.blackBoard.get("agent");
+            Entity agent = (Entity)blackBoard.get("agent");
             PhysicsComponent agentPhys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
 
@@ -208,32 +209,29 @@ public class KubotzBehaviour extends Selector{
 
     /**
      * Moves towards a destination
+     * Using foot (not fly nor dash)
      */
     public class MoveToDestination extends Node{
 
-        public MoveToDestination(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
+        @Override
+        public boolean precondition(Hashtable<String, Object> blackBoard) {
+            return blackBoard.get("destination") != null;
         }
 
         @Override
-        public boolean precondition() {
-            return this.blackBoard.get("destination") != null;
-        }
-
-        @Override
-        public State update() {
+        public State update(Hashtable<String, Object> blackBoard) {
 
             //Agent
-            Entity agent = (Entity) this.blackBoard.get("agent");
-            KubotzAIComponent aiComp = (KubotzAIComponent) agent.getComponent(KubotzAIComponent.ID);
+            Entity agent = (Entity) blackBoard.get("agent");
+            AIComponent aiComp = (AIComponent) agent.getComponent(AIComponent.ID);
             PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
 
             // Determine path with pathfinder
-            KubotzPathFinder pathfinder = (KubotzPathFinder)this.blackBoard.get("pathfinder");
+            Pathfinder pathfinder = (Pathfinder)blackBoard.get("pathfinder");
             aiComp.currentPath = pathfinder.findPath(
                     phys.getPosition(),
-                    (Vector2) this.blackBoard.get("destination")
+                    (Vector2) blackBoard.get("destination")
             );
 
 
@@ -241,7 +239,7 @@ public class KubotzBehaviour extends Selector{
             if(!aiComp.currentPath.isEmpty()){
                 //if(false){
                 VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
-                com.brm.GoatEngine.AI.Pathfinding.Node node = aiComp.currentPath.get(0);
+                PathNode node = aiComp.currentPath.get(0);
                 Vector2 pos = node.position;
 
                 //LEFT OF
@@ -272,14 +270,7 @@ public class KubotzBehaviour extends Selector{
 
             return State.SUCCESS;
         }
-
-
     }
-
-
-
-
-
 
 
 
@@ -288,17 +279,13 @@ public class KubotzBehaviour extends Selector{
      */
     public class StopAtDestination extends Node{
 
-        public StopAtDestination(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
-
         @Override
-        public State update() {
+        public State update(Hashtable<String, Object> blackBoard) {
 
-            Entity agent = (Entity) this.blackBoard.get("agent");
+            Entity agent = (Entity) blackBoard.get("agent");
             PhysicsComponent phys = (PhysicsComponent) agent.getComponent(PhysicsComponent.ID);
 
-            Vector2 destination = (Vector2)this.blackBoard.get("destination");
+            Vector2 destination = (Vector2)blackBoard.get("destination");
 
             Logger.log(destination);
 
@@ -306,8 +293,8 @@ public class KubotzBehaviour extends Selector{
 
             if(GameMath.isMoreOrLess(phys.getPosition().x, destination.x, 2.0f) &&
                     GameMath.isMoreOrLess(phys.getPosition().y, destination.y, 2.0f)
-            ){
-                this.blackBoard.remove("destination");
+                    ){
+                blackBoard.remove("destination");
                 return State.SUCCESS;
             }
             return State.RUNNING;
@@ -319,57 +306,42 @@ public class KubotzBehaviour extends Selector{
      * Finds the nearest health bonus object in order to heal
      */
     public class LocateNearestHealthBonus extends Node{
-
-        public LocateNearestHealthBonus(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
-
         @Override
-        public State update() {
+        public State update(Hashtable<String, Object> blackBoard) {
             return null;
         }
     }
 
 
-    
+
     /**
      * Behaviour setting the current ennemy as the next destination
      * @author TECH
      *
      */
     public class SetEnemyAsTarget extends Node{
+        @Override
+        public State update(Hashtable<String, Object> blackBoard) {
 
-		public SetEnemyAsTarget(Hashtable<String, Object> blackBoard) {
-			super(blackBoard);
-		}
+            PhysicsComponent phys = (PhysicsComponent)
+                    ((Entity)blackBoard.get("enemy")).getComponent(PhysicsComponent.ID);
 
-		@Override
-		public State update() {
-			
-			PhysicsComponent phys = (PhysicsComponent)
-					((Entity)this.blackBoard.get("enemy")).getComponent(PhysicsComponent.ID);
+            blackBoard.put("destination", phys.getPosition());
+            return State.SUCCESS;
+        }
 
-			this.blackBoard.put("destination", phys.getPosition());
-			return State.SUCCESS;
-		}
-    	
     }
-    
-    
-    
-    
-    
+
+
+
+
+
     /**
      * Takes an object
      */
     public class TakeObject extends Node{
-
-        public TakeObject(Hashtable<String, Object> blackBoard) {
-            super(blackBoard);
-        }
-
         @Override
-        public State update() {
+        public State update(Hashtable<String, Object> blackBoard) {
             return null;
         }
     }
@@ -378,14 +350,10 @@ public class KubotzBehaviour extends Selector{
 
 
     public class OffensiveBehaviour extends Selector{
-        public OffensiveBehaviour(Hashtable<String, Object> blackBoard) {
-			super(blackBoard);
-		}
-
-		@Override
-        public boolean precondition() {
-			 float health = ((HealthComponent)((Entity)this.blackBoard.get("agent"))
-                             .getComponent(HealthComponent.ID)).getAmount();
+        @Override
+        public boolean precondition(Hashtable<String, Object> blackBoard) {
+            float health = ((HealthComponent)((Entity)blackBoard.get("agent"))
+                    .getComponent(HealthComponent.ID)).getAmount();
             return health >= 25;
         }
     }
@@ -395,11 +363,8 @@ public class KubotzBehaviour extends Selector{
      * Attacks an enemy with a ranged weapon
      */
     public class AttackWithRangeWeapon extends Node{
-
         @Override
-        public State update() {
-
-
+        public State update(Hashtable<String, Object> blackBoard) {
 
             return State.SUCCESS;
         }
@@ -409,19 +374,13 @@ public class KubotzBehaviour extends Selector{
      * Attacks an enemy with a melee weapon
      */
     public class AttackWithMeleeWeapon extends Node{
-
-        public AttackWithMeleeWeapon(Hashtable<String, Object> blackBoard) {
-            this.blackBoard = blackBoard;
-        }
-
         @Override
-        public State update() {
+        public State update(Hashtable<String, Object> blackBoard) {
 
-            Entity agent = (Entity) this.blackBoard.get("agent");
+            Entity agent = (Entity) blackBoard.get("agent");
             VirtualGamePad gamePad = (VirtualGamePad) agent.getComponent(VirtualGamePad.ID);
 
             gamePad.pressButton(GameButton.PRIMARY_ACTION_BUTTON);
-
 
             return State.SUCCESS;
         }
@@ -432,6 +391,32 @@ public class KubotzBehaviour extends Selector{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
-
-

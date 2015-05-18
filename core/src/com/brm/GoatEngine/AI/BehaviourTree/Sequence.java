@@ -13,15 +13,10 @@ import java.util.Hashtable;
 * */
 public class Sequence extends Composite {
 
-    public Sequence(Hashtable<String, Object> blackBoard){
-        this.setBlackBoard(blackBoard);
-    }
-    
-    public State update() {
-
+    public State update(Hashtable<String, Object> blackBoard) {
         State state;
         for(Node node: this.children){
-            state = node.tick();
+            state = node.tick(blackBoard);
             if(state == State.RUNNING){
                 return State.RUNNING;
             }else if(state == State.FAILED){
@@ -30,5 +25,4 @@ public class Sequence extends Composite {
         }
         return State.SUCCESS;
     }
-    
 }

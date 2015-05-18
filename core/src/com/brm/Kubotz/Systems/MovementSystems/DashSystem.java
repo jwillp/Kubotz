@@ -130,7 +130,7 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
         // Do we need to disable?
-        if (Vectors.euclidianDistance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x
+        if (Vectors.euclideanDistance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x
                 || dashComp.getTravelDuration().isDone()) {
             dashComp.setPhase(DashComponent.Phase.DECELERATION);
         }else{

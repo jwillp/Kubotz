@@ -20,26 +20,23 @@ public abstract class Node {
     
     
     protected  State state;
-    protected Hashtable<String, Object> blackBoard = new Hashtable<String, Object>();
-
     protected Node(){}
 
-    protected Node(Hashtable<String, Object> blackBoard){
-        this.setBlackBoard(blackBoard);
-    }
+
 
 
     /**
      * Updates the state of a node
+     * @param blackBoard the black board to use
      * @return
      */
-    public abstract State update();
+    public abstract State update(Hashtable<String, Object> blackBoard);
 
     /**
      * Precondition in order for the node to be updated
      * @return
      */
-    public boolean precondition(){ return true; }
+    public boolean precondition(Hashtable<String, Object> blackBoard){ return true; }
 
     /**
      * Called when a node is initialized
@@ -54,11 +51,12 @@ public abstract class Node {
 
     /**
      * Main method for a loop
-     * @return
+     * @param blackBoard the blackboard to use for the current node
+     * @return the final STATE of the Node
      */
-    public State tick(){
+    public State tick(Hashtable<String, Object> blackBoard){
         
-        if(!precondition()){
+        if(!precondition(blackBoard)){
             return State.FAILED;
         }
 
@@ -66,32 +64,13 @@ public abstract class Node {
         if(state == State.INVALID) {
             onInitialize();
         }
-        
-        
-        state = update();
+
+        state = update(blackBoard);
         
         if(state != State.RUNNING)
             onTerminate(state);
             
          return state;   
     }
-    
-    
-    /**
-     * @return the blackBoard
-     */
-    public Hashtable<String, Object> getBlackBoard() {
-        return blackBoard;
-    }
 
-    /**
-     * @param blackBoard the blackBoard to set
-     */
-    public void setBlackBoard(Hashtable<String, Object> blackBoard) {
-        this.blackBoard = blackBoard;
-    }
-    
-    
-    
-    
 }

@@ -12,12 +12,12 @@ public abstract class Vectors {
 
 
     /**
-     * Calculates the euclidianDistance between two Vector 2
+     * Calculates the euclideanDistance between two Vector 2
      * @param a
      * @param b
-     * @return the euclidianDistance between a and b
+     * @return the euclideanDistance between a and b
      */
-    public static double euclidianDistance(Vector2 a, Vector2 b){
+    public static double euclideanDistance(Vector2 a, Vector2 b){
         float x = a.x - b.x;
         float y = a.y - b.y;
         return java.lang.Math.sqrt(x * x + y * y);
@@ -26,7 +26,7 @@ public abstract class Vectors {
     /**
      * Return the manhattan Distance
      * Distance between two points based on adding the horizontal and
-     * vertical distances rather than computing the exact difference. (faster than manhanttan distance)
+     * vertical distances rather than computing the exact difference. (faster than euclidean distance)
      * @param a
      * @param b
      * @return
