@@ -10,9 +10,11 @@ public class DroneGauntletComponent extends EntityComponent {
     public final static String ID = "DRONE_GAUNTLET_COMPONENT";
 
 
-    private Timer cooldown = new Timer(1);
+    private Timer cooldown = new Timer(Timer.FIVE_SECONDS);
 
-
+    public DroneGauntletComponent(){
+        cooldown.start();
+    }
 
 
     public Timer getCooldown() {

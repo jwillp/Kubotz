@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.AttackSystems;
+package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
