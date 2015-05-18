@@ -32,7 +32,7 @@ public class GameScreenManager {
         Logger.log("Game Engine Init::Loading Resources");
 
 
-        //Graphical Interface init
+        //Graphical Interface initSystems
         Logger.log("Game Engine Init::GUI Initialisation");
 
 

@@ -10,12 +10,12 @@ public class HealthComponent extends EntityComponent {
     public final static String ID = "HEALTH_PROPERTY";
 
     protected float amount = 0;
-    public float maxAmount = 100; //the maximum amount
-    public float minAmount = 0;  // the minimum amount
+    protected float maxAmount = 100; //the maximum amount
+    protected float minAmount = 0;  // the minimum amount
 
     //Regeneration
-    public Timer regenTimer = new Timer(0); //The number of milliseconds to regain health
-    public float regenRate = 0; //the nbOf Points it regains every time de regenTimer delay is done
+    protected Timer regenTimer = new Timer(0); //The number of milliseconds to regain health
+    protected float regenRate = 0; //the nbOf Points it regains every time de regenTimer delay is done
 
 
     public HealthComponent(){}
@@ -74,6 +74,35 @@ public class HealthComponent extends EntityComponent {
     }
 
 
+    public float getMaxAmount() {
+        return maxAmount;
+    }
 
+    public void setMaxAmount(float maxAmount) {
+        this.maxAmount = maxAmount;
+    }
 
+    public float getMinAmount() {
+        return minAmount;
+    }
+
+    public void setMinAmount(float minAmount) {
+        this.minAmount = minAmount;
+    }
+
+    public Timer getRegenTimer() {
+        return regenTimer;
+    }
+
+    public void setRegenTimer(Timer regenTimer) {
+        this.regenTimer = regenTimer;
+    }
+
+    public float getRegenRate() {
+        return regenRate;
+    }
+
+    public void setRegenRate(float regenRate) {
+        this.regenRate = regenRate;
+    }
 }

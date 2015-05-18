@@ -1,6 +1,5 @@
 package com.brm.Kubotz.Entities;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
@@ -12,10 +11,11 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Component.AppearanceComponent;
-import com.brm.Kubotz.Component.GunComponent;
-import com.brm.Kubotz.Component.PunchComponent;
-import com.brm.Kubotz.Component.Skills.DashComponent;
+import com.brm.Kubotz.Components.GrabComponent;
+import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Components.Parts.Boots.FlyingBootsComponent;
+import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
+import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
 
 
@@ -100,21 +100,17 @@ public class KubotzFactory extends EntityFactory {
         PhysicsComponent physics = this.buildBody(character);
         character.addComponent(physics, PhysicsComponent.ID);
 
-        //Appearance
-        AppearanceComponent appearance = new AppearanceComponent();
-        appearance.setDebugColor(Color.GREEN);
-        character.addComponent(appearance, AppearanceComponent.ID);
-
 
 
         //TAGS
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
 
-
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
 
+
         // JUMP
+        character.addComponent(new RunningComponent(), RunningComponent.ID);
         character.addComponent(new JumpComponent(3), JumpComponent.ID);
 
 
@@ -124,22 +120,26 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        //character.addComponent(new FlyComponent(1000, Timer.INFINITE), FlyComponent.ID);
+        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashComponent(), DashComponent.ID);
+        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
-        //character.addComponent(new MagneticFeetComponent(), MagneticFeetComponent.ID);
+        //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
-        //character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
 
-        /* GUN Component */
-        character.addComponent(new GunComponent(), GunComponent.ID);
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
+
+        //GRAB
+        character.addComponent(new GrabComponent(), GrabComponent.ID);
+
+        //PowerUps
+        character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
 
         return character;
     }

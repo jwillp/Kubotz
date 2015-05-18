@@ -34,12 +34,12 @@ public class CameraFactory extends EntityFactory {
 
 
     public CameraFactory withSpeed(Vector2 speed){
-        this.cameraComponent.speed = speed;
+        this.cameraComponent.setSpeed(speed);
         return this;
     }
 
     public CameraFactory withZoomSpeed(float speed){
-        this.cameraComponent.zoomSpeed = speed;
+        this.cameraComponent.setZoomSpeed(speed);
         return this;
     }
 

@@ -1,13 +1,27 @@
 package com.brm.GoatEngine.ECS.Entity;
 
+import com.badlogic.gdx.physics.box2d.Body;
+
 import java.util.ArrayList;
 
 /**
- * Used to store a collection of EntityContact
- * And do retrieval methods
+ * A collection of EntityContacts
  */
 public class EntityContactCollection extends ArrayList<EntityContact> {
 
+    /**
+     * Returns whether or not that body has a contact with a
+     * provided body
+     */
+    public boolean hasContactWithEntity(Entity entity){
+        for(int i=0; i<this.size(); i++){
+            EntityContact contact =  this.get(i);
+            if(contact.getEntityB().getID() == entity.getID()){
+                return true;
+            }
+        }
+        return false;
+    }
 
 
 
@@ -41,37 +55,15 @@ public class EntityContactCollection extends ArrayList<EntityContact> {
         }
     }
 
-
     /**
-     * Returns a list of contacts with describer
-     * @param describer
-     * @return
+     * Removes all the contact with a null entity
      */
-    private ArrayList<EntityContact> getContactsWithDescriber(EntityContact.Describer describer){
-        ArrayList<EntityContact> ct = new ArrayList<EntityContact>();
-        for(EntityContact contact: this){
-            if(contact.describer == describer){
-                ct.add(contact);
+    public void cleanContacts(){
+        for(int i=0; i< this.size(); i++){
+            if(this.get(i).getEntityB() == null){
+                this.remove(i);
             }
         }
-        return ct;
-    }
-
-    /**
-     * Returns all the contacts with a Begin describer
-     * @return
-     */
-    public ArrayList<EntityContact> getBeginContacts(){
-        return getContactsWithDescriber(EntityContact.Describer.BEGIN);
-    }
-
-
-    /**
-     * Returns all the contacts with a Begin describer
-     * @return
-     */
-    public ArrayList<EntityContact> getEndContacts(){
-        return getContactsWithDescriber(EntityContact.Describer.END);
     }
 
 

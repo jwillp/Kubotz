@@ -13,7 +13,7 @@ import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.AI.KubotzPathFinder;
-import com.brm.Kubotz.Component.AI.KubotzAIComponent;
+import com.brm.Kubotz.Components.AI.KubotzAIComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 

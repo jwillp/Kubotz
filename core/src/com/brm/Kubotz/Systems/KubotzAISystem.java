@@ -1,21 +1,11 @@
 package com.brm.Kubotz.Systems;
 
-import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.AI.Pathfinding.Node;
-import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.AI.KubotzPathFinder;
-import com.brm.Kubotz.Component.AI.KubotzAIComponent;
-import com.brm.Kubotz.Component.Skills.ActiveSkill;
+import com.brm.Kubotz.Components.AI.KubotzAIComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Input.GameButton;
-
-import java.util.ArrayList;
 
 /**
  * Use to process AI logic of Kubotz
@@ -27,12 +17,19 @@ public class KubotzAISystem extends EntitySystem {
         super(em);
     }
 
+
+
     public KubotzPathFinder pathfinder = new KubotzPathFinder();
 
 
-    public void update(){
 
-        // UPDATE PATHFINDER (RESCAN MAP)
+    @Override
+    public void init(){}
+
+    @Override
+    public void update(float dt) {
+
+        // UPDATE PATHFINDER (RESCAN MAP) //TODO Maybe not rescan all the time (or yess for bullets)
         this.pathfinder.scanMap(em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM));
 
         // UPDATE BEHAVIOUR TREES OF KUBOTZ
@@ -40,16 +37,10 @@ public class KubotzAISystem extends EntitySystem {
             KubotzAIComponent aiComp = (KubotzAIComponent) eAI.getComponent(KubotzAIComponent.ID);
 
             aiComp.behaviourTree.tick();
-
-
-
         }
-
-
-
-
-
     }
+
+
 
 
 

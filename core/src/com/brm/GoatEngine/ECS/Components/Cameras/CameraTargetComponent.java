@@ -7,7 +7,5 @@ import com.brm.GoatEngine.ECS.Components.EntityComponent;
  * The cameras concentrate on these kind of entities.
  */
 public class CameraTargetComponent extends EntityComponent {
-
     public final static String ID = "CAMERA_TARGET_PROPERTY";
-    public CameraTargetComponent(){}
 }

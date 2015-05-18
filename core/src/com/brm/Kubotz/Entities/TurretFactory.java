@@ -103,7 +103,7 @@ public class TurretFactory extends EntityFactory {
 
         //Tracker Component
         TrackerComponent trackerComponent = new TrackerComponent(this.targetId);
-        trackerComponent.distance = this.distance;
+        trackerComponent.setDistance(this.distance);
 
         turret.addComponent(physics, PhysicsComponent.ID);
         turret.addComponent(trackerComponent, TrackerComponent.ID);

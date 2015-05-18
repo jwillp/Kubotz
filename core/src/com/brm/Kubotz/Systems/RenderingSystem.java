@@ -7,16 +7,14 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.AI.Pathfinding.Node;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.CameraSystem;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
-import com.brm.Kubotz.Component.AI.KubotzAIComponent;
+import com.brm.GoatEngine.ECS.Systems.CameraSystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.Kubotz.Components.AI.KubotzAIComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 
@@ -36,9 +34,14 @@ public class RenderingSystem extends EntitySystem {
         debugRenderer = new Box2DDebugRenderer();
     }
 
+    @Override
+    public void init() {
 
-    public void update(){
-        this.cameraSystem.update();
+    }
+
+    @Override
+    public void update(float dt){
+        this.cameraSystem.update(dt);
     }
 
 
@@ -46,7 +49,8 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-    public void render(World world){
+    public void render(){
+        World world = getSystemManager().getSystem(PhysicsSystem.class).getWorld();
         if(Config.DEBUG_RENDERING_ENABLED) {
             this.renderDebug(world);
 
@@ -83,11 +87,6 @@ public class RenderingSystem extends EntitySystem {
                 	shapeRenderer.setColor(Color.MAGENTA);
                 shapeRenderer.rect(node.position.x, node.position.y, NODE_SIZE, NODE_SIZE);
                 shapeRenderer.end();
-                
-                
-                
-                
-                
             }
 
             // PATH
@@ -133,61 +132,12 @@ public class RenderingSystem extends EntitySystem {
         this.spriteBatch.end();
 
 
-
-
-
-
         /** CAMERA DEBUG */
         CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
         cdr.render();
 
 
-        /** PATHFINDING DEBUG **/
-        //Pathfinding display
-       /* for(Entity e: this.em.getEntitiesWithComponent(KubotzAIComponent.ID)){
-
-            KubotzAIComponent aiComp = (KubotzAIComponent) e.getComponent(KubotzAIComponent.ID);
-
-            int index = 0;
-            for(Node node: aiComp.pathfinder.path) {
-                this.shapeRenderer.setProjectionMatrix(this.getCamera().combined);
-                this.shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-                if (node.isWalkable)
-                    shapeRenderer.setColor(Color.RED); // RED
-                else
-                    shapeRenderer.setColor(Color.BLACK);
-
-                if(index == 0)
-                    shapeRenderer.setColor(Color.GREEN);
-
-                shapeRenderer.rect(node.position.x, node.position.y, aiComp.pathfinder.NODE_SIZE, aiComp.pathfinder.NODE_SIZE);
-                shapeRenderer.end();
-                index++;
-            }
-
-            // PATH
-            for(Node node: aiComp.pathfinder.path){
-                if(node.parent != null){
-                    shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // shape type
-                    shapeRenderer.setColor(1, 0, 0, 1); // line's color
-
-                    float offset = aiComp.pathfinder.NODE_SIZE/2;
-                    shapeRenderer.line(
-                            node.position.x + offset , node.position.y + offset,
-                            node.parent.position.x + offset, node.parent.position.y + offset
-                    );
-                    shapeRenderer.end();
-                }
-            }
-        }*/
-
-
-
-
-
         /** FPS **/
-
         // FPS
         if(Config.DEBUG_RENDERING_ENABLED) {
             SpriteBatch sb = getSpriteBatch();
@@ -200,9 +150,6 @@ public class RenderingSystem extends EntitySystem {
             font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);*/
             sb.end();
         }
-
-
-
 
     }
 

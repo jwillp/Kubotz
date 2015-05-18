@@ -8,7 +8,8 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+
 
 /**dd
  * Responsible for checking collisions, making the entities move
@@ -25,9 +26,10 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         Box2D.init();
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(this);
-
-
     }
+
+    @Override
+    public void init(){}
 
 
     @Override
@@ -37,47 +39,31 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         world.step(1 / 60f, 6, 2);
 
         // Since all contacts have been processed empty them all
-        //clearContacts();
+        cleanContacts();
     }
 
     /**
-     * Clears the contact for all the entities
-     * with a physics component
+     * Makes a cleanup of the contacts of the entities
+     * that would be colliding tih null entities
      */
-    public void clearContacts(){
-       for(EntityComponent component: em.getComponents(PhysicsComponent.ID)){
+    public void cleanContacts(){
+        for(EntityComponent component: em.getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
-           phys.contacts.clear();
+            phys.getContacts().cleanContacts();
         }
     }
 
 
+
     // CONTACT LISTENING
-    @Override
-    public void beginContact(Contact contact) {
-        dispatchContactEvent(contact, EntityContact.Describer.BEGIN);
-    }
-
-    @Override
-    public void endContact(Contact contact) {
-        dispatchContactEvent(contact, EntityContact.Describer.END);
-    }
-
-    @Override
-    public void preSolve(Contact contact, Manifold oldManifold) {}
-
-    @Override
-    public void postSolve(Contact contact, ContactImpulse impulse) {}
-
 
     /**
      * Dispatches the contact between two entities in their respective PhysicsComponent
      * to be used by other systems, to accomplish certain tasks accordingly
-     * @param contact the contact event
-     * @param describer the describer of the event (BEGIN || END)
+     * @param contact
      */
-    public void dispatchContactEvent(Contact contact, EntityContact.Describer describer){
-
+    @Override
+    public void beginContact(Contact contact) {
         //Get Fixtures
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
@@ -86,16 +72,57 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         Entity entityA = (Entity) fixtureA.getBody().getUserData();
         Entity entityB = (Entity) fixtureB.getBody().getUserData();
 
+        //Get Phys
+        PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
+        PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
+
+
+
         //Create EntityContacts
-        EntityContact contactA = new EntityContact(fixtureA, fixtureB, describer);
-        EntityContact contactB = new EntityContact(fixtureB, fixtureA, describer);
+        EntityContact contactA = new EntityContact(fixtureA, fixtureB);
+        EntityContact contactB = new EntityContact(fixtureB, fixtureA);
+
 
         //Dispatch Contacts
-        ((PhysicsComponent) entityA.getComponent(PhysicsComponent.ID)).contacts.add(contactA);
-        ((PhysicsComponent) entityB.getComponent(PhysicsComponent.ID)).contacts.add(contactB);
+        physA.getContacts().add(contactA);
+        physB.getContacts().add(contactB);
+
+
     }
 
+    /**
+     * Removes the contact between two entities in their respective PhysicsComponent
+     * @param contact
+     */
+    @Override
+    public void endContact(Contact contact) {
 
+        //Remove contact only if it was a touching contact (otherwise the contacts would always delete themselves)
+       /* if(!contact.isTouching()){
+            return;
+        }*/
+
+        //Get Entities
+        Entity entityA = (Entity) contact.getFixtureA().getBody().getUserData();
+        Entity entityB = (Entity) contact.getFixtureB().getBody().getUserData();
+
+        //Get Phys
+        PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
+        PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
+
+
+
+        //Remove Contacts
+        physA.getContacts().removeContactsWithEntity(entityB);
+        physB.getContacts().removeContactsWithEntity(entityA);
+
+    }
+
+    @Override
+    public void preSolve(Contact contact, Manifold oldManifold) {}
+
+    @Override
+    public void postSolve(Contact contact, ContactImpulse impulse) {}
 
 
     // GETTERS AND SETTERS //

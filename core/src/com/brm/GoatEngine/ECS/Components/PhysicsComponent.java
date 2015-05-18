@@ -3,10 +3,8 @@ package com.brm.GoatEngine.ECS.Components;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContactCollection;
-
-import java.util.ArrayList;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World
@@ -15,6 +13,7 @@ import java.util.ArrayList;
 public class PhysicsComponent extends EntityComponent {
 
     public final static String ID = "PHYSICS_PROPERTY";
+
 
     //The directions an entity can face
     public enum Direction{
@@ -25,11 +24,11 @@ public class PhysicsComponent extends EntityComponent {
 
     private Body body;  //the physical body of the entity
     private Vector2 acceleration = new Vector2(0,0);   // The acceleration rate
-    public final Vector2 MAX_SPEED = new Vector2(18f, 18f); //The max velocity the entity can go
+    private final Vector2 MAX_SPEED = new Vector2(18f, 18f); //The max velocity the entity can go
 
     private boolean isGrounded = false; //Whether or not the entity's feet touch the ground
 
-    public Direction direction = Direction.LEFT;
+    private Direction direction = Direction.LEFT;
 
 
 
@@ -37,8 +36,9 @@ public class PhysicsComponent extends EntityComponent {
     private float height;  //The height of the entity (in game units)
 
     // List of all the contacts that recently happened to the entities.
-    // The a entity will always be the current entity.
-    public EntityContactCollection contacts = new EntityContactCollection();
+
+    // The "A entity" will always be the current entity.
+    private EntityContactCollection contacts = new EntityContactCollection();
 
 
 
@@ -65,8 +65,8 @@ public class PhysicsComponent extends EntityComponent {
 
 
     @Override
-    public void onDetach() {
-        super.onDetach();
+    public void onDetach(Entity entity) {
+        super.onDetach(entity);
         this.getBody().getWorld().destroyBody(this.body);
     }
 
@@ -120,4 +120,27 @@ public class PhysicsComponent extends EntityComponent {
     public Body getBody() {
         return body;
     }
+
+    public Vector2 getMaxSpeed() {
+        return MAX_SPEED;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public void setDirection(Direction direction) {
+        this.direction = direction;
+    }
+
+    public EntityContactCollection getContacts() {
+        return contacts;
+    }
+
+    public void setContacts(EntityContactCollection contacts) {
+        this.contacts = contacts;
+    }
+
+
+
 }

@@ -11,8 +11,9 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.DamageComponent;
-import com.brm.Kubotz.Component.LifespanComponent;
+import com.brm.Kubotz.Components.DamageComponent;
+import com.brm.Kubotz.Components.LifespanComponent;
+
 import com.brm.Kubotz.Constants;
 
 /**
@@ -48,7 +49,7 @@ public class BulletFactory extends EntityFactory {
      * @return this for chaining
      */
     public BulletFactory withDamage(float nbDamage){
-        this.dmgComp.damage = nbDamage;
+        this.dmgComp.setDamage(nbDamage);
         return this;
     }
 
@@ -58,7 +59,7 @@ public class BulletFactory extends EntityFactory {
      * @return this for chaining
      */
     public BulletFactory withKnockBack(Vector2 knockback){
-        this.dmgComp.knockBack = knockback;
+        this.dmgComp.setKnockBack(knockback);
         return this;
     }
 
@@ -153,9 +154,7 @@ public class BulletFactory extends EntityFactory {
 
         physics.getBody().setBullet(true);
 
-        physics.direction = this.direction;
-
-
+        physics.setDirection(this.direction);
 
         return physics;
     }
