@@ -57,7 +57,7 @@ public class EntityManager {
         this.components.put(componentId, componentContainer);
 
         //Call on attach
-        component.onAttach(new Entity(entityId));
+        component.onAttach(getEntity(entityId));
         return this;
     }
 

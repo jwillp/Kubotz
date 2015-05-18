@@ -13,7 +13,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.GrabComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
-import com.brm.Kubotz.Components.Parts.Boots.FlyingBootsComponent;
+import com.brm.Kubotz.Components.Parts.Weapons.DroneGauntletComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
@@ -111,7 +111,7 @@ public class KubotzFactory extends EntityFactory {
 
         // JUMP
         character.addComponent(new RunningComponent(), RunningComponent.ID);
-        character.addComponent(new JumpComponent(3), JumpComponent.ID);
+        character.addComponent(new JumpComponent(2), JumpComponent.ID);
 
 
 
@@ -120,7 +120,7 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+        //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
         //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
@@ -131,6 +131,10 @@ public class KubotzFactory extends EntityFactory {
         /* PUNCH Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);
 
+        /* TURRET GAUNTLET */
+        character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
+
+
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
@@ -140,6 +144,7 @@ public class KubotzFactory extends EntityFactory {
 
         //PowerUps
         character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
+
 
         return character;
     }
@@ -171,7 +176,7 @@ public class KubotzFactory extends EntityFactory {
         physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_TORSO);
         polyShape.dispose();
 
-        // Circle 1
+        // Circle TOP
         CircleShape circleShapeTop = new CircleShape();
         circleShapeTop.setRadius(physics.getWidth());
         circleShapeTop.setPosition(new Vector2(0, size.y * 0.5f));
@@ -182,7 +187,7 @@ public class KubotzFactory extends EntityFactory {
         circleShapeTop.dispose();
 
 
-        // Circle 2
+        // Circle BOTTOM
         CircleShape circleShapeBottom = new CircleShape();
         circleShapeBottom.setRadius(physics.getWidth());
         circleShapeBottom.setPosition(new Vector2(0, -size.y * 0.5f));

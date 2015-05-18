@@ -14,8 +14,8 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath.GameMath;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.AI.AIComponent;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Components.AIComponent;
+import com.brm.Kubotz.Components.SensorComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Systems.AISystem;
@@ -40,6 +40,10 @@ public class KubotzBehaviourScript extends EntityScript{
 
         KubotzBehaviourScript.buildTree();
 
+        //TEST //TODO REMOVE
+        entity.addComponent(new SensorComponent(3), SensorComponent.ID);
+
+
 
     }
 
@@ -47,7 +51,7 @@ public class KubotzBehaviourScript extends EntityScript{
     public void onUpdate(Entity entity, EntityManager manager) {
         AIComponent aiComponent = (AIComponent) entity.getComponent(AIComponent.ID);
         if(aiComponent.getReactionTime().isDone()){
-            KubotzBehaviourScript.behaviourTree.tick(aiComponent.getBlackboard());
+           // KubotzBehaviourScript.behaviourTree.tick(aiComponent.getBlackboard());
             aiComponent.getReactionTime().reset();
         }
     }
@@ -205,7 +209,7 @@ public class KubotzBehaviourScript extends EntityScript{
 
     /**
      * Moves towards a destination
-     * Using foot (not fly nor dash)
+     * By (not fly nor dash)
      */
     public static class MoveToDestination extends Node{
 

@@ -54,6 +54,8 @@ public class Constants {
     public static final String FIXTURE_HEAD = "head";
     public static final String FIXTURE_FEET_SENSOR = "feetSensor";
 
+    public static final String FIXTURE_SENSOR_COMP = "sensorComp";
+
     public static final String FIXTURE_PUNCH_ATTACK = "punch";
 
 

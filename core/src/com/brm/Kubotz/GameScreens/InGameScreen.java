@@ -23,7 +23,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.AI.AIComponent;
+import com.brm.Kubotz.Components.AIComponent;
 import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Config;
@@ -76,26 +76,20 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem(this.entityManager));
         systemManager.addSystem(MovementSystem.class, new MovementSystem(this.entityManager));
 
-        systemManager.addSystem(TrackerSystem.class, new TrackerSystem(this.entityManager));
-
         systemManager.addSystem(GrabSystem.class, new GrabSystem(this.entityManager));
 
         systemManager.addSystem(SkillsSystem.class, new SkillsSystem(this.entityManager));
 
-
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
-
         systemManager.addSystem(PunchSystem.class, new PunchSystem(this.entityManager));
-
         systemManager.addSystem(LifespanSystem.class, new LifespanSystem(this.entityManager));
-
         systemManager.addSystem(DamageSystem.class, new DamageSystem(this.entityManager));
-
         systemManager.addSystem(AttackSystem.class, new AttackSystem(this.entityManager));
-
         systemManager.addSystem(ScriptSystem.class, new ScriptSystem(this.entityManager));
-
         systemManager.addSystem(AISystem.class, new AISystem(this.entityManager));
+
+
+        systemManager.addSystem(SensorSystem.class, new SensorSystem(this.entityManager));
 
 
         //INIT SYSTEMS
@@ -215,7 +209,6 @@ public class InGameScreen extends GameScreen {
 
         systemManager.getSystem(AISystem.class).update(deltaTime);
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
-        systemManager.getSystem(TrackerSystem.class).update(deltaTime);
         systemManager.getSystem(SkillsSystem.class).update(deltaTime);
 
         systemManager.getSystem(AttackSystem.class).update(deltaTime);
@@ -225,6 +218,7 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(LifespanSystem.class).update(deltaTime);
         systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
 
+        systemManager.getSystem(SensorSystem.class).update(deltaTime);
 
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);

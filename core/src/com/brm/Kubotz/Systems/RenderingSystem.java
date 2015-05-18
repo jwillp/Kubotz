@@ -14,7 +14,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.CameraSystem;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.Kubotz.Components.AI.AIComponent;
+import com.brm.Kubotz.Components.AIComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
 

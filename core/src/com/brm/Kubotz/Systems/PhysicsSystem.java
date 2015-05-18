@@ -72,6 +72,10 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         Entity entityA = (Entity) fixtureA.getBody().getUserData();
         Entity entityB = (Entity) fixtureB.getBody().getUserData();
 
+        if(entityA == null || entityB == null){
+            return;
+        }
+
         //Get Phys
         PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
         PhysicsComponent physB = (PhysicsComponent) entityB.getComponent(PhysicsComponent.ID);
@@ -105,6 +109,10 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         //Get Entities
         Entity entityA = (Entity) contact.getFixtureA().getBody().getUserData();
         Entity entityB = (Entity) contact.getFixtureB().getBody().getUserData();
+
+        if(entityA == null || entityB == null){
+            return;
+        }
 
         //Get Phys
         PhysicsComponent physA = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);

@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Components.AI;
+package com.brm.Kubotz.Components;
 
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
