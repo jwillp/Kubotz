@@ -1,19 +1,19 @@
 package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Component;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.DamageComponent;
-import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Components.DamageComponent;
+import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
+import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
 
 /**
- * USed to deal damage and process Health Bonuses
+ * Used to deal damage and process Health Bonuses
  */
 public class DamageSystem extends EntitySystem{
 
@@ -22,28 +22,26 @@ public class DamageSystem extends EntitySystem{
         super(em);
     }
 
+    @Override
+    public void init() {}
+
 
     @Override
-    public void update(float dt) {
-        super.update(dt);
-    }
-
-
-    public void update(){
+    public void update(float dt){
         //Process collisions
         for(Entity e: em.getEntitiesWithComponent(DamageComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
 
-            for(int i=0; i<phys.contacts.size(); i++){
-                EntityContact contact = phys.contacts.get(i);
+            for(int i=0; i< phys.getContacts().size(); i++){
+                EntityContact contact = phys.getContacts().get(i);
                 //The the other entity can be Hit handle damage
                 if(contact.getEntityB().hasComponent(HealthComponent.ID)){
 
                     handleDamage(contact.getEntityA(), contact.getEntityB());
                     //REMOVE CONTACTS
-                    phys.contacts.remove(i);
+                    phys.getContacts().remove(i);
                     PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.contacts.remove(contact);
+                    physB.getContacts().remove(contact);
                 }
             }
         }
@@ -67,23 +65,35 @@ public class DamageSystem extends EntitySystem{
 
 
         //Damage Health
+        //Invinvible
+        if(target.hasComponent(InvincibilityComponent.ID)){
+            return;
+        }//Energetic Shield
+        else if(target.hasComponent(EnergeticShieldComponent.ID)){
+            EnergeticShieldComponent shield = (EnergeticShieldComponent) target.getComponent(EnergeticShieldComponent.ID);
+            shield.takeDamage(damageComp.getDamage());
 
+            //Is shield dead? If so remove it
+            if(shield.isDead()){
+                target.removeComponent(EnergeticShieldComponent.ID);
+            }
+        }else{
+            targetHealth.substractAmount(damageComp.getDamage());
 
-        targetHealth.substractAmount(damageComp.damage);
+            //KnockBack
+            Vector2 knockBack = damageComp.getKnockBack().cpy();
+            if(damagerPhys.getDirection() == PhysicsComponent.Direction.LEFT){
+                knockBack.x *= -1;
+            }
+
+            targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
+                    targetPhys.getPosition().x,
+                    targetPhys.getPosition().y,
+                    true);
+
+        }
         Logger.log(targetHealth.getAmount());
 
-
-
-        //KnockBack
-        Vector2 knockBack = damageComp.knockBack.cpy();
-        if(damagerPhys.direction == PhysicsComponent.Direction.LEFT){
-            knockBack.x *= -1;
-        }
-
-        targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
-                targetPhys.getPosition().x,
-                targetPhys.getPosition().y,
-                true);
 
     }
 

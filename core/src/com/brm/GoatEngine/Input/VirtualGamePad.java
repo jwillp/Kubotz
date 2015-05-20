@@ -1,8 +1,7 @@
 package com.brm.GoatEngine.Input;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -11,7 +10,7 @@ import java.util.Collection;
  * This makes an entity controllable (it can use the buttons to shoot, to attack to move etc..)
  * This is a Component it must therfore be attached to an entity
  */
-public class VirtualGamePad extends Component {
+public class VirtualGamePad extends EntityComponent {
 
     public final static String ID = "VIRTUAL_GAME_PAD";
 

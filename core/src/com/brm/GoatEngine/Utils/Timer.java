@@ -83,6 +83,7 @@ public class Timer {
         return delay;
     }
 
+    public void setDelay(int newDelay){ delay = newDelay; }
 
     /**
      * Exceptions related to Timer Misuse

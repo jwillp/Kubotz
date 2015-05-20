@@ -1,9 +1,7 @@
 package com.brm.GoatEngine.ECS.Entity;
 
-import com.brm.GoatEngine.ECS.Components.Component;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.Utils.Logger;
 
 
 import java.util.*;
@@ -14,7 +12,7 @@ import java.util.*;
 public class EntityManager {
 
     //HashMap<COMPONENT_ID, HashMap<ENTITY_ID, COMPONENT_ISNTANCE>>
-    private HashMap<String, HashMap<String, Component>> components = new HashMap<String, HashMap<String, Component>>();
+    private HashMap<String, HashMap<String, EntityComponent>> components = new HashMap<String, HashMap<String, EntityComponent>>();
 
     public EntityManager(){}
 
@@ -49,17 +47,17 @@ public class EntityManager {
      * @param entityId: The Id of the entity
      * @return EntityManager for chaining
      */
-    public EntityManager addComponent(String componentId, Component component, String entityId){
+    public EntityManager addComponent(String componentId, EntityComponent component, String entityId){
 
         HashMap componentContainer = this.components.get(componentId);
         if(componentContainer == null){
-            componentContainer = new HashMap<String, Component>();
+            componentContainer = new HashMap<String, EntityComponent>();
         }
         componentContainer.put(entityId, component);
         this.components.put(componentId, componentContainer);
 
         //Call on attach
-        component.onAttach();
+        component.onAttach(new Entity(entityId));
         return this;
     }
 
@@ -70,12 +68,12 @@ public class EntityManager {
      * @return this for chaining
      */
     public EntityManager removeComponent(String componentId, String entityId){
-        HashMap<String, Component> componentEntry = this.components.get(componentId);
+        HashMap<String, EntityComponent> componentEntry = this.components.get(componentId);
 
         //Test if the entity has the component
         if(this.hasComponent(componentId, entityId)) {
             //Call onDetach
-            componentEntry.get(entityId).onDetach();
+            componentEntry.get(entityId).onDetach(new Entity(entityId));
             componentEntry.remove(entityId);
         }
         return this;
@@ -89,10 +87,10 @@ public class EntityManager {
      * @param entityId: The id of the entity of which we want the component
      * @return Component: The desired component instance
      */
-    public Component getComponent(String componentId, String entityId){
-        Component component;
+    public EntityComponent getComponent(String componentId, String entityId){
+        EntityComponent component;
 
-        HashMap<String, Component> componentEntry = this.components.get(componentId);
+        HashMap<String, EntityComponent> componentEntry = this.components.get(componentId);
 
         component = componentEntry.get(entityId);
         return component;
@@ -103,8 +101,8 @@ public class EntityManager {
      * @param entityId : the id of the entity
      * @return //TODO understand this madness! What was I thinking?
      */
-    public HashMap<String, Component> getEntityForComponents(String entityId){
-        HashMap<String, Component> components = new HashMap<String, Component>();
+    public HashMap<String, EntityComponent> getEntityForComponents(String entityId){
+        HashMap<String, EntityComponent> components = new HashMap<String, EntityComponent>();
         for(String compId: this.components.keySet()){
             if(this.components.get(compId).containsKey(entityId)){
                 components.put(compId, this.components.get(compId).get(entityId));
@@ -177,7 +175,7 @@ public class EntityManager {
      * @param compId: the Id of the component
      * @return HashMap<String, Component>
      */
-    public HashMap<String, Component> getComponentsWithEntity(String compId){
+    public HashMap<String, EntityComponent> getComponentsWithEntity(String compId){
         return this.components.get(compId);
     }
 
@@ -229,12 +227,12 @@ public class EntityManager {
      * @param compId: the Id of the component
      * @return ArrayList of Components or an empty array list if no instance of component type exist.
      */
-    public ArrayList<Component> getComponents(String compId){
+    public ArrayList<EntityComponent> getComponents(String compId){
 
         if(this.components.containsKey(compId)){
-            return new ArrayList<Component>(this.components.get(compId).values());
+            return new ArrayList<EntityComponent>(this.components.get(compId).values());
         }else{
-            return new ArrayList<Component>(); //Empty ArrayList
+            return new ArrayList<EntityComponent>(); //Empty ArrayList
         }
 
     }

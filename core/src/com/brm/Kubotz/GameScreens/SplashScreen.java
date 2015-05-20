@@ -37,10 +37,9 @@ public class SplashScreen extends GameScreen {
     }
 
     @Override
-    public void draw(GameScreenManager engine) {
-        Logger.log(" SPLASH SCREEN DRAW CALL");
+    public void draw(GameScreenManager engine, float deltaTime) {
+            Logger.log(" SPLASH SCREEN DRAW CALL");
     }
-
 
 
 

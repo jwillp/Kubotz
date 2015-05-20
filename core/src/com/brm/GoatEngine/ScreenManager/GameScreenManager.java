@@ -32,7 +32,7 @@ public class GameScreenManager {
         Logger.log("Game Engine Init::Loading Resources");
 
 
-        //Graphical Interface init
+        //Graphical Interface initSystems
         Logger.log("Game Engine Init::GUI Initialisation");
 
 
@@ -126,9 +126,9 @@ public class GameScreenManager {
 
     }
 
-    public void draw() {
+    public void draw(float deltaTime) {
         if(!this.screens.empty()){
-            this.screens.peek().draw(this);
+            this.screens.peek().draw(this, deltaTime);
         }else{
             this.exitWithError("Game Engine Draw::There is no screen in the engine's stack.");
         }

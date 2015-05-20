@@ -1,28 +1,38 @@
 package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.System.EntitySystem;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Component.UIHealthComponent;
 
 /**
  * Sub System responsible of rendering HUD, on screen elements
  */
-public class HUDSystem extends EntitySystem{
+public class HUDSystem extends EntitySystem {
 
+    private final ShapeRenderer shapeRenderer;
+    private final SpriteBatch spriteBatch;
 
-    public HUDSystem(EntityManager em) {
+    public HUDSystem(EntityManager em, ShapeRenderer shapeRenderer, SpriteBatch spriteBatch) {
         super(em);
+        this.shapeRenderer = shapeRenderer;
+        this.spriteBatch = spriteBatch;
     }
 
+    @Override
+    public void init() {
 
+    }
 
-    public void render(float dt){
+    @Override
+    public void update(float dt){
+
 
     }
 
@@ -43,9 +53,9 @@ public class HUDSystem extends EntitySystem{
             );
 
             Vector2 outlineSize = new Vector2(1, 0.1f);
-            float healthWidth = health.getAmount() * outlineSize.x/health.maxAmount;
+            float healthWidth = health.getAmount() * outlineSize.x/health.getMaxAmount();
 
-            shapeRenderer.setProjectionMatrix(this.getCamera().combined);
+            shapeRenderer.setProjectionMatrix(getSystemManager().getSystem(RenderingSystem.class).getCamera().combined);
 
             //Outline
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
