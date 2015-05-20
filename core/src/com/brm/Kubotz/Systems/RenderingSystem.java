@@ -46,7 +46,7 @@ public class RenderingSystem extends EntitySystem {
 
     public void render(World world){
         if(Config.DEBUG_RENDERING_ENABLED) {
-            this.renderDebug(world);
+            this.renderDebug(world); //TODO get FROM System Manager
         }
 
         if(Config.TEXTURE_RENDERING_ENABLED){

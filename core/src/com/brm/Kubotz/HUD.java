@@ -21,9 +21,7 @@ public class HUD {
     }
 
 
-
     public void draw(SpriteBatch sb){
-
         sb.begin();
         BitmapFont font = new BitmapFont(Gdx.files.internal("fonts/okubacloud.fnt"), false);
         font.setScale(0.2f);
@@ -33,7 +31,6 @@ public class HUD {
         font.draw(sb, time, Config.V_WIDTH/2 - 150*0.5f, Config.V_HEIGHT);
         sb.draw(this.texture, 0,0);
         sb.end();
-
     }
 
 
