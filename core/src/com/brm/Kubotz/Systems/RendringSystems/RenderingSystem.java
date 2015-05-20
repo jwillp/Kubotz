@@ -1,25 +1,17 @@
-package com.brm.Kubotz.Systems;
+package com.brm.Kubotz.Systems.RendringSystems;
 
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.Kubotz.Component.UIHealthComponent;
 import com.brm.GoatEngine.ECS.Systems.CameraSystem;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
+import com.brm.Kubotz.Systems.PhysicsSystem;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -46,7 +38,8 @@ public class RenderingSystem extends EntitySystem {
 
     @Override
     public void init() {
-
+        this.getSystemManager().addSystem(CameraSystem.class, this.cameraSystem);
+        this.getSystemManager().addSystem(HUDSystem.class, this.hudSystem);
     }
 
     @Override
@@ -96,9 +89,9 @@ public class RenderingSystem extends EntitySystem {
 
         /** FPS **/
 
-        BitmapFont font = new BitmapFont();
-        spriteBatch.begin();
-        font.draw(spriteBatch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
+        //BitmapFont font = new BitmapFont();
+        //spriteBatch.begin();
+        //font.draw(spriteBatch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
         /*
         font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
 
@@ -110,7 +103,7 @@ public class RenderingSystem extends EntitySystem {
         font.draw(sb, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
         font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);
         */
-        spriteBatch.end();
+        //spriteBatch.end();
 
 
     }

@@ -3,8 +3,6 @@ package com.brm.Kubotz.GameScreens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -12,9 +10,6 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
@@ -31,6 +26,7 @@ import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
 
 
@@ -205,8 +201,8 @@ public class InGameScreen extends GameScreen {
 
 
         // DRAW WORLD
-        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
         this.mapRenderer.setView(systemManager.getSystem(RenderingSystem.class).getCamera());
         this.mapRenderer.render();
+        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
     }
 }

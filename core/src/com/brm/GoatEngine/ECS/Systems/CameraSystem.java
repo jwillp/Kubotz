@@ -22,7 +22,7 @@ public class CameraSystem extends EntitySystem {
     public CameraSystem(EntityManager em) {
         super(em);
         //Creation of a main Camera
-        this.mainCamera = new CameraFactory(this.em, 30,30)
+        this.mainCamera = new CameraFactory(this.em, 40,40)
                 .withTag("mainCamera")
                 .build();
 
