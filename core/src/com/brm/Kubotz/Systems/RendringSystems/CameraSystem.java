@@ -59,7 +59,7 @@ public class CameraSystem extends EntitySystem {
         updatePosition(leftMost, rightMost);
 
         //ZOOM IN/OUT according to the distance between the two entities
-        updateZoom(leftMost, rightMost);
+        //updateZoom(leftMost, rightMost);
 
         //Update the camera
         mainCamera.update();
@@ -79,18 +79,14 @@ public class CameraSystem extends EntitySystem {
      */
     private void updatePosition(Vector2 leftMost, Vector2 rightMost){
 
-
         // Find the center point between leftMost and rightMost pos
-        float w = Gdx.graphics.getWidth();
-        float h = Gdx.graphics.getHeight();
-        float width = rightMost.x - leftMost.x;
-        float height = (rightMost.y - leftMost.y) * (h/w);
-        Vector2 newPos = new Vector2(width/2+leftMost.x, height/2+leftMost.y);
-
-        //Reposition the camera to that center point
+        float centerX = (leftMost.x + rightMost.x)*0.5f;
+        float centerY = (leftMost.y + rightMost.y)*0.5f;
+        
+        //Reposition the camera to that center point (with smoothing)
         Vector3 cameraPosition = mainCamera.position;
-        cameraPosition.x += (newPos.x - cameraPosition.x) * mainCamera.getSpeed().x * Gdx.graphics.getDeltaTime();
-        cameraPosition.y += (newPos.y - cameraPosition.y) * mainCamera.getSpeed().y * Gdx.graphics.getDeltaTime();
+        cameraPosition.x += (centerX - cameraPosition.x) * mainCamera.getSpeed().x * Gdx.graphics.getDeltaTime();
+        cameraPosition.y += (centerY - cameraPosition.y) * mainCamera.getSpeed().y * Gdx.graphics.getDeltaTime();
     }
 
 
@@ -108,6 +104,7 @@ public class CameraSystem extends EntitySystem {
         float zoomScale = (float) (GameMath.distance(leftMost, rightMost)/10.0f);
         double zoomSpeed;
 
+        //if tjhe camera has no particular zoom speed, we'll define one based on camera speed
         zoomSpeed = mainCamera.getZoomSpeed() == -1 ? mainCamera.getSpeed().len() : mainCamera.getZoomSpeed();
 
 
