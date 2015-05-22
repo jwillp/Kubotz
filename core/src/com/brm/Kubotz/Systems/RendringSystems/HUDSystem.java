@@ -8,7 +8,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -32,6 +34,7 @@ public class HUDSystem extends EntitySystem {
     private final ShapeRenderer shapeRenderer;
     private final SpriteBatch spriteBatch;
 
+    private final Stage stage;
 
 
 
@@ -46,6 +49,8 @@ public class HUDSystem extends EntitySystem {
 
         hudCamera = new OrthographicCamera(1280,768);
 
+        stage = new Stage(new StretchViewport(Config.V_WIDTH, Config.V_HEIGHT, hudCamera));
+
     }
 
 
@@ -55,7 +60,7 @@ public class HUDSystem extends EntitySystem {
      * @return
      */
     private Vector2 getHudCoord(float x, float y){
-        return new Vector2(-1280/2 + x, -768/2+y);
+        return new Vector2(-Config.V_WIDTH/2 + x, -Config.V_HEIGHT/2+y);
     }
 
 
@@ -71,6 +76,9 @@ public class HUDSystem extends EntitySystem {
     public void update(float dt){
         this.renderMiniHealthBars();
 
+        stage.act(dt);
+        stage.draw();
+
 
         //HUD Matrix
         //Matrix4 hudMatrix = getSystemManager().getSystem(RenderingSystem.class).getCamera().combined.cpy();
@@ -82,10 +90,11 @@ public class HUDSystem extends EntitySystem {
 
         spriteBatch.draw(this.timer, 0-this.timer.getWidth()/2,768/2 - this.timer.getHeight());
 
-        spriteBatch.draw(this.bars, -1280/2 + this.badge.getWidth()/2 + 30, 768/2 -this.badge.getHeight()/2);
-        spriteBatch.draw(this.badge, -1280/2, 768/2 - this.badge.getHeight());
+        spriteBatch.draw(this.bars, -Config.V_WIDTH/2 + this.badge.getWidth()/2 + 30, Config.V_HEIGHT/2 -this.badge.getHeight()/2);
+        spriteBatch.draw(this.badge, -Config.V_WIDTH/2, Config.V_HEIGHT/2 - this.badge.getHeight());
 
 
+        Logger.log(Config.ASPECT_RATIO);
 
         spriteBatch.end();
 
