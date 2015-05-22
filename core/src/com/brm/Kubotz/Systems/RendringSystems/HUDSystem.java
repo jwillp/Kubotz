@@ -32,7 +32,7 @@ public class HUDSystem extends EntitySystem {
     private final ShapeRenderer shapeRenderer;
     private final SpriteBatch spriteBatch;
 
-
+    private final Viewport viewport;
 
 
 
@@ -46,6 +46,8 @@ public class HUDSystem extends EntitySystem {
         this.spriteBatch = new SpriteBatch();
 
         hudCamera = new OrthographicCamera(Config.V_WIDTH, Config.V_HEIGHT);
+        viewport = new FitViewport(Config.V_WIDTH, Config.V_HEIGHT, hudCamera);
+
     }
 
 
@@ -62,8 +64,13 @@ public class HUDSystem extends EntitySystem {
     public void update(float dt){
         this.renderMiniHealthBars();
 
-        //hudCamera.position.set(Config.V_WIDTH/2, Config.V_HEIGHT/2, 0.0f);
-        //hudCamera.update();
+        int currentWidth = Gdx.graphics.getWidth();
+        int currentHeight = Gdx.graphics.getHeight();
+
+        viewport.update(currentWidth, currentHeight);
+
+
+
         //HUD
         spriteBatch.setProjectionMatrix(hudCamera.combined);
         spriteBatch.begin();
