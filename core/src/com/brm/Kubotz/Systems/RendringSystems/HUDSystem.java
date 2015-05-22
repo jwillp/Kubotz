@@ -9,9 +9,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.StretchViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
+import com.badlogic.gdx.utils.viewport.*;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -34,7 +32,7 @@ public class HUDSystem extends EntitySystem {
     private final ShapeRenderer shapeRenderer;
     private final SpriteBatch spriteBatch;
 
-    private final Stage stage;
+
 
 
 
@@ -44,24 +42,12 @@ public class HUDSystem extends EntitySystem {
 
     public HUDSystem(EntityManager em, ShapeRenderer shapeRenderer, SpriteBatch spriteBatch) {
         super(em);
-        this.shapeRenderer = shapeRenderer;
-        this.spriteBatch = spriteBatch;
+        this.shapeRenderer = new ShapeRenderer();
+        this.spriteBatch = new SpriteBatch();
 
-        hudCamera = new OrthographicCamera(1280,768);
-
-        stage = new Stage(new StretchViewport(Config.V_WIDTH, Config.V_HEIGHT, hudCamera));
-
+        hudCamera = new OrthographicCamera(Config.V_WIDTH, Config.V_HEIGHT);
     }
 
-
-    /**
-     * Calculates the correct coordinates of an image
-     * positioned from the bottom left corner of the HUD
-     * @return
-     */
-    private Vector2 getHudCoord(float x, float y){
-        return new Vector2(-Config.V_WIDTH/2 + x, -Config.V_HEIGHT/2+y);
-    }
 
 
 
@@ -76,27 +62,24 @@ public class HUDSystem extends EntitySystem {
     public void update(float dt){
         this.renderMiniHealthBars();
 
-        stage.act(dt);
-        stage.draw();
-
-
-        //HUD Matrix
-        //Matrix4 hudMatrix = getSystemManager().getSystem(RenderingSystem.class).getCamera().combined.cpy();
-        //hudMatrix.setToOrtho2D(0,0, Config.V_WIDTH, Config.V_HEIGHT);
-        //spriteBatch.setProjectionMatrix(hudMatrix);
+        //hudCamera.position.set(Config.V_WIDTH/2, Config.V_HEIGHT/2, 0.0f);
+        //hudCamera.update();
+        //HUD
         spriteBatch.setProjectionMatrix(hudCamera.combined);
         spriteBatch.begin();
 
 
         spriteBatch.draw(this.timer, 0-this.timer.getWidth()/2,768/2 - this.timer.getHeight());
 
-        spriteBatch.draw(this.bars, -Config.V_WIDTH/2 + this.badge.getWidth()/2 + 30, Config.V_HEIGHT/2 -this.badge.getHeight()/2);
-        spriteBatch.draw(this.badge, -Config.V_WIDTH/2, Config.V_HEIGHT/2 - this.badge.getHeight());
+        spriteBatch.draw(this.bars, -Config.V_WIDTH/2 + this.badge.getWidth()/2 + 30, Config.V_HEIGHT/2 -this.badge.getHeight()/2,
+                this.bars.getWidth(), this.bars.getHeight());
 
+        spriteBatch.draw(this.badge, -Config.V_WIDTH/2, Config.V_HEIGHT/2 - this.badge.getHeight(),
+                this.badge.getWidth(), this.badge.getHeight());
 
-        Logger.log(Config.ASPECT_RATIO);
 
         spriteBatch.end();
+
 
     }
 

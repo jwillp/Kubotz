@@ -1,13 +1,17 @@
-package com.brm.GoatEngine.ECS.Systems;
+package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.viewport.FillViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
 import com.brm.GoatEngine.Utils.GameMath;
 
@@ -18,12 +22,14 @@ import com.brm.GoatEngine.Utils.GameMath;
  */
 public class CameraSystem extends EntitySystem {
 
-    private GameCamera mainCamera;
+    private final GameCamera mainCamera;
+    private final Viewport viewport;
 
     public CameraSystem(EntityManager em) {
         super(em);
         //Creation of a main Camera
-        this.mainCamera = new GameCamera(32,20);
+        this.mainCamera = new GameCamera();
+        this.viewport = new FitViewport(40, 24, mainCamera);
     }
 
     @Override
@@ -33,6 +39,7 @@ public class CameraSystem extends EntitySystem {
 
     @Override
     public void update(float dt){
+
         //UPDATE THE CAMERA
         Vector2 leftMost = new Vector2(Integer.MAX_VALUE,Float.MAX_VALUE);
         Vector2 rightMost = new Vector2(Integer.MIN_VALUE, Integer.MIN_VALUE);
@@ -57,6 +64,7 @@ public class CameraSystem extends EntitySystem {
         //Update the camera
         mainCamera.update();
 
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
 
     }

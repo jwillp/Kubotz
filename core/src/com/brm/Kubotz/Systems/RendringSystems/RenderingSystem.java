@@ -4,10 +4,10 @@ package com.brm.Kubotz.Systems.RendringSystems;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.CameraSystem;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Renderers.CameraDebugRenderer;
@@ -55,8 +55,17 @@ public class RenderingSystem extends EntitySystem {
             renderTextures();
         }
 
-        this.hudSystem.update(dt);
 
+
+    }
+
+    public void renderHud(float dt){
+        this.hudSystem.update(dt);
+    }
+
+    public void renderMap(MapRenderer mapRenderer){
+        mapRenderer.setView(getCamera());
+        mapRenderer.render();
     }
 
 

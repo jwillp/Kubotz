@@ -7,16 +7,21 @@
     <object id="0" x="0" y="0" width="64" height="64"/>
    </objectgroup>
   </tile>
+  <tile id="1">
+   <image width="64" height="64" source="bg.png"/>
+  </tile>
  </tileset>
- <imagelayer name="Calque d'image 1" x="256" y="320">
-  <image source="J:/Spaceshoot/images/background.jpg"/>
- </imagelayer>
+ <layer name="background" width="38" height="29" visible="0">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3R0QkAMAhDQen+Q3eBUihRSeUF/FQPjSBqVnPhwoVrrqtrzus813tVuroN0+uWyl5K/5ODQXGd+jLmqC7Xe+H6x6X4M3a87HO4Fy6iZAP/j/0vOBEAAA==
+  </data>
+ </layer>
  <layer name="images_layer" width="38" height="29">
   <data encoding="base64" compression="gzip">
    H4sIAAAAAAAAC+2UQQoAMAjD9P+f3hukW5EugV4lVLGrqokUN3jhhVeul2tOSl8vveAuyr433Uo6Gzrmr87A618vx19N6gsvouQA6Q93AzgRAAA=
   </data>
  </layer>
- <objectgroup name="objects">
+ <objectgroup name="objects" visible="0">
   <object id="49" type="WALL" x="192" y="0" width="2048" height="128"/>
   <object id="50" type="WALL" x="2112" y="128" width="128" height="512"/>
   <object id="51" type="WALL" x="192" y="128" width="128" height="512"/>

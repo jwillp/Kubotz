@@ -194,15 +194,13 @@ public class InGameScreen extends GameScreen {
 
     @Override
     public void draw(GameScreenManager engine, float deltaTime) {
-        // CLEAR SCREEN
-        //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-        Gdx.gl.glClearColor(0.07f, 0.2f, 0.3f, 1);
+
+        Gdx.gl.glClearColor(0,0,0,0);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-
         // DRAW WORLD
-        this.mapRenderer.setView(systemManager.getSystem(RenderingSystem.class).getCamera());
-        this.mapRenderer.render();
+
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
+        systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
+        systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
     }
 }
