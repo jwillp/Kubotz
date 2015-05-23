@@ -31,11 +31,11 @@ public class CameraSystem extends EntitySystem {
 
     public CameraSystem(EntityManager em) {
         super(em);
-        maxX = 36;
-        maxY = 28;
+        maxX = 40;
+        maxY = 24;
         //Creation of a main Camera
         this.mainCamera = new GameCamera();
-        this.viewport = new FitViewport(20, 12, mainCamera);
+        this.viewport = new FitViewport(40, 24, mainCamera);
     }
 
     @Override
@@ -138,8 +138,6 @@ public class CameraSystem extends EntitySystem {
      */
     private void updateBoundaries(){
         // Now We need to readjust the position of the camera (so it doest show the outside of the world)
-        float mapMaxX = 36;
-        float mapMaxY = 28;
         float visibleX = mainCamera.viewportWidth *  mainCamera.zoom; //The number of tiles visible in X at the moment
         float visibleY = mainCamera.viewportHeight *  mainCamera.zoom;//The number of tiles visible in Y at the moment
         float posY = mainCamera.position.y;
@@ -147,8 +145,9 @@ public class CameraSystem extends EntitySystem {
 
 
         // First try to move it out of the bounds
-        mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, visibleX/2, mapMaxX - visibleX/2);
-        mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, visibleY/2, mapMaxY - visibleY/2+4);
+        mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, visibleX/2, this.maxX/2 - visibleX/2);
+        mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, visibleY/2, this.maxY/2 - visibleY/2);
+
 
     }
 

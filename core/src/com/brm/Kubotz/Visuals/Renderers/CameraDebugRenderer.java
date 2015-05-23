@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Renderers;
+package com.brm.Kubotz.Visuals.Renderers;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;

@@ -1,17 +1,25 @@
 package com.brm.Kubotz.Systems.RendringSystems;
 
 
-import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Renderers.CameraDebugRenderer;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Visuals.LaserRenderer;
+import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
+
+import java.awt.*;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -76,6 +84,16 @@ public class RenderingSystem extends EntitySystem {
      */
     private void renderTextures(){
 
+        for(Entity entity: em.getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+
+
+            LaserRenderer laserRenderer = new LaserRenderer(phys.getPosition().cpy(), phys.getWidth(), phys.getHeight(),
+                    Color.BLUE, Color.WHITE
+            );
+            this.spriteBatch.setProjectionMatrix(this.getCamera().combined);
+            laserRenderer.render(0, this.spriteBatch);
+        }
 
     }
 

@@ -1,5 +1,6 @@
 package com.brm.Kubotz;
 
+import com.badlogic.gdx.Game;
 import org.robovm.apple.foundation.NSAutoreleasePool;
 import org.robovm.apple.uikit.UIApplication;
 
@@ -10,7 +11,7 @@ public class IOSLauncher extends IOSApplication.Delegate {
     @Override
     protected IOSApplication createApplication() {
         IOSApplicationConfiguration config = new IOSApplicationConfiguration();
-        return new IOSApplication(new Game(), config);
+        //return new IOSApplication(new Game(), config);
     }
 
     public static void main(String[] argv) {

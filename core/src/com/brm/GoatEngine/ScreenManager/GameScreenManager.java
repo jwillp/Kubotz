@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ScreenManager;
 
 
+import com.badlogic.gdx.assets.AssetManager;
 import com.brm.GoatEngine.Utils.Logger;
 
 import java.util.Stack;
@@ -17,8 +18,6 @@ public class GameScreenManager {
     // ATTRIBUTES //
     private Stack<GameScreen> screens = new Stack<GameScreen>();
     private boolean isRunning;
-
-
 
     // METHODS //
 

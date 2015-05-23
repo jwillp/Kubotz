@@ -109,6 +109,7 @@ public class BulletFactory extends EntityFactory {
         bullet.addComponent(this.buildBody(bullet), PhysicsComponent.ID);
 
         //Tags Component
+        this.tagsComponent.addTag(Constants.ENTITY_TAG_BULLET);
         bullet.addComponent(this.tagsComponent, TagsComponent.ID);
 
         return bullet;
