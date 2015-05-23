@@ -4,10 +4,7 @@ public abstract class GameScreen {
 
 
 
-    protected GameScreen(){
-
-    }
-
+    protected GameScreen(){}
 
     public void pause() {}
 
@@ -22,7 +19,7 @@ public abstract class GameScreen {
 
     public abstract void update(GameScreenManager engine, float deltaTime);
 
-    public abstract void draw(GameScreenManager engine);
+    public abstract void draw(GameScreenManager engine, float deltaTime);
 
 
     public void changeState(GameScreenManager engine, GameScreen state){

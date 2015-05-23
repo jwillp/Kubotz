@@ -22,10 +22,11 @@ public class Game extends ApplicationAdapter {
 
 	@Override
 	public void render () {
+		super.render();
+		float deltaTime = Gdx.graphics.getDeltaTime();
 		screenManager.handleEvents();
-		screenManager.update(Gdx.graphics.getDeltaTime());
-		screenManager.draw();
-
+		screenManager.update(deltaTime);
+		screenManager.draw(deltaTime);
 	}
 
 

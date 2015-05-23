@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ScreenManager;
 
 
+import com.badlogic.gdx.assets.AssetManager;
 import com.brm.GoatEngine.Utils.Logger;
 
 import java.util.Stack;
@@ -17,8 +18,6 @@ public class GameScreenManager {
     // ATTRIBUTES //
     private Stack<GameScreen> screens = new Stack<GameScreen>();
     private boolean isRunning;
-
-
 
     // METHODS //
 
@@ -126,9 +125,9 @@ public class GameScreenManager {
 
     }
 
-    public void draw() {
+    public void draw(float deltaTime) {
         if(!this.screens.empty()){
-            this.screens.peek().draw(this);
+            this.screens.peek().draw(this, deltaTime);
         }else{
             this.exitWithError("Game Engine Draw::There is no screen in the engine's stack.");
         }

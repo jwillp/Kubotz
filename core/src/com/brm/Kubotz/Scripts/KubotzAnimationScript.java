@@ -9,7 +9,7 @@ import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Component.AnimationComponent;
 import com.brm.Kubotz.Components.Movements.DashComponent;
-import com.brm.Kubotz.Systems.RenderingSystem.AnimationSheet;
+import com.brm.Kubotz.Systems.RendringSystems.AnimationSheet;
 
 import java.util.ArrayList;
 
@@ -19,13 +19,13 @@ import java.util.ArrayList;
 public class KubotzAnimationScript extends EntityScript {
 
 
-    AnimationSheet idle = new AnimationSheet("textures/idle.png", 1/15f);
-    AnimationSheet running = new AnimationSheet("textures/running.png", 1/15f);
-    AnimationSheet jumping = new AnimationSheet("textures/jumping.png", 1/15f);
-    AnimationSheet falling = new AnimationSheet("textures/falling.png", 1/15f);
-    AnimationSheet kicking = new AnimationSheet("textures/kicking.png", 1/15f);
-    AnimationSheet dashing = new AnimationSheet("textures/dashing.png", 1/74f);
-    AnimationSheet dashingPrep = new AnimationSheet("textures/dashing_prep.png", 1/30f);
+    public static AnimationSheet idle = new AnimationSheet("textures/idle.png", 1/15f);
+    public static AnimationSheet running = new AnimationSheet("textures/running.png", 1/15f);
+    public static AnimationSheet jumping = new AnimationSheet("textures/jumping.png", 1/15f);
+    public static AnimationSheet falling = new AnimationSheet("textures/falling.png", 1/15f);
+    public static AnimationSheet kicking = new AnimationSheet("textures/kicking.png", 1/15f);
+    public static AnimationSheet dashing = new AnimationSheet("textures/dashing.png", 1/74f);
+    public static AnimationSheet dashingPrep = new AnimationSheet("textures/dashing_prep.png", 1/30f);
 
 
 
@@ -92,6 +92,14 @@ public class KubotzAnimationScript extends EntityScript {
 
     }
 
+
+
+
+
+
+
+
+
     @Override
     public void onCollision(EntityContact contact) {
 
@@ -104,4 +112,8 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     }
+
+
+
+
 }

@@ -124,7 +124,7 @@ public class PowerUpFactory extends EntityFactory {
         return physics;
     }
 
-    //TODO Static Methods returnning a predefined PowerUp
+    //TODO Static Methods returning a predefined PowerUp (prefab)
 
 
 

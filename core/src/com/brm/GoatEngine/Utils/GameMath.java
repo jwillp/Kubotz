@@ -2,14 +2,15 @@ package com.brm.GoatEngine.Utils;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 
 /**
- * Vectorial Math
+ * Vector math
  */
 public abstract class GameMath {
 
     /**
-     * Calculates the distance between two Vector 2
+     * Calculates the euclidean distance between two Vector2
      * @param a
      * @param b
      * @return the distance between a and b
@@ -40,7 +41,22 @@ public abstract class GameMath {
     }
 
 
-
+    /**
+     * Calculates the cross product of two Vectors2
+     * Normally a cross product is used on 3D vectors.
+     * In this case to calculate it for 2D vectors we use
+     * z = 0. (because we are in a 2D world)
+     * The cross product calculates a perpendicular
+     * vector to the two supplied .i.e , a vector that is 90 degrees
+     * perpendicular to both of the two vectors
+     * @return float
+     */
+    public static Vector3 crossProduct2D(Vector2 a, Vector2 b){
+        Vector3 u = new Vector3(a, 0);
+        Vector3 v = new Vector3(b, 0);
+        //FORMULA UxV = (UyVz - UzVy,   UzVx - UxVz,    UxVy - UyVx)
+        return new Vector3(u.y * v.z - u.z*v.y, u.z*v.x - u.x*v.z, u.x*v.y - u.y*v.x);
+    }
 
 
 

@@ -1,6 +1,8 @@
 package com.brm.GoatEngine.Utils;
 
 
+import java.util.concurrent.TimeUnit;
+
 public class Timer {
     public static final int INFINITE = Integer.MAX_VALUE; //To put the timer to be infinite and never be done
     public static final int ONE_SECOND = 1000;
@@ -10,6 +12,9 @@ public class Timer {
     public static final int THREE_SECONDS = ONE_SECOND*3;
     public static final int FIVE_SECONDS = ONE_SECOND*5;
     public static final int TEN_SECONDS = ONE_SECOND*10;
+
+    public static final int ONE_MINUTE = ONE_SECOND*60;
+
 
     /**
      * Returns the number of milliseconds for a certain number of seconds
@@ -89,9 +94,46 @@ public class Timer {
         }
     }
 
+    /**
+     * Converts a number of milliseconds to a formated string
+     * mm:ss
+     */
+    public static String toStringMinSec(int milliseconds){
+        return String.format("%d:%d",
+                TimeUnit.MILLISECONDS.toMinutes(milliseconds),
+                TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
+                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds))
+        );
+    }
 
 
+    /**
+     * Converts milliseconds to a number of seconds
+     * @param ms nbMilliseconds to convert
+     * @return
+     */
+    public static int msToSeconds(int ms){
+        return (ms/1000) % 60;
+    }
 
+    /**
+     * Converts milliseconds to a number of minutes
+     * @param ms nbMilliseconds to convert
+     * @return
+     */
+    public static int msToMinutes(int ms){
+        return (ms/1000*60) % 60;
+    }
+
+
+    /**
+     * Converts milliseconds to a number of hours
+     * @param ms nbMilliseconds to convert
+     * @return
+     */
+    public static int msToHours(int ms){
+        return (ms/1000*60*60) % 24;
+    }
 
 }
 

@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.RenderingSystem;
+package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;

@@ -81,13 +81,4 @@ public class EntitySystemManager {
     }
 
 
-    /**
-     * Renders all systems in order
-     */
-    public void render(){
-        for(EntitySystem system: systems.values()){
-            system.render(Gdx.graphics.getDeltaTime());
-        }
-    }
-
 }

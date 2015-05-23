@@ -10,14 +10,16 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Component.AnimationComponent;
 import com.brm.Kubotz.Component.SpriteComponent;
+import com.brm.Kubotz.Component.UIHealthComponent;
 import com.brm.Kubotz.Components.GrabComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Parts.Boots.FlyingBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
-import sun.font.Script;
+
 
 
 /**
@@ -119,10 +121,10 @@ public class KubotzFactory extends EntityFactory {
 
 
         /* Flying Component */
-        character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+        //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
@@ -134,11 +136,15 @@ public class KubotzFactory extends EntityFactory {
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
 
+
         //APPEAREANCE
         //anim
         character.addComponent(new AnimationComponent(), AnimationComponent.ID);
         // sprite
         character.addComponent(new SpriteComponent(), SpriteComponent.ID);
+
+        character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
+
 
         //GRAB
         character.addComponent(new GrabComponent(), GrabComponent.ID);
@@ -147,12 +153,11 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
 
 
-
         //Scripts
-
         ScriptComponent scriptComponent = new ScriptComponent();
         scriptComponent.addScript(new KubotzAnimationScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
+
         return character;
     }
 

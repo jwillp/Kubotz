@@ -34,7 +34,7 @@ public class Constants {
     public static final String ENTITY_TAG_KUBOTZ = "KUBOTZ";
     public static final String ENTITY_TAG_CAMERA = "CAMERA";
     public static final String ENTITY_TAG_TURRET = "TUERRET";
-
+    public static final String ENTITY_TAG_PLATFORM = "PLATFORM";
     public static final String ENTITY_TAG_BULLET = "BULLET";
     public static final String ENTITY_TAG_PUNCH = "PUNCH";
 

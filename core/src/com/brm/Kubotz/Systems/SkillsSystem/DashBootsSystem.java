@@ -9,6 +9,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
+import com.brm.Kubotz.Game;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -33,12 +34,20 @@ public class DashBootsSystem extends EntitySystem {
             DashBootsComponent boots = (DashBootsComponent) entity.getComponent(DashBootsComponent.ID);
 
             if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+                gamePad.releaseButton(GameButton.ACTIVE_SKILL_BUTTON);
 
-                //Can we Dash?
-                if(!entity.hasComponent(DashComponent.ID)) {
-                    Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
-                    if (boots.getCooldown().isDone())
-                        turnDashOn(entity);
+                boolean up, down, left, right;
+                up = gamePad.isButtonPressed(GameButton.MOVE_UP);
+                down = gamePad.isButtonPressed(GameButton.MOVE_DOWN);
+                left = gamePad.isButtonPressed(GameButton.MOVE_LEFT);
+                right = gamePad.isButtonPressed(GameButton.MOVE_RIGHT);
+                if(up || down || left || right) {
+                    //Can we Dash?
+                    if(!entity.hasComponent(DashComponent.ID)) {
+                        Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
+                        if (boots.getCooldown().isDone())
+                            turnDashOn(entity);
+                    }
                 }
             }
         }

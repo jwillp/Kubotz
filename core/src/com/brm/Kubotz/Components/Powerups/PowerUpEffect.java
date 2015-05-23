@@ -172,7 +172,6 @@ public abstract class PowerUpEffect {
 
 
 
-    // TODO Complete
     public static class LaserGunMkIProvider extends PowerUpEffect{
 
         @Override
@@ -186,7 +185,7 @@ public abstract class PowerUpEffect {
         }
     }
 
-    // TODO Complete
+
     public static class LaserGunMkIIProvider extends PowerUpEffect{
 
         @Override

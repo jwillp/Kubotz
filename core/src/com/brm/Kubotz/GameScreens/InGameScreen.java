@@ -3,8 +3,6 @@ package com.brm.Kubotz.GameScreens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -12,9 +10,6 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
@@ -25,14 +20,15 @@ import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.SpawnPointComponent;
-import com.brm.Kubotz.Config;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
-import com.brm.Kubotz.Systems.RenderingSystem.RenderingSystem;
+import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
+import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
 
 
@@ -49,8 +45,6 @@ public class InGameScreen extends GameScreen {
     private Entity player;
 
 
-    public InGameScreen() {
-    }
 
 
     @Override
@@ -89,6 +83,7 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(ScriptSystem.class, new ScriptSystem(this.entityManager));
 
+        systemManager.addSystem(AnimationSystem.class, new AnimationSystem(this.entityManager));
 
 
         //INIT SYSTEMS
@@ -100,7 +95,7 @@ public class InGameScreen extends GameScreen {
 
 
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
@@ -135,29 +130,24 @@ public class InGameScreen extends GameScreen {
             }else{
                 new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withSize(0.5f,0.5f)
                         .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
+                        .withTag(Constants.ENTITY_TAG_PLATFORM)
                         .build();
             }
         }
 
 
 
-        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,2))
+        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,12))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
         bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
 
-
-
-
-
         Logger.log("In Game State initialised");
-
-
-
     }
+
+
 
     @Override
     public void cleanUp() {
@@ -187,7 +177,6 @@ public class InGameScreen extends GameScreen {
     public void update(GameScreenManager engine, float deltaTime) {
 
 
-
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
         systemManager.getSystem(TrackerSystem.class).update(deltaTime);
         systemManager.getSystem(SkillsSystem.class).update(deltaTime);
@@ -201,46 +190,20 @@ public class InGameScreen extends GameScreen {
 
         systemManager.getSystem(ScriptSystem.class).update(deltaTime);
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
-        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
 
-
+        systemManager.getSystem(AnimationSystem.class).update(deltaTime);
     }
 
     @Override
-    public void draw(GameScreenManager engine) {
-        // CLEAR SCREEN
-        //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-        Gdx.gl.glClearColor(0.07f, 0.2f, 0.3f, 1);
-        //Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT | GL20.GL_STENCIL_BUFFER_BIT);
 
+    public void draw(GameScreenManager engine, float deltaTime) {
 
+        Gdx.gl.glClearColor(0,0,0,0);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         // DRAW WORLD
-        systemManager.getSystem(RenderingSystem.class).render();
-        this.mapRenderer.setView(systemManager.getSystem(RenderingSystem.class).getCamera());
-        this.mapRenderer.render();
 
-
-        // FPS
-        if(Config.DEBUG_RENDERING_ENABLED) {
-            SpriteBatch sb = systemManager.getSystem(RenderingSystem.class).getSpriteBatch();
-            BitmapFont font = new BitmapFont();
-            sb.begin();
-            font.draw(sb, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
-            font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
-
-
-            String velText = "Velocity: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getVelocity();
-            font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
-
-            font.draw(sb, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJujmps(), 0, Gdx.graphics.getHeight() - 80);
-            font.draw(sb, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
-            font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);
-
-            sb.end();
-        }
-
-
-
+        //systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
+        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
+        systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
     }
 }

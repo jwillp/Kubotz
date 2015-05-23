@@ -19,6 +19,7 @@ public class BlockFactory extends EntityFactory {
     private World world;
     private Vector2 position = new Vector2(0,0);
     private Vector2 size = new Vector2(1,1);
+    private TagsComponent tagsComponent = new TagsComponent();
 
     public BlockFactory(EntityManager entityManager, World world, Vector2 position){
         super(entityManager);
@@ -44,7 +45,7 @@ public class BlockFactory extends EntityFactory {
         Entity block = new Entity();
         entityManager.registerEntity(block);
 
-
+        block.addComponent(this.tagsComponent, TagsComponent.ID);
 
         //Readjust position so it is not positioned according to the middle, but rather the bottom left corner
         position = new Vector2(position.x + size.x, position.y + size.y);
@@ -76,5 +77,13 @@ public class BlockFactory extends EntityFactory {
         return block;
     }
 
-
+    /**
+     * Adds a tag
+     * @param tag
+     * @return this for chaining
+     */
+    public BlockFactory withTag(String tag) {
+        this.tagsComponent.addTag(tag);
+        return this;
+    }
 }

@@ -43,12 +43,6 @@ public abstract class EntitySystem {
      */
     public void deInit(){}
 
-    /**
-     * Renders only if needed
-     * @param deltaTime
-     */
-    public void render(float deltaTime){}
-
     public EntitySystemManager getSystemManager() {
         return systemManager;
     }

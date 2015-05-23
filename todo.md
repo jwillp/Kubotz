@@ -17,7 +17,7 @@
 * [ ] Système de Respawn
 * [ ] Vérifier les boutons pour chacun des skills
 * [ ] Se débarasser d'un objet
-* [ ] Script Component
+* [x] Script Component
 * [ ] Ne pas oublier l'implémentation de l'audio
 * [ ] Une Doc Propre
 * [ ] IN CODE TODO

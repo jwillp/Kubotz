@@ -33,7 +33,8 @@ public class PauseGameScreen extends GameScreen {
     }
 
     @Override
-    public void draw(GameScreenManager engine) {
+    public void draw(GameScreenManager engine, float deltaTime) {
 
     }
+
 }

@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Renderers;
+package com.brm.Kubotz.Visuals.Renderers;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 /**
  * To display on screen the camera position
  */
-public class CameraDebugRenderer {
+public class CameraDebugRenderer{
     OrthographicCamera camera;
     ShapeRenderer shapeRenderer;
 

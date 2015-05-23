@@ -3,11 +3,12 @@ package com.brm.GoatEngine.Utils;
 import com.badlogic.gdx.assets.AssetManager;
 
 /**
- * Manages Resources (assets)
+ * Resource Manager
+ * Singleton pattern
  */
-public class ResourceManager extends AssetManager {
+public class ResourceManager extends AssetManager{
 
-    private static ResourceManager instance;
+    private static ResourceManager instance = null;
 
     public static ResourceManager getInstance(){
         if(instance == null){
@@ -16,6 +17,9 @@ public class ResourceManager extends AssetManager {
         return instance;
     }
 
+    public ResourceManager(){
+        super();
+    }
 
 
 }
