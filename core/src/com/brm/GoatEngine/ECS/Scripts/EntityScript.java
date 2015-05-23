@@ -13,29 +13,27 @@ import java.util.ArrayList;
  */
 public abstract class EntityScript{
 
-    public boolean isEnabled = true;
+    private boolean isInitialized = false;
 
     /**
      * Called when a script is added to an entity
      */
-    public abstract void onInit(Entity entity, EntityManager manager);
+    public abstract void onInit(Entity entity);
 
 
 
     /**
      * Called every frame
-     * @param entity
-     * @param manager
+     * @param entity the entity to update with the script
      */
-    public abstract void onUpdate(Entity entity, EntityManager manager);
+    public abstract void onUpdate(Entity entity);
 
     /**
      * Called when the entity this script is attached to presses one or more buttons
      * @param entity the entity this script is attached to
-     * @param manager   the entity manager
      * @param pressedButtons the buttons that were pressed
      */
-    public abstract void onInput(Entity entity, EntityManager manager, ArrayList<VirtualButton> pressedButtons);
+    public abstract void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons);
 
 
     /**
@@ -48,9 +46,14 @@ public abstract class EntityScript{
     /**
      * Called when the script is detached from the entity
      */
-    public abstract void onDetach(Entity entity, EntityManager manager);
+    public abstract void onDetach(Entity entity);
 
 
+    public boolean isInitialized() {
+        return isInitialized;
+    }
 
-
+    public void setInitialized(boolean isInitialized) {
+        this.isInitialized = isInitialized;
+    }
 }

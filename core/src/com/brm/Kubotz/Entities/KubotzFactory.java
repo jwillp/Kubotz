@@ -2,11 +2,8 @@ package com.brm.Kubotz.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.Components.*;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -19,6 +16,8 @@ import com.brm.Kubotz.Components.Parts.Boots.FlyingBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Scripts.KubotzAnimationScript;
+import sun.font.Script;
 
 
 /**
@@ -148,6 +147,12 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
 
 
+
+        //Scripts
+
+        ScriptComponent scriptComponent = new ScriptComponent();
+        scriptComponent.addScript(new KubotzAnimationScript());
+        character.addComponent(scriptComponent, ScriptComponent.ID);
         return character;
     }
 

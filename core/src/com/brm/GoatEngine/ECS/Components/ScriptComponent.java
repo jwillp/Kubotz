@@ -1,7 +1,6 @@
 package com.brm.GoatEngine.ECS.Components;
 
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 
 import java.util.ArrayList;
@@ -14,17 +13,15 @@ public class ScriptComponent extends EntityComponent {
     public static final String ID = "SCRIPT_COMPONENT";
     private ArrayList<EntityScript> scripts = new ArrayList<EntityScript>();
 
+    private Entity entity = null; //The entity to which this component is attached
 
-
-
-    public void addScript(EntityScript script, Entity entity, EntityManager manager){
-        script.onInit(entity, manager);
+    public void addScript(EntityScript script){
         this.scripts.add(script);
     }
 
 
-    public void removeScript(EntityScript script, Entity entity, EntityManager manager){
-        script.onDetach(entity, manager);
+    public void removeScript(EntityScript script){
+        script.onDetach(entity);
         this.scripts.remove(script);
     }
 
@@ -34,10 +31,26 @@ public class ScriptComponent extends EntityComponent {
     }
 
 
+    @Override
+    public void onAttach(Entity entity) {
+       this.entity = entity;
+    }
+
+    @Override
+    public void onDetach(Entity entity) {
+        this.entity = null;
+    }
 
 
-
-
+    /**
+     * Exception thrown when we try to use the component when it was unattached to any entity
+     */
+    public static class UnattachedComponentException extends RuntimeException{
+        //Constructor that accepts a message
+        public UnattachedComponentException(String message){
+            super(message);
+        }
+    }
 
 
 }

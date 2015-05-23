@@ -119,6 +119,10 @@ public class Entity {
         this.getComponent(componentId).setEnabled(false);
     }
 
+    public EntityManager getManager() {
+        return manager;
+    }
+
 
     /**
      * Thrown when an unregistered entity tries to access a null EntityManager

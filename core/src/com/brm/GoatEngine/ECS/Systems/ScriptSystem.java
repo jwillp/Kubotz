@@ -38,7 +38,7 @@ public class ScriptSystem extends EntitySystem{
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         for(EntityScript script: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
-                script.onInput(entity, em, gamePad.getPressedButtons());
+                script.onInput(entity, gamePad.getPressedButtons());
             }
         }
     }
@@ -49,11 +49,15 @@ public class ScriptSystem extends EntitySystem{
         for(Entity entity: em.getEntitiesWithComponent(ScriptComponent.ID)){
             ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(EntityScript script: scriptComp.getScripts()){
+
+                //ON INIT
+                if(!script.isInitialized()){
+                    script.onInit(entity);
+                }
                 // ON COLLISION
                 this.onCollision(entity, script);
-
                 // ON UPDATE
-                script.onUpdate(entity, em);
+                script.onUpdate(entity);
             }
         }
     }
@@ -69,12 +73,6 @@ public class ScriptSystem extends EntitySystem{
             script.onCollision(contact);
         }
     }
-
-
-
-
-
-
 
 
 }

@@ -28,7 +28,6 @@ import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
-import com.brm.Kubotz.Scripts.TestScript;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
@@ -152,11 +151,6 @@ public class InGameScreen extends GameScreen {
 
 
 
-        // TEST SCRIPT
-
-        ScriptComponent scriptComponent = new ScriptComponent();
-        scriptComponent.addScript(new TestScript(), this.player, entityManager);
-        this.player.addComponent(scriptComponent, ScriptComponent.ID);
 
 
         Logger.log("In Game State initialised");

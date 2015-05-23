@@ -12,8 +12,14 @@ public class SpriteComponent extends EntityComponent {
 
     public final static String ID = "SPRITE_COMPONENT";
 
-    public TextureRegion currentSprite;
+    private TextureRegion currentSprite;
 
 
+    public TextureRegion getCurrentSprite() {
+        return currentSprite;
+    }
 
+    public void setCurrentSprite(TextureRegion currentSprite) {
+        this.currentSprite = currentSprite;
+    }
 }

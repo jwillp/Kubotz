@@ -81,23 +81,19 @@ public class RenderingSystem extends EntitySystem {
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
+            if(spriteComp.getCurrentSprite() != null){
+                TextureRegion currentFrame = spriteComp.getCurrentSprite();
+                float height = phys.getHeight()*3;
+                float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
+                float posX = phys.getPosition().x-width/2;
+                float posY =  phys.getPosition().y-height/2;
+                spriteBatch.draw(currentFrame, posX, posY, width,height);
 
 
-
-            TextureRegion currentFrame = spriteComp.currentSprite;
-            float height = phys.getHeight()*3;
-            float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
-            float posX = phys.getPosition().x-width/2;
-            float posY =  phys.getPosition().y-height/2;
-            spriteBatch.draw(currentFrame, posX, posY, width,height);
-
-
-            /*spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
-                    15, 15
-            );*/
-
-
-
+                /*spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
+                        15, 15
+                );*/
+            }
         }
         spriteBatch.end();
 
