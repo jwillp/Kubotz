@@ -5,6 +5,8 @@
    <image width="64" height="64" source="smalltile.png"/>
    <objectgroup draworder="index">
     <object id="0" x="0" y="0" width="64" height="64"/>
+    <object id="0" x="0" y="0" width="64" height="64"/>
+    <object id="0" x="128" y="64"/>
    </objectgroup>
   </tile>
   <tile id="1">
@@ -21,7 +23,7 @@
    H4sIAAAAAAAAC+2UQQoAMAjD9P+f3hukW5EugV4lVLGrqokUN3jhhVeul2tOSl8vveAuyr433Uo6Gzrmr87A618vx19N6gsvouQA6Q93AzgRAAA=
   </data>
  </layer>
- <objectgroup name="objects" visible="0">
+ <objectgroup name="objects">
   <object id="49" type="WALL" x="192" y="0" width="2048" height="128"/>
   <object id="50" type="WALL" x="2112" y="128" width="128" height="512"/>
   <object id="51" type="WALL" x="192" y="128" width="128" height="512"/>

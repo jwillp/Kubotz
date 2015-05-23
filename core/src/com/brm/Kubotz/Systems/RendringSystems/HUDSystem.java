@@ -120,9 +120,12 @@ public class HUDSystem extends EntitySystem {
             shapeRenderer.end();
 
             //life
+            Color lightGreen = new Color(0, 79, 54, 255f);
+            Color darkGreen =  new Color(125,244,102, 255);
+
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(Color.GREEN);
-            shapeRenderer.rect(barPos.x, barPos.y, healthWidth, outlineSize.y);
+            shapeRenderer.rect(barPos.x, barPos.y, healthWidth, outlineSize.y, lightGreen, darkGreen, darkGreen, lightGreen);
             shapeRenderer.end();
 
         }

@@ -93,7 +93,7 @@ public class InGameScreen extends GameScreen {
 
 
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("res/maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
@@ -135,7 +135,8 @@ public class InGameScreen extends GameScreen {
         }
 
 
-        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,2))
+
+        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,12))
                 .withHeight(1.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);

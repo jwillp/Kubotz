@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="100" height="45" tilewidth="64" tileheight="64" nextobjectid="62">
+ <tileset firstgid="1" name="Tileset" tilewidth="64" tileheight="64">
+  <tile id="0">
+   <image width="64" height="64" source="smalltile.png"/>
+  </tile>
+ </tileset>
+ <layer name="images_layer" width="100" height="45">
+  <data encoding="base64" compression="zlib">
+   eJztlzEWgCAMxeD+l3ZwcUSkNMXkvT+3GKDYW2vdGGOMWRSJRR8s9MFCHyz0wUIfLPTBQh8s9LEH/wdrEumjuuOM/j0fLHTARR8s9MGC5CNqnlWak+Te/og+WOhjnB33nj5YzPrOnpHZ9aM4cU3VGN1b+tiDPljogwXVR1Q/Get8U/OtD5q30/A7s9AHC32w0AeLlT4ynWbVXl3X88Ei20fWe3q2bvS+pPQhN/pgoQ8WX+9RY4wx5pkLB/0FXg==
+  </data>
+ </layer>
+ <objectgroup name="objects">
+  <object id="5" name="WALL" type="WALL" x="192" y="960" width="192" height="64"/>
+  <object id="6" name="WALL" type="WALL" x="192" y="1536" width="192" height="64"/>
+  <object id="8" name="WALL" type="WARP_ZONE" x="192" y="1024" width="64" height="512"/>
+  <object id="11" name="WALL" type="WALL" x="6016" y="1600" width="256" height="64"/>
+  <object id="15" name="WALL" type="WALL" x="6016" y="960" width="256" height="64"/>
+  <object id="16" name="WALL" type="WALL" x="6016" y="1664" width="64" height="960"/>
+  <object id="18" name="WALL" type="WALL" x="6016" y="256" width="64" height="704"/>
+  <object id="20" name="WALL" type="WALL" x="384" y="192" width="5632" height="64"/>
+  <object id="22" name="WALL" type="WALL" x="384" y="2624" width="5632" height="64"/>
+  <object id="23" name="WALL" type="WALL" x="320" y="256" width="64" height="704"/>
+  <object id="25" name="WALL" type="WALL" x="320" y="1600" width="64" height="1024"/>
+  <object id="26" name="WALL" type="WALL" x="1088" y="896" width="640" height="64"/>
+  <object id="27" name="WALL" type="WALL" x="2048" y="1216" width="640" height="64"/>
+  <object id="28" name="WALL" type="WALL" x="704" y="1536" width="640" height="64"/>
+  <object id="29" name="WALL" type="WALL" x="384" y="1920" width="640" height="64"/>
+  <object id="31" name="WALL" type="WALL" x="832" y="2240" width="640" height="64"/>
+  <object id="32" name="WALL" type="WALL" x="1664" y="2368" width="896" height="64"/>
+  <object id="33" name="WALL" type="WALL" x="2048" y="1856" width="640" height="64"/>
+  <object id="34" name="WALL" type="WALL" x="2752" y="1536" width="640" height="64"/>
+  <object id="37" name="WALL" type="WALL" x="2816" y="2240" width="640" height="64"/>
+  <object id="38" name="WALL" type="WALL" x="3456" y="1856" width="640" height="64"/>
+  <object id="39" name="WALL" type="WALL" x="3456" y="1216" width="640" height="64"/>
+  <object id="41" name="WALL" type="WALL" x="3584" y="2368" width="1024" height="64"/>
+  <object id="42" name="WALL" type="WALL" x="4736" y="2240" width="640" height="64"/>
+  <object id="43" name="WALL" type="WALL" x="5312" y="1856" width="640" height="64"/>
+  <object id="44" name="WALL" type="WALL" x="4608" y="1408" width="640" height="64"/>
+  <object id="45" name="WALL" type="WALL" x="4160" y="896" width="640" height="64"/>
+  <object id="46" name="WALL" type="WALL" x="5376" y="768" width="640" height="64"/>
+  <object id="47" name="WALL" type="WARP_ZONE" x="6144" y="1024" width="64" height="576"/>
+  <object id="48" name="BONUS" type="PLAYER_SPAWN" x="1152" y="2560" width="64" height="64"/>
+  <object id="49" name="BONUS" type="BONUS_SPAWN" x="1152" y="1984" width="64" height="64"/>
+  <object id="50" name="BONUS" type="BONUS_SPAWN" x="2304" y="1664" width="64" height="64"/>
+  <object id="51" name="BONUS" type="BONUS_SPAWN" x="1344" y="640" width="64" height="64"/>
+  <object id="53" name="BONUS" type="BONUS_SPAWN" x="3072" y="1280" width="64" height="64"/>
+  <object id="57" name="BONUS" type="BONUS_SPAWN" x="3136" y="2048" width="64" height="64"/>
+  <object id="59" name="BONUS" type="BONUS_SPAWN" x="4032" y="2176" width="64" height="64"/>
+  <object id="61" name="BONUS" type="BONUS_SPAWN" x="4992" y="2048" width="64" height="64"/>
+ </objectgroup>
+</map>

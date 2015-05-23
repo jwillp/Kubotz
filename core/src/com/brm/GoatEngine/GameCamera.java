@@ -16,9 +16,10 @@ public class GameCamera extends OrthographicCamera {
 
     //Zoom properties
     private float minimumZoom = 0.3f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
-    private float maximumZoom = Float.MAX_VALUE; //The maximum value the camera can Zoom In/Out
+    private float maximumZoom = 1.7f; //The maximum value the camera can Zoom In/Out
 
-
+    private boolean isXAxisLocked = false;
+    private boolean isYAxisLocked = false;
 
 
     public GameCamera(){
@@ -61,6 +62,41 @@ public class GameCamera extends OrthographicCamera {
 
     public void setMaximumZoom(float maximumZoom) {
         this.maximumZoom = maximumZoom;
+    }
+
+
+    public boolean isYAxisLocked() {
+        return isYAxisLocked;
+    }
+
+    public void setYAxisLocked(boolean isYAxisLocked) {
+        this.isYAxisLocked = isYAxisLocked;
+    }
+
+    public boolean isXAxisLocked() {
+        return isXAxisLocked;
+    }
+
+    public void setXAxisLocked(boolean isXAxisLocked) {
+        this.isXAxisLocked = isXAxisLocked;
+    }
+
+
+    public boolean isLocked(){
+        return isXAxisLocked && isYAxisLocked;
+    }
+
+    private void setLocked(boolean isLocked){
+        this.setXAxisLocked(isLocked);
+        this.setYAxisLocked(isLocked);
+    }
+
+    private void lock(){
+        this.setLocked(true);
+    }
+
+    private void unlock(){
+        this.setLocked(false);
     }
 
 

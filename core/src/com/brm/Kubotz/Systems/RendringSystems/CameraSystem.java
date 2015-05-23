@@ -2,6 +2,7 @@ package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FillViewport;
@@ -14,6 +15,8 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
 import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Config;
 
 /**
  * A system handling all cameras and their movements
@@ -24,12 +27,15 @@ public class CameraSystem extends EntitySystem {
 
     private final GameCamera mainCamera;
     private final Viewport viewport;
+    private float maxX, maxY;
 
     public CameraSystem(EntityManager em) {
         super(em);
+        maxX = 36;
+        maxY = 28;
         //Creation of a main Camera
         this.mainCamera = new GameCamera();
-        this.viewport = new FitViewport(40, 24, mainCamera);
+        this.viewport = new FitViewport(20, 12, mainCamera);
     }
 
     @Override
@@ -55,11 +61,15 @@ public class CameraSystem extends EntitySystem {
             rightMost.y = java.lang.Math.max(rightMost.y, phys.getPosition().y);
         }
 
+        //ZOOM IN/OUT according to the distance between the two entities
+        updateZoom(leftMost, rightMost);
+
         // Find the center point between between the two entities
         updatePosition(leftMost, rightMost);
 
-        //ZOOM IN/OUT according to the distance between the two entities
-        //updateZoom(leftMost, rightMost);
+        //Make sure the camera does not display anything outside the world
+        updateBoundaries();
+
 
         //Update the camera
         mainCamera.update();
@@ -78,15 +88,25 @@ public class CameraSystem extends EntitySystem {
      * @param rightMost The right most object's position
      */
     private void updatePosition(Vector2 leftMost, Vector2 rightMost){
-
+        if(mainCamera.isLocked()){
+            return;
+        }
         // Find the center point between leftMost and rightMost pos
         float centerX = (leftMost.x + rightMost.x)*0.5f;
         float centerY = (leftMost.y + rightMost.y)*0.5f;
-        
-        //Reposition the camera to that center point (with smoothing)
-        Vector3 cameraPosition = mainCamera.position;
-        cameraPosition.x += (centerX - cameraPosition.x) * mainCamera.getSpeed().x * Gdx.graphics.getDeltaTime();
-        cameraPosition.y += (centerY - cameraPosition.y) * mainCamera.getSpeed().y * Gdx.graphics.getDeltaTime();
+
+
+        //All is good let's lerp for smooth cam movements
+        float lerpProgress = mainCamera.getSpeed().x * Gdx.graphics.getDeltaTime();
+        if(!mainCamera.isXAxisLocked()){
+            mainCamera.position.x = MathUtils.lerp( mainCamera.position.x, centerX, lerpProgress);
+        }
+        if(!mainCamera.isYAxisLocked()){
+            mainCamera.position.y = MathUtils.lerp( mainCamera.position.y, centerY, lerpProgress);
+        }
+
+
+
     }
 
 
@@ -101,18 +121,51 @@ public class CameraSystem extends EntitySystem {
     private void updateZoom(Vector2 leftMost, Vector2 rightMost){
 
         //Pythagorean distance
-        float zoomScale = (float) (GameMath.distance(leftMost, rightMost)/10.0f);
-        double zoomSpeed;
+        float zoomFactor = (float)(GameMath.distance(leftMost, rightMost)/10.0f); //TODO 10? what was I thinking?
+        zoomFactor = MathUtils.clamp(zoomFactor, mainCamera.getMinimumZoom(), mainCamera.getMaximumZoom());
 
-        //if tjhe camera has no particular zoom speed, we'll define one based on camera speed
-        zoomSpeed = mainCamera.getZoomSpeed() == -1 ? mainCamera.getSpeed().len() : mainCamera.getZoomSpeed();
+        //if the camera has no particular zoom speed, we'll define one based on camera speed
+        float zoomSpeed = mainCamera.getZoomSpeed() == -1 ? mainCamera.getSpeed().len() : mainCamera.getZoomSpeed();
 
-
-        //Zoom according to distance
-        mainCamera.zoom += (java.lang.Math.min(java.lang.Math.max(zoomScale, mainCamera.getMinimumZoom()), mainCamera.getMaximumZoom()) - mainCamera.zoom)
-                * zoomSpeed * Gdx.graphics.getDeltaTime();
-
+        //LERP for smooth zoom
+        mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, zoomFactor, zoomSpeed * Gdx.graphics.getDeltaTime());
      }
+
+
+    /**
+     * Make sure the Viewport of the camera is always within the boundaries
+     * So moves it and zoom in/out in order for it work
+     */
+    private void updateBoundaries(){
+        // Now We need to readjust the position of the camera (so it doest show the outside of the world)
+        float mapMaxX = 36;
+        float mapMaxY = 28;
+        float visibleX = mainCamera.viewportWidth *  mainCamera.zoom; //The number of tiles visible in X at the moment
+        float visibleY = mainCamera.viewportHeight *  mainCamera.zoom;//The number of tiles visible in Y at the moment
+        float posY = mainCamera.position.y;
+        float posX = mainCamera.position.x;
+
+
+        // First try to move it out of the bounds
+        mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, visibleX/2, mapMaxX - visibleX/2);
+        mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, visibleY/2, mapMaxY - visibleY/2+4);
+
+    }
+
+
+
+
+    /**
+     * Used to make the camera shake.
+     * Process all entities and finds the ones Shaking
+     */
+    private void cameraShake(){
+        //TODO Shake that CAMERA!
+    }
+
+
+
+
 
     /**
      * Returns the orthographic camera
