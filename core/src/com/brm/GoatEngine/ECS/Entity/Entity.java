@@ -68,13 +68,15 @@ public class Entity {
      */
     public EntityComponent getComponent(String componentId){
         try {
-            return manager.getComponent(componentId, getID());
+            EntityComponent component = manager.getComponent(componentId, getID());
+            if(component == null)
+                throw new EntityComponentNotFoundException(componentId);
+            return component;
         } catch (NullPointerException e) {
             if(manager == null)
                 throw new UnregisteredEntityException();
-            else
-                throw new EntityComponentNotFoundException(componentId);
         }
+        return null;
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.brm.GoatEngine.ECS.Components.ChildrenComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
@@ -39,7 +40,8 @@ public class KubotzAnimationScript extends EntityScript {
     @Override
     public void onUpdate(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        AnimationComponent animComp = (AnimationComponent)entity.getComponent(AnimationComponent.ID);
+        ChildrenComponent childComp = (ChildrenComponent) entity.getComponent(ChildrenComponent.ID);
+        AnimationComponent animComp = (AnimationComponent)childComp.getChild("HEAD").getComponent(AnimationComponent.ID);
 
         //IDLE
         if(phys.getVelocity().isZero()){

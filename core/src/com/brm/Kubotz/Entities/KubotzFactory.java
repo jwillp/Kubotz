@@ -153,8 +153,8 @@ public class KubotzFactory extends EntityFactory {
         for(Entity child: childrenComponent.getChildren()){
             entityManager.registerEntity(child);
             child.addComponent(physics, PhysicsComponent.ID); //So they have the same body as the parent Body
-            character.addComponent(new AnimationComponent(), AnimationComponent.ID);
-            character.addComponent(new SpriteComponent(), SpriteComponent.ID);
+            child.addComponent(new AnimationComponent(), AnimationComponent.ID);
+            child.addComponent(new SpriteComponent(), SpriteComponent.ID);
         }
 
         character.addComponent(childrenComponent, ChildrenComponent.ID);
