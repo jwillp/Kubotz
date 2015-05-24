@@ -6,21 +6,15 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.*;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.UIHealthComponent;
+import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
-
-import javax.xml.soap.Text;
 
 /**
  * Sub System responsible of rendering HUD, on screen elements

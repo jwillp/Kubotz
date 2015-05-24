@@ -5,8 +5,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.Kubotz.Component.AnimationComponent;
-import com.brm.Kubotz.Component.SpriteComponent;
+import com.brm.Kubotz.Components.Graphics.AnimationComponent;
+import com.brm.Kubotz.Components.Graphics.SpriteComponent;
 
 /**
  * Responsible for managing Animations

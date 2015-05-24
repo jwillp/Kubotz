@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Component;
+package com.brm.Kubotz.Components.Graphics;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;

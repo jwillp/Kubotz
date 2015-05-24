@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Component.AnimationComponent;
+import com.brm.Kubotz.Components.Graphics.AnimationComponent;
 import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Systems.RendringSystems.AnimationSheet;
 
