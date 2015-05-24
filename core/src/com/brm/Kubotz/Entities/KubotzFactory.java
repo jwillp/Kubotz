@@ -99,6 +99,7 @@ public class KubotzFactory extends EntityFactory {
         Entity character = new Entity();
         entityManager.registerEntity(character);
 
+        // PHYSICS
         PhysicsComponent physics = this.buildBody(character);
         character.addComponent(physics, PhysicsComponent.ID);
 
@@ -106,18 +107,18 @@ public class KubotzFactory extends EntityFactory {
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
 
+        // INPUT
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
-
 
         // JUMP
         character.addComponent(new RunningComponent(), RunningComponent.ID);
         character.addComponent(new JumpComponent(3), JumpComponent.ID);
 
-
-
         //CAM
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
 
+        //HEALTH
+        character.addComponent(new HealthComponent(100), HealthComponent.ID);
 
         /* Flying Component */
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
@@ -132,8 +133,6 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);
         
 
-        //HEALTH
-        character.addComponent(new HealthComponent(100), HealthComponent.ID);
 
 
         //APPEAREANCE
@@ -141,8 +140,24 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new AnimationComponent(), AnimationComponent.ID);
         // sprite
         character.addComponent(new SpriteComponent(), SpriteComponent.ID);
-
+        // UI Health Bar
         character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
+
+
+        //Children [for body parts]
+        ChildrenComponent childrenComponent = new ChildrenComponent();
+        childrenComponent.addChildren("HEAD", new Entity());
+        childrenComponent.addChildren("ARM", new Entity());
+        childrenComponent.addChildren("BOOTS", new Entity());
+
+        for(Entity child: childrenComponent.getChildren()){
+            entityManager.registerEntity(child);
+            child.addComponent(physics, PhysicsComponent.ID); //So they have the same body as the parent Body
+            character.addComponent(new AnimationComponent(), AnimationComponent.ID);
+            character.addComponent(new SpriteComponent(), SpriteComponent.ID);
+        }
+
+        character.addComponent(childrenComponent, ChildrenComponent.ID);
 
 
         //GRAB
@@ -159,6 +174,24 @@ public class KubotzFactory extends EntityFactory {
 
         return character;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     /**
@@ -187,7 +220,7 @@ public class KubotzFactory extends EntityFactory {
         physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_TORSO);
         polyShape.dispose();
 
-        // Circle 1
+        // Circle TOP
         CircleShape circleShapeTop = new CircleShape();
         circleShapeTop.setRadius(physics.getWidth());
         circleShapeTop.setPosition(new Vector2(0, size.y * 0.5f));
@@ -198,7 +231,7 @@ public class KubotzFactory extends EntityFactory {
         circleShapeTop.dispose();
 
 
-        // Circle 2
+        // Circle BOTTOM
         CircleShape circleShapeBottom = new CircleShape();
         circleShapeBottom.setRadius(physics.getWidth());
         circleShapeBottom.setPosition(new Vector2(0, -size.y * 0.5f));
@@ -209,7 +242,7 @@ public class KubotzFactory extends EntityFactory {
         circleShapeBottom.dispose();
 
 
-        //foot fixture
+        //FEET FIXTURE
         PolygonShape footSensor = new PolygonShape();
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;

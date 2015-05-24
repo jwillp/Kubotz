@@ -1,4 +1,4 @@
-package com.brm.Kubotz;
+package com.brm.Kubotz.Components;
 
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 

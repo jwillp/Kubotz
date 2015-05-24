@@ -202,8 +202,8 @@ public class InGameScreen extends GameScreen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         // DRAW WORLD
 
-        //systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
+        systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
         systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
     }
 }
