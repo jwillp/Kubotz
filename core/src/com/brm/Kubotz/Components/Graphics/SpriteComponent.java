@@ -4,6 +4,7 @@ package com.brm.Kubotz.Components.Graphics;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.Entity.Entity;
 
 import java.util.Comparator;
 
@@ -18,7 +19,7 @@ public class SpriteComponent extends EntityComponent {
     private TextureRegion currentSprite;
     private Color color = Color.WHITE;
 
-    public int zIndex = 0;
+    private int zIndex = 0;
 
     public TextureRegion getCurrentSprite() {
         return currentSprite;
@@ -36,16 +37,33 @@ public class SpriteComponent extends EntityComponent {
         this.color = color;
     }
 
+    public int getzIndex() {
+        return zIndex;
+    }
+
+    public void setzIndex(int zIndex) {
+        this.zIndex = zIndex;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
 
     /**
      * Comparator used to sort in ascending order (greatest z to smallest z)
      * source: https://github.com/libgdx/libgdx/blob/master/tests/gdx-tests/src/com/badlogic/gdx/tests/SortedSpriteTest.java
      */
-    public class SpriteComponentComparator implements Comparator<SpriteComponent>{
+    public static class EntitySpriteComponentComparator implements Comparator<Entity>{
+
         @Override
-        public int compare(SpriteComponent o1, SpriteComponent o2) {
-            return (o2.zIndex - o1.zIndex) > 0 ? 1 : -1;
+        public int compare(Entity e1, Entity e2) {
+            SpriteComponent s1 = (SpriteComponent) e1.getComponent(SpriteComponent.ID);
+            SpriteComponent s2 = (SpriteComponent) e2.getComponent(SpriteComponent.ID);
+
+            return (s2.getzIndex() - s1.getzIndex()) > 0 ? 1 : -1;
         }
+
     }
 
 }

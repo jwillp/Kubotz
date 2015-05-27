@@ -2,23 +2,23 @@ package com.brm.Kubotz.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.*;
+import com.brashmonkey.spriter.PlayerTweener;
+import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.Components.*;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Components.Graphics.AnimationComponent;
-import com.brm.Kubotz.Components.Graphics.SpriteComponent;
-import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.GrabComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
-
 
 
 /**
@@ -135,31 +135,6 @@ public class KubotzFactory extends EntityFactory {
 
 
 
-        //APPEAREANCE
-        //anim
-        character.addComponent(new AnimationComponent(), AnimationComponent.ID);
-        // sprite
-        character.addComponent(new SpriteComponent(), SpriteComponent.ID);
-        // UI Health Bar
-        character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
-
-
-        //Children [for body parts]
-        ChildrenComponent childrenComponent = new ChildrenComponent();
-        childrenComponent.addChildren("HEAD", new Entity());
-        childrenComponent.addChildren("ARM", new Entity());
-        childrenComponent.addChildren("BOOTS", new Entity());
-
-        for(Entity child: childrenComponent.getChildren()){
-            entityManager.registerEntity(child);
-            child.addComponent(physics, PhysicsComponent.ID); //So they have the same body as the parent Body
-            child.addComponent(new AnimationComponent(), AnimationComponent.ID);
-            child.addComponent(new SpriteComponent(), SpriteComponent.ID);
-        }
-
-        character.addComponent(childrenComponent, ChildrenComponent.ID);
-
-
         //GRAB
         character.addComponent(new GrabComponent(), GrabComponent.ID);
 
@@ -172,18 +147,24 @@ public class KubotzFactory extends EntityFactory {
         scriptComponent.addScript(new KubotzAnimationScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
+
+        //APPEAREANCE
+        //ANIMATION
+
+
+        character.addComponent(
+                new SpriterAnimationComponent(Spriter.newPlayer("animations/kubotz.scml", "Kubotz")),
+                SpriterAnimationComponent.ID
+        );
+        // UI Health Bar
+        character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
+
+
+
+
+
         return character;
     }
-
-
-
-
-
-
-
-
-
-
 
 
 

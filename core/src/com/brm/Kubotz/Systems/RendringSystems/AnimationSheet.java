@@ -13,7 +13,7 @@ public class AnimationSheet {
 
 
     public int FRAME_COLS = 4; //Number of columns
-    public int FRAME_ROWS = 4; //Number of Rows
+    public int FRAME_ROWS = 8; //Number of Rows
 
     public Texture spriteSheet;
     public TextureRegion frames[];

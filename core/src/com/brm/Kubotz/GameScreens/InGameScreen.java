@@ -10,6 +10,9 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.brashmonkey.spriter.Spriter;
+import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
+import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
@@ -23,9 +26,9 @@ import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
-import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
+import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
 import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
@@ -91,9 +94,17 @@ public class InGameScreen extends GameScreen {
 
 
 
+        // Init Animation Manager
+        Spriter.setDrawerDependencies(
+                systemManager.getSystem(RenderingSystem.class).getSpriteBatch(),
+                systemManager.getSystem(RenderingSystem.class).getShapeRenderer()
+        );
+        Spriter.init(LibGdxSpriterLoader.class, LibGdxSpriterDrawer.class);
+        Spriter.load(Gdx.files.internal("animations/kubotz.scml").read(), "animations/kubotz.scml");
+
+
+
         // MAP
-
-
         //LOAD MAP
         tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);

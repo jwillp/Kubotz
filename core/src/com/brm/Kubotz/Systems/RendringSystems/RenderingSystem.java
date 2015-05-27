@@ -10,17 +10,24 @@ import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
+import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriteComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Visuals.LaserRenderer;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -84,12 +91,16 @@ public class RenderingSystem extends EntitySystem {
      * Renders the texture of all the entities
      */
     private void renderTextures(){
-        //TODO Clean Entites should be rendered using renderers
+
 
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
         spriteBatch.begin();
-        for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
 
+        //TODO see performance
+        /*ArrayList<Entity> sprites = em.getEntitiesWithComponent(SpriteComponent.ID);
+        Collections.sort(sprites, new SpriteComponent.EntitySpriteComponentComparator());
+
+        for(Entity entity: sprites){
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
@@ -100,15 +111,35 @@ public class RenderingSystem extends EntitySystem {
                 float posX = phys.getPosition().x-width/2;
                 float posY =  phys.getPosition().y-height/2;
 
-                spriteBatch.setColor(Color.RED);
-                spriteBatch.setColor(Color.WHITE);
+                spriteBatch.setColor(spriteComp.getColor());
                 spriteBatch.draw(currentFrame, posX, posY, width, height);
 
-                /*spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
+                spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
                         15, 15
-                );*/
+                );
             }
+        }*/
+
+
+        for(Entity entity: em.getEntitiesWithComponent(SpriterAnimationComponent.ID)){
+            SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
+
+
+            //float scale = phys.getHeight()/anim.getPlayer().get
+            float posX = phys.getPosition().x -phys.getWidth()/2 +0.25f;
+            float posY =  phys.getPosition().y -phys.getHeight()/2 - 0.5f; //TODO have real scaling
+
+
+            anim.getPlayer().setPosition(posX, posY);
+            anim.getPlayer().setAngle(phys.getBody().getAngle());
+            anim.getPlayer().setScale(0.005f);
+
+
         }
+        Spriter.draw();
+
+
         spriteBatch.end();
 
 

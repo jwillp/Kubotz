@@ -18,7 +18,7 @@ public abstract class EntityScript{
     /**
      * Called when a script is added to an entity
      */
-    public abstract void onInit(Entity entity);
+    public void onInit(Entity entity){}
 
 
 
@@ -33,7 +33,7 @@ public abstract class EntityScript{
      * @param entity the entity this script is attached to
      * @param pressedButtons the buttons that were pressed
      */
-    public abstract void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons);
+    public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){};
 
 
     /**
@@ -41,12 +41,12 @@ public abstract class EntityScript{
      * two entities touch
      * @param contact
      */
-    public abstract void onCollision(EntityContact contact);
+    public void onCollision(EntityContact contact){}
 
     /**
      * Called when the script is detached from the entity
      */
-    public abstract void onDetach(Entity entity);
+    public void onDetach(Entity entity){}
 
 
     public boolean isInitialized() {

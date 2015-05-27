@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.AnimationComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Systems.RendringSystems.AnimationSheet;
 
@@ -16,56 +17,29 @@ import java.util.ArrayList;
 
 /**
  * Updates a kubotz Sprite according to animation and movement
+ * It is an animation Controller
  */
 public class KubotzAnimationScript extends EntityScript {
 
+    public static final String ANIM_IDLE = "Idle";
+    public static final String ANIM_RUNNING = "Running";
+    public static final String ANIM_JUMPING = "Jumping";
+    public static final String ANIM_FALLING = "Falling";
 
-    public static AnimationSheet idle = new AnimationSheet("textures/idle.png", 1/15f);
-    public static AnimationSheet running = new AnimationSheet("textures/running.png", 1/15f);
-    public static AnimationSheet jumping = new AnimationSheet("textures/jumping.png", 1/15f);
-    public static AnimationSheet falling = new AnimationSheet("textures/falling.png", 1/15f);
-    public static AnimationSheet kicking = new AnimationSheet("textures/kicking.png", 1/15f);
-    public static AnimationSheet dashing = new AnimationSheet("textures/dashing.png", 1/74f);
-    public static AnimationSheet dashingPrep = new AnimationSheet("textures/dashing_prep.png", 1/30f);
-
-
-
-
-    @Override
-    public void onInit(Entity entity) {
-
-
-    }
 
     @Override
     public void onUpdate(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        ChildrenComponent childComp = (ChildrenComponent) entity.getComponent(ChildrenComponent.ID);
-        AnimationComponent animComp = (AnimationComponent)childComp.getChild("HEAD").getComponent(AnimationComponent.ID);
+        SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
 
-        //IDLE
-        if(phys.getVelocity().isZero()){
-            animComp.setCurrentAnimation(idle.generateAnimation());
-            animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
-        }
 
-        //RUNNING
-        if(phys.getVelocity().x != 0 && phys.isGrounded()){
-            animComp.setCurrentAnimation(running.generateAnimation());
-            animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
-        }
+        this.handleRunning(phys, anim);
 
-        //JUMPING TODO Opposite of gravity scale
-        if(phys.getVelocity().y > 0){
-            animComp.setCurrentAnimation(jumping.generateAnimation());
-            animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.NORMAL);
-        }
+        this.handleFlying(phys, anim);
 
-        //FALLING TODO same gravity scale
-        if(phys.getVelocity().y < 0){
-            animComp.setCurrentAnimation(falling.generateAnimation());
-            animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
-        }
+
+
+
 
         //LANDING
         if(phys.getVelocity().y < 0 && phys.isGrounded()){
@@ -75,22 +49,75 @@ public class KubotzAnimationScript extends EntityScript {
         //DASH ANIM
         if(entity.hasComponent(DashComponent.ID)){
             DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-
-            if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
-                animComp.setCurrentAnimation(dashingPrep.generateAnimation());
-                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
-            }
-
-            if(dashComp.getPhase() == DashComponent.Phase.TRAVEL){
-                animComp.setCurrentAnimation(dashing.generateAnimation());
-                animComp.getCurrentAnimation().setPlayMode(Animation.PlayMode.LOOP);
-            }
+            this.handleDashing(dashComp, phys, anim);
         }
 
     }
 
-    @Override
-    public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons) {
+
+    /**
+     * Handles the animations while the player is Running
+     * @param phys
+     * @param anim
+     */
+    private void handleRunning(PhysicsComponent phys, SpriterAnimationComponent anim){
+        Logger.log(anim.getPlayer().speed);
+        if(phys.isGrounded()){
+            //IDLE
+            if(phys.getVelocity().isZero()){
+                anim.getPlayer().setAnimation(ANIM_IDLE);
+
+            }
+
+            //RUNNING
+            if(phys.getVelocity().x != 0 && phys.isGrounded()){
+                anim.getPlayer().setAnimation(ANIM_RUNNING);
+                //anim.getPlayer().speed = (int) (phys.getVelocity().x * 2); //TODO set speed of anim according to velX
+            }
+        }else{
+
+            //FALLING TODO same gravity scale
+            if(phys.getVelocity().y < 0){
+                anim.getPlayer().setAnimation(ANIM_FALLING);
+            }
+        }
+
+
+        //JUMPING TODO Opposite of gravity scale
+        if(phys.getVelocity().y > 0){
+            anim.getPlayer().setAnimation(ANIM_JUMPING);
+        }
+
+
+        this.handleFlip(phys, anim);
+    }
+
+    /**
+     * Flips the Sprite to the side the character is looking at
+     * @param phys
+     * @param anim
+     */
+    private void handleFlip(PhysicsComponent phys, SpriterAnimationComponent anim){
+        //Handle Flip
+        if(phys.getDirection() == PhysicsComponent.Direction.RIGHT){
+            if(!anim.getPlayer().isFlippedX()){
+                anim.getPlayer().flipX();
+            }
+        }else{
+            if(anim.getPlayer().isFlippedX()){
+                anim.getPlayer().flipX();
+            }
+        }
+    }
+
+
+
+    /**
+     * Handles the animtions while the player is flying
+     * @param phys
+     * @param anim
+     */
+    private void handleFlying(PhysicsComponent phys, SpriterAnimationComponent anim){
 
     }
 
@@ -100,22 +127,25 @@ public class KubotzAnimationScript extends EntityScript {
 
 
 
+    /**
+     * Handles the animations while the player is Dashing
+     * @param dashComp
+     * @param phys
+     * @param anim
+     */
+    private void handleDashing(DashComponent dashComp, PhysicsComponent phys, SpriterAnimationComponent anim){
+        if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
+            anim.getPlayer().setAnimation("Dash_begin");
+        }
 
+        if(dashComp.getPhase() == DashComponent.Phase.TRAVEL){
+            anim.getPlayer().setAnimation("Dash_dashin");
+        }
 
-    @Override
-    public void onCollision(EntityContact contact) {
-
-
-
+        if(dashComp.getPhase() == DashComponent.Phase.DECELERATION){
+            anim.getPlayer().setAnimation("Dash_ending");
+            //anim.getPlayer().getAnimation().looping = false;
+        }
     }
-
-    @Override
-    public void onDetach(Entity entity) {
-
-
-    }
-
-
-
 
 }
