@@ -119,14 +119,14 @@ public class RenderingSystem extends EntitySystem {
         for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
 
             ParticleEffectComponent pef = (ParticleEffectComponent) comp;
-            for(ParticleEffect effect: pef.getEffects()){
+            for(GParticleEffect effect: pef.getEffects()){
 
 
                 effect.update(Gdx.graphics.getDeltaTime()); //TODO get from method delta
                 effect.draw(spriteBatch);
 
 
-                if(effect.isComplete()){
+                if(effect.isComplete() && effect.isLooping()){
                     effect.reset(); // TODO is LOOPING
                 }
             }

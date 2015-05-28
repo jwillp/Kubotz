@@ -5,6 +5,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.GParticleEffect;
 
 import java.util.ArrayList;
 
@@ -16,7 +17,7 @@ public class ParticleEffectComponent extends EntityComponent{
 
     public static String ID = "PARTICLE_EMITTER_COMPONENT";
 
-    private ArrayList<ParticleEffect> effects = new ArrayList<ParticleEffect>();
+    private ArrayList<GParticleEffect> effects = new ArrayList<GParticleEffect>();
 
 
     /**
@@ -26,7 +27,7 @@ public class ParticleEffectComponent extends EntityComponent{
      * @param startNow
      */
     public void addEffect(FileHandle particle, Vector2 pos, boolean startNow){
-        ParticleEffect effect = new ParticleEffect();
+        GParticleEffect effect = new GParticleEffect();
         effect.load(particle, Gdx.files.internal(""));
         effect.setPosition(pos.x, pos.y);
         if(startNow){
@@ -45,7 +46,7 @@ public class ParticleEffectComponent extends EntityComponent{
     }
 
 
-    public ArrayList<ParticleEffect> getEffects() {
+    public ArrayList<GParticleEffect> getEffects() {
         return effects;
     }
 

@@ -39,7 +39,8 @@ public class BulletGraphicsScript extends EntityScript {
         // New Smoke effect
         ((ParticleEffectComponent)bullet.getComponent(ParticleEffectComponent.ID)).addEffect(
                 Gdx.files.internal("particles/laserSmoke.pe"),
-                phys.getPosition()
+                phys.getPosition(),
+                true
         );
 
     }

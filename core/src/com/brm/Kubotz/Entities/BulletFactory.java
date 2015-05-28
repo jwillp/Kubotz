@@ -148,7 +148,7 @@ public class BulletFactory extends EntityFactory {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
 
-        fixtureDef.isSensor = true;
+        fixtureDef.isSensor = false;
 
         physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_BULLET);
         polyShape.dispose();
