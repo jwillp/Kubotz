@@ -28,7 +28,7 @@ public class PunchSystem extends EntitySystem{
     @Override
     public void handleInput() {
 
-        for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)) {
+        for(Entity entity: em.getEntitiesWithComponentEnabled(PunchComponent.ID)) {
             if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
                 handleInputForEntity(entity);
             }
@@ -66,7 +66,7 @@ public class PunchSystem extends EntitySystem{
         // See if punch duration is over
         // Update the punch's position according to the puncher's position
 
-        for(Entity entity: em.getEntitiesWithComponent(PunchComponent.ID)){
+        for(Entity entity: em.getEntitiesWithComponentEnabled(PunchComponent.ID)){
             PunchComponent punchComponent = (PunchComponent)entity.getComponent(PunchComponent.ID);
 
                 //If the entity is punching

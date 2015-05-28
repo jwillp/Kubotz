@@ -78,6 +78,16 @@ public class GunsSystem extends EntitySystem {
     @Override
     public void update(float dt) {
 
+
+        //Delete bullet that collided
+        for(Entity entity: em.getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
+
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            if(!phys.getContacts().isEmpty()){
+                phys.getBody().setActive(false);
+            }
+        }
+
     }
 
 
@@ -107,7 +117,7 @@ public class GunsSystem extends EntitySystem {
                 .withSize(1, phys.getWidth() * 0.5f)
                 .withKnockBack(gunComponent.getKnockBack())
                 .withLifespan(Timer.FIVE_SECONDS)
-                .withTag(Constants.ENTITY_TAG_PUNCH)
+                .withTag(Constants.ENTITY_TAG_BULLET)
                 .withDirection(phys.getDirection())
                 .withSpeed(gunComponent.getBulletSpeed())
                 .build();

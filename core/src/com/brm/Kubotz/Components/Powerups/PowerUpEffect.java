@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Components.PunchComponent;
 
 /**
  * The effect of a PowerUp. It is an action to perform
@@ -177,11 +178,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
+            entity.disableComponent(PunchComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(GunComponent.ID);
+            entity.enableComponent(PunchComponent.ID);
         }
     }
 

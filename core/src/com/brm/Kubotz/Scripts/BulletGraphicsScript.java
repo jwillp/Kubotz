@@ -17,7 +17,7 @@ public class BulletGraphicsScript extends EntityScript {
 
     @Override
     public void onInit(Entity entity) {
-        addSmokeEffect(entity);
+        //addSmokeEffect(entity);
 
     }
 
@@ -36,12 +36,18 @@ public class BulletGraphicsScript extends EntityScript {
      */
     private void addSmokeEffect(Entity bullet){
         PhysicsComponent phys = (PhysicsComponent) bullet.getComponent(PhysicsComponent.ID);
+        ParticleEffectComponent pe = (ParticleEffectComponent) bullet.getComponent(ParticleEffectComponent.ID);
         // New Smoke effect
-        ((ParticleEffectComponent)bullet.getComponent(ParticleEffectComponent.ID)).addEffect(
-                Gdx.files.internal("particles/laserSmoke.pe"),
-                phys.getPosition(),
-                true
-        );
+
+        if(pe.getEffects().size() <= 2){
+            pe.addEffect(
+                    Gdx.files.internal("particles/laserSmoke.pe"),
+                    phys.getPosition(),
+                    true
+            );
+        }
+
+
 
     }
 
