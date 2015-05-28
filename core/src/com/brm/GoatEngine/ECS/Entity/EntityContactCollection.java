@@ -48,11 +48,16 @@ public class EntityContactCollection extends ArrayList<EntityContact> {
      * @param e
      */
     public void removeContactsWithEntity(Entity e){
-        for(int i=0; i< this.size(); i++){
-            if(e.getID().equals(this.get(i).getEntityB().getID())){
-                this.remove(i);
+
+            for(int i=0; i< this.size(); i++){
+                try {
+                    if (e.getID().equals(this.get(i).getEntityB().getID())) {
+                        this.remove(i);
+                    }
+                } catch (NullPointerException ex){
+                        this.remove(i);
+                }
             }
-        }
     }
 
     /**

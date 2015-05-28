@@ -17,7 +17,7 @@ public class BulletGraphicsScript extends EntityScript {
 
     @Override
     public void onInit(Entity entity) {
-        //addSmokeEffect(entity);
+        //ooaddSmokeEffect(entity);
 
     }
 
