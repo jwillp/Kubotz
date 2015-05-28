@@ -1,18 +1,22 @@
 package com.brm.Kubotz.Entities;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Components.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Scripts.BulletGraphicsScript;
 
 /**
  * Used to generate bullets
@@ -111,6 +115,22 @@ public class BulletFactory extends EntityFactory {
         //Tags Component
         this.tagsComponent.addTag(Constants.ENTITY_TAG_BULLET);
         bullet.addComponent(this.tagsComponent, TagsComponent.ID);
+
+
+        // SCRIPTS
+        ScriptComponent scriptComp = new ScriptComponent();
+        scriptComp.addScript(new BulletGraphicsScript());
+        bullet.addComponent(scriptComp, ScriptComponent.ID);
+
+        // Particle Effect
+        bullet.addComponent(
+                new ParticleEffectComponent(
+                        Gdx.files.internal("particles/laserSmoke.pe"),
+                        ((PhysicsComponent)bullet.getComponent(PhysicsComponent.ID)).getPosition().cpy(),
+                        true
+                ),
+                ParticleEffectComponent.ID
+        );
 
         return bullet;
     }

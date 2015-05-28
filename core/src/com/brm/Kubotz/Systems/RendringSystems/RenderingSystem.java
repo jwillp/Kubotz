@@ -1,33 +1,25 @@
 package com.brm.Kubotz.Systems.RendringSystems;
 
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brashmonkey.spriter.Spriter;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Graphics.SpriteComponent;
+import com.brm.GoatEngine.GParticleEffect;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Components.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Visuals.LaserRenderer;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -96,31 +88,7 @@ public class RenderingSystem extends EntitySystem {
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
         spriteBatch.begin();
 
-        //TODO see performance
-        /*ArrayList<Entity> sprites = em.getEntitiesWithComponent(SpriteComponent.ID);
-        Collections.sort(sprites, new SpriteComponent.EntitySpriteComponentComparator());
-
-        for(Entity entity: sprites){
-            SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
-            PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
-
-            if(spriteComp.getCurrentSprite() != null){
-                TextureRegion currentFrame = spriteComp.getCurrentSprite();
-                float height = phys.getHeight()*3;
-                float width = height * ((float)currentFrame.getRegionWidth()/(float)currentFrame.getRegionHeight());
-                float posX = phys.getPosition().x-width/2;
-                float posY =  phys.getPosition().y-height/2;
-
-                spriteBatch.setColor(spriteComp.getColor());
-                spriteBatch.draw(currentFrame, posX, posY, width, height);
-
-                spriteBatch.draw(spriteComp.currentSprite.getTexture(), 5, 5,
-                        15, 15
-                );
-            }
-        }*/
-
-
+        //UPDATE SPRITER
         for(Entity entity: em.getEntitiesWithComponent(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
@@ -135,7 +103,6 @@ public class RenderingSystem extends EntitySystem {
             anim.getPlayer().setAngle(phys.getBody().getAngle());
             anim.getPlayer().setScale(0.005f);
 
-
         }
         Spriter.draw();
 
@@ -144,21 +111,20 @@ public class RenderingSystem extends EntitySystem {
 
 
 
+        //Particle Effectsv
+        spriteBatch.begin();
+        spriteBatch.setProjectionMatrix(this.getCamera().combined);
+        for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
+            ParticleEffectComponent pef = (ParticleEffectComponent) comp;
 
-        for(Entity entity: em.getEntitiesWithTag(Constants.ENTITY_TAG_PLATFORM)){
-            Logger.log("OK");
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            pef.getEffect().update(Gdx.graphics.getDeltaTime()); //TODO get from method delta
 
-            Vector2 pos = phys.getPosition().cpy();
-            float width = phys.getWidth()*2;
-            float height = phys.getHeight()*20;
-            pos.x = pos.x - phys.getWidth();
-            pos.y = pos.y - height/2;
-            LaserRenderer laserRenderer = new LaserRenderer(pos, width, height, Color.BLUE, Color.BLUE);
-            this.spriteBatch.setProjectionMatrix(this.getCamera().combined);
-            laserRenderer.render(0, this.spriteBatch);
+            pef.getEffect().draw(spriteBatch);
+            if(pef.isLooping()){
+                pef.getEffect().reset();
+            }
         }
-
+        spriteBatch.end();
 
 
 

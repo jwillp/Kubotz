@@ -2,7 +2,9 @@ package com.brm.Kubotz.Systems.AttackSystems;
 
 
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
@@ -10,6 +12,7 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.Components.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Constants;
@@ -30,9 +33,6 @@ public class GunsSystem extends EntitySystem {
     @Override
     public void init() {}
 
-    @Override
-    public void update(float dt) {}
-
 
     @Override
     public void handleInput() {
@@ -51,24 +51,46 @@ public class GunsSystem extends EntitySystem {
     private void handleInputForEntity(Entity entity){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             GunComponent gunComponent = (GunComponent) entity.getComponent(GunComponent.getId());
-            PhysicsComponent physicsComponent = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-
+            PhysicsComponent physComp = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            gunComponent.setShooting(false);
             if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
                 gamePad.releaseButton(GameButton.PUNCH_BUTTON);
                 //can we shoot?
                 if(gunComponent.getCooldown().isDone()){
-                    Logger.log("SHOOT");
-                    //CREATE A BULLET
-                    Entity bullet = this.createBullet(physicsComponent, gunComponent);
-                    ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).startLife();
                     gunComponent.getCooldown().reset();
+                    gunComponent.setShooting(true);
 
+
+                    //CREATE A BULLET
+                    Entity bullet = this.createBullet(physComp, gunComponent);
+                    ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).startLife();
                     //Move the bullet
-                    int direction = (physicsComponent.getDirection() == PhysicsComponent.Direction.RIGHT) ? 1 : -1;
+                    int direction = (physComp.getDirection() == PhysicsComponent.Direction.RIGHT) ? 1 : -1;
                     MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
                     MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
+
+
+                    // TODO RENDERING CODE: Maybe put in a script?
+
+                    bullet.addComponent(
+                            new ParticleEffectComponent(
+                                    Gdx.files.internal("particles/laserSmoke.pe"),
+                                    ((PhysicsComponent)bullet.getComponent(PhysicsComponent.ID)).getPosition().cpy(),
+                                    true
+                            ),
+                            ParticleEffectComponent.ID
+                    );
+
+
                 }
             }
+    }
+
+
+
+    @Override
+    public void update(float dt) {
+
     }
 
 

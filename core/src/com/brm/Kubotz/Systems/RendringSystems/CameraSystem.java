@@ -35,7 +35,7 @@ public class CameraSystem extends EntitySystem {
         maxY = 24;
         //Creation of a main Camera
         this.mainCamera = new GameCamera();
-        this.viewport = new FitViewport(40, 24, mainCamera);
+        this.viewport = new FitViewport(80, 48, mainCamera);
     }
 
     @Override
@@ -145,8 +145,8 @@ public class CameraSystem extends EntitySystem {
 
 
         // First try to move it out of the bounds
-        mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, visibleX/2, this.maxX/2 - visibleX/2);
-        mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, visibleY/2, this.maxY/2 - visibleY/2);
+        //mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, visibleX/2, this.maxX/2 - visibleX/2);
+        //mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, visibleY/2, this.maxY/2 - visibleY/2);
 
 
     }
