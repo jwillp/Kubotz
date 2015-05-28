@@ -69,19 +69,6 @@ public class GunsSystem extends EntitySystem {
                     MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
                     MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
 
-
-                    // TODO RENDERING CODE: Maybe put in a script?
-
-                    bullet.addComponent(
-                            new ParticleEffectComponent(
-                                    Gdx.files.internal("particles/laserSmoke.pe"),
-                                    ((PhysicsComponent)bullet.getComponent(PhysicsComponent.ID)).getPosition().cpy(),
-                                    true
-                            ),
-                            ParticleEffectComponent.ID
-                    );
-
-
                 }
             }
     }

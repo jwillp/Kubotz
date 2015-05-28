@@ -3,6 +3,7 @@ package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
@@ -15,6 +16,7 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.GParticleEffect;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
@@ -115,13 +117,18 @@ public class RenderingSystem extends EntitySystem {
         spriteBatch.begin();
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
         for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
+
             ParticleEffectComponent pef = (ParticleEffectComponent) comp;
+            for(ParticleEffect effect: pef.getEffects()){
 
-            pef.getEffect().update(Gdx.graphics.getDeltaTime()); //TODO get from method delta
 
-            pef.getEffect().draw(spriteBatch);
-            if(pef.isLooping()){
-                pef.getEffect().reset();
+                effect.update(Gdx.graphics.getDeltaTime()); //TODO get from method delta
+                effect.draw(spriteBatch);
+
+
+                if(effect.isComplete()){
+                    effect.reset(); // TODO is LOOPING
+                }
             }
         }
         spriteBatch.end();

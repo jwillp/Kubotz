@@ -31,6 +31,7 @@ public class KubotzAnimationScript extends EntityScript {
     public static final String ANIM_FALLING = "Falling";
 
 
+
     @Override
     public void onUpdate(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
@@ -104,7 +105,6 @@ public class KubotzAnimationScript extends EntityScript {
      */
     private void handleGuns(GunComponent gun, SpriterAnimationComponent anim){
         if(gun.isShooting()){
-            Logger.log("SHOOT");
             anim.getPlayer().setAnimation("Shooting");
         }
     }

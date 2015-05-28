@@ -13,9 +13,12 @@ import com.brm.Kubotz.Components.ParticleEffectComponent;
  */
 public class BulletGraphicsScript extends EntityScript {
 
+    public static int lol = 0;
+
     @Override
     public void onInit(Entity entity) {
         addSmokeEffect(entity);
+
     }
 
     @Override
@@ -32,14 +35,13 @@ public class BulletGraphicsScript extends EntityScript {
      * @param bullet
      */
     private void addSmokeEffect(Entity bullet){
-        /*PhysicsComponent phys = (PhysicsComponent) bullet.getComponent(PhysicsComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) bullet.getComponent(PhysicsComponent.ID);
         // New Smoke effect
         ((ParticleEffectComponent)bullet.getComponent(ParticleEffectComponent.ID)).addEffect(
                 Gdx.files.internal("particles/laserSmoke.pe"),
                 phys.getPosition()
         );
 
-        Logger.log("EEFECT");*/
     }
 
 }

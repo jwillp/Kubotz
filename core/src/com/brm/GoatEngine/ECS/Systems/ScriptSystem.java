@@ -53,6 +53,7 @@ public class ScriptSystem extends EntitySystem{
                 //ON INIT
                 if(!script.isInitialized()){
                     script.onInit(entity);
+                    script.setInitialized(true);
                 }
                 // ON COLLISION
                 this.onCollision(entity, script);

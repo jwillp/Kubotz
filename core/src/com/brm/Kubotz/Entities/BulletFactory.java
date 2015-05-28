@@ -117,20 +117,15 @@ public class BulletFactory extends EntityFactory {
         bullet.addComponent(this.tagsComponent, TagsComponent.ID);
 
 
+        // Particle Effect
+        bullet.addComponent(new ParticleEffectComponent(), ParticleEffectComponent.ID);
+
+
+
         // SCRIPTS
         ScriptComponent scriptComp = new ScriptComponent();
         scriptComp.addScript(new BulletGraphicsScript());
         bullet.addComponent(scriptComp, ScriptComponent.ID);
-
-        // Particle Effect
-        bullet.addComponent(
-                new ParticleEffectComponent(
-                        Gdx.files.internal("particles/laserSmoke.pe"),
-                        ((PhysicsComponent)bullet.getComponent(PhysicsComponent.ID)).getPosition().cpy(),
-                        true
-                ),
-                ParticleEffectComponent.ID
-        );
 
         return bullet;
     }
