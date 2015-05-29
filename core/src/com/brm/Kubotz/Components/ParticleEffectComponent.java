@@ -2,10 +2,9 @@ package com.brm.Kubotz.Components;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.GParticleEffect;
+import com.brm.GoatEngine.Utils.GParticleEffect;
 
 import java.util.ArrayList;
 
@@ -37,12 +36,12 @@ public class ParticleEffectComponent extends EntityComponent{
     }
 
     /**
-     * Adds a new particle effect not starting right awaya
+     * Adds a new particle effect starting right away
      * @param particle
      * @param pos
      */
     public void addEffect(FileHandle particle, Vector2 pos){
-       addEffect(particle, pos, false);
+       addEffect(particle, pos, true);
     }
 
 

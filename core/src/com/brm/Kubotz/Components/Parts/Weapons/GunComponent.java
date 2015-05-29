@@ -3,6 +3,7 @@ package com.brm.Kubotz.Components.Parts.Weapons;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.Config;
 
 /**
  * Enables an entity to use a gun
@@ -13,10 +14,8 @@ public class GunComponent extends EntityComponent {
 
     // TYPES OF GUN
     public enum Type{
-
         LASER_MK_I,   //MEDIUM POWER GUN
         LASER_MK_II,  //HIGH POWER GUN
-
     }
 
 
@@ -35,10 +34,16 @@ public class GunComponent extends EntityComponent {
 
         switch (type) {
             case LASER_MK_I:
-                init(5, new Vector2(30, 0), 500, new Vector2(0.1f, 0.1f));
+                init(
+                        Config.LASER_GUN_MK_I_DAMAGE, new Vector2(Config.LASER_GUN_MK_I_SPEED, 0),
+                        Config.LASER_GUN_MK_I_COOLDOWN, new Vector2(0.1f, 0.1f)
+                );
                 break;
             case LASER_MK_II:
-                init(9, new Vector2(40, 0), 600, new Vector2(0.3f, 0.0f));
+                init(
+                        Config.LASER_GUN_MK_II_DAMAGE, new Vector2(Config.LASER_GUN_MK_II_SPEED, 0),
+                        Config.LASER_GUN_MK_II_COOLDOWN, new Vector2(0.1f, 0.1f)
+                );
                 break;
         }
 

@@ -5,6 +5,7 @@ import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.Config;
 
 /**
  * Component used to let an entity punch
@@ -13,10 +14,10 @@ public class PunchComponent extends EntityComponent {
 
     public static final String ID = "PUNCH_COMPONENT";
 
-    private int damage = 3; //Number of damage per hit
+    private int damage = Config.PUNCH_DAMAGE; //Number of damage per hit
 
     private Timer durationTimer = new Timer(30); //The Duration of the hit
-    private Timer cooldown = new Timer(80); //The delay between hits
+    private Timer cooldown = new Timer(Config.PUNCH_COOLDOWN); //The delay between hits
     private PhysicsComponent phys;
 
     private Vector2 knockBack = new Vector2(0.1f, 0.1f);

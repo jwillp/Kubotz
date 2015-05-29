@@ -1,4 +1,4 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.Utils;
 
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 

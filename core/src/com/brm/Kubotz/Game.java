@@ -14,6 +14,16 @@ public class Game extends ApplicationAdapter {
 
 	@Override
 	public void create () {
+
+		// READ GAME PROPERTIES FROM FILE
+		Config.load();
+		if(Config.FULL_SCREEN){
+			Gdx.graphics.setDisplayMode(
+					Gdx.graphics.getDesktopDisplayMode().width,
+					Gdx.graphics.getDesktopDisplayMode().height,
+					Config.FULL_SCREEN
+			);
+		}
 		screenManager = new GameScreenManager();
 		screenManager.init();
 		screenManager.addScreen(new InGameScreen());
@@ -22,15 +32,15 @@ public class Game extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		super.render();
 		float deltaTime = Gdx.graphics.getDeltaTime();
 		screenManager.handleEvents();
 		screenManager.update(deltaTime);
 		screenManager.draw(deltaTime);
+
 	}
 
-
-
-
-
+	@Override
+	public void dispose() {
+		Config.save();
+	}
 }

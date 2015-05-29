@@ -14,6 +14,7 @@ import com.brm.Kubotz.Components.GrabComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Components.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
@@ -150,15 +151,14 @@ public class KubotzFactory extends EntityFactory {
 
         //APPEAREANCE
         //ANIMATION
-
-
         character.addComponent(
                 new SpriterAnimationComponent(Spriter.newPlayer("animations/kubotz.scml", "Kubotz")),
                 SpriterAnimationComponent.ID
         );
         // UI Health Bar
         character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
-
+        //Particle effect
+        character.addComponent(new ParticleEffectComponent(), ParticleEffectComponent.ID);
 
 
 
