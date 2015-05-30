@@ -1,6 +1,14 @@
 package com.brm.Kubotz;
 
 
+import com.badlogic.gdx.Input;
+import com.brm.GoatEngine.Utils.OrderedProperties;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 public class Config {
 
     public static String TITLE = "Kubotz";
@@ -10,8 +18,6 @@ public class Config {
     public static final int V_HEIGHT = 768;     //Virtual Height
     public static final float ASPECT_RATIO = (float)V_WIDTH/(float)V_HEIGHT;
 
-    public static boolean FULL_SCREEN = false;
-
     public static final int FPS = 1/60; // in milliseconds
 
     public static boolean DEBUG_RENDERING_ENABLED = true;
@@ -20,7 +26,12 @@ public class Config {
 
     public static final String CONFIG_FILE = "config.properties";
 
+
     // THE FOLLOWING SETTINGS ARE ALL EDITABLE BY THE USER //
+
+    //DISPLAY
+    public static boolean FULL_SCREEN = false;
+
 
     //AUDIO SETTINGS
     public static final int GAME_VOLUME = 100;
@@ -29,25 +40,33 @@ public class Config {
 
 
     //INPUT CONTROLS SETTINGS
-    public static final int PLAYER_1_MOVE_UP = 51;
-    public static final int PLAYER_1_MOVE_LEFT = 29;
-    public static final int PLAYER_1_MOVE_DOWN = 47;
-    public static final int PLAYER_1_MOVE_RIGHT = 32;
-    public static final int PLAYER_1_START = 131;
-    public static final int PLAYER_1_PRIMARY_ACTION_BUTTON = 37;
-    public static final int PLAYER_1_SECONDARY_ACTION_BUTTON = 62;
-    public static final int PLAYER_1_PUNCH = 43;
-    public static final int PLAYER_1_ACTIVE_SKILL = 59;
+    //Player 1
+    public static final int PLAYER_1_MOVE_UP = Input.Keys.W;
+    public static final int PLAYER_1_MOVE_LEFT = Input.Keys.A;
+    public static final int PLAYER_1_MOVE_DOWN = Input.Keys.S;
+    public static final int PLAYER_1_MOVE_RIGHT = Input.Keys.D;
 
-    public static final int PLAYER_2_MOVE_UP = 51;
-    public static final int PLAYER_2_MOVE_LEFT = 29;
-    public static final int PLAYER_2_MOVE_DOWN = 47;
-    public static final int PLAYER_2_MOVE_RIGHT = 32;
-    public static final int PLAYER_2_START = 131;
-    public static final int PLAYER_2_PRIMARY_ACTION_BUTTON = 37;
-    public static final int PLAYER_2_SECONDARY_ACTION_BUTTON = 62;
-    public static final int PLAYER_2_PUNCH = 43;
-    public static final int PLAYER_2_ACTIVE_SKILL = 59;
+    public static final int PLAYER_1_START = Input.Keys.ESCAPE;
+
+    public static final int PLAYER_1_PRIMARY_ACTION_BUTTON = Input.Keys.I;
+    public static final int PLAYER_1_SECONDARY_ACTION_BUTTON = Input.Keys.SPACE;
+    public static final int PLAYER_1_PUNCH = Input.Keys.O;
+    public static final int PLAYER_1_ACTIVE_SKILL = Input.Keys.SHIFT_LEFT;
+
+    //Player 2
+    public static final int PLAYER_2_MOVE_UP = Input.Keys.W;
+    public static final int PLAYER_2_MOVE_LEFT = Input.Keys.A;
+    public static final int PLAYER_2_MOVE_DOWN = Input.Keys.S;
+    public static final int PLAYER_2_MOVE_RIGHT = Input.Keys.D;
+
+    public static final int PLAYER_2_START = Input.Keys.ESCAPE;
+
+    public static final int PLAYER_2_PRIMARY_ACTION_BUTTON = Input.Keys.I;
+    public static final int PLAYER_2_SECONDARY_ACTION_BUTTON = Input.Keys.SPACE;
+    public static final int PLAYER_2_PUNCH = Input.Keys.O;
+    public static final int PLAYER_2_ACTIVE_SKILL = Input.Keys.SHIFT_LEFT;
+
+
 
 
     //GAME RULES SETTINGS
@@ -89,21 +108,128 @@ public class Config {
 
 
     public static void load() {
+        try {
+            FileInputStream inputStream = new FileInputStream(CONFIG_FILE);
+
+            //TODO READ
+
+            inputStream.close();
+        } catch (FileNotFoundException e) {
+            //We create the config fall than save the current default values
+            Config.save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
     public static void save() {
+        try {
+            FileOutputStream outputStream = new FileOutputStream(CONFIG_FILE);
+
+            writeDisplayProperies(outputStream);
+            writeAudioProperies(outputStream);
+            writeControlsProperies(outputStream);
+            writeGameRulesProperies(outputStream);
+
+            outputStream.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
 
 
+    private static void writeDisplayProperies(FileOutputStream output) throws IOException {
+        OrderedProperties prop = new OrderedProperties();
+        prop.setProperty("FULL_SCREEN", String.valueOf(FULL_SCREEN));
 
+        prop.store(output, "DISPLAY SETTINGS");
+        output.write("\n\n".getBytes());
+        output.flush();
 
+    }
 
+    private static void writeAudioProperies(FileOutputStream output) throws IOException {
+        OrderedProperties prop = new OrderedProperties();
+        prop.setProperty("GAME_VOLUME", String.valueOf(GAME_VOLUME));
+        prop.setProperty("SFX_VOLUME", String.valueOf(SFX_VOLUME));
+        prop.setProperty("MUSIC_VOLUME", String.valueOf(MUSIC_VOLUME));
 
+        prop.store(output, "AUDIO SETTINGS");
+        output.write("\n\n".getBytes());
+        output.flush();
+    }
 
+    private static void writeControlsProperies(FileOutputStream output) throws IOException {
+        OrderedProperties prop = new OrderedProperties();
+        //Player 1
+        prop.setProperty("PLAYER_1_MOVE_UP", String.valueOf(PLAYER_1_MOVE_UP));
+        prop.setProperty("PLAYER_1_MOVE_LEFT", String.valueOf(PLAYER_1_MOVE_LEFT));
+        prop.setProperty("PLAYER_1_MOVE_DOWN", String.valueOf(PLAYER_1_MOVE_DOWN));
+        prop.setProperty("PLAYER_1_MOVE_RIGHT", String.valueOf(PLAYER_1_MOVE_RIGHT));
+        prop.setProperty("PLAYER_1_START", String.valueOf(PLAYER_1_START));
+        prop.setProperty("PLAYER_1_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_1_PRIMARY_ACTION_BUTTON));
+        prop.setProperty("PLAYER_1_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_1_SECONDARY_ACTION_BUTTON));
+        prop.setProperty("PLAYER_1_PUNCH", String.valueOf(PLAYER_1_PUNCH));
+        prop.setProperty("PLAYER_1_ACTIVE_SKILL", String.valueOf(PLAYER_1_ACTIVE_SKILL));
 
+        //Player 2
+        prop.setProperty("PLAYER_2_MOVE_UP", String.valueOf(PLAYER_2_MOVE_UP));
+        prop.setProperty("PLAYER_2_MOVE_LEFT", String.valueOf(PLAYER_2_MOVE_LEFT));
+        prop.setProperty("PLAYER_2_MOVE_DOWN", String.valueOf(PLAYER_2_MOVE_DOWN));
+        prop.setProperty("PLAYER_2_MOVE_RIGHT", String.valueOf(PLAYER_2_MOVE_RIGHT));
+        prop.setProperty("PLAYER_2_START", String.valueOf(PLAYER_2_START));
+        prop.setProperty("PLAYER_2_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_2_PRIMARY_ACTION_BUTTON));
+        prop.setProperty("PLAYER_2_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_2_SECONDARY_ACTION_BUTTON));
+        prop.setProperty("PLAYER_2_PUNCH", String.valueOf(PLAYER_2_PUNCH));
+        prop.setProperty("PLAYER_2_ACTIVE_SKILL", String.valueOf(PLAYER_2_ACTIVE_SKILL));
+
+        prop.store(output, "INPUT CONTROLS SETTINGS");
+        output.write("\n\n".getBytes());
+        output.flush();
+    }
+
+    private static void writeGameRulesProperies(FileOutputStream output) throws IOException {
+        OrderedProperties prop = new OrderedProperties();
+
+        prop.setProperty("KUBOTZ_SPEED_X", String.valueOf(KUBOTZ_SPEED_X));
+        prop.setProperty("KUBOTZ_SPEED_Y", String.valueOf(KUBOTZ_SPEED_Y));
+        prop.setProperty("KUBOTZ_NB_JUMPS", String.valueOf(KUBOTZ_NB_JUMPS));
+
+        prop.setProperty("PUNCH_DAMAGE", String.valueOf(PUNCH_DAMAGE));
+        prop.setProperty("PUNCH_COOLDOWN", String.valueOf(PUNCH_COOLDOWN));
+
+        prop.setProperty("FLYBOOTS_DURATION", String.valueOf(FLYBOOTS_DURATION));
+        prop.setProperty("FLYBOOTS_COOLDOWN", String.valueOf(FLYBOOTS_COOLDOWN));
+
+        prop.setProperty("DASHBOOTS_COOLDOWN", String.valueOf(DASHBOOTS_COOLDOWN));
+
+        prop.setProperty("LASER_SWORD_DAMAGE", String.valueOf(LASER_SWORD_DAMAGE));
+        prop.setProperty("LASER_SWORD_COOLDOWN", String.valueOf(LASER_SWORD_COOLDOWN));
+
+        prop.setProperty("LASER_GUN_MK_I_DAMAGE", String.valueOf(LASER_GUN_MK_I_DAMAGE));
+        prop.setProperty("LASER_GUN_MK_I_SPEED", String.valueOf(LASER_GUN_MK_I_SPEED));
+        prop.setProperty("LASER_GUN_MK_I_COOLDOWN", String.valueOf(LASER_GUN_MK_I_COOLDOWN));
+        prop.setProperty("LASER_GUN_MK_II_DAMAGE", String.valueOf(LASER_GUN_MK_II_DAMAGE));
+        prop.setProperty("LASER_GUN_MK_II_SPEED", String.valueOf(LASER_GUN_MK_II_SPEED));
+        prop.setProperty("LASER_GUN_MK_II_COOLDOWN", String.valueOf(LASER_GUN_MK_II_COOLDOWN));
+
+        prop.setProperty("DRONE_SPEED_X", String.valueOf(DRONE_SPEED_X));
+        prop.setProperty("DRONE_SPEED_Y", String.valueOf(DRONE_SPEED_Y));
+
+        prop.setProperty("GRAVITY_X", String.valueOf(GRAVITY_X));
+        prop.setProperty("GRAVITY_Y", String.valueOf(GRAVITY_Y));
+
+        prop.store(output, "GAME RULES SETTINGS");
+        output.write("\n\n".getBytes());
+        output.flush();
+    }
 
 
 
