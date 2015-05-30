@@ -29,7 +29,7 @@ public class ParticleEffectComponent extends EntityComponent{
      */
     public void addEffect(FileHandle particle, Vector2 pos, boolean startNow){
         GParticleEffect effect = new GParticleEffect();
-        effect.load(particle, Gdx.files.internal(""));
+        effect.load(particle, Gdx.files.internal("particles/"));
         effect.setPosition(pos.x, pos.y);
         if(startNow){
             effect.start();

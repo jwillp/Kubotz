@@ -54,6 +54,6 @@ public class LibGdxSpriterDrawer extends Drawer<Sprite> {
 
         sprite.setColor(1f, 1f, 1f, object.alpha);
         sprite.setScale(object.scale.x, object.scale.y);
-        sprite.draw(batch);
+        sprite.draw(batch, object.alpha);
     }
 }
