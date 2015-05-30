@@ -1,6 +1,5 @@
 package com.brm.Kubotz.Entities;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -14,7 +13,7 @@ import com.brm.GoatEngine.ECS.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
-import com.brm.Kubotz.Components.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Scripts.BulletGraphicsScript;
 

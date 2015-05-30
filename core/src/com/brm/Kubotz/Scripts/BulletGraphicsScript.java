@@ -5,8 +5,7 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 
 /**
  * Used to handle visual apsects of bullets

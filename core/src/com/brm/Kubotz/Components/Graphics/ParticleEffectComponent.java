@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Components;
+package com.brm.Kubotz.Components.Graphics;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -17,6 +17,8 @@ public class ParticleEffectComponent extends EntityComponent{
     public static String ID = "PARTICLE_EMITTER_COMPONENT";
 
     private ArrayList<GParticleEffect> effects = new ArrayList<GParticleEffect>();
+
+    private float alpha = 1;
 
 
     /**
@@ -50,9 +52,11 @@ public class ParticleEffectComponent extends EntityComponent{
     }
 
 
+    public float getAlpha() {
+        return alpha;
+    }
 
-
-
-
-
+    public void setAlpha(float alpha) {
+        this.alpha = alpha;
+    }
 }

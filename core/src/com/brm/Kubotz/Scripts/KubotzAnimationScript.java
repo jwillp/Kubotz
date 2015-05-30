@@ -1,28 +1,23 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.brm.GoatEngine.ECS.Components.ChildrenComponent;
+import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
-import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Graphics.AnimationComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Components.Movements.FlyComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
-import com.brm.Kubotz.Components.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Systems.RendringSystems.AnimationSheet;
-
-import java.util.ArrayList;
 
 /**
  * Updates a kubotz Sprite according to animation and movement
@@ -38,6 +33,18 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     @Override
+    public void onCollision(EntityContact contact) {
+
+        Entity entity = contact.getEntityA();
+
+        //GETTING HIT
+       
+
+
+
+    }
+
+    @Override
     public void onUpdate(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
@@ -49,7 +56,7 @@ public class KubotzAnimationScript extends EntityScript {
 
         //Run
         if(entity.hasComponent(RunningComponent.ID)){
-            this.handleRunning(phys, gamePad, anim);
+            this.handleRunning(entity, phys, gamePad, anim);
         }
 
         //Fly
@@ -75,8 +82,9 @@ public class KubotzAnimationScript extends EntityScript {
             anim.setAnimation("Dying");
             // TODO dying Particle Effect set object alpha to 0
             ParticleEffectComponent pe = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
-            pe.addEffect(Gdx.files.internal("particles/deathDust.pe"), phys.getPosition().cpy(), true);
-            Logger.log("YOOO: " + pe.getEffects().size());
+            Vector2 pos = phys.getPosition().cpy();
+            pos.y -= phys.getHeight()/2;
+            pe.addEffect(Gdx.files.internal("particles/deathDust.pe"), pos, true);
         }
 
 
@@ -93,12 +101,13 @@ public class KubotzAnimationScript extends EntityScript {
      * @param gamePad
      * @param anim
      */
-    private void handleRunning(PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
+    private void handleRunning(Entity e, PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
         this.handleFlip(phys, anim);
         if(phys.isGrounded()) {
 
             if(phys.getVelocity().isZero()){
                 //anim.setAnimation(ANIM_IDLE);
+
             }
 
             //RUNNING
@@ -120,6 +129,7 @@ public class KubotzAnimationScript extends EntityScript {
         //JUMPING TODO Opposite of gravity scale
         if(phys.getVelocity().y > 0){
             anim.setAnimation(ANIM_JUMPING);
+
         }
 
     }

@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Components.Graphics;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.brashmonkey.spriter.Player;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
@@ -12,8 +13,20 @@ public class SpriterAnimationComponent extends EntityComponent {
 
     private Player player;
 
-    public SpriterAnimationComponent(Player player){
+    private float alpha = 1; //alpha level
+
+    private float offsetX = 0;
+    private float offsetY = 0;
+    private float scale = 1;
+
+
+    private Color color = Color.WHITE;
+
+    public SpriterAnimationComponent(Player player, float offsetX, float offsetY, float scale){
         this.player = player;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.scale = scale;
     }
 
 
@@ -36,8 +49,27 @@ public class SpriterAnimationComponent extends EntityComponent {
     }
 
 
+    public float getOffsetX() {
+        return offsetX;
+    }
 
+    public void setOffsetX(float offsetX) {
+        this.offsetX = offsetX;
+    }
 
+    public float getOffsetY() {
+        return offsetY;
+    }
 
+    public void setOffsetY(float offsetY) {
+        this.offsetY = offsetY;
+    }
 
+    public float getScale() {
+        return scale;
+    }
+
+    public void setScale(float scale) {
+        this.scale = scale;
+    }
 }

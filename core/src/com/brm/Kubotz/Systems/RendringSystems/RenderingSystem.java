@@ -1,7 +1,6 @@
 package com.brm.Kubotz.Systems.RendringSystems;
 
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -16,10 +15,12 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.GParticleEffect;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
-import com.brm.Kubotz.Components.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
+
+import java.util.Iterator;
 
 /**
  * Responsible for displaying all visual elements on screen
@@ -60,7 +61,7 @@ public class RenderingSystem extends EntitySystem {
         }
 
         if(Config.TEXTURE_RENDERING_ENABLED){
-            renderTextures();
+            renderTextures(dt);
         }
 
 
@@ -82,7 +83,7 @@ public class RenderingSystem extends EntitySystem {
     /**
      * Renders the texture of all the entities
      */
-    private void renderTextures(){
+    private void renderTextures(float deltaTime){
 
 
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
@@ -95,13 +96,13 @@ public class RenderingSystem extends EntitySystem {
 
 
             //float scale = phys.getHeight()/anim.getPlayer().get
-            float posX = phys.getPosition().x -phys.getWidth()/2 +0.25f;
-            float posY =  phys.getPosition().y -phys.getHeight()/2 - 0.5f; //TODO have real scaling
-
+            float posX = phys.getPosition().x + anim.getOffsetX();
+            float posY =  phys.getPosition().y + anim.getOffsetY();
 
             anim.getPlayer().setPosition(posX, posY);
             anim.getPlayer().setAngle(phys.getBody().getAngle());
-            anim.getPlayer().setScale(0.005f);
+            anim.getPlayer().setScale(anim.getScale());
+
 
         }
         Spriter.draw();
@@ -111,30 +112,36 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-        //Particle Effectsv
-        spriteBatch.begin();
-        spriteBatch.setProjectionMatrix(this.getCamera().combined);
-        for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
+        //Particle Effects
+        if(Config.PARTICLES_ENABLED){
+            spriteBatch.begin();
+            spriteBatch.setProjectionMatrix(this.getCamera().combined);
+            for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
 
-            ParticleEffectComponent pef = (ParticleEffectComponent) comp;
-            for(GParticleEffect effect: pef.getEffects()){
+                ParticleEffectComponent pef = (ParticleEffectComponent) comp;
+                for (Iterator<GParticleEffect> iterator = pef.getEffects().iterator(); iterator.hasNext(); ) {
+                    GParticleEffect effect = iterator.next();
 
+                    effect.update(deltaTime);
 
-                effect.update(Gdx.graphics.getDeltaTime()); //TODO get from method delta
-                effect.draw(spriteBatch);
+                    spriteBatch.getColor().a = pef.getAlpha();
+                    effect.draw(spriteBatch);
+                    spriteBatch.getColor().a = 1.0f; //Default alpha
 
-
-                if(effect.isComplete() && effect.isLooping()){
-                    effect.reset(); // TODO is LOOPING
+                    if (effect.isComplete()){
+                        if (effect.isLooping()){
+                            iterator.remove();
+                        }
+                    }
                 }
             }
+            spriteBatch.end();
         }
-        spriteBatch.end();
+
 
 
 
     }
-
 
 
 

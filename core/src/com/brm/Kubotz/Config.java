@@ -11,6 +11,7 @@ import java.io.IOException;
 
 public class Config {
 
+
     public static String TITLE = "Kubotz";
 
     //Fixed Aspect Ratio
@@ -31,6 +32,7 @@ public class Config {
 
     //DISPLAY
     public static boolean FULL_SCREEN = false;
+    public static boolean PARTICLES_ENABLED = true;
 
 
     //AUDIO SETTINGS
@@ -99,14 +101,9 @@ public class Config {
     public static float GRAVITY_Y = 50.0f;
 
 
-
-
-
-
-
-
-
-
+    /**
+     * Reads the configuration file and applies its values
+     */
     public static void load() {
         try {
             FileInputStream inputStream = new FileInputStream(CONFIG_FILE);
@@ -123,6 +120,9 @@ public class Config {
 
     }
 
+    /**
+     * Save the current values of the config in a config file
+     */
     public static void save() {
         try {
             FileOutputStream outputStream = new FileOutputStream(CONFIG_FILE);
@@ -147,7 +147,9 @@ public class Config {
 
     private static void writeDisplayProperies(FileOutputStream output) throws IOException {
         OrderedProperties prop = new OrderedProperties();
+
         prop.setProperty("FULL_SCREEN", String.valueOf(FULL_SCREEN));
+        prop.setProperty("PARTICLES_ENABLED", String.valueOf(PARTICLES_ENABLED));
 
         prop.store(output, "DISPLAY SETTINGS");
         output.write("\n\n".getBytes());
@@ -157,6 +159,7 @@ public class Config {
 
     private static void writeAudioProperies(FileOutputStream output) throws IOException {
         OrderedProperties prop = new OrderedProperties();
+
         prop.setProperty("GAME_VOLUME", String.valueOf(GAME_VOLUME));
         prop.setProperty("SFX_VOLUME", String.valueOf(SFX_VOLUME));
         prop.setProperty("MUSIC_VOLUME", String.valueOf(MUSIC_VOLUME));
@@ -230,24 +233,5 @@ public class Config {
         output.write("\n\n".getBytes());
         output.flush();
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

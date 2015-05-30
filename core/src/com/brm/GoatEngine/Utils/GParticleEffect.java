@@ -9,7 +9,7 @@ public class GParticleEffect extends ParticleEffect {
 
     private boolean isLooping = false;
 
-   /* @Override
+   /*@Override
     public void update(float delta) {
         super.update(delta);
         if(isLooping()){

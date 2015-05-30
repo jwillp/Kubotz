@@ -2,7 +2,6 @@ package com.brm.Kubotz.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brashmonkey.spriter.PlayerTweener;
 import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.*;
@@ -14,7 +13,7 @@ import com.brm.Kubotz.Components.GrabComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
-import com.brm.Kubotz.Components.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
@@ -149,10 +148,15 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
 
-        //APPEAREANCE
+        // GRAPHICS
         //ANIMATION
         character.addComponent(
-                new SpriterAnimationComponent(Spriter.newPlayer("animations/kubotz.scml", "Kubotz")),
+                new SpriterAnimationComponent(
+                        Spriter.newPlayer("animations/kubotz.scml", "Kubotz"),
+                        -physics.getWidth()/2 +0.25f,
+                        -physics.getHeight()/2-0.5f,
+                        0.005f
+                ),
                 SpriterAnimationComponent.ID
         );
         // UI Health Bar

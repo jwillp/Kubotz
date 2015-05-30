@@ -196,8 +196,8 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
 
         systemManager.getSystem(ScriptSystem.class).update(deltaTime);
-        systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
 
+        systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(AnimationSystem.class).update(deltaTime);
     }
 
