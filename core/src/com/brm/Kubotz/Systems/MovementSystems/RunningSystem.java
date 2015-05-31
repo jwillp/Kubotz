@@ -93,14 +93,19 @@ public class RunningSystem extends EntitySystem {
         // TODO only do it for Running Entities
         for (EntityComponent comp : em.getComponents(PhysicsComponent.ID)) {
             PhysicsComponent phys = (PhysicsComponent) comp;
-            for (int i = 0; i < phys.getContacts().size(); i++) {
-                EntityContact contact = phys.getContacts().get(i);
-                if (contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR) {
-                    phys.setGrounded(true);
-                    phys.getContacts().remove(i);
-                    //REMOVE OTHER contact for other entity
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.getContacts().remove(contact);
+
+            if(phys.getContacts().size() == 0){ // TODO this is a hack!
+                phys.setGrounded(false);
+            }else {
+                for (int i = 0; i < phys.getContacts().size(); i++) {
+                    EntityContact contact = phys.getContacts().get(i);
+                    if (contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR) {
+                        phys.setGrounded(true);
+                        phys.getContacts().remove(i);
+                        //REMOVE OTHER contact for other entity
+                        PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
+                        physB.getContacts().remove(contact);
+                    }
                 }
             }
         }
