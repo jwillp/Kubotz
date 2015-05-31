@@ -70,7 +70,7 @@ public class HUDSystem extends EntitySystem {
         spriteBatch.begin();
 
 
-        spriteBatch.draw(this.timer, 0-this.timer.getWidth()/2,768/2 - this.timer.getHeight());
+        spriteBatch.draw(this.timer, 0-this.timer.getWidth()/2, Config.V_HEIGHT/2 - this.timer.getHeight());
 
         spriteBatch.draw(this.bars, -Config.V_WIDTH/2 + this.badge.getWidth()/2 + 30, Config.V_HEIGHT/2 -this.badge.getHeight()/2,
                 this.bars.getWidth(), this.bars.getHeight());

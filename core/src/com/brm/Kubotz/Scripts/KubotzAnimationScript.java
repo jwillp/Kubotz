@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
@@ -25,12 +26,14 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class KubotzAnimationScript extends EntityScript {
 
-    public static final String ANIM_IDLE = "Idle";
-    public static final String ANIM_RUNNING = "Running";
-    public static final String ANIM_JUMPING = "Jumping";
-    public static final String ANIM_FALLING = "Falling";
-    private static final String ANIM_LANDING = "Landing";
+    public static final  String IDLE = "Idle";
+    public static final  String RUNNING = "Running";
+    public static final  String JUMPING = "Jumping";
+    public static final  String FALLING = "Falling";
 
+
+    //Default state
+    private String currentState = "Idle";
 
     @Override
     public void onCollision(EntityContact contact) {
@@ -38,9 +41,6 @@ public class KubotzAnimationScript extends EntityScript {
         Entity entity = contact.getEntityA();
 
         //GETTING HIT
-       
-
-
 
     }
 
@@ -51,111 +51,15 @@ public class KubotzAnimationScript extends EntityScript {
         VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);
         HealthComponent health = (HealthComponent) entity.getComponent(HealthComponent.ID);
 
-        this.handleCharacterMaps(entity, anim);
 
 
-        //Run
-        if(entity.hasComponent(RunningComponent.ID)){
-            this.handleRunning(entity, phys, gamePad, anim);
-        }
-
-        //Fly
-        if(entity.hasComponent(FlyComponent.ID)){
-            this.handleFlying(phys, anim);
-        }
-
-        //DASH
-        if(entity.hasComponent(DashComponent.ID)){
-            DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
-            this.handleDashing(dashComp, phys, anim);
-        }
-
-        // GUN
-        if(entity.hasComponent(GunComponent.ID)){
-            GunComponent gun = (GunComponent)entity.getComponent(GunComponent.ID);
-            handleGuns(gun, anim);
-        }
+        handleRunning(entity, phys, gamePad, anim);
 
 
-        //DYING
-        if(health.getAmount() == health.getMinAmount()){
-            anim.setAnimation("Dying");
-            // TODO dying Particle Effect set object alpha to 0
-            ParticleEffectComponent pe = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
-            Vector2 pos = phys.getPosition().cpy();
-            pos.y -= phys.getHeight()/2;
-            pe.addEffect(Gdx.files.internal("particles/deathDust.pe"), pos, true);
-        }
-
-
-
-
-
+        anim.setAnimation(currentState);
+        handleFlip(phys, anim);
 
     }
-
-
-    /**
-     * Handles the animations while the player is Running
-     * @param phys
-     * @param gamePad
-     * @param anim
-     */
-    private void handleRunning(Entity e, PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
-        this.handleFlip(phys, anim);
-        if(phys.isGrounded()) {
-
-            if(phys.getVelocity().isZero()){
-                //anim.setAnimation(ANIM_IDLE);
-
-            }
-
-            //RUNNING
-            else if((gamePad.isButtonPressed(GameButton.MOVE_LEFT) || gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) &&
-                    phys.getVelocity().x != 0)
-            {
-                anim.setAnimation(ANIM_RUNNING);
-                //TODO set speed of anim according to velX
-            }
-
-
-        }else{
-        //FALLING TODO same as gravity scale
-            if(phys.getVelocity().y < 0){
-                anim.setAnimation(ANIM_FALLING);
-            }
-        }
-
-        //JUMPING TODO Opposite of gravity scale
-        if(phys.getVelocity().y > 0){
-            anim.setAnimation(ANIM_JUMPING);
-
-        }
-
-    }
-
-
-    /**
-     *
-     */
-    private void handleGuns(GunComponent gun, SpriterAnimationComponent anim){
-        if(gun.isShooting()){
-            if(!anim.getPlayer().getAnimation().name.equals("Shooting")){
-                anim.getPlayer().setAnimation("Shooting");
-            }
-        }
-    }
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -183,166 +87,65 @@ public class KubotzAnimationScript extends EntityScript {
 
 
 
+    private void handleRunning(Entity entity, PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
+        //Check states
+        if(currentState.equals(IDLE)){
+            if(gamePad.isButtonPressed(GameButton.MOVE_LEFT) || gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+                currentState = "Running";
+            }
 
+            if(phys.getVelocity().y > 0){
+                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                    currentState = JUMPING;
+                }
+            }
 
+            if(phys.getVelocity().y < 0 && !phys.isGrounded()){
+                currentState = FALLING;
+            }
 
+        }else if(currentState.equals(RUNNING)){
+            if(phys.getVelocity().y > 0){
+                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                    currentState = JUMPING;
+                }
+            }
+            if(!phys.isGrounded()){
+                currentState = FALLING;
+            }
 
+            if(phys.getVelocity().x == 0 && phys.isGrounded()){
+                currentState = IDLE;
+            }
 
+        }else if(currentState.equals(JUMPING)){
+            if(phys.getVelocity().y < 0){
+                currentState = FALLING;
+            }
 
+        }else if(currentState.equals(FALLING)){
 
+            if(phys.getVelocity().y > 0){
+                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                    currentState = JUMPING;
+                }
+            }else if(phys.getVelocity().isZero()){
+                currentState = IDLE;
+                ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+                Vector2 pos = phys.getPosition().cpy();
+                pos.y -= phys.getHeight()/2;
+                pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
 
+            }else if(phys.getVelocity().x != 0 && phys.isGrounded()){
+                currentState = RUNNING;
+                ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+                Vector2 pos = phys.getPosition().cpy();
+                pos.y -= phys.getHeight()/2;
+                pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
 
-
-
-
-
-
-
-
-
-    /**
-     * Handles the animtions while the player is flying
-     * @param phys
-     * @param anim
-     */
-    private void handleFlying(PhysicsComponent phys, SpriterAnimationComponent anim){
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Handles the animations while the player is Dashing
-     * @param dashComp
-     * @param phys
-     * @param anim
-     */
-    private void handleDashing(DashComponent dashComp, PhysicsComponent phys, SpriterAnimationComponent anim){
-        if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
-            anim.getPlayer().setAnimation("Dash_begin");
-        }
-
-        if(dashComp.getPhase() == DashComponent.Phase.TRAVEL){
-            anim.getPlayer().setAnimation("Dash_dashin");
-        }
-
-        if(dashComp.getPhase() == DashComponent.Phase.DECELERATION){
-            anim.getPlayer().setAnimation("Dash_ending");
-            //anim.getPlayer().getAnimation().looping = false;
+            }
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Handles if we need to add character maps (weapons overlay)
-     */
-    private void handleCharacterMaps(Entity entity, SpriterAnimationComponent anim){
-
-        //GunComponent
-        if(entity.hasComponent(GunComponent.ID)){
-            com.brashmonkey.spriter.Entity.CharacterMap map = anim.getPlayer()
-                    .getEntity().getCharacterMap("weapon_laserGunMkI");
-            anim.getPlayer().characterMaps = new com.brashmonkey.spriter.Entity.CharacterMap[3];
-            anim.getPlayer().characterMaps[0] = map;
-        }
-
-        //SwordComponent
-        if(entity.hasComponent(LaserSwordComponent.ID)){
-            com.brashmonkey.spriter.Entity.CharacterMap map = anim.getPlayer()
-                    .getEntity().getCharacterMap("weapon_laserSword");
-            anim.getPlayer().characterMaps = new com.brashmonkey.spriter.Entity.CharacterMap[3];
-            anim.getPlayer().characterMaps[0] = map;
-        }
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -2,6 +2,7 @@ package com.brm.Kubotz.Components.Graphics;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.brashmonkey.spriter.Mainline;
 import com.brashmonkey.spriter.Player;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 
@@ -19,14 +20,35 @@ public class SpriterAnimationComponent extends EntityComponent {
     private float offsetY = 0;
     private float scale = 1;
 
-
     private Color color = Color.WHITE;
+
+    private boolean isComplete = false;
 
     public SpriterAnimationComponent(Player player, float offsetX, float offsetY, float scale){
         this.player = player;
         this.offsetX = offsetX;
         this.offsetY = offsetY;
         this.scale = scale;
+
+
+        this.player.addListener(new Player.PlayerListener() {
+            @Override
+            public void animationFinished(com.brashmonkey.spriter.Animation animation){
+                SpriterAnimationComponent.this.isComplete = true;
+            }
+
+            @Override
+            public void animationChanged(com.brashmonkey.spriter.Animation oldAnim, com.brashmonkey.spriter.Animation newAnim){}
+
+            @Override
+            public void preProcess(Player player) {}
+
+            @Override
+            public void postProcess(Player player) {}
+
+            @Override
+            public void mainlineKeyChanged(Mainline.Key prevKey, Mainline.Key newKey) {}
+        });
     }
 
 
@@ -36,6 +58,7 @@ public class SpriterAnimationComponent extends EntityComponent {
 
 
     public void setAnimation(String name){
+        isComplete = false;
         this.player.setAnimation(name);
     }
 
@@ -45,7 +68,7 @@ public class SpriterAnimationComponent extends EntityComponent {
 
 
     public boolean isComplete(){
-        return this.player.getTime() > this.getAnimation().length || this.player.getTime() < 0;
+        return isComplete;
     }
 
 
