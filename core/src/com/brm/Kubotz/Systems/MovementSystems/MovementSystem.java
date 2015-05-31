@@ -7,7 +7,9 @@ import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Input.GameButton;
 
 
 /**
@@ -35,6 +37,19 @@ public class MovementSystem extends EntitySystem {
         getSystemManager().getSystem(FlySystem.class).handleInput();
         getSystemManager().getSystem(DashSystem.class).handleInput();
         getSystemManager().getSystem(RunningSystem.class).handleInput();
+
+
+        // Set direction
+        for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+
+            if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT))
+                phys.setDirection(PhysicsComponent.Direction.RIGHT);
+            else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT))
+                phys.setDirection(PhysicsComponent.Direction.LEFT);
+
+        }
     }
 
 
@@ -84,10 +99,10 @@ public class MovementSystem extends EntitySystem {
         phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
 
         //SET DIRECTION
-        if(velocity > 0)
+        /*if(velocity > 0)
             phys.setDirection(PhysicsComponent.Direction.RIGHT);
         else if(velocity < 0)
-            phys.setDirection(PhysicsComponent.Direction.LEFT);
+            phys.setDirection(PhysicsComponent.Direction.LEFT);*/
     }
 
     /**

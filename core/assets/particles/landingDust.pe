@@ -62,8 +62,8 @@ timeline0: 0.0
 - Scale - 
 lowMin: 0.0
 lowMax: 0.0
-highMin: 0.5
-highMax: 0.5
+highMin: 0.4
+highMax: 0.4
 relative: false
 scalingCount: 2
 scaling0: 1.0
@@ -121,8 +121,8 @@ timeline2: 1.0
 - Tint - 
 colorsCount: 3
 colors0: 0.4
-colors1: 0.4
-colors2: 0.4
+colors1: 0.38431373
+colors2: 0.23529412
 timelineCount: 1
 timeline0: 0.0
 - Transparency - 
@@ -145,7 +145,7 @@ additive: true
 behind: false
 premultipliedAlpha: false
 - Image Path -
-/D:/Dev/Util/pre_particle.png
+pre_particle.png
 
 
 left
@@ -212,8 +212,8 @@ timeline0: 0.0
 - Scale - 
 lowMin: 0.0
 lowMax: 0.0
-highMin: 0.5
-highMax: 0.5
+highMin: 0.3
+highMax: 0.3
 relative: false
 scalingCount: 2
 scaling0: 1.0
@@ -277,9 +277,9 @@ timeline1: 0.34246576
 timeline2: 1.0
 - Tint - 
 colorsCount: 3
-colors0: 0.4
-colors1: 0.4
-colors2: 0.4
+colors0: 0.21176471
+colors1: 0.20392157
+colors2: 0.1254902
 timelineCount: 1
 timeline0: 0.0
 - Transparency - 
@@ -302,4 +302,4 @@ additive: true
 behind: false
 premultipliedAlpha: false
 - Image Path -
-/D:/Dev/Util/pre_particle.png
+pre_particle.png

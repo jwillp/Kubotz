@@ -100,7 +100,7 @@ public class KubotzAnimationScript extends EntityScript {
                 }
             }
 
-            if(phys.getVelocity().y < 0 && !phys.isGrounded()){
+            if(!phys.isGrounded()){
                 currentState = FALLING;
             }
 
@@ -118,6 +118,16 @@ public class KubotzAnimationScript extends EntityScript {
                 currentState = IDLE;
             }
 
+            if(phys.isGrounded())
+            // Facing opposite of direction
+            {
+                if (phys.getDirection() == PhysicsComponent.Direction.RIGHT && phys.getVelocity().x < 0
+                        || phys.getDirection() == PhysicsComponent.Direction.LEFT && phys.getVelocity().x > 0) {
+                    createMotionDust(entity, phys);
+                }
+            }
+
+
         }else if(currentState.equals(JUMPING)){
             if(phys.getVelocity().y < 0){
                 currentState = FALLING;
@@ -129,27 +139,27 @@ public class KubotzAnimationScript extends EntityScript {
                 if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
                     currentState = JUMPING;
                 }
-            }else if(phys.getVelocity().isZero()){
-                currentState = IDLE;
-                ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
-                Vector2 pos = phys.getPosition().cpy();
-                pos.y -= phys.getHeight()/2;
-                pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
-
             }else if(phys.getVelocity().x != 0 && phys.isGrounded()){
                 currentState = RUNNING;
-                ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
-                Vector2 pos = phys.getPosition().cpy();
-                pos.y -= phys.getHeight()/2;
-                pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
-
+                createMotionDust(entity, phys);
+            }else if(phys.isGrounded()){
+                currentState = IDLE;
+                createMotionDust(entity, phys);
             }
         }
     }
 
 
+    /**
+     * Creates motion dust for a certain entity
+     */
+    private void createMotionDust(Entity entity, PhysicsComponent phys){
 
-
+        ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+        Vector2 pos = phys.getPosition().cpy();
+        pos.y -= phys.getHeight();
+        pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
+    }
 
 
 
