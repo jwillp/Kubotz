@@ -20,7 +20,6 @@ public class Constants {
     public static final String ENTITY_TAG_PLATFORM = "PLATFORM";
     public static final String ENTITY_TAG_BULLET = "BULLET";
     public static final String ENTITY_TAG_PUNCH = "PUNCH";
-
     public static final String ENTITY_TAG_POWERUP = "POWERUP";
 
 
@@ -37,6 +36,10 @@ public class Constants {
 
 
 
+    // PARAMETERS (THESE MOSTLY NED TO BE HARDCODED AND NEVER CHANGED IN ORDER FOR THE GAME TO WORK WELL
+
+    public static final int PUNCH_INPUT_DELAY = 200; //in ms, the delay between the button press and the punch to occur
+    public static final int PUNCH_DURATION = 500; //The duration of a punch
 
 
 

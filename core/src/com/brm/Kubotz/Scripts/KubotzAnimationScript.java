@@ -2,7 +2,9 @@ package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -17,6 +19,7 @@ import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -26,14 +29,27 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class KubotzAnimationScript extends EntityScript {
 
-    public static final  String IDLE = "Idle";
-    public static final  String RUNNING = "Running";
-    public static final  String JUMPING = "Jumping";
-    public static final  String FALLING = "Falling";
+    public static final String IDLE = "Idle";
+    public static final String RUNNING = "Running";
+    public static final String JUMPING = "Jumping";
+    public static final String FALLING = "Falling";
+    public static final String PUNCHING = "Punching";
+    public static final String AIR_KICKING = "Air Kicking";
+    public static final String KICKING = "Kicking";
 
+    public static final String SHOOTING = "Shooting";
+    public static final String SWORD_SLASH = "Sword_slash_01";
+
+    public static final int CHAR_MAP_HEAD_ID = 0;
+    public static final int CHAR_MAP_ARM_ID = 0;
+    public static final int CHAR_MAP_BOOTS_ID = 0;
+
+
+
+    public static final String DEFAULT = IDLE;
 
     //Default state
-    private String currentState = "Idle";
+    private String currentState = DEFAULT;
 
     @Override
     public void onCollision(EntityContact contact) {
@@ -55,9 +71,29 @@ public class KubotzAnimationScript extends EntityScript {
 
         handleRunning(entity, phys, gamePad, anim);
 
+        // PUNCH
+        if(entity.hasComponentEnabled(PunchComponent.ID)){
+            PunchComponent punch = (PunchComponent) entity.getComponent(PunchComponent.ID);
+            this.handlePunch(punch);
+        }
 
+        //GUNS
+        if(entity.hasComponentEnabled(GunComponent.ID)){
+            GunComponent gun = (GunComponent) entity.getComponent(GunComponent.ID);
+            this.handleGuns(gun);
+        }
+
+        // SWORD
+        if(entity.hasComponent(LaserSwordComponent.ID)){
+            LaserSwordComponent laserSword = (LaserSwordComponent) entity.getComponent(LaserSwordComponent.ID);
+            this.handleLaserSword(laserSword);
+        }
+
+        this.handleCharacterMaps(entity, anim);
         anim.setAnimation(currentState);
-        handleFlip(phys, anim);
+        if(!currentState.equals(JUMPING)) {
+            handleFlip(phys, anim);
+        }
 
     }
 
@@ -83,10 +119,13 @@ public class KubotzAnimationScript extends EntityScript {
     }
 
 
-
-
-
-
+    /**
+     * Handles animation when entity is moving on foot (running, Jumping, Falling, Idle etc.)
+     * @param entity
+     * @param phys
+     * @param gamePad
+     * @param anim
+     */
     private void handleRunning(Entity entity, PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
         //Check states
         if(currentState.equals(IDLE)){
@@ -100,7 +139,7 @@ public class KubotzAnimationScript extends EntityScript {
                 }
             }
 
-            if(!phys.isGrounded()){
+            if(!phys.isGrounded() && phys.getVelocity().y < 0){
                 currentState = FALLING;
             }
 
@@ -110,7 +149,7 @@ public class KubotzAnimationScript extends EntityScript {
                     currentState = JUMPING;
                 }
             }
-            if(!phys.isGrounded()){
+            if(!phys.isGrounded() && phys.getVelocity().y < 0){
                 currentState = FALLING;
             }
 
@@ -126,8 +165,6 @@ public class KubotzAnimationScript extends EntityScript {
                     createMotionDust(entity, phys);
                 }
             }
-
-
         }else if(currentState.equals(JUMPING)){
             if(phys.getVelocity().y < 0){
                 currentState = FALLING;
@@ -148,6 +185,99 @@ public class KubotzAnimationScript extends EntityScript {
             }
         }
     }
+
+    /**
+     * Handles animation when entity is punching
+     * @param punch
+     */
+    private void handlePunch(PunchComponent punch){
+        if(punch.getPunchBullet() != null){
+            if(currentState.equals(FALLING) || currentState.equals(JUMPING)) {
+                currentState = AIR_KICKING;
+            }else{
+                currentState = AIR_KICKING;
+
+            }
+        }
+        if(currentState.equals(PUNCHING) || currentState.equals(KICKING) || currentState.equals(AIR_KICKING) ){
+            if(punch.getDurationTimer().isDone()){
+                currentState = IDLE;
+            }
+        }
+    }
+
+
+    /**
+            * Handles Kubotz with Guns
+    * @param gun
+    */
+    private void handleGuns(GunComponent gun) {
+        if(gun.isShooting()){
+            if(!currentState.equals(SHOOTING)) {
+                currentState = SHOOTING;
+            }
+        }
+        if(currentState.equals(SHOOTING)){
+            if(gun.getCooldown().isDone()){
+                currentState = DEFAULT;
+            }
+
+        }
+    }
+
+
+    /**
+     * Handles Kubotz with Laser Sword
+     * @param laserSword
+     */
+    private void handleLaserSword(LaserSwordComponent laserSword) {
+        if(laserSword.isSwinging()){
+            if(!currentState.equals(SWORD_SLASH)) {
+                currentState = SWORD_SLASH;
+            }
+        }
+        if(currentState.equals(SWORD_SLASH)){
+            if(laserSword.getDurationTimer().isDone()){
+                currentState = DEFAULT;
+            }
+
+        }
+
+    }
+
+
+
+
+
+
+
+
+    /**
+     * Applies the necessary character maps to an entity
+     */
+    private void handleCharacterMaps(Entity entity, SpriterAnimationComponent anim){
+
+        anim.getPlayer().characterMaps = new com.brashmonkey.spriter.Entity.CharacterMap[3];
+        // HEADS
+
+
+        // ARMS
+        // LASER SWORD
+        if(entity.hasComponentEnabled(LaserSwordComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserSword");
+        }else if(entity.hasComponent(GunComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserGunMkI");
+            Logger.log("YEP");
+        }
+
+
+
+        // BOOTS
+
+
+    }
+
+
 
 
     /**
