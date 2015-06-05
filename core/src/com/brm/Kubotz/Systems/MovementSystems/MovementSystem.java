@@ -1,14 +1,10 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 
@@ -18,17 +14,15 @@ import com.brm.Kubotz.Input.GameButton;
 public class MovementSystem extends EntitySystem {
 
 
-    public MovementSystem(EntityManager em) {
-        super(em);
-
+    public MovementSystem() {
 
     }
 
     @Override
     public void init() {
-        getSystemManager().addSystem(RunningSystem.class, new RunningSystem(em));
-        getSystemManager().addSystem(FlySystem.class, new FlySystem(em));
-        getSystemManager().addSystem(DashSystem.class, new DashSystem(em));
+        getSystemManager().addSystem(RunningSystem.class, new RunningSystem());
+        getSystemManager().addSystem(FlySystem.class, new FlySystem());
+        getSystemManager().addSystem(DashSystem.class, new DashSystem());
     }
 
 
@@ -40,7 +34,7 @@ public class MovementSystem extends EntitySystem {
 
 
         // Set direction
-        for(Entity entity: em.getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 

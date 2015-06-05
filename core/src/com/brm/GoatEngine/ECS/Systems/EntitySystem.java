@@ -6,13 +6,10 @@ import com.brm.GoatEngine.ECS.Entity.EntityManager;
 
 public abstract class EntitySystem {
 
-    protected EntityManager em;
+    private EntityManager entityManager;
 
     private EntitySystemManager systemManager;
 
-    public EntitySystem(EntityManager em){
-        this.em = em;
-    }
 
     /**
      * Used to initialise the system
@@ -49,5 +46,13 @@ public abstract class EntitySystem {
 
     public void setSystemManager(EntitySystemManager systemManager) {
         this.systemManager = systemManager;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 }

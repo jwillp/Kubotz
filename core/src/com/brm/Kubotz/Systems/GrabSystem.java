@@ -3,7 +3,6 @@ package com.brm.Kubotz.Systems;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
@@ -20,9 +19,7 @@ import com.brm.Kubotz.Input.GameButton;
 public class GrabSystem extends EntitySystem{
 
 
-    public GrabSystem(EntityManager em) {
-        super(em);
-    }
+    public GrabSystem(){}
 
     @Override
     public void init(){}
@@ -33,7 +30,7 @@ public class GrabSystem extends EntitySystem{
 
     public void handleInput(){
         //FIND IF AN ENTITY WANTS TO PICKUP AN OBJECT
-        for(Entity entity: em.getEntitiesWithComponent(GrabComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(GrabComponent.ID)){
             VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
             //Find if the entity might be trying to grab something

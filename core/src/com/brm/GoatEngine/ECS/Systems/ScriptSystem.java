@@ -4,7 +4,6 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 
@@ -14,9 +13,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
  */
 public class ScriptSystem extends EntitySystem{
 
-    public ScriptSystem(EntityManager em) {
-        super(em);
-    }
+    public ScriptSystem(){}
 
     @Override
     public void init() {
@@ -25,7 +22,7 @@ public class ScriptSystem extends EntitySystem{
 
     @Override
     public void handleInput() {
-        for(Entity entity: em.getEntitiesWithComponent(ScriptComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 handleInputForEntity(entity);
             }
@@ -46,7 +43,7 @@ public class ScriptSystem extends EntitySystem{
     @Override
     public void update(float dt) {
 
-        for(Entity entity: em.getEntitiesWithComponent(ScriptComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
             ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(EntityScript script: scriptComp.getScripts()){
 

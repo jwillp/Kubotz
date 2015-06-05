@@ -2,7 +2,6 @@ package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
@@ -15,15 +14,13 @@ import com.brm.Kubotz.Input.GameButton;
  * System handling FlyingBoots Logic (responsible of toggling on/off the ability of the boots
  */
 public class FlyingBootsSystem extends EntitySystem{
-    public FlyingBootsSystem(EntityManager em) {
-        super(em);
-    }
+    public FlyingBootsSystem(){}
 
     @Override
     public void init() {}
 
     public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponent(FlyingBootsComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(FlyingBootsComponent.ID)){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             FlyingBootsComponent boots = (FlyingBootsComponent) entity.getComponent(FlyingBootsComponent.ID);
 
@@ -45,7 +42,7 @@ public class FlyingBootsSystem extends EntitySystem{
     @Override
     public void update(float dt){
         //Check if any flying entity needs to stop flying because of flight duration time exceeded
-        for(Entity entity: em.getEntitiesWithComponent(FlyingBootsComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(FlyingBootsComponent.ID)){
             FlyingBootsComponent boots = (FlyingBootsComponent) entity.getComponent(FlyingBootsComponent.ID);
             if(entity.hasComponent(FlyComponent.ID)){
                 if(boots.getEffectDuration().isDone()){

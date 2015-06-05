@@ -8,19 +8,13 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
  */
 public class AttackSystem extends EntitySystem {
 
-    public AttackSystem(EntityManager em) {
-        super(em);
-
-
-
-
-    }
+    public AttackSystem(){}
 
     @Override
     public void init() {
-        this.getSystemManager().addSystem(PunchSystem.class, new PunchSystem(em));
-        this.getSystemManager().addSystem(LaserSwordSystem.class, new LaserSwordSystem(em));
-        this.getSystemManager().addSystem(GunsSystem.class, new GunsSystem(em));
+        this.getSystemManager().addSystem(PunchSystem.class, new PunchSystem());
+        this.getSystemManager().addSystem(LaserSwordSystem.class, new LaserSwordSystem());
+        this.getSystemManager().addSystem(GunsSystem.class, new GunsSystem());
     }
 
     @Override

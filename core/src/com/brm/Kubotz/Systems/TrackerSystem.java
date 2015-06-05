@@ -5,7 +5,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TrackerComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 
 /**
@@ -14,8 +13,8 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 public class TrackerSystem extends EntitySystem {
 
 
-    public TrackerSystem(EntityManager em) {
-        super(em);
+    public TrackerSystem() {
+
     }
 
     @Override
@@ -24,9 +23,9 @@ public class TrackerSystem extends EntitySystem {
     @Override
     public void update(float dt){
         // Track
-        for(Entity tracker: em.getEntitiesWithComponent(TrackerComponent.ID)){
+        for(Entity tracker: getEntityManager().getEntitiesWithComponent(TrackerComponent.ID)){
             TrackerComponent trackComp = (TrackerComponent) tracker.getComponent(TrackerComponent.ID);
-            trackTarget(tracker, em.getEntity(trackComp.getTargetId()));
+            trackTarget(tracker, getEntityManager().getEntity(trackComp.getTargetId()));
         }
     }
 

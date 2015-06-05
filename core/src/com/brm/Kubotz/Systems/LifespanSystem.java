@@ -1,7 +1,6 @@
 package com.brm.Kubotz.Systems;
 
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Components.LifespanComponent;
 
@@ -10,8 +9,8 @@ import com.brm.Kubotz.Components.LifespanComponent;
  */
 public class LifespanSystem extends EntitySystem{
 
-    public LifespanSystem(EntityManager em) {
-        super(em);
+    public LifespanSystem() {
+
     }
 
     @Override
@@ -22,10 +21,10 @@ public class LifespanSystem extends EntitySystem{
     public void update(float dt){
 
 
-        for(Entity entity: em.getEntitiesWithComponent(LifespanComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(LifespanComponent.ID)){
             LifespanComponent lifespan = (LifespanComponent) entity.getComponent(LifespanComponent.ID);
             if(lifespan.isFinished()){
-                em.deleteEntity(entity.getID());
+                getEntityManager().deleteEntity(entity.getID());
             }
         }
 

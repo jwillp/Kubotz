@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.Systems;
 
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.ECS.ECSManager;
 
 import java.util.LinkedHashMap;
 
@@ -10,11 +11,14 @@ import java.util.LinkedHashMap;
  */
 public class EntitySystemManager {
 
+    private ECSManager ecsManager;
     private LinkedHashMap<Class, EntitySystem> systems;
 
 
-    public EntitySystemManager(){
+    public EntitySystemManager(ECSManager manager){
+        ecsManager = manager;
         systems = new LinkedHashMap<Class, EntitySystem>();
+
     }
 
     /**
@@ -35,6 +39,7 @@ public class EntitySystemManager {
      */
     public <T extends  EntitySystem> void addSystem(Class<T> systemType, EntitySystem system){
         system.setSystemManager(this);
+        system.setEntityManager(this.ecsManager.getEntityManager());
         this.systems.put(systemType, system);
     }
 

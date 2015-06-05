@@ -19,24 +19,16 @@ import java.awt.*;
 public class AnimationSystem extends EntitySystem {
 
 
-
-
-
-
-    public AnimationSystem(EntityManager em) {
-        super(em);
-    }
+    public AnimationSystem() {}
 
     @Override
-    public void init() {
-
-    }
+    public void init(){}
 
 
     @Override
     public void update(float dt){
 
-        /*for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
+        /*for(Entity entity: entityManager.getEntitiesWithComponent(SpriteComponent.ID)){
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             AnimationComponent animComp = (AnimationComponent)entity.getComponent(AnimationComponent.ID);
 

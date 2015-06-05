@@ -4,7 +4,6 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath;
@@ -16,9 +15,7 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class DashSystem extends EntitySystem{
 
-    public DashSystem(EntityManager em) {
-        super(em);
-    }
+    public DashSystem(){}
 
     @Override
     public void init(){
@@ -28,7 +25,7 @@ public class DashSystem extends EntitySystem{
 
 
     public void handleInput(){
-        for(Entity entity : em.getEntitiesWithComponent(DashComponent.ID)){
+        for(Entity entity : getEntityManager().getEntitiesWithComponent(DashComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 this.handleInputForEntity(entity);
             }
@@ -82,7 +79,7 @@ public class DashSystem extends EntitySystem{
      */
     @Override
     public void update(float dt){
-        for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
+        for(Entity entity : this.getEntityManager().getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
             if (dashComp.isEnabled()) {

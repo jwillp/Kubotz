@@ -5,7 +5,6 @@ import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.DamageComponent;
@@ -19,8 +18,7 @@ import com.brm.Kubotz.Constants;
 public class DamageSystem extends EntitySystem{
 
 
-    public DamageSystem(EntityManager em) {
-        super(em);
+    public DamageSystem() {
     }
 
     @Override
@@ -30,7 +28,7 @@ public class DamageSystem extends EntitySystem{
     @Override
     public void update(float dt){
         //Process collisions
-        for(Entity e: em.getEntitiesWithComponent(DamageComponent.ID)){
+        for(Entity e: getEntityManager().getEntitiesWithComponent(DamageComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
 
             for(int i=0; i< phys.getContacts().size(); i++){

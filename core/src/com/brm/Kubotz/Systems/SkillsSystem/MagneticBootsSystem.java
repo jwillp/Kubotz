@@ -3,7 +3,6 @@ package com.brm.Kubotz.Systems.SkillsSystem;
 import com.badlogic.gdx.math.MathUtils;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
@@ -16,9 +15,7 @@ import com.brm.Kubotz.Input.GameButton;
 public class MagneticBootsSystem extends EntitySystem{
 
 
-    public MagneticBootsSystem(EntityManager em) {
-        super(em);
-    }
+    public MagneticBootsSystem(){}
 
     @Override
     public void init() {}
@@ -27,7 +24,7 @@ public class MagneticBootsSystem extends EntitySystem{
      * Handles the input for every entity with magnetic boots
      */
     public void handleInput() {
-        for (Entity entity : em.getEntitiesWithComponent(MagneticBootsComponent.ID)) {
+        for (Entity entity : getEntityManager().getEntitiesWithComponent(MagneticBootsComponent.ID)) {
             if(entity.hasComponent(VirtualGamePad.ID)){
                 handleInputForEntity(entity);
             }

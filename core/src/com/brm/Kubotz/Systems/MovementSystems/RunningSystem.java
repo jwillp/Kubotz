@@ -6,7 +6,6 @@ import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
@@ -19,9 +18,7 @@ import com.brm.Kubotz.Input.GameButton;
 public class RunningSystem extends EntitySystem {
 
 
-    public RunningSystem(EntityManager em) {
-        super(em);
-    }
+    public RunningSystem(){}
 
     @Override
     public void init() {
@@ -30,7 +27,7 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public void handleInput() {
-        for (Entity entity : em.getEntitiesWithComponentEnabled(RunningComponent.ID)) {
+        for (Entity entity : getEntityManager().getEntitiesWithComponentEnabled(RunningComponent.ID)) {
             if (entity.hasComponent(VirtualGamePad.ID)) {
                 handleInputForEntity(entity);
             }
@@ -75,7 +72,7 @@ public class RunningSystem extends EntitySystem {
     private void updateJumps() {
 
         //RESET JUMPS
-        for (Entity entity : em.getEntitiesWithComponent(JumpComponent.ID)) {
+        for (Entity entity : getEntityManager().getEntitiesWithComponent(JumpComponent.ID)) {
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
             if (phys.isGrounded()) {
@@ -91,7 +88,7 @@ public class RunningSystem extends EntitySystem {
      */
     private void updateIsGrounded() {
         // TODO only do it for Running Entities
-        for (EntityComponent comp : em.getComponents(PhysicsComponent.ID)) {
+        for (EntityComponent comp : getEntityManager().getComponents(PhysicsComponent.ID)) {
             PhysicsComponent phys = (PhysicsComponent) comp;
 
             if(phys.getContacts().size() == 0){ // TODO this is a hack!

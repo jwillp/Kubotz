@@ -7,7 +7,6 @@ import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 
 /**dd
@@ -20,8 +19,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     private World world;
 
 
-    public PhysicsSystem(EntityManager em) {
-        super(em);
+    public PhysicsSystem() {
         Box2D.init();
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(this);
@@ -47,7 +45,7 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      * that would be colliding tih null entities
      */
     public void cleanContacts(){
-        for(EntityComponent component: em.getComponents(PhysicsComponent.ID)){
+        for(EntityComponent component: getEntityManager().getComponents(PhysicsComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) component;
             phys.getContacts().cleanContacts();
         }

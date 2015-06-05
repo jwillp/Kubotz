@@ -11,7 +11,6 @@ import com.badlogic.gdx.utils.viewport.*;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Config;
@@ -34,8 +33,7 @@ public class HUDSystem extends EntitySystem {
     private Texture timer = new Texture(Gdx.files.internal("hud-multi-timer.png"));
     private Texture bars = new Texture(Gdx.files.internal("hud-multi-bars.png"));
 
-    public HUDSystem(EntityManager em, ShapeRenderer shapeRenderer, SpriteBatch spriteBatch) {
-        super(em);
+    public HUDSystem(ShapeRenderer shapeRenderer, SpriteBatch spriteBatch) {
         this.shapeRenderer = new ShapeRenderer();
         this.spriteBatch = new SpriteBatch();
 
@@ -93,7 +91,7 @@ public class HUDSystem extends EntitySystem {
      */
     public void renderMiniHealthBars(){
 
-        for(Entity entity : em.getEntitiesWithComponent(UIHealthComponent.ID)){
+        for(Entity entity : getEntityManager().getEntitiesWithComponent(UIHealthComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
             HealthComponent health = (HealthComponent)entity.getComponent(HealthComponent.ID);
 

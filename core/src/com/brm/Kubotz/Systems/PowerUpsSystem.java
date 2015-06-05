@@ -4,7 +4,6 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Components.Powerups.PowerUp;
@@ -26,8 +25,7 @@ public class PowerUpsSystem extends EntitySystem {
 
     private Timer spawnTimer; //Timer responsible to determine whether or not we should spawn a new power up
 
-    public PowerUpsSystem(EntityManager em) {
-        super(em);
+    public PowerUpsSystem() {
         int delay = MathUtils.random(Constants.MIN_DELAY_BONUS_SPAWN, Constants.MAX_DELAY_BONUS_SPAWN);
         spawnTimer = new Timer(delay);
         spawnTimer.start();
@@ -49,7 +47,7 @@ public class PowerUpsSystem extends EntitySystem {
      * Terminates all PowerUps if needed
      */
     private void updatePowerUps(){
-        for(Entity entity: em.getEntitiesWithComponent(PowerUpsContainerComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(PowerUpsContainerComponent.ID)){
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) entity.getComponent(PowerUpsContainerComponent.ID);
             ArrayList<PowerUp> powerUps = container.getPowerUps();
@@ -70,7 +68,7 @@ public class PowerUpsSystem extends EntitySystem {
     private void updateSpawns(){
         if(this.spawnTimer.isDone()){
             this.spawnTimer.setDelay(MathUtils.random(Constants.MIN_DELAY_BONUS_SPAWN, Constants.MAX_DELAY_BONUS_SPAWN));
-            if(em.getEntitiesWithComponent(PowerUpComponent.ID).size() < Constants.MAX_NB_BONUS){
+            if(getEntityManager().getEntitiesWithComponent(PowerUpComponent.ID).size() < Constants.MAX_NB_BONUS){
                 this.spawnPowerUp();
             }
             this.spawnTimer.reset();
@@ -85,7 +83,7 @@ public class PowerUpsSystem extends EntitySystem {
 
 
         //Get PowerUps Spawns
-        ArrayList<EntityComponent> spawns = em.getComponents(SpawnPointComponent.ID);
+        ArrayList<EntityComponent> spawns = getEntityManager().getComponents(SpawnPointComponent.ID);
         for (int i = 0, spawnsSize = spawns.size(); i < spawnsSize; i++) {
             if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.PowerUp) {
                 spawns.remove(i);
@@ -94,7 +92,7 @@ public class PowerUpsSystem extends EntitySystem {
 
         //Get a Random Spawn Point
         int index = MathUtils.random(spawns.size()-1);
-        Entity entity = em.getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
+        Entity entity = getEntityManager().getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
         SpawnPointComponent spawn = (SpawnPointComponent)entity.getComponent(SpawnPointComponent.ID);
 
         //Randomize position
@@ -104,7 +102,7 @@ public class PowerUpsSystem extends EntitySystem {
 
 
         // Make a random PowerUp
-        new PowerUpFactory(em, this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
+        new PowerUpFactory(getEntityManager(), this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
             .withEffect(getRandomEffect())
             .withDuration(Timer.TEN_SECONDS * 3)
             .withLifeTime(Timer.TEN_SECONDS * 2)

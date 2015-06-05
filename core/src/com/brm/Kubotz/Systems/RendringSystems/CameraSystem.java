@@ -4,19 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.viewport.FillViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
 import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Config;
 
 /**
  * A system handling all cameras and their movements
@@ -29,8 +24,7 @@ public class CameraSystem extends EntitySystem {
     private final Viewport viewport;
     private float maxX, maxY;
 
-    public CameraSystem(EntityManager em) {
-        super(em);
+    public CameraSystem() {
         maxX = 40;
         maxY = 24;
         //Creation of a main Camera
@@ -51,7 +45,7 @@ public class CameraSystem extends EntitySystem {
         Vector2 rightMost = new Vector2(Integer.MIN_VALUE, Integer.MIN_VALUE);
 
         //Find the left most entity and the right most entity
-        for(Entity target : this.em.getEntitiesWithComponentEnabled(CameraTargetComponent.ID)){
+        for(Entity target : this.getEntityManager().getEntitiesWithComponentEnabled(CameraTargetComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
             leftMost.x = java.lang.Math.min(leftMost.x, phys.getPosition().x);

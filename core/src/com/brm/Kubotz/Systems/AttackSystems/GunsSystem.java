@@ -5,7 +5,6 @@ package com.brm.Kubotz.Systems.AttackSystems;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
@@ -22,9 +21,7 @@ import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 public class GunsSystem extends EntitySystem {
 
 
-    public GunsSystem(EntityManager em) {
-        super(em);
-    }
+    public GunsSystem(){}
 
     @Override
     public void init() {}
@@ -33,7 +30,7 @@ public class GunsSystem extends EntitySystem {
     @Override
     public void handleInput() {
 
-        for(Entity entity: em.getEntitiesWithComponent(GunComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(GunComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 handleInputForEntity(entity);
             }
@@ -76,7 +73,7 @@ public class GunsSystem extends EntitySystem {
 
 
         //Delete bullet that collided
-        for(Entity entity: em.getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
+        for(Entity entity: getEntityManager().getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
 
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             if(!phys.getContacts().isEmpty()){
@@ -108,7 +105,7 @@ public class GunsSystem extends EntitySystem {
         }
 
         position.add(phys.getPosition());
-        return new BulletFactory(this.em, phys.getBody().getWorld(), position)
+        return new BulletFactory(this.getEntityManager(), phys.getBody().getWorld(), position)
                 .withDamage(gunComponent.getDamage())
                 .withSize(1, phys.getWidth() * 0.5f)
                 .withKnockBack(gunComponent.getKnockBack())

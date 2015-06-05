@@ -3,7 +3,6 @@ package com.brm.Kubotz.Systems.AttackSystems;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.LifespanComponent;
@@ -17,9 +16,7 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class LaserSwordSystem extends EntitySystem{
 
-    public LaserSwordSystem(EntityManager em) {
-        super(em);
-    }
+    public LaserSwordSystem(){}
 
     @Override
     public void init(){}
@@ -28,7 +25,7 @@ public class LaserSwordSystem extends EntitySystem{
     @Override
     public void handleInput() {
 
-        for(Entity entity: em.getEntitiesWithComponent(LaserSwordComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(LaserSwordComponent.ID)){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             LaserSwordComponent laserSwordComponent = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
             PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
@@ -55,7 +52,7 @@ public class LaserSwordSystem extends EntitySystem{
         // See if punch duration is over
         // Update the punch's position according to the puncher's position
 
-        for(Entity entity: em.getEntitiesWithComponent(LaserSwordComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(LaserSwordComponent.ID)){
             LaserSwordComponent laserSwordComponent = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
 
             //If the entity is punching
@@ -113,7 +110,7 @@ public class LaserSwordSystem extends EntitySystem{
         }
 
         position.add(agentPhys.getPosition());
-        return new BulletFactory(this.em, agentPhys.getBody().getWorld(), position)
+        return new BulletFactory(this.getEntityManager(), agentPhys.getBody().getWorld(), position)
                 .withDamage(laserSwordComponent.getDamage())
                 .withSize(agentPhys.getWidth() * 3.0f, agentPhys.getHeight() * 2.1f)
                 .withKnockBack(laserSwordComponent.getKnockBack())
