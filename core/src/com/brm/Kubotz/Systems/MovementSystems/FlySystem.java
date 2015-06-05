@@ -40,14 +40,14 @@ public class FlySystem extends EntitySystem {
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         if(flyComponent.isEnabled()){
-            if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+            if (gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                 flyUp(entity);
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
                 flyDown(entity);
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 flyRight(entity);
 
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_LEFT)) {
                 flyLeft(entity);
             }else{
                 //No movement made? we decelerate

@@ -130,7 +130,7 @@ public class KubotzFactory extends EntityFactory {
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
-        /* PUNCH Component*/
+        /* BUTTON_A Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);
         
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);

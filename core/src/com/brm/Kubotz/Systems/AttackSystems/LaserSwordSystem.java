@@ -34,10 +34,10 @@ public class LaserSwordSystem extends EntitySystem{
             PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
             //Triggers the punch
-            if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
+            if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
                 if(laserSwordComponent.getCooldown().isDone() && laserSwordComponent.getLaserBox() == null){
 
-                    //CREATE A "PUNCH BULLET"
+                    //CREATE A "BUTTON_A BULLET"
                     Entity box = this.createHitBox(physicsComponent, laserSwordComponent);
                     laserSwordComponent.setLaserBox(box);
                     ((LifespanComponent)box.getComponent(LifespanComponent.ID)).startLife();
@@ -86,7 +86,7 @@ public class LaserSwordSystem extends EntitySystem{
 
 
     /**
-     * Creates a "PUNCH BULLET"
+     * Creates a "BUTTON_A BULLET"
      * @param agentPhys the PhysicsComponent of the puncher
      * @return the new Bullet
      */

@@ -27,7 +27,7 @@ public class FlyingBootsSystem extends EntitySystem{
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             FlyingBootsComponent boots = (FlyingBootsComponent) entity.getComponent(FlyingBootsComponent.ID);
 
-            if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+            if(gamePad.isButtonPressed(GameButton.BUTTON_X)){
                 //Need to turn ON?
                 if(!entity.hasComponent(FlyComponent.ID)) {
                     if (boots.getCooldown().isDone())

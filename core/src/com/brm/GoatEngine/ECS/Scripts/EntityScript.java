@@ -33,7 +33,7 @@ public abstract class EntityScript{
      * @param entity the entity this script is attached to
      * @param pressedButtons the buttons that were pressed
      */
-    public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){};
+    public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){}
 
 
     /**

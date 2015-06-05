@@ -51,13 +51,13 @@ public class DashSystem extends EntitySystem{
             boolean isDashValid = true;
 
             //Find dash direction
-            if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
+            if(gamePad.isButtonPressed(GameButton.DPAD_RIGHT)){
                 dashComp.getDirection().x = DashComponent.RIGHT;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_LEFT)){
                 dashComp.getDirection().x = DashComponent.LEFT;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_UP)){
                 dashComp.getDirection().y = DashComponent.UP;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_DOWN)){
                 dashComp.getDirection().y = DashComponent.DOWN;
             }else{
                 isDashValid = false;

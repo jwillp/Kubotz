@@ -133,6 +133,11 @@ public class InGameScreen extends GameScreen {
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();
+                Entity entity = new Entity();
+                entityManager.registerEntity(entity);
+                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
+                        SpawnPointComponent.Type.Player), SpawnPointComponent.ID);
+
             }else if(objType.equals("BONUS_SPAWN")){
                 Entity entity = new Entity();
                 entityManager.registerEntity(entity);

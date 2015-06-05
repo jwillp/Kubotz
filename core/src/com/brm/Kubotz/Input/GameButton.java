@@ -9,10 +9,10 @@ public enum GameButton implements VirtualButton {
 
 
     //D-PAD
-    MOVE_UP,
-    MOVE_LEFT,
-    MOVE_RIGHT,
-    MOVE_DOWN,
+    DPAD_UP,
+    DPAD_LEFT,
+    DPAD_RIGHT,
+    DPAD_DOWN,
 
 
     // MIDDLE BUTTONS
@@ -20,9 +20,10 @@ public enum GameButton implements VirtualButton {
 
 
     // ACTION BUTTONS
-    PRIMARY_ACTION_BUTTON,
-    SECONDARY_ACTION_BUTTON,
-    ACTIVE_SKILL_BUTTON,
-    PUNCH_BUTTON
+    BUTTON_A,
+    BUTTON_B,
+    BUTTON_X,
+    BUTTON_Y,
+    BUTTON_R,
 
 }

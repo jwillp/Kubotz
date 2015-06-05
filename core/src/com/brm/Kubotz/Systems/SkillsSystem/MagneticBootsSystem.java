@@ -43,7 +43,7 @@ public class MagneticBootsSystem extends EntitySystem{
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         MagneticBootsComponent boots = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
 
-        if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+        if(gamePad.isButtonPressed(GameButton.BUTTON_X)){
 
             if(boots.isEnabled()){
                 processMagno(entity, false);
@@ -51,7 +51,7 @@ public class MagneticBootsSystem extends EntitySystem{
                 processMagno(entity, true);
             }
             //Simulate a small jump
-            gamePad.pressButton(GameButton.MOVE_UP);
+            gamePad.pressButton(GameButton.DPAD_UP);
         }
     }
 

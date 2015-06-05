@@ -49,8 +49,8 @@ public class GunsSystem extends EntitySystem {
             GunComponent gunComponent = (GunComponent) entity.getComponent(GunComponent.getId());
             PhysicsComponent physComp = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             gunComponent.setShooting(false);
-            if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
-                gamePad.releaseButton(GameButton.PUNCH_BUTTON);
+            if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
+                gamePad.releaseButton(GameButton.BUTTON_A);
                 //can we shoot?
                 if(gunComponent.getCooldown().isDone()){
                     gunComponent.getCooldown().reset();

@@ -37,7 +37,7 @@ public class GrabSystem extends EntitySystem{
             VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
             //Find if the entity might be trying to grab something
-            if(virtualGamePad.isButtonPressed(GameButton.PRIMARY_ACTION_BUTTON)){
+            if(virtualGamePad.isButtonPressed(GameButton.BUTTON_B)){
                 Logger.log("CHECK");
                 //is the entity colliding with a pick-able object
                 PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
@@ -47,7 +47,7 @@ public class GrabSystem extends EntitySystem{
                         //PICK IT UP
                         this.pickupObject(entity, contact.getEntityB());
                         phys.getContacts().removeContactsWithEntity(contact.getEntityB());
-                        virtualGamePad.releaseButton(GameButton.PRIMARY_ACTION_BUTTON); //Realease Button
+                        virtualGamePad.releaseButton(GameButton.BUTTON_B); //Realease Button
                     }
 
                 }

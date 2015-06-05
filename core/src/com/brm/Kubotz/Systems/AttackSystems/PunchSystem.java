@@ -47,10 +47,10 @@ public class PunchSystem extends EntitySystem{
         PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
         //Triggers the punch
-        if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
+        if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
             if(punchComponent.getCooldown().isDone() && punchComponent.getPunchBullet() == null){
 
-                //CREATE A "PUNCH BULLET"
+                //CREATE A "BUTTON_A BULLET"
                 Entity bullet = this.createBullet(physicsComponent, punchComponent);
                 punchComponent.setPunchBullet(bullet);
                 ((LifespanComponent)bullet.getComponent(LifespanComponent.ID)).startLife();
@@ -98,7 +98,7 @@ public class PunchSystem extends EntitySystem{
 
 
     /**
-     * Creates a "PUNCH BULLET"
+     * Creates a "BUTTON_A BULLET"
      * @param phys the PhysicsComponent of the puncher
      * @return the new Bullet
      */

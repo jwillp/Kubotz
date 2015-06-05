@@ -86,7 +86,7 @@ public class PowerUpsSystem extends EntitySystem {
 
         //Get PowerUps Spawns
         ArrayList<EntityComponent> spawns = em.getComponents(SpawnPointComponent.ID);
-        for (int i = 0, spawnsSize = spawns.size(); i < spawnsSize; i++) {
+        for (int i = 0; i < spawns.size(); i++) {
             if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.PowerUp) {
                 spawns.remove(i);
             }

@@ -1,10 +1,7 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.ParticleEffect;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -13,14 +10,10 @@ import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
-import com.brm.Kubotz.Components.Movements.DashComponent;
-import com.brm.Kubotz.Components.Movements.FlyComponent;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Components.PunchComponent;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -71,7 +64,7 @@ public class KubotzAnimationScript extends EntityScript {
 
         handleRunning(entity, phys, gamePad, anim);
 
-        // PUNCH
+        // BUTTON_A
         if(entity.hasComponentEnabled(PunchComponent.ID)){
             PunchComponent punch = (PunchComponent) entity.getComponent(PunchComponent.ID);
             this.handlePunch(punch);
@@ -129,12 +122,12 @@ public class KubotzAnimationScript extends EntityScript {
     private void handleRunning(Entity entity, PhysicsComponent phys, VirtualGamePad gamePad, SpriterAnimationComponent anim){
         //Check states
         if(currentState.equals(IDLE)){
-            if(gamePad.isButtonPressed(GameButton.MOVE_LEFT) || gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            if(gamePad.isButtonPressed(GameButton.DPAD_LEFT) || gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 currentState = "Running";
             }
 
             if(phys.getVelocity().y > 0){
-                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                if(gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                     currentState = JUMPING;
                 }
             }
@@ -145,7 +138,7 @@ public class KubotzAnimationScript extends EntityScript {
 
         }else if(currentState.equals(RUNNING)){
             if(phys.getVelocity().y > 0){
-                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                if(gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                     currentState = JUMPING;
                 }
             }
@@ -173,7 +166,7 @@ public class KubotzAnimationScript extends EntityScript {
         }else if(currentState.equals(FALLING)){
 
             if(phys.getVelocity().y > 0){
-                if(gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+                if(gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                     currentState = JUMPING;
                 }
             }else if(phys.getVelocity().x != 0 && phys.isGrounded()){

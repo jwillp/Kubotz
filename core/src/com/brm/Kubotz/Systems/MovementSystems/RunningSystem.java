@@ -46,14 +46,14 @@ public class RunningSystem extends EntitySystem {
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
-            if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+            if (gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                 jump(entity);
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
                 moveDown(entity);
 
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 moveRight(entity);
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_LEFT)) {
                 moveLeft(entity);
             } else {
                 //No movement made we decelerate

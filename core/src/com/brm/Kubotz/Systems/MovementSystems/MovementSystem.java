@@ -1,14 +1,11 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 
@@ -44,9 +41,9 @@ public class MovementSystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-            if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT))
+            if(gamePad.isButtonPressed(GameButton.DPAD_RIGHT))
                 phys.setDirection(PhysicsComponent.Direction.RIGHT);
-            else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT))
+            else if(gamePad.isButtonPressed(GameButton.DPAD_LEFT))
                 phys.setDirection(PhysicsComponent.Direction.LEFT);
 
         }
