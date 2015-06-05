@@ -2,6 +2,8 @@ package com.brm.GoatEngine.ECS.Systems;
 
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.ECSManager;
+import com.brm.GoatEngine.ECS.Event;
+import com.brm.GoatEngine.Utils.Logger;
 
 import java.util.LinkedHashMap;
 
@@ -85,5 +87,14 @@ public class EntitySystemManager {
         }
     }
 
-
+    /**
+     * Fires an event to all Systems
+     * @param event
+     */
+    public <T extends Event> void fireEvent(T event) {
+        for(EntitySystem system: this.systems.values()){
+            system.onEvent(event);
+        }
+        Logger.log("AN EVENT WAS FIRED!");
+    }
 }

@@ -7,6 +7,7 @@ import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Event;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 
 /**dd
@@ -15,8 +16,13 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
  */
 public class PhysicsSystem extends EntitySystem implements ContactListener {
 
-
     private World world;
+
+    public class ContactEvent extends Event{
+
+    }
+
+
 
 
     public PhysicsSystem() {
@@ -62,6 +68,8 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
      */
     @Override
     public void beginContact(Contact contact) {
+        
+
         //Get Fixtures
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
