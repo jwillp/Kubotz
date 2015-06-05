@@ -17,6 +17,7 @@ import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.PunchComponent;
+import com.brm.Kubotz.Components.RespawnComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
 
@@ -119,7 +120,7 @@ public class KubotzFactory extends EntityFactory {
 
         //HEALTH
         character.addComponent(new HealthComponent(100), HealthComponent.ID);
-
+        character.addComponent(new ManaComponent(100), ManaComponent.ID);
         /* Flying Component */
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
@@ -132,7 +133,7 @@ public class KubotzFactory extends EntityFactory {
         /* PUNCH Component*/
         character.addComponent(new PunchComponent(physics), PunchComponent.ID);
         
-
+        character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 
 
         //GRAB

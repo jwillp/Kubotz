@@ -88,6 +88,8 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(AnimationSystem.class, new AnimationSystem(this.entityManager));
 
+        systemManager.addSystem(RespawnSystem.class, new RespawnSystem(this.entityManager));
+
 
         //INIT SYSTEMS
         systemManager.initSystems();
@@ -149,11 +151,11 @@ public class InGameScreen extends GameScreen {
 
 
 
-       /* Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,12))
+        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,12))
                 .withHeight(2.0f)
                 .withCameraTargetComponent().build();
         bo.disableComponent(VirtualGamePad.ID);
-        bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);*/
+        bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
 
         Logger.log("In Game State initialised");
     }
@@ -199,6 +201,9 @@ public class InGameScreen extends GameScreen {
 
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(AnimationSystem.class).update(deltaTime);
+
+
+        systemManager.getSystem(RespawnSystem.class).update(deltaTime);
     }
 
     @Override

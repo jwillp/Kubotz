@@ -125,7 +125,7 @@ public abstract class PowerUpEffect {
     /**
      * Makes an entity invincible (does not take any damage)
      */
-    public class InvicibilityProvider extends PowerUpEffect{
+    public static class InvincibilityProvider extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {
@@ -141,7 +141,7 @@ public abstract class PowerUpEffect {
     /**
      * Gives a shield to an entity absorbing damage
      */
-    public class ShieldProvider extends PowerUpEffect{
+    public static class ShieldProvider extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {
@@ -157,7 +157,7 @@ public abstract class PowerUpEffect {
     /**
      * Makes an Entity invisible (usually for sometime)
      */
-    public class InvisibilityProvider extends PowerUpEffect{
+    public static class InvisibilityProvider extends PowerUpEffect{
 
         @Override
         public void onStart(Entity entity) {

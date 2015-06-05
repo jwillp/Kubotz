@@ -12,6 +12,7 @@ import java.io.IOException;
 public class Config {
 
 
+
     public static String TITLE = "Kubotz";
 
     //Fixed Aspect Ratio
@@ -99,6 +100,8 @@ public class Config {
 
     public static float GRAVITY_X = 0.0f;
     public static float GRAVITY_Y = 50.0f;
+
+    public static final int RESPAWN_DELAY = 2000;
 
 
     /**
@@ -228,6 +231,8 @@ public class Config {
 
         prop.setProperty("GRAVITY_X", String.valueOf(GRAVITY_X));
         prop.setProperty("GRAVITY_Y", String.valueOf(GRAVITY_Y));
+
+        prop.setProperty("RESPAWN_DELAY", String.valueOf(RESPAWN_DELAY));
 
         prop.store(output, "GAME RULES SETTINGS");
         output.write("\n\n".getBytes());
