@@ -194,11 +194,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_II), GunComponent.ID);
+            entity.disableComponent(PunchComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(GunComponent.ID);
+            entity.enableComponent(PunchComponent.ID);
         }
     }
 
@@ -211,11 +213,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
+            entity.disableComponent(PunchComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(LaserSwordComponent.ID);
+            entity.enableComponent(PunchComponent.ID);
         }
     }
 

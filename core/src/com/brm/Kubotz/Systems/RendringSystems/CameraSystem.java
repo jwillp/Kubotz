@@ -51,7 +51,7 @@ public class CameraSystem extends EntitySystem {
         Vector2 rightMost = new Vector2(Integer.MIN_VALUE, Integer.MIN_VALUE);
 
         //Find the left most entity and the right most entity
-        for(Entity target : this.em.getEntitiesWithComponent(CameraTargetComponent.ID)){
+        for(Entity target : this.em.getEntitiesWithComponentEnabled(CameraTargetComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
 
             leftMost.x = java.lang.Math.min(leftMost.x, phys.getPosition().x);

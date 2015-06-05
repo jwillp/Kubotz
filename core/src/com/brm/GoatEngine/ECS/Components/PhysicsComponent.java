@@ -84,6 +84,9 @@ public class PhysicsComponent extends EntityComponent {
         return this.body.getPosition();
     }
 
+    public void setPosition(float x, float y){
+        this.body.setTransform(x,y, this.body.getAngle());
+    }
 
     public Vector2 getAcceleration() {
         return acceleration;

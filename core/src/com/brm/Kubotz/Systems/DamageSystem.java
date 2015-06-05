@@ -11,6 +11,7 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
 import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
+import com.brm.Kubotz.Constants;
 
 /**
  * Used to deal damage and process Health Bonuses
@@ -37,11 +38,14 @@ public class DamageSystem extends EntitySystem{
                 //The the other entity can be Hit handle damage
                 if(contact.getEntityB().hasComponent(HealthComponent.ID)){
 
-                    handleDamage(contact.getEntityA(), contact.getEntityB());
-                    //REMOVE CONTACTS
-                    phys.getContacts().remove(i);
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.getContacts().remove(contact);
+                    //Only hit the torso //TODO this is a quick fix (hack) to prevent 3 fixture damamge
+                    if(contact.fixtureB.getUserData().equals(Constants.FIXTURE_TORSO)){
+                        handleDamage(contact.getEntityA(), contact.getEntityB());
+                        //REMOVE CONTACTS
+                        phys.getContacts().remove(i);
+                        PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
+                        physB.getContacts().remove(contact);
+                    }
                 }
             }
         }

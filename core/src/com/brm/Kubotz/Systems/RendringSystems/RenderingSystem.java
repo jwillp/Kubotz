@@ -90,7 +90,7 @@ public class RenderingSystem extends EntitySystem {
         spriteBatch.begin();
 
         //UPDATE SPRITER
-        for(Entity entity: em.getEntitiesWithComponent(SpriterAnimationComponent.ID)){
+        for(Entity entity: em.getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
