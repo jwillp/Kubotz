@@ -3,11 +3,11 @@ package com.brm.Kubotz.Entities;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
-import com.brm.GoatEngine.ECS.Components.*;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.*;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.GrabComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
@@ -16,7 +16,7 @@ import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
-import com.brm.Kubotz.Components.PunchComponent;
+import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.RespawnComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
@@ -131,7 +131,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
-        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
         
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 

@@ -1,8 +1,8 @@
 package com.brm.Kubotz.Events;
 
 import com.badlogic.gdx.physics.box2d.Fixture;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Event;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 
 /**
  * Triggered when two entities collide.
@@ -25,6 +25,7 @@ public class CollisionEvent extends Event {
     }
 
     public CollisionEvent(Fixture fixtureA, Fixture fixtureB, Describer describer){
+        super((String)((Entity)fixtureA.getBody().getUserData()).getID());
         this.fixtureA = fixtureA;
         this.fixtureB = fixtureB;
         this.describer = describer;

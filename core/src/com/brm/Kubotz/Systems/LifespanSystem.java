@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Systems;
 
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.Kubotz.Components.LifespanComponent;
 
 /**

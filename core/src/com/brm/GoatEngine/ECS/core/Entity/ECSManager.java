@@ -1,7 +1,6 @@
-package com.brm.GoatEngine.ECS;
+package com.brm.GoatEngine.ECS.core.Entity;
 
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
 
 /**
  * Big container used to setup an ECS

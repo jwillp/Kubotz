@@ -1,9 +1,8 @@
-package com.brm.GoatEngine.ECS.Systems;
+package com.brm.GoatEngine.ECS.core.Systems;
 
 import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.ECSManager;
-import com.brm.GoatEngine.ECS.Event;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 
 import java.util.LinkedHashMap;
 

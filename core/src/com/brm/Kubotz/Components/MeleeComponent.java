@@ -1,9 +1,9 @@
 package com.brm.Kubotz.Components;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
@@ -11,7 +11,7 @@ import com.brm.Kubotz.Constants;
 /**
  * Component used to let an entity punch
  */
-public class PunchComponent extends EntityComponent {
+public class MeleeComponent extends EntityComponent {
 
     public static final String ID = "PUNCH_COMPONENT";
 
@@ -30,7 +30,7 @@ public class PunchComponent extends EntityComponent {
      *
      * @param phys : The physics component of the entity
      */
-    public PunchComponent(PhysicsComponent phys){
+    public MeleeComponent(PhysicsComponent phys){
        this.phys = phys;
         this.durationTimer.start();
         this.cooldown.start();

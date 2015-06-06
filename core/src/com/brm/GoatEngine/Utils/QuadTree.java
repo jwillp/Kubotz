@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.Utils;
 
 import com.badlogic.gdx.math.Rectangle;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 
 import java.util.ArrayList;
 

@@ -1,14 +1,14 @@
 package com.brm.Kubotz.Events;
 
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+
 /**
  * Triggered when an entity is taking Damage
  */
-public class TakeDamageEvent {
-
-    private final String entityId;
+public class TakeDamageEvent extends Event {
 
     public TakeDamageEvent(String entityId){
-        this.entityId = entityId;
+        super(entityId);
     }
 
 }

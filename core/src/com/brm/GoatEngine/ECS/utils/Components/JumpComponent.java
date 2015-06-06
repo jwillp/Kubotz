@@ -1,6 +1,7 @@
-package com.brm.GoatEngine.ECS.Components;
+package com.brm.GoatEngine.ECS.utils.Components;
 
 
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 /**

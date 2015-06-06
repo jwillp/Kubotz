@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Components;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Makes an entity able to grab/pick up objects and throw them away.

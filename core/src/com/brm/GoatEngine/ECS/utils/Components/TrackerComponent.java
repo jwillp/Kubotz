@@ -1,6 +1,7 @@
-package com.brm.GoatEngine.ECS.Components;
+package com.brm.GoatEngine.ECS.utils.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Alllows an entity to follow another entity

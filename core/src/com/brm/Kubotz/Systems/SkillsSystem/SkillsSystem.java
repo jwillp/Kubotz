@@ -1,9 +1,6 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.Kubotz.Systems.MovementSystems.DashSystem;
-import com.brm.Kubotz.Systems.MovementSystems.FlySystem;
-import com.brm.Kubotz.Systems.MovementSystems.RunningSystem;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 
 /**
  * Used to process Skills... most active skills

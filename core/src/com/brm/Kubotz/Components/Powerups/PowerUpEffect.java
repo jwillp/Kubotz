@@ -1,14 +1,14 @@
 package com.brm.Kubotz.Components.Powerups;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.ManaComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.utils.Components.JumpComponent;
+import com.brm.GoatEngine.ECS.utils.Components.ManaComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
-import com.brm.Kubotz.Components.PunchComponent;
+import com.brm.Kubotz.Components.MeleeComponent;
 
 /**
  * The effect of a PowerUp. It is an action to perform
@@ -178,13 +178,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
-            entity.disableComponent(PunchComponent.ID);
+            entity.disableComponent(MeleeComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(GunComponent.ID);
-            entity.enableComponent(PunchComponent.ID);
+            entity.enableComponent(MeleeComponent.ID);
         }
     }
 
@@ -194,13 +194,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_II), GunComponent.ID);
-            entity.disableComponent(PunchComponent.ID);
+            entity.disableComponent(MeleeComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(GunComponent.ID);
-            entity.enableComponent(PunchComponent.ID);
+            entity.enableComponent(MeleeComponent.ID);
         }
     }
 
@@ -213,13 +213,13 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
-            entity.disableComponent(PunchComponent.ID);
+            entity.disableComponent(MeleeComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(LaserSwordComponent.ID);
-            entity.enableComponent(PunchComponent.ID);
+            entity.enableComponent(MeleeComponent.ID);
         }
     }
 

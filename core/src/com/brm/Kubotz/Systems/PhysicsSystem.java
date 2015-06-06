@@ -3,7 +3,7 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.Kubotz.Events.CollisionEvent;
 
 import java.util.ArrayList;

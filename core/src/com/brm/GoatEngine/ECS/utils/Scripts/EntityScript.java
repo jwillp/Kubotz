@@ -1,7 +1,7 @@
-package com.brm.GoatEngine.ECS.Scripts;
+package com.brm.GoatEngine.ECS.utils.Scripts;
 
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Event;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Events.CollisionEvent;
 
@@ -58,4 +58,6 @@ public abstract class EntityScript{
     public void setInitialized(boolean isInitialized) {
         this.isInitialized = isInitialized;
     }
+
+    public <T extends Event> void onEvent(T event){};
 }

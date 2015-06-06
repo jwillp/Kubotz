@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Components.Graphics;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Used to add an currentAnimation to an entity

@@ -13,11 +13,11 @@ import com.badlogic.gdx.math.Vector2;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
-import com.brm.GoatEngine.ECS.ECSManager;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
-import com.brm.GoatEngine.ECS.Systems.ScriptSystem;
+import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
@@ -28,7 +28,7 @@ import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
-import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
+import com.brm.Kubotz.Systems.AttackSystems.MeleeSystem;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
@@ -76,7 +76,7 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem());
 
-        systemManager.addSystem(PunchSystem.class, new PunchSystem());
+        systemManager.addSystem(MeleeSystem.class, new MeleeSystem());
 
         systemManager.addSystem(LifespanSystem.class, new LifespanSystem());
 

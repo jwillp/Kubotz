@@ -3,11 +3,11 @@ package com.brm.Kubotz.Systems.AttackSystems;
 
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Event;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
@@ -103,7 +103,6 @@ public class GunsSystem extends EntitySystem {
                 if (tags.hasTag(Constants.ENTITY_TAG_BULLET)) {
                     PhysicsComponent phys = (PhysicsComponent) collision.getEntityA().getComponent(PhysicsComponent.ID);
                     phys.getBody().setActive(false);
-
 
                     //TODO send a TakeDamageEvent
                 }

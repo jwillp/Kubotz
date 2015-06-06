@@ -1,8 +1,8 @@
-package com.brm.GoatEngine.ECS.Components;
+package com.brm.GoatEngine.ECS.utils.Components;
 
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -15,7 +15,7 @@ import java.util.HashMap;
  *     - multiple guns on a spaceship
  *
  */
-public class ChildrenComponent extends EntityComponent{
+public class ChildrenComponent extends EntityComponent {
 
     public static final String ID = "CHILDREN_COMPONENT";
 

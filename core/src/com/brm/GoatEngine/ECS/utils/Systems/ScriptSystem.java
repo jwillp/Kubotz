@@ -1,9 +1,10 @@
-package com.brm.GoatEngine.ECS.Systems;
+package com.brm.GoatEngine.ECS.utils.Systems;
 
-import com.brm.GoatEngine.ECS.Components.ScriptComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Event;
-import com.brm.GoatEngine.ECS.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Events.CollisionEvent;
 
@@ -11,7 +12,7 @@ import com.brm.Kubotz.Events.CollisionEvent;
 /**
  * Responsible for updateing sripts
  */
-public class ScriptSystem extends EntitySystem{
+public class ScriptSystem extends EntitySystem {
 
     public ScriptSystem(){}
 
@@ -61,30 +62,19 @@ public class ScriptSystem extends EntitySystem{
 
     @Override
     public <T extends Event> void onEvent(T event) {
-        if(event.getClass() == CollisionEvent.class){
-            CollisionEvent contact = (CollisionEvent) event;
-            if(contact.getEntityA() != null) {
-                if (contact.getEntityA().hasComponentEnabled(ScriptComponent.ID)) {
-                    this.onCollision(contact, contact.getEntityA());
+        Entity entity = getEntityManager().getEntity(event.getEntityId());
+        if(entity.hasComponentEnabled(ScriptComponent.ID)){
+            ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
+            for(EntityScript script: scripts.getScripts()){
+                if(event.getClass() == CollisionEvent.class){
+                    script.onCollision((CollisionEvent)event); //TODO get rid of this! generify!
+                }else{
+                    script.onEvent(event);
                 }
             }
         }
-
-
-
-
     }
 
-    /**
-     * Checks if entity has any collision if so call the right method of script
-     * @param entity
-     */
-    private void onCollision(CollisionEvent contact, Entity entity){
-        ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
-        for(EntityScript script: scriptComp.getScripts()){
-            script.onCollision(contact);
-        }
-    }
 
 
 }

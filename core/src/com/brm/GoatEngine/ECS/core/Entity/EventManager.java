@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.ECS;
+package com.brm.GoatEngine.ECS.core.Entity;
 
 import java.util.ArrayList;
 

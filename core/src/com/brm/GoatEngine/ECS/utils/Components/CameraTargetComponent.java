@@ -1,6 +1,6 @@
-package com.brm.GoatEngine.ECS.Components.Cameras;
+package com.brm.GoatEngine.ECS.utils.Components;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Used to make an entity important for a camera.

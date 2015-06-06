@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.ECS.Components;
+package com.brm.GoatEngine.ECS.utils.Components;
 
 /**
  * Used for magic powers, mana, energy etc.

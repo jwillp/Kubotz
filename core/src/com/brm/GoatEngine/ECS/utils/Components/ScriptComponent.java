@@ -1,7 +1,8 @@
-package com.brm.GoatEngine.ECS.Components;
+package com.brm.GoatEngine.ECS.utils.Components;
 
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 
 import java.util.ArrayList;
 
