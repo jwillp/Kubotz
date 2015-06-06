@@ -4,7 +4,9 @@ package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.Event;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
@@ -12,6 +14,8 @@ import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
+import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Events.GunShotEvent;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 
@@ -49,6 +53,7 @@ public class GunsSystem extends EntitySystem {
                     gunComponent.getCooldown().reset();
                     gunComponent.setShooting(true);
 
+                    this.fireEvent(new GunShotEvent(entity.getID()));
 
                     //CREATE A BULLET
                     Entity bullet = this.createBullet(physComp, gunComponent);
@@ -57,7 +62,6 @@ public class GunsSystem extends EntitySystem {
                     int direction = (physComp.getDirection() == PhysicsComponent.Direction.RIGHT) ? 1 : -1;
                     MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
                     MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
-
                 }
             }
     }
@@ -78,6 +82,37 @@ public class GunsSystem extends EntitySystem {
         }
 
     }
+
+
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == CollisionEvent.class){
+            this.onCollision((CollisionEvent) event);
+        }
+    }
+
+
+    /**
+     * Triggered when a collision occurs
+     * Used to see if a bullet has collided with something
+     */
+    private void onCollision(CollisionEvent collision){
+        if(collision.getEntityA() != null) {
+            if (collision.getEntityA().hasComponent(TagsComponent.ID)) {
+                TagsComponent tags = (TagsComponent) collision.getEntityA().getComponent(TagsComponent.ID);
+                if (tags.hasTag(Constants.ENTITY_TAG_BULLET)) {
+                    PhysicsComponent phys = (PhysicsComponent) collision.getEntityA().getComponent(PhysicsComponent.ID);
+                    phys.getBody().setActive(false);
+
+
+                    //TODO send a TakeDamageEvent
+                }
+            }
+        }
+    }
+
+
+
 
 
 

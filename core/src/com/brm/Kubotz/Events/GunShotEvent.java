@@ -1,9 +1,11 @@
 package com.brm.Kubotz.Events;
 
+import com.brm.GoatEngine.ECS.Event;
+
 /**
  * Triggered when an entity fires a Gun Shot
  */
-public class GunShotEvent {
+public class GunShotEvent extends Event{
 
     public final String shooterId; //The entity Shooting
 

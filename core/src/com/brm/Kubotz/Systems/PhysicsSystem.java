@@ -6,6 +6,8 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.Kubotz.Events.CollisionEvent;
 
+import java.util.ArrayList;
+
 /**dd
  * Responsible for checking collisions, making the entities move
  * and apply gravity to the necessary entities
@@ -13,6 +15,8 @@ import com.brm.Kubotz.Events.CollisionEvent;
 public class PhysicsSystem extends EntitySystem implements ContactListener {
 
     private World world;
+
+    private ArrayList<CollisionEvent> collisions = new ArrayList<CollisionEvent>();
 
     public PhysicsSystem() {
         Box2D.init();
@@ -27,6 +31,12 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
     public void update(float dt) {
         //Update the box2D world
         world.step(1 / 60f, 6, 2);
+
+        // UPDATE CALLBACKS
+        for(CollisionEvent event: collisions){
+            this.fireEvent(event);
+        }
+        collisions.clear();
     }
 
 
@@ -42,14 +52,16 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
-        if(fixtureA.getUserData() != null) {
-            this.fireEvent(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.BEGIN));
+        if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
+            this.collisions.add(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.BEGIN));
         }
-        if(fixtureB.getUserData() != null) {
-            this.fireEvent(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.BEGIN));
+        if(fixtureB.getUserData() != null && fixtureB.getBody().getUserData() != null) {
+            this.collisions.add(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.BEGIN));
         }
 
-        //TODO see if we need to fire these events later (in case we are during a world step)
+
+
+
     }
 
     /**
@@ -61,11 +73,11 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
-        if(fixtureA.getUserData() != null) {
-            this.fireEvent(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.END));
+        if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
+            this.collisions.add(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.END));
         }
-        if(fixtureB.getUserData() != null) {
-            this.fireEvent(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.END));
+        if(fixtureB.getUserData() != null && fixtureB.getBody().getUserData() != null) {
+            this.collisions.add(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.END));
         }
     }
 

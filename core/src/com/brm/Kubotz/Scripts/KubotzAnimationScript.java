@@ -7,9 +7,8 @@ import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Components.PunchComponent;
@@ -80,6 +79,10 @@ public class KubotzAnimationScript extends EntityScript {
         }
 
     }
+
+
+
+
 
 
 
@@ -192,7 +195,7 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     /**
-            * Handles Kubotz with Guns
+    * Handles Kubotz with Guns
     * @param gun
     */
     private void handleGuns(GunComponent gun) {
@@ -251,13 +254,9 @@ public class KubotzAnimationScript extends EntityScript {
             anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserSword");
         }else if(entity.hasComponent(GunComponent.ID)){
             anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserGunMkI");
-            Logger.log("YEP");
         }
-
-
-
+        
         // BOOTS
-
 
     }
 

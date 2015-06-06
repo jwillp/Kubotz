@@ -63,10 +63,16 @@ public class ScriptSystem extends EntitySystem{
     public <T extends Event> void onEvent(T event) {
         if(event.getClass() == CollisionEvent.class){
             CollisionEvent contact = (CollisionEvent) event;
-            if(contact.getEntityA().hasComponentEnabled(ScriptComponent.ID)){
-                this.onCollision(contact, contact.getEntityA());
+            if(contact.getEntityA() != null) {
+                if (contact.getEntityA().hasComponentEnabled(ScriptComponent.ID)) {
+                    this.onCollision(contact, contact.getEntityA());
+                }
             }
         }
+
+
+
+
     }
 
     /**

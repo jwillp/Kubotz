@@ -95,12 +95,15 @@ public class RunningSystem extends EntitySystem {
      * @param contact
      */
     private void onCollision(CollisionEvent contact){
-        if(contact.getFixtureA().getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) {
-            if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
-                PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
-                phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
+        if(contact.getEntityA() != null){
+            if(contact.getFixtureA().getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) {
+                if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
+                    PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
+                    phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
+                }
             }
         }
+
     }
 
 

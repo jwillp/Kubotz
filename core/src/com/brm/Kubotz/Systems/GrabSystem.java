@@ -60,15 +60,17 @@ public class GrabSystem extends EntitySystem{
 
     @Override
     public <T extends Event> void onEvent(T event) {
-
+        // TODO Better system!
         if(event.getClass() == CollisionEvent.class){
             CollisionEvent contact = (CollisionEvent) event;
-            if(contact.getEntityA().hasComponentEnabled(GrabComponent.ID)){
-                Entity entity = contact.getEntityA();
-                VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-                if(virtualGamePad.isButtonPressed(GameButton.PRIMARY_ACTION_BUTTON)){
-                    if(contact.getEntityB().hasComponentEnabled(GrabbableComponent.ID)){
-                        this.pickupObject(entity, contact.getEntityB());
+            if(contact.getEntityA() != null) {
+                if (contact.getEntityA().hasComponentEnabled(GrabComponent.ID)) {
+                    Entity entity = contact.getEntityA();
+                    VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+                    if (virtualGamePad.isButtonPressed(GameButton.PRIMARY_ACTION_BUTTON)) {
+                        if (contact.getEntityB().hasComponentEnabled(GrabbableComponent.ID)) {
+                            this.pickupObject(entity, contact.getEntityB());
+                        }
                     }
                 }
             }
