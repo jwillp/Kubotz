@@ -95,6 +95,5 @@ public class EntitySystemManager {
         for(EntitySystem system: this.systems.values()){
             system.onEvent(event);
         }
-        Logger.log("AN EVENT WAS FIRED!");
     }
 }

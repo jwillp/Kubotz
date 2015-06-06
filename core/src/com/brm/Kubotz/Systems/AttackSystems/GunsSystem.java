@@ -29,16 +29,12 @@ public class GunsSystem extends EntitySystem {
 
     @Override
     public void handleInput() {
-
         for(Entity entity: getEntityManager().getEntitiesWithComponent(GunComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 handleInputForEntity(entity);
             }
-
         }
-
     }
-
 
 
     private void handleInputForEntity(Entity entity){
@@ -75,10 +71,10 @@ public class GunsSystem extends EntitySystem {
         //Delete bullet that collided
         for(Entity entity: getEntityManager().getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
 
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            /*PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             if(!phys.getContacts().isEmpty()){
                 phys.getBody().setActive(false);
-            }
+            }*/ // TODO REPAIR THIS
         }
 
     }

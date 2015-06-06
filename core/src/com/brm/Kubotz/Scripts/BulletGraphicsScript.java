@@ -3,9 +3,9 @@ package com.brm.Kubotz.Scripts;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Events.CollisionEvent;
 
 /**
  * Used to handle visual apsects of bullets
@@ -21,7 +21,7 @@ public class BulletGraphicsScript extends EntityScript {
     }
 
     @Override
-    public void onCollision(EntityContact contact) {
+    public void onCollision(CollisionEvent contact) {
         addSmokeEffect(contact.getEntityA());
     }
 

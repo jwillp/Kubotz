@@ -1,9 +1,9 @@
 package com.brm.GoatEngine.ECS.Scripts;
 
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.Event;
 import com.brm.GoatEngine.Input.VirtualButton;
+import com.brm.Kubotz.Events.CollisionEvent;
 
 import java.util.ArrayList;
 
@@ -41,7 +41,9 @@ public abstract class EntityScript{
      * two entities touch
      * @param contact
      */
-    public void onCollision(EntityContact contact){}
+    public <T extends Event> void onCollision(CollisionEvent contact){
+
+    }
 
     /**
      * Called when the script is detached from the entity

@@ -1,26 +1,18 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.ParticleEffect;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
-import com.brm.Kubotz.Components.Movements.DashComponent;
-import com.brm.Kubotz.Components.Movements.FlyComponent;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Components.PunchComponent;
-import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -51,14 +43,6 @@ public class KubotzAnimationScript extends EntityScript {
     //Default state
     private String currentState = DEFAULT;
 
-    @Override
-    public void onCollision(EntityContact contact) {
-
-        Entity entity = contact.getEntityA();
-
-        //GETTING HIT
-
-    }
 
     @Override
     public void onUpdate(Entity entity) {

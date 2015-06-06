@@ -4,7 +4,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.DamageComponent;
@@ -28,7 +27,7 @@ public class DamageSystem extends EntitySystem{
     @Override
     public void update(float dt){
         //Process collisions
-        for(Entity e: getEntityManager().getEntitiesWithComponent(DamageComponent.ID)){
+        /*for(Entity e: getEntityManager().getEntitiesWithComponent(DamageComponent.ID)){
             PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
 
             for(int i=0; i< phys.getContacts().size(); i++){
@@ -46,7 +45,7 @@ public class DamageSystem extends EntitySystem{
                     }
                 }
             }
-        }
+        }*/
     }
 
 
@@ -95,13 +94,7 @@ public class DamageSystem extends EntitySystem{
 
         }
         Logger.log(targetHealth.getAmount());
-
-
     }
-
-
-
-
 
 
 

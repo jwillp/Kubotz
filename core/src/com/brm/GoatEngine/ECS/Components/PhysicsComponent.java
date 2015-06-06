@@ -4,7 +4,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContactCollection;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World
@@ -14,13 +13,11 @@ public class PhysicsComponent extends EntityComponent {
 
     public final static String ID = "PHYSICS_PROPERTY";
 
-
     //The directions an entity can face
     public enum Direction{
         LEFT,  //RIGHT
         RIGHT, //LEFT
     }
-
 
     private Body body;  //the physical body of the entity
     private Vector2 acceleration = new Vector2(0,0);   // The acceleration rate
@@ -30,16 +27,8 @@ public class PhysicsComponent extends EntityComponent {
 
     private Direction direction = Direction.LEFT;
 
-
-
     private float width;   //The width of the entity(in game units)
     private float height;  //The height of the entity (in game units)
-
-    // List of all the contacts that recently happened to the entities.
-
-    // The "A entity" will always be the current entity.
-    private EntityContactCollection contacts = new EntityContactCollection();
-
 
 
     /**
@@ -137,13 +126,7 @@ public class PhysicsComponent extends EntityComponent {
         this.direction = direction;
     }
 
-    public EntityContactCollection getContacts() {
-        return contacts;
-    }
 
-    public void setContacts(EntityContactCollection contacts) {
-        this.contacts = contacts;
-    }
 
 
 

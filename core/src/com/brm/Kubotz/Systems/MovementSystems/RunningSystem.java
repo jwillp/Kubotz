@@ -1,15 +1,15 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.JumpComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
+import com.brm.GoatEngine.ECS.Event;
 import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Events.CollisionEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -62,7 +62,6 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public void update(float dt) {
-        updateIsGrounded();
         updateJumps();
     }
 
@@ -83,30 +82,29 @@ public class RunningSystem extends EntitySystem {
     }
 
 
-    /**
-     * Updates the property describing if an entity is grounded or not
-     */
-    private void updateIsGrounded() {
-        // TODO only do it for Running Entities
-        for (EntityComponent comp : getEntityManager().getComponents(PhysicsComponent.ID)) {
-            PhysicsComponent phys = (PhysicsComponent) comp;
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == CollisionEvent.class){
+           this.onCollision((CollisionEvent)event);
+        }
+    }
 
-            if(phys.getContacts().size() == 0){ // TODO this is a hack!
-                phys.setGrounded(false);
-            }else {
-                for (int i = 0; i < phys.getContacts().size(); i++) {
-                    EntityContact contact = phys.getContacts().get(i);
-                    if (contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR) {
-                        phys.setGrounded(true);
-                        phys.getContacts().remove(i);
-                        //REMOVE OTHER contact for other entity
-                        PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                        physB.getContacts().remove(contact);
-                    }
-                }
+
+    /**
+     * Called when a collision occurs between two entities
+     * @param contact
+     */
+    private void onCollision(CollisionEvent contact){
+        if(contact.getFixtureA().getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) {
+            if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
+                PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
+                phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
             }
         }
     }
+
+
+
 
 
     /**

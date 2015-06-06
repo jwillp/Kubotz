@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 /**
  * Manages entity Events
+ *
+ * //TODO Make systems register themselves to EventTypes
  */
 public class EventManager{
     private ECSManager ecsManager;
@@ -13,8 +15,5 @@ public class EventManager{
     public EventManager(ECSManager manager) {
         this.ecsManager = manager;
     }
-
-
-
 
 }
