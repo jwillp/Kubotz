@@ -1,17 +1,7 @@
 package com.brm.Kubotz.Systems.RendringSystems;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
-import com.brm.Kubotz.Components.Graphics.AnimationComponent;
-import com.brm.Kubotz.Components.Graphics.SpriteComponent;
-import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
-
-import java.awt.*;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 
 /**
  * Responsible for managing Animations
@@ -19,24 +9,16 @@ import java.awt.*;
 public class AnimationSystem extends EntitySystem {
 
 
-
-
-
-
-    public AnimationSystem(EntityManager em) {
-        super(em);
-    }
+    public AnimationSystem() {}
 
     @Override
-    public void init() {
-
-    }
+    public void init(){}
 
 
     @Override
     public void update(float dt){
 
-        /*for(Entity entity: em.getEntitiesWithComponent(SpriteComponent.ID)){
+        /*for(Entity entity: entityManager.getEntitiesWithComponent(SpriteComponent.ID)){
             SpriteComponent spriteComp = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             AnimationComponent animComp = (AnimationComponent)entity.getComponent(AnimationComponent.ID);
 

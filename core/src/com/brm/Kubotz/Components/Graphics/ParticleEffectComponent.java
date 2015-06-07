@@ -3,7 +3,7 @@ package com.brm.Kubotz.Components.Graphics;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.GParticleEffect;
 
 import java.util.ArrayList;

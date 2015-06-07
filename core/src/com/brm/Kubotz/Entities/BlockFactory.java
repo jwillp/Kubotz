@@ -5,11 +5,11 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 
 /**
  * Used to create block entities

@@ -78,7 +78,7 @@ public class Config {
     public static int KUBOTZ_NB_JUMPS = 1;
 
     public static int PUNCH_DAMAGE = 3;
-    public static int PUNCH_COOLDOWN = 80;
+    public static int PUNCH_COOLDOWN = 8;
 
     public static int FLYBOOTS_DURATION = 5000;
     public static int FLYBOOTS_COOLDOWN = 5000;

@@ -27,11 +27,11 @@ public class Constants {
     // FIXTURE
 
     public static final String FIXTURE_LEGS = "legs";
-    public static final String FIXTURE_TORSO = "tosro";
+    public static final String FIXTURE_TORSO = "TORSO";
     public static final String FIXTURE_HEAD = "head";
     public static final String FIXTURE_FEET_SENSOR = "feetSensor";
 
-    public static final String FIXTURE_PUNCH_ATTACK = "punch";
+    public static final String FIXTURE_MELEE_ATTACK = "MELEE";
 
 
 

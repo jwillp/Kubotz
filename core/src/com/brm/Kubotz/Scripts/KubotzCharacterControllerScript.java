@@ -1,14 +1,12 @@
 package com.brm.Kubotz.Scripts;
 
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Scripts.EntityScript;
+
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.KubotzActionComponent;
-import com.brm.Kubotz.Components.Movements.FlyComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
-import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
-import com.brm.Kubotz.Game;
 import com.brm.Kubotz.Input.GameButton;
 
 import java.util.ArrayList;
@@ -17,7 +15,7 @@ import java.util.ArrayList;
  * Script used to control a Kubotz, according to the input of the player.
  * It verifies user input and translates it to Intent (Actions)
  */
-public class KubotzCharacterControllerScript extends EntityScript{
+public class KubotzCharacterControllerScript extends EntityScript {
 
     @Override
     public void onUpdate(Entity entity){ }
@@ -39,7 +37,7 @@ public class KubotzCharacterControllerScript extends EntityScript{
                     action.setAction(KubotzActionComponent.Action.JUMP);
                 }
             }else if(pressedButtons.contains(GameButton.DPAD_UP)){
-                ac
+
             }else if(pressedButtons.contains(GameButton.DPAD_DOWN)){
 
             }else if(pressedButtons.contains(GameButton.DPAD_LEFT)){

@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Components.Powerups;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 import java.util.ArrayList;
 

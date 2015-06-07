@@ -8,11 +8,10 @@ import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.GParticleEffect;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
@@ -38,10 +37,9 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-    public RenderingSystem(EntityManager em) {
-        super(em);
-        this.cameraSystem = new CameraSystem(em);
-        this.hudSystem = new HUDSystem(em, this.shapeRenderer, spriteBatch);
+    public RenderingSystem() {
+        this.cameraSystem = new CameraSystem();
+        this.hudSystem = new HUDSystem(this.shapeRenderer, spriteBatch);
         debugRenderer = new Box2DDebugRenderer();
     }
 
@@ -90,7 +88,7 @@ public class RenderingSystem extends EntitySystem {
         spriteBatch.begin();
 
         //UPDATE SPRITER
-        for(Entity entity: em.getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
@@ -116,7 +114,7 @@ public class RenderingSystem extends EntitySystem {
         if(Config.PARTICLES_ENABLED){
             spriteBatch.begin();
             spriteBatch.setProjectionMatrix(this.getCamera().combined);
-            for(EntityComponent comp: em.getComponents(ParticleEffectComponent.ID)){
+            for(EntityComponent comp: getEntityManager().getComponents(ParticleEffectComponent.ID)){
 
                 ParticleEffectComponent pef = (ParticleEffectComponent) comp;
                 for (Iterator<GParticleEffect> iterator = pef.getEffects().iterator(); iterator.hasNext(); ) {

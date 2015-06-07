@@ -5,12 +5,12 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.ScriptComponent;
-import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
+import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
@@ -147,7 +147,7 @@ public class BulletFactory extends EntityFactory {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
 
-        fixtureDef.isSensor = false;
+        fixtureDef.isSensor = true;
 
         physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_BULLET);
         polyShape.dispose();

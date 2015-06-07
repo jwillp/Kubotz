@@ -2,18 +2,16 @@ package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
-import com.brm.Kubotz.Components.PunchComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -44,14 +42,6 @@ public class KubotzAnimationScript extends EntityScript {
     //Default state
     private String currentState = DEFAULT;
 
-    @Override
-    public void onCollision(EntityContact contact) {
-
-        Entity entity = contact.getEntityA();
-
-        //GETTING HIT
-
-    }
 
     @Override
     public void onUpdate(Entity entity) {
@@ -64,9 +54,9 @@ public class KubotzAnimationScript extends EntityScript {
 
         handleRunning(entity, phys, gamePad, anim);
 
-        // BUTTON_A
-        if(entity.hasComponentEnabled(PunchComponent.ID)){
-            PunchComponent punch = (PunchComponent) entity.getComponent(PunchComponent.ID);
+        // PUNCH
+        if(entity.hasComponentEnabled(MeleeComponent.ID)){
+            MeleeComponent punch = (MeleeComponent) entity.getComponent(MeleeComponent.ID);
             this.handlePunch(punch);
         }
 
@@ -89,6 +79,10 @@ public class KubotzAnimationScript extends EntityScript {
         }
 
     }
+
+
+
+
 
 
 
@@ -183,7 +177,7 @@ public class KubotzAnimationScript extends EntityScript {
      * Handles animation when entity is punching
      * @param punch
      */
-    private void handlePunch(PunchComponent punch){
+    private void handlePunch(MeleeComponent punch){
         if(punch.getPunchBullet() != null){
             if(currentState.equals(FALLING) || currentState.equals(JUMPING)) {
                 currentState = AIR_KICKING;
@@ -201,7 +195,7 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     /**
-            * Handles Kubotz with Guns
+    * Handles Kubotz with Guns
     * @param gun
     */
     private void handleGuns(GunComponent gun) {
@@ -260,13 +254,9 @@ public class KubotzAnimationScript extends EntityScript {
             anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserSword");
         }else if(entity.hasComponent(GunComponent.ID)){
             anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserGunMkI");
-            Logger.log("YEP");
         }
-
-
-
+        
         // BOOTS
-
 
     }
 

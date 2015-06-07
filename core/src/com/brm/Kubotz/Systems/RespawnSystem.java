@@ -3,13 +3,12 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
@@ -23,9 +22,7 @@ import java.util.ArrayList;
  */
 public class RespawnSystem extends EntitySystem {
 	
-	 public RespawnSystem(EntityManager em) {
-        super(em);
-    }
+	public RespawnSystem(){}
 
 
     @Override
@@ -35,7 +32,7 @@ public class RespawnSystem extends EntitySystem {
 
     @Override
     public void update(float dt){
-        for(Entity entity: em.getEntitiesWithComponent(RespawnComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(RespawnComponent.ID)){
             RespawnComponent respawn = (RespawnComponent) entity.getComponent(RespawnComponent.ID);
             //STATE MACHINE
 
@@ -149,7 +146,7 @@ public class RespawnSystem extends EntitySystem {
     private Vector2 getRandomSpawnPoint(){
 
         //Get PowerUps Spawns
-        ArrayList<EntityComponent> spawns = em.getComponents(SpawnPointComponent.ID);
+        ArrayList<EntityComponent> spawns = getEntityManager().getComponents(SpawnPointComponent.ID);
         for (int i = 0; i < spawns.size(); i++) {
             if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.Player) {
                 spawns.remove(i);
@@ -158,7 +155,7 @@ public class RespawnSystem extends EntitySystem {
 
         //Get a Random Spawn Point
         int index = MathUtils.random(spawns.size() - 1);
-        Entity entity = em.getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
+        Entity entity = getEntityManager().getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
         SpawnPointComponent spawn = (SpawnPointComponent)entity.getComponent(SpawnPointComponent.ID);
 
         //Randomize position

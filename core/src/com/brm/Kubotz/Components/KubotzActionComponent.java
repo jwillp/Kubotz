@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Components;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * This component is used to determine what is the desired action to be performed by the entity

@@ -1,10 +1,8 @@
 package com.brm.Kubotz.Systems;
 
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.GrabComponent;
@@ -12,6 +10,7 @@ import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
+import com.brm.Kubotz.Events.CollisionEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -20,9 +19,7 @@ import com.brm.Kubotz.Input.GameButton;
 public class GrabSystem extends EntitySystem{
 
 
-    public GrabSystem(EntityManager em) {
-        super(em);
-    }
+    public GrabSystem(){}
 
     @Override
     public void init(){}
@@ -32,27 +29,7 @@ public class GrabSystem extends EntitySystem{
 
 
     public void handleInput(){
-        //FIND IF AN ENTITY WANTS TO PICKUP AN OBJECT
-        for(Entity entity: em.getEntitiesWithComponent(GrabComponent.ID)){
-            VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
-            //Find if the entity might be trying to grab something
-            if(virtualGamePad.isButtonPressed(GameButton.BUTTON_B)){
-                Logger.log("CHECK");
-                //is the entity colliding with a pick-able object
-                PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                for(int i =0; i < phys.getContacts().size(); i++){
-                    EntityContact contact = phys.getContacts().get(i);
-                    if(contact.getEntityB().hasComponent(GrabbableComponent.ID)){
-                        //PICK IT UP
-                        this.pickupObject(entity, contact.getEntityB());
-                        phys.getContacts().removeContactsWithEntity(contact.getEntityB());
-                        virtualGamePad.releaseButton(GameButton.BUTTON_B); //Realease Button
-                    }
-
-                }
-            }
-        }
     }
 
 
@@ -80,6 +57,37 @@ public class GrabSystem extends EntitySystem{
         //Grab Ennemy
         // TODO Grab ennemy
     }
+
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        // TODO Better system!
+        if(event.getClass() == CollisionEvent.class){
+            CollisionEvent contact = (CollisionEvent) event;
+            if(contact.getEntityA() == null || contact.getEntityB() == null){
+                return;
+            }
+            if(contact.getDescriber() == CollisionEvent.Describer.END){
+                return;
+            }
+
+            if (contact.getEntityA().hasComponentEnabled(GrabComponent.ID)) {
+                Entity entity = contact.getEntityA();
+                VirtualGamePad virtualGamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+                if (virtualGamePad.isButtonPressed(GameButton.BUTTON_B)) {
+                    if (contact.getEntityB().hasComponentEnabled(GrabbableComponent.ID)) {
+                        this.pickupObject(entity, contact.getEntityB());
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
 
 
 

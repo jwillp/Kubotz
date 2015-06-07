@@ -13,10 +13,11 @@ import com.badlogic.gdx.math.Vector2;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
-import com.brm.GoatEngine.ECS.Systems.ScriptSystem;
+import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
@@ -27,7 +28,7 @@ import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
-import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
+import com.brm.Kubotz.Systems.AttackSystems.MeleeSystem;
 import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
@@ -37,6 +38,7 @@ import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
 
 public class InGameScreen extends GameScreen {
 
+    private ECSManager ecsManager = new ECSManager();
     private EntityManager entityManager;
     private EntitySystemManager systemManager;
 
@@ -56,39 +58,37 @@ public class InGameScreen extends GameScreen {
         Logger.log("In Game State initialisation");
 
 
-
-
         // Systems Init
-        entityManager = new EntityManager();
-        systemManager = new EntitySystemManager();
+        entityManager = ecsManager.getEntityManager();
+        systemManager = ecsManager.getSystemManager();
 
-        systemManager.addSystem(PhysicsSystem.class, new PhysicsSystem(this.entityManager));
-        systemManager.addSystem(RenderingSystem.class, new RenderingSystem(this.entityManager));
-        systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem(this.entityManager));
-        systemManager.addSystem(MovementSystem.class, new MovementSystem(this.entityManager));
+        systemManager.addSystem(PhysicsSystem.class, new PhysicsSystem());
+        systemManager.addSystem(RenderingSystem.class, new RenderingSystem());
+        systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem());
+        systemManager.addSystem(MovementSystem.class, new MovementSystem());
 
-        systemManager.addSystem(TrackerSystem.class, new TrackerSystem(this.entityManager));
+        systemManager.addSystem(TrackerSystem.class, new TrackerSystem());
 
-        systemManager.addSystem(GrabSystem.class, new GrabSystem(this.entityManager));
+        systemManager.addSystem(GrabSystem.class, new GrabSystem());
 
-        systemManager.addSystem(SkillsSystem.class, new SkillsSystem(this.entityManager));
+        systemManager.addSystem(SkillsSystem.class, new SkillsSystem());
 
 
-        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
+        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem());
 
-        systemManager.addSystem(PunchSystem.class, new PunchSystem(this.entityManager));
+        systemManager.addSystem(MeleeSystem.class, new MeleeSystem());
 
-        systemManager.addSystem(LifespanSystem.class, new LifespanSystem(this.entityManager));
+        systemManager.addSystem(LifespanSystem.class, new LifespanSystem());
 
-        systemManager.addSystem(DamageSystem.class, new DamageSystem(this.entityManager));
+        systemManager.addSystem(DamageSystem.class, new DamageSystem());
 
-        systemManager.addSystem(AttackSystem.class, new AttackSystem(this.entityManager));
+        systemManager.addSystem(AttackSystem.class, new AttackSystem());
 
-        systemManager.addSystem(ScriptSystem.class, new ScriptSystem(this.entityManager));
+        systemManager.addSystem(ScriptSystem.class, new ScriptSystem());
 
-        systemManager.addSystem(AnimationSystem.class, new AnimationSystem(this.entityManager));
+        systemManager.addSystem(AnimationSystem.class, new AnimationSystem());
 
-        systemManager.addSystem(RespawnSystem.class, new RespawnSystem(this.entityManager));
+        systemManager.addSystem(RespawnSystem.class, new RespawnSystem());
 
 
         //INIT SYSTEMS
