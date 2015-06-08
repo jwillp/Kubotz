@@ -79,6 +79,15 @@ public class Timer {
             return System.currentTimeMillis() - lastCheck;
     }
 
+    /**
+     * Returns the time remaining
+     * @return
+     */
+    public long getRemainingTime(){
+       return System.currentTimeMillis() - this.lastCheck;
+    }
+
+
     public int getDelay() {
         return delay;
     }

@@ -15,6 +15,7 @@ import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
+import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.RespawnComponent;
@@ -148,6 +149,9 @@ public class KubotzFactory extends EntityFactory {
         ScriptComponent scriptComponent = new ScriptComponent();
         scriptComponent.addScript(new KubotzAnimationScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
+
+
+        character.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
 
 
         // GRAPHICS

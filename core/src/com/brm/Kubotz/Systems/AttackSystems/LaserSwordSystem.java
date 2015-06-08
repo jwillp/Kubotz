@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
@@ -45,7 +46,9 @@ public class LaserSwordSystem extends EntitySystem{
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
+            Logger.log(laserSword.getDurationTimer().getRemainingTime());
             if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone()){
+                Logger.log("OK");
                 laserSword.getDurationTimer().reset();
                 createAttackBox(phys);
                 // TODO FIRE EVENT FOR PUNCHING
@@ -62,7 +65,7 @@ public class LaserSwordSystem extends EntitySystem{
             //Check if the punch duration is over, if so hide the punch
             if(laserSword.getDurationTimer().isDone()){
                 laserSword.getCooldown().reset();
-                removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                //removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
             }
         }
     }
@@ -94,7 +97,7 @@ public class LaserSwordSystem extends EntitySystem{
         punchFixture.shape = shape;
 
         Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.HITBOX_LABEL_MELEE);
-        hitbox.damage = 10; //TODO Config
+        hitbox.damage = Config.LASER_SWORD_DAMAGE;
 
 
         phys.getBody().createFixture(punchFixture).setUserData(hitbox);
