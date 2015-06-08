@@ -24,46 +24,25 @@ public class Constants {
 
 
 
-    // FIXTURE
+    // HITBOX LABELS
 
-    public static final String FIXTURE_LEGS = "legs";
-    public static final String FIXTURE_TORSO = "TORSO";
-    public static final String FIXTURE_HEAD = "head";
-    public static final String FIXTURE_FEET_SENSOR = "feetSensor";
-
-    public static final String FIXTURE_MELEE_ATTACK = "MELEE";
-
+    //Kubotz
+    public static final String HITBOX_LABEL_LEGS = "legs";
+    public static final String HITBOX_LABEL_TORSO = "TORSO";
+    public static final String HITBOX_LABEL_HEAD = "head";
+    public static final String HITBOX_LABEL_FEET = "feetSensor";
 
 
+    public static final String HITBOX_LABEL_MELEE = "MELEE";
 
     // PARAMETERS (THESE MOSTLY NED TO BE HARDCODED AND NEVER CHANGED IN ORDER FOR THE GAME TO WORK WELL
-
     public static final int PUNCH_INPUT_DELAY = 200; //in ms, the delay between the button press and the punch to occur
+
+
+
+
     public static final int PUNCH_DURATION = 500; //The duration of a punch
 
 
-
-
     public static final int CLASH_THRESHOLD = 5; //The maex number cuasing a clash
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

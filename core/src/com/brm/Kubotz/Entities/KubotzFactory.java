@@ -19,6 +19,7 @@ import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.RespawnComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
 
 
@@ -203,7 +204,7 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_TORSO);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_TORSO));
         polyShape.dispose();
 
         // Circle TOP
@@ -213,7 +214,7 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_HEAD);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_HEAD));
         circleShapeTop.dispose();
 
 
@@ -224,7 +225,7 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeBottom;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_LEGS);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_LEGS));
         circleShapeBottom.dispose();
 
 
@@ -233,7 +234,7 @@ public class KubotzFactory extends EntityFactory {
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;
         fixtureDef.shape = footSensor;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_FEET_SENSOR);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable,Constants.HITBOX_LABEL_FEET));
 
 
 

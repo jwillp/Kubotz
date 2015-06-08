@@ -10,6 +10,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -96,7 +97,8 @@ public class RunningSystem extends EntitySystem {
      */
     private void onCollision(CollisionEvent contact){
         if(contact.getEntityA() != null){
-            if(contact.getFixtureA().getUserData().equals(Constants.FIXTURE_FEET_SENSOR)) {
+            Hitbox hitbox = (Hitbox) contact.getFixtureA().getUserData();
+            if (hitbox.label.equals(Constants.HITBOX_LABEL_FEET)) {
                 if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
                     PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
                     phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);

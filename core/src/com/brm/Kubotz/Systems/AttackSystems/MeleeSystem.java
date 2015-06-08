@@ -10,9 +10,11 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.MeleeComponent;
+import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
 import com.brm.Kubotz.Events.TakeDamageEvent;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -55,11 +57,10 @@ public class MeleeSystem extends EntitySystem{
 
     public void update(float dt) {
         // See if punch duration is over
-        // Update the punch's position according to the puncher's position
 
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(MeleeComponent.ID)){
             MeleeComponent meleeComponent = (MeleeComponent)entity.getComponent(MeleeComponent.ID);
-            //Check if the punch duration is done, if so hide the punch
+            //Check if the punch duration is over, if so hide the punch
             if(meleeComponent.getDurationTimer().isDone()){
                 meleeComponent.getCooldown().reset();
                 removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
@@ -67,43 +68,6 @@ public class MeleeSystem extends EntitySystem{
         }
     }
 
-
-    @Override
-    public <T extends Event> void onEvent(T event) {
-        if(event.getClass() == CollisionEvent.class){
-            onCollision((CollisionEvent) event);
-        }
-    }
-
-
-    /**
-     * Calls when a collision occurs
-     * tries to find it something collided with a
-     * melee attack box
-     * @param e
-     */
-    private void onCollision(CollisionEvent e){
-        if(e.getDescriber() == CollisionEvent.Describer.END){
-            return;
-        }
-        if(e.getEntityA() == null || e.getEntityB() == null){
-                return;
-        }
-
-        if(e.getFixtureA().getUserData().equals(Constants.FIXTURE_MELEE_ATTACK)){
-            MeleeComponent comp = (MeleeComponent) e.getEntityA().getComponent(MeleeComponent.ID);
-
-            //FIRE A TAKE DAMAGE EVENT
-            this.fireEvent(new TakeDamageEvent(
-                            e.getEntityB().getID(),
-                            e.getEntityA().getID(),
-                            comp.getDamage(),
-                            comp.getKnockBack().x
-                    )
-            );
-        }
-
-    }
 
 
 
@@ -129,7 +93,12 @@ public class MeleeSystem extends EntitySystem{
         FixtureDef punchFixture = new FixtureDef();
         punchFixture.isSensor = true;
         punchFixture.shape = shape;
-        phys.getBody().createFixture(punchFixture).setUserData(Constants.FIXTURE_MELEE_ATTACK);
+
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_MELEE);
+        hitbox.damage = Config.PUNCH_DAMAGE;
+
+
+        phys.getBody().createFixture(punchFixture).setUserData(hitbox);
         shape.dispose();
 
     }
@@ -141,7 +110,8 @@ public class MeleeSystem extends EntitySystem{
     public void removeAttackBox(PhysicsComponent phys){
         for(int i=0; i<phys.getBody().getFixtureList().size ;i++){
             Fixture fixture = phys.getBody().getFixtureList().get(i);
-            if(fixture.getUserData().equals(Constants.FIXTURE_MELEE_ATTACK)) {
+            Hitbox hitbox = (Hitbox) fixture.getUserData();
+            if(hitbox.label.equals(Constants.HITBOX_LABEL_MELEE)) {
                 phys.getBody().destroyFixture(fixture);
             }
         }

@@ -15,6 +15,7 @@ import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Scripts.BulletGraphicsScript;
 
 /**
@@ -149,7 +150,12 @@ public class BulletFactory extends EntityFactory {
 
         fixtureDef.isSensor = true;
 
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_BULLET);
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Damageable, Constants.ENTITY_TAG_BULLET);
+        hitbox.damage = this.dmgComp.getDamage();
+
+
+
+        physics.getBody().createFixture(fixtureDef).setUserData(hitbox);
         polyShape.dispose();
 
 

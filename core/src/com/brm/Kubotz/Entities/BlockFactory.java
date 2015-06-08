@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
  * Used to create block entities
@@ -59,7 +60,7 @@ public class BlockFactory extends EntityFactory {
         FixtureDef fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
 
-        physics.getBody().createFixture(fixtureDef);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Inert));
         polyShape.dispose();
 
         physics.getBody().setUserData(block);

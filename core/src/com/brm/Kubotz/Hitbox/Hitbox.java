@@ -1,11 +1,16 @@
 package com.brm.Kubotz.Hitbox;
 
+import com.sun.javafx.scene.text.HitInfo;
+
 /**
  * Represents a hitbox. A hitbox is the main structure to represent
  * the execution of an attack. It is also used to represent how the physical structure
  * of the entities in the game interact with attacks.
  */
 public class Hitbox{
+
+    public final static String DEFAULT_LABEL = "UNDEFINED"; // A generic label for hitbox with none provided
+
     /**
      * All the different types of hitboxes
      * The ones with [COLLIDE] tag means that they will change their movement when another [COLLIDE] collides with it.
@@ -22,7 +27,9 @@ public class Hitbox{
 
     }
 
-    public Type type = Type.Inert;
+    public Type type;
+
+    public String label;
 
 
     // These are public for simplicity of use
@@ -32,8 +39,23 @@ public class Hitbox{
     public float freezeFrames = 0;  // The number of frames to freeze for the entities on impact
 
 
+    /**
+     * Ctor with default label
+     * @param type
+     */
+    public Hitbox(Type type) {
+        this(type, DEFAULT_LABEL);
+    }
 
-
+    /**
+     * Ctor
+     * @param type
+     * @param label
+     */
+    public Hitbox(Type type, String label){
+        this.type = type;
+        this.label = label;
+    }
 
 
 

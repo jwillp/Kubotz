@@ -12,6 +12,7 @@ import com.brm.Kubotz.Components.Powerups.PowerUp;
 import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpEffect;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
  * Used to Create PowerUps
@@ -115,7 +116,7 @@ public class PowerUpFactory extends EntityFactory {
 
         fixtureDef.isSensor = false;
 
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_POWERUP);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Inert, Constants.ENTITY_TAG_POWERUP));
         circleShape.dispose();
 
 
