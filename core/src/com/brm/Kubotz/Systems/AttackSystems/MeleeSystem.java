@@ -47,9 +47,10 @@ public class MeleeSystem extends EntitySystem{
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
-            if(meleeComponent.getCooldown().isDone() && meleeComponent.getDurationTimer().isDone()){
+            if(meleeComponent.getCooldown().isDone() && !meleeComponent.isAttacking()){
                 meleeComponent.getDurationTimer().reset();
                 createAttackBox(phys);
+                meleeComponent.setAttacking(true);
                 // TODO FIRE EVENT FOR PUNCHING
             }
         }
@@ -62,9 +63,12 @@ public class MeleeSystem extends EntitySystem{
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(MeleeComponent.ID)){
             MeleeComponent meleeComponent = (MeleeComponent)entity.getComponent(MeleeComponent.ID);
             //Check if the punch duration is over, if so hide the punch
-            if(meleeComponent.getDurationTimer().isDone()){
-                meleeComponent.getCooldown().reset();
-                removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+            if(meleeComponent.isAttacking()) {
+                if (meleeComponent.getDurationTimer().isDone()) {
+                    meleeComponent.getCooldown().reset();
+                    removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                    meleeComponent.setAttacking(false);
+                }
             }
         }
     }

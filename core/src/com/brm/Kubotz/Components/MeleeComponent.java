@@ -23,8 +23,8 @@ public class MeleeComponent extends EntityComponent {
     private PhysicsComponent phys;
 
     private Vector2 knockBack = new Vector2(0.1f, 0.1f);
+    private boolean attacking;
 
-    private Entity punchBullet;
 
     /**
      *
@@ -75,11 +75,11 @@ public class MeleeComponent extends EntityComponent {
         return knockBack;
     }
 
-    public Entity getPunchBullet() {
-        return punchBullet;
+    public boolean isAttacking() {
+        return attacking;
     }
 
-    public void setPunchBullet(Entity punchBullet) {
-        this.punchBullet = punchBullet;
+    public void setAttacking(boolean attacking) {
+        this.attacking = attacking;
     }
 }

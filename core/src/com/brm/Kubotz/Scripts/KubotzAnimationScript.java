@@ -178,14 +178,7 @@ public class KubotzAnimationScript extends EntityScript {
      * @param punch
      */
     private void handlePunch(MeleeComponent punch){
-        if(punch.getPunchBullet() != null){
-            if(currentState.equals(FALLING) || currentState.equals(JUMPING)) {
-                currentState = AIR_KICKING;
-            }else{
-                currentState = AIR_KICKING;
-
-            }
-        }
+        
         if(currentState.equals(PUNCHING) || currentState.equals(KICKING) || currentState.equals(AIR_KICKING) ){
             if(punch.getDurationTimer().isDone()){
                 currentState = IDLE;
