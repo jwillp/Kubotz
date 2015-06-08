@@ -44,6 +44,7 @@ public class Constants {
 
 
 
+    public static final int CLASH_THRESHOLD = 5; //The maex number cuasing a clash
 
 
 

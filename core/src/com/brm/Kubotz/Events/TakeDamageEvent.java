@@ -2,44 +2,47 @@ package com.brm.Kubotz.Events;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
  * Triggered when an entity is taking Damage
  */
 public class TakeDamageEvent extends Event {
 
-    private final float damage;
-    private final Vector2 knockback;
-
+    private final String entityId;
+    private String damagerId;       // The id of the entity dealing the damage
+    private Hitbox targetHitbox;    // The hitbox receiving the damage
+    private Hitbox damagerHitbox;   // The hitbox dealing the damage
 
     /**
      * Ctor with no Knockback
      * @param entityId the entity being damaged, the target
-     * @param damagerId the entity inflicting the damage to the target
-     * @param damage the amount of damage to inflict
+     * @param targetHitbox the hitbox receiving the damage
+     * @param damagerId the entity dealing the damage to the target
+     * @param damagerHitbox the hitbox dealing the damage
      */
-    public TakeDamageEvent(String entityId, String damagerId, float damage) {
-        this(entityId, damagerId, damage, new Vector2(0,0));
-    }
-
-    /**
-     * Ctor
-     * @param entityId the entity being damaged, the target
-     * @param damagerId the entity inflicting the damage to the target
-     * @param damage the amount of damage to inflict
-     * @param knockback the knockback associated
-     */
-    public TakeDamageEvent(String entityId, String damagerId, float damage, Vector2 knockback){
+    public TakeDamageEvent(String entityId, Hitbox targetHitbox, String damagerId, Hitbox damagerHitbox) {
         super(entityId);
-        this.damage = damage;
-        this.knockback = knockback;
+        this.entityId = entityId;
+        this.targetHitbox = targetHitbox;
+        this.damagerId = damagerId;
+        this.damagerHitbox = damagerHitbox;
     }
 
-    public float getDamage() {
-        return damage;
+
+    public Hitbox getDamagerHitbox() {
+        return damagerHitbox;
     }
 
-    public Vector2 getKnockback() {
-        return knockback;
+    public void setDamagerHitbox(Hitbox damagerHitbox) {
+        this.damagerHitbox = damagerHitbox;
+    }
+
+    public Hitbox getTargetHitbox() {
+        return targetHitbox;
+    }
+
+    public String getDamagerId() {
+        return damagerId;
     }
 }

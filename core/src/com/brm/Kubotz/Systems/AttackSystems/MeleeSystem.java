@@ -47,7 +47,7 @@ public class MeleeSystem extends EntitySystem{
             if(meleeComponent.getCooldown().isDone() && meleeComponent.getDurationTimer().isDone()){
                 meleeComponent.getDurationTimer().reset();
                 createAttackBox(phys);
-                // TODO FIRE EVENT
+                // TODO FIRE EVENT FOR PUNCHING
             }
         }
     }
@@ -95,10 +95,10 @@ public class MeleeSystem extends EntitySystem{
 
             //FIRE A TAKE DAMAGE EVENT
             this.fireEvent(new TakeDamageEvent(
-                    e.getEntityB().getID(),
-                    e.getEntityA().getID(),
-                    comp.getDamage(),
-                    comp.getKnockBack()
+                            e.getEntityB().getID(),
+                            e.getEntityA().getID(),
+                            comp.getDamage(),
+                            comp.getKnockBack().x
                     )
             );
         }

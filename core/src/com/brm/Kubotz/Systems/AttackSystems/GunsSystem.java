@@ -105,6 +105,7 @@ public class GunsSystem extends EntitySystem {
                     phys.getBody().setActive(false);
 
                     //TODO send a TakeDamageEvent
+
                 }
             }
         }
