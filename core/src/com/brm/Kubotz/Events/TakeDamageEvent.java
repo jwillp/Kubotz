@@ -2,6 +2,7 @@ package com.brm.Kubotz.Events;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
@@ -27,6 +28,7 @@ public class TakeDamageEvent extends Event {
         this.targetHitbox = targetHitbox;
         this.damagerId = damagerId;
         this.damagerHitbox = damagerHitbox;
+        Logger.log("TAKE DAMAGE");
     }
 
 

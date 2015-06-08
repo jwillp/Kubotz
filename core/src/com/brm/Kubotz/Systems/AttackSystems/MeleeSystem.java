@@ -94,7 +94,7 @@ public class MeleeSystem extends EntitySystem{
         punchFixture.isSensor = true;
         punchFixture.shape = shape;
 
-        Hitbox hitbox = new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_MELEE);
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.HITBOX_LABEL_MELEE);
         hitbox.damage = Config.PUNCH_DAMAGE;
 
 

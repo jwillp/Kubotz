@@ -39,6 +39,24 @@ public class DamageSystem extends EntitySystem{
     public <T extends Event> void onEvent(T event) {
         if(event.getClass() == TakeDamageEvent.class){
             onTakeDamage((TakeDamageEvent) event);
+        }else if(event.getClass() == CollisionEvent.class){
+            onCollision((CollisionEvent) event);
+        }
+
+
+
+    }
+
+    private void onCollision(CollisionEvent event) {
+        Hitbox hitboxA = (Hitbox) event.getFixtureA().getUserData();
+        if(hitboxA == null){
+            return;
+        }
+        if(hitboxA.type == Hitbox.Type.Offensive){
+            Hitbox hitboxB = (Hitbox) event.getFixtureB().getUserData();
+            TakeDamageEvent tkDmgEv;
+            tkDmgEv = new TakeDamageEvent(event.getEntityB().getID(), hitboxB, event.getEntityA().getID(), hitboxA);
+            this.fireEvent(tkDmgEv);
         }
     }
 
