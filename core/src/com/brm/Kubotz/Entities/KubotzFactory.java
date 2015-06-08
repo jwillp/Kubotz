@@ -133,7 +133,10 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
-        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
+        //character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
+        character.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
+
+
 
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 
@@ -151,7 +154,6 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
 
-        character.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
 
 
         // GRAPHICS

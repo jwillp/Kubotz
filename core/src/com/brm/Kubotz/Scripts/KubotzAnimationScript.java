@@ -67,10 +67,10 @@ public class KubotzAnimationScript extends EntityScript {
         }
 
         // SWORD
-        if(entity.hasComponent(LaserSwordComponent.ID)){
+        /*if(entity.hasComponent(LaserSwordComponent.ID)){
             LaserSwordComponent laserSword = (LaserSwordComponent) entity.getComponent(LaserSwordComponent.ID);
             this.handleLaserSword(laserSword);
-        }
+        }*/
 
         this.handleCharacterMaps(entity, anim);
         anim.setAnimation(currentState);

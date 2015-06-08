@@ -46,12 +46,15 @@ public class LaserSwordSystem extends EntitySystem{
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
-            Logger.log(laserSword.getDurationTimer().getRemainingTime());
+            Logger.log(laserSword.getCooldown().getRemainingTime());
+            Logger.log(laserSword.getCooldown().isDone());
+
             if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone()){
                 Logger.log("OK");
                 laserSword.getDurationTimer().reset();
                 createAttackBox(phys);
-                // TODO FIRE EVENT FOR PUNCHING
+                laserSword.setSwinging(true);
+                // TODO FIRE EVENT FOR SWINGING
             }
         }
     }
@@ -63,10 +66,14 @@ public class LaserSwordSystem extends EntitySystem{
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(LaserSwordComponent.ID)){
             LaserSwordComponent laserSword = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
             //Check if the punch duration is over, if so hide the punch
-            if(laserSword.getDurationTimer().isDone()){
-                laserSword.getCooldown().reset();
-                //removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+            if(laserSword.isSwinging()){
+                if(laserSword.getDurationTimer().isDone()){
+                    laserSword.setSwinging(false);
+                    laserSword.getCooldown().reset();
+                    removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                }
             }
+
         }
     }
 
@@ -79,7 +86,7 @@ public class LaserSwordSystem extends EntitySystem{
      */
     private void createAttackBox(PhysicsComponent phys){
         CircleShape shape = new CircleShape();
-        shape.setRadius(phys.getWidth() * 0.5f);
+        shape.setRadius(phys.getWidth() * 1.5f);
 
         Vector2 position = null;
         switch (phys.getDirection()) {

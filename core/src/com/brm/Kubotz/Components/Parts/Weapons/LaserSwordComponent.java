@@ -24,12 +24,12 @@ public class LaserSwordComponent extends EntityComponent {
     private Vector2 knockBack = new Vector2(0.2f, 0.0f);
 
     private Entity laserBox;
-    private boolean swinging;
+    private boolean swinging = false;
 
 
     public LaserSwordComponent(){
-        this.durationTimer.start();
         this.cooldown.start();
+        this.durationTimer.start();
     }
 
 
@@ -83,5 +83,9 @@ public class LaserSwordComponent extends EntityComponent {
 
     public boolean isSwinging() {
         return swinging;
+    }
+
+    public void setSwinging(boolean swinging) {
+        this.swinging = swinging;
     }
 }
