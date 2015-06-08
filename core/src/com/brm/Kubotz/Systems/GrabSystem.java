@@ -40,8 +40,8 @@ public class GrabSystem extends EntitySystem{
             GrabComponent grabComp = (GrabComponent)entity.getComponent(GrabComponent.ID);
             //Check if the grab duration is over, if so destroy the grab box
             if(grabComp.getDurationTimer().isDone()){
-                grabComp.getCooldown().reset();
                 removeGrabBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                grabComp.getCooldown().reset();
             }
         }
     }
@@ -62,16 +62,14 @@ public class GrabSystem extends EntitySystem{
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_B)){
-
             if(grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone()){
-                createGrabBox(phys);
                 grabComp.getDurationTimer().reset();
+                createGrabBox(phys);
                 // TODO FIRE EVENT FOR GRAB_ATTEMPT
 
             }
         }
     }
-
 
 
     /**
@@ -133,7 +131,6 @@ public class GrabSystem extends EntitySystem{
         CircleShape shape = new CircleShape();
         shape.setRadius(phys.getWidth() * 2f);
 
-
         shape.setPosition(new Vector2(0,0));
 
         FixtureDef punchFixture = new FixtureDef();
@@ -141,8 +138,6 @@ public class GrabSystem extends EntitySystem{
         punchFixture.shape = shape;
 
         Hitbox hitbox = new Hitbox(Hitbox.Type.Grab);
-
-
 
         phys.getBody().createFixture(punchFixture).setUserData(hitbox);
         shape.dispose();
@@ -162,8 +157,4 @@ public class GrabSystem extends EntitySystem{
             }
         }
     }
-
-
-
-
 }

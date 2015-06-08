@@ -40,9 +40,7 @@ public class MeleeComponent extends EntityComponent {
 
     @Override
     public void onDetach(Entity entity) {
-        //DELETE BULLET?
-        PhysicsComponent phys = (PhysicsComponent) punchBullet.getComponent(PhysicsComponent.ID);
-        phys.getBody().getWorld().destroyBody(phys.getBody());
+
     }
 
     public int getDamage() {

@@ -150,7 +150,7 @@ public class BulletFactory extends EntityFactory {
 
         fixtureDef.isSensor = true;
 
-        Hitbox hitbox = new Hitbox(Hitbox.Type.Damageable, Constants.ENTITY_TAG_BULLET);
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.ENTITY_TAG_BULLET);
         hitbox.damage = this.dmgComp.getDamage();
 
 
