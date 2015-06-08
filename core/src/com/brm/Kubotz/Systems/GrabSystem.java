@@ -39,9 +39,12 @@ public class GrabSystem extends EntitySystem{
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(GrabComponent.ID)){
             GrabComponent grabComp = (GrabComponent)entity.getComponent(GrabComponent.ID);
             //Check if the grab duration is over, if so destroy the grab box
-            if(grabComp.getDurationTimer().isDone()){
-                removeGrabBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
-                grabComp.getCooldown().reset();
+            if(grabComp.isGrabbing()) {
+                if (grabComp.getDurationTimer().isDone()) {
+                    removeGrabBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                    grabComp.getCooldown().reset();
+                    grabComp.setGrabbing(false);
+                }
             }
         }
     }
@@ -65,6 +68,7 @@ public class GrabSystem extends EntitySystem{
             if(grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone()){
                 grabComp.getDurationTimer().reset();
                 createGrabBox(phys);
+                grabComp.setGrabbing(true);
                 // TODO FIRE EVENT FOR GRAB_ATTEMPT
 
             }

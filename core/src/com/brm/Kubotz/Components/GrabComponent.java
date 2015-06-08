@@ -11,8 +11,9 @@ import com.brm.Kubotz.Constants;
  */
 public class GrabComponent extends EntityComponent {
     public  final static String ID = "GRAB_COMPONENT";
-    private Timer durationTimer = new Timer(Constants.PUNCH_DURATION);
-    private Timer cooldown = new Timer(Config.PUNCH_COOLDOWN);  //The delay between uses of grab
+    private Timer durationTimer = new Timer(200);
+    private Timer cooldown = new Timer(100);  //The delay between uses of grab
+    private boolean grabbing;
 
     public GrabComponent(){
         durationTimer.start();
@@ -27,4 +28,11 @@ public class GrabComponent extends EntityComponent {
         return cooldown;
     }
 
+    public void setGrabbing(boolean grabbing) {
+        this.grabbing = grabbing;
+    }
+
+    public boolean isGrabbing() {
+        return grabbing;
+    }
 }
