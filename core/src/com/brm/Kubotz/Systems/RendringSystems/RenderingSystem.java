@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems.RendringSystems;
 
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -36,11 +37,21 @@ public class RenderingSystem extends EntitySystem {
     private Box2DDebugRenderer debugRenderer;
 
 
+    private final OrthographicCamera backgroundCamera;
+    private final Texture background;
+
+
 
     public RenderingSystem() {
         this.cameraSystem = new CameraSystem();
         this.hudSystem = new HUDSystem(this.shapeRenderer, spriteBatch);
         debugRenderer = new Box2DDebugRenderer();
+        backgroundCamera = new OrthographicCamera(Config.V_WIDTH, Config.V_HEIGHT);
+        backgroundCamera.translate(Config.V_WIDTH/2,Config.V_HEIGHT/2,0);
+        backgroundCamera.update();
+
+        background = new Texture(Gdx.files.internal("maps/background.jpg"));
+
     }
 
     @Override
@@ -52,6 +63,9 @@ public class RenderingSystem extends EntitySystem {
     @Override
     public void update(float dt){
         this.cameraSystem.update(dt);
+
+        Gdx.gl.glClearColor(26f/255f,26f/255f,26f/255f,0);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
         World world = getSystemManager().getSystem(PhysicsSystem.class).getWorld();
         if(Config.DEBUG_RENDERING_ENABLED) {
@@ -84,8 +98,15 @@ public class RenderingSystem extends EntitySystem {
     private void renderTextures(float deltaTime){
 
 
+
+
+
+
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
+
+        //BACKGROUND
         spriteBatch.begin();
+        spriteBatch.draw(this.background,0,0, 52, 37);
 
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){

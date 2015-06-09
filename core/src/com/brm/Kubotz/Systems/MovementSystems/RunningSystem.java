@@ -98,10 +98,12 @@ public class RunningSystem extends EntitySystem {
     private void onCollision(CollisionEvent contact){
         if(contact.getEntityA() != null){
             Hitbox hitbox = (Hitbox) contact.getFixtureA().getUserData();
-            if (hitbox.label.equals(Constants.HITBOX_LABEL_FEET)) {
-                if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
-                    PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
-                    phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
+            if(hitbox != null) {
+                if (hitbox.label.equals(Constants.HITBOX_LABEL_FEET)) {
+                    if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
+                        PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
+                        phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
+                    }
                 }
             }
         }

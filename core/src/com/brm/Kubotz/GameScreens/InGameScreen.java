@@ -215,10 +215,7 @@ public class InGameScreen extends GameScreen {
 
     public void draw(GameScreenManager engine, float deltaTime) {
 
-        Gdx.gl.glClearColor(0,0,0,0);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
         // DRAW WORLD
-
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
         systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);

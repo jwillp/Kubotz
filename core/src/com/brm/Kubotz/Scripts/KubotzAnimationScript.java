@@ -3,10 +3,12 @@ package com.brm.Kubotz.Scripts;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.MeleeComponent;
@@ -42,6 +44,11 @@ public class KubotzAnimationScript extends EntityScript {
     //Default state
     private String currentState = DEFAULT;
 
+
+    @Override
+    public <T extends Event> void onEvent(T event) {
+
+    }
 
     @Override
     public void onUpdate(Entity entity) {
@@ -178,7 +185,7 @@ public class KubotzAnimationScript extends EntityScript {
      * @param punch
      */
     private void handlePunch(MeleeComponent punch){
-        
+
         if(currentState.equals(PUNCHING) || currentState.equals(KICKING) || currentState.equals(AIR_KICKING) ){
             if(punch.getDurationTimer().isDone()){
                 currentState = IDLE;
