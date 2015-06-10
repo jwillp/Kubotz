@@ -12,8 +12,9 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
-import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
-import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
+import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -271,7 +272,7 @@ public class KubotzAnimationScript extends EntityScript {
         ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
         Vector2 pos = phys.getPosition().cpy();
         pos.y -= phys.getHeight();
-        pef.addEffect(Gdx.files.internal("particles/landingDust.pe"), pos);
+        pef.addEffect(Gdx.files.internal(Constants.PARTICLES_LANDING_DUST), pos);
     }
 
 

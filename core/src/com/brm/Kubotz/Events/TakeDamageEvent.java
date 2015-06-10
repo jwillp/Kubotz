@@ -6,31 +6,34 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
- * Triggered when an entity is taking Damage
+ * Triggered when an entity MIGHT be taking Damage
  */
 public class TakeDamageEvent extends Event {
 
-    private final String entityId;
+
     private String damagerId;       // The id of the entity dealing the damage
     private Hitbox targetHitbox;    // The hitbox receiving the damage
     private Hitbox damagerHitbox;   // The hitbox dealing the damage
-
+    private float knockback;          // The knockback to apply
     /**
-     * Ctor with no Knockback
+     * Ctor with no Knockback (defaults to 0);
      * @param entityId the entity being damaged, the target
      * @param targetHitbox the hitbox receiving the damage
      * @param damagerId the entity dealing the damage to the target
      * @param damagerHitbox the hitbox dealing the damage
      */
     public TakeDamageEvent(String entityId, Hitbox targetHitbox, String damagerId, Hitbox damagerHitbox) {
+      this(entityId, targetHitbox, damagerId, damagerHitbox, 0);
+    }
+
+
+    public TakeDamageEvent(String entityId, Hitbox targetHitbox, String damagerId, Hitbox damagerHitbox, float knockback){
         super(entityId);
-        this.entityId = entityId;
         this.targetHitbox = targetHitbox;
         this.damagerId = damagerId;
         this.damagerHitbox = damagerHitbox;
-        Logger.log("TAKE DAMAGE");
+        this.knockback = knockback;
     }
-
 
     public Hitbox getDamagerHitbox() {
         return damagerHitbox;
@@ -46,5 +49,9 @@ public class TakeDamageEvent extends Event {
 
     public String getDamagerId() {
         return damagerId;
+    }
+
+    public float getKnockback() {
+        return knockback;
     }
 }

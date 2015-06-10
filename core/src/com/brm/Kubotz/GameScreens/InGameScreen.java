@@ -20,11 +20,13 @@ import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.SpawnPointComponent;
+import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
+import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.Grab.Systems.GrabSystem;
+import com.brm.Kubotz.Features.Respawn.Systems.RespawnSystem;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Features.MeleeAttacks.Systems.MeleeSystem;
 import com.brm.Kubotz.Systems.*;
@@ -48,8 +50,6 @@ public class InGameScreen extends GameScreen {
     private Entity player;
 
 
-
-
     @Override
     public void init(GameScreenManager engine) {
 
@@ -70,7 +70,6 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(GrabSystem.class, new GrabSystem());
 
         systemManager.addSystem(SkillsSystem.class, new SkillsSystem());
-
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem());
 
@@ -103,13 +102,13 @@ public class InGameScreen extends GameScreen {
                 systemManager.getSystem(RenderingSystem.class).getShapeRenderer()
         );
         Spriter.init(LibGdxSpriterLoader.class, LibGdxSpriterDrawer.class);
-        Spriter.load(Gdx.files.internal("animations/kubotz.scml").read(), "animations/kubotz.scml");
+        Spriter.load(Gdx.files.internal(Constants.KUBOTZ_ANIM_FILE).read(), Constants.KUBOTZ_ANIM_FILE);
 
 
 
         // MAP
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load(Constants.MAIN_MAP_FILE);
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
