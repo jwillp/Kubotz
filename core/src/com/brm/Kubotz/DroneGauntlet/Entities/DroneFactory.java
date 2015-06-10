@@ -6,6 +6,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.Kubotz.AI.Components.AIComponent;
@@ -123,7 +124,8 @@ public class DroneFactory extends EntityFactory {
 
         drone.addComponent(physics, PhysicsComponent.ID);
 
-
+        //HEALTH
+        drone.addComponent(new HealthComponent(30), HealthComponent.ID);
 
         // AI
         AIComponent aiComponent = new AIComponent();

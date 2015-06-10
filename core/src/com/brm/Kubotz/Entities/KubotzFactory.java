@@ -20,6 +20,7 @@ import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
 import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.RespawnComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.DroneGauntlet.Components.DroneGauntletComponent;
 import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Scripts.KubotzAnimationScript;
 
@@ -127,15 +128,16 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
+        character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
         /* PUNCH Component*/
         character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
-
+        //Respawn
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 
 

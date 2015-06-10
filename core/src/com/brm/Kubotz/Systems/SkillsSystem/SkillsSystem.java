@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.Kubotz.DroneGauntlet.Systems.DroneGauntletSystem;
 
 /**
  * Used to process Skills... most active skills
@@ -20,13 +21,12 @@ public class SkillsSystem extends EntitySystem {
 
     @Override
     public void init(){
-        magneticBootsSystem = new MagneticBootsSystem();
-        flyingBootsSystem = new FlyingBootsSystem();
-        dashBootsSystem = new DashBootsSystem();
 
-        getSystemManager().addSystem(MagneticBootsSystem.class, magneticBootsSystem);
-        getSystemManager().addSystem(FlyingBootsSystem.class, flyingBootsSystem);
-        getSystemManager().addSystem(DashBootsSystem.class, dashBootsSystem);
+        getSystemManager().addSystem(MagneticBootsSystem.class,  new MagneticBootsSystem());
+        getSystemManager().addSystem(FlyingBootsSystem.class,  new FlyingBootsSystem());
+        getSystemManager().addSystem(DashBootsSystem.class, new DashBootsSystem());
+
+        getSystemManager().addSystem(DroneGauntletSystem.class, new DroneGauntletSystem());
     }
 
 
@@ -34,21 +34,22 @@ public class SkillsSystem extends EntitySystem {
      * Handles the input for the skills
      */
     public void handleInput(){
+        getSystemManager().getSystem(MagneticBootsSystem.class).handleInput();
+        getSystemManager().getSystem(FlyingBootsSystem.class).handleInput();
+        getSystemManager().getSystem(DashBootsSystem.class).handleInput();
 
-        flyingBootsSystem.handleInput();
-        magneticBootsSystem.handleInput();
-        dashBootsSystem.handleInput();
-
-
+        getSystemManager().getSystem(DroneGauntletSystem.class).handleInput();
     }
 
     /**
      * Updates the input for the skills
      */
     public void update(float dt){
-        magneticBootsSystem.update(0); //TODO Change that
-        flyingBootsSystem.update(0);
-        dashBootsSystem.update(0);
+        getSystemManager().getSystem(MagneticBootsSystem.class).update(dt);
+        getSystemManager().getSystem(FlyingBootsSystem.class).update(dt);
+        getSystemManager().getSystem(DashBootsSystem.class).update(dt);
+
+        getSystemManager().getSystem(DroneGauntletSystem.class).update(dt);
     }
 
 
