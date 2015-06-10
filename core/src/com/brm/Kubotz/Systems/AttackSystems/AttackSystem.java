@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.Kubotz.Features.MeleeAttacks.Systems.MeleeSystem;
 
 /**
  * Global systems for sub systems of attacks

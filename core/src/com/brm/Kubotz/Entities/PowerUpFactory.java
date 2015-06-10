@@ -6,7 +6,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.Kubotz.Components.GrabbableComponent;
+import com.brm.Kubotz.Features.Grab.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUp;
 import com.brm.Kubotz.Components.Powerups.PowerUpComponent;

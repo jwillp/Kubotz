@@ -3,7 +3,6 @@ package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
@@ -15,8 +14,8 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.GParticleEffect;
-import com.brm.Kubotz.AI.Components.AIComponent;
-import com.brm.Kubotz.AI.Pathfinding.PathNode;
+import com.brm.GoatEngine.AI.Components.AIComponent;
+import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;

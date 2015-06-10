@@ -8,7 +8,7 @@ public abstract class Event {
     private final String entityId;  //The entity to which the event mostly applies (can be null for some special events)
 
 
-    public Event(String entityId){
+    protected Event(String entityId){
         this.entityId = entityId;
     }
 

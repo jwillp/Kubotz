@@ -8,7 +8,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.Kubotz.Components.Parts.Weapons.GunComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
-import com.brm.Kubotz.Components.MeleeComponent;
+import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
 
 /**
  * The effect of a PowerUp. It is an action to perform

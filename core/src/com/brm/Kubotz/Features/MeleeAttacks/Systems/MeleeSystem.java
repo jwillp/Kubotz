@@ -1,15 +1,14 @@
-package com.brm.Kubotz.Systems.AttackSystems;
+package com.brm.Kubotz.Features.MeleeAttacks.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Hitbox.Hitbox;
@@ -18,9 +17,10 @@ import com.brm.Kubotz.Input.GameButton;
 /**
  * Used to handle the entities punching
  */
-public class LaserSwordSystem extends EntitySystem{
+public class MeleeSystem extends EntitySystem{
 
-    public LaserSwordSystem(){}
+    public MeleeSystem() {
+    }
 
     @Override
     public void init(){}
@@ -28,7 +28,7 @@ public class LaserSwordSystem extends EntitySystem{
 
     @Override
     public void handleInput() {
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(LaserSwordComponent.ID)) {
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(MeleeComponent.ID)) {
             if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
                 handleInputForEntity(entity);
             }
@@ -38,20 +38,16 @@ public class LaserSwordSystem extends EntitySystem{
 
     private void handleInputForEntity(Entity entity){
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        LaserSwordComponent laserSword = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
+        MeleeComponent meleeComponent = (MeleeComponent)entity.getComponent(MeleeComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
-            Logger.log(laserSword.getCooldown().getRemainingTime());
-            Logger.log(laserSword.getCooldown().isDone());
-
-            if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone()){
-                Logger.log("OK");
-                laserSword.getDurationTimer().reset();
+            if(meleeComponent.getCooldown().isDone() && !meleeComponent.isAttacking()){
+                meleeComponent.getDurationTimer().reset();
                 createAttackBox(phys);
-                laserSword.setSwinging(true);
-                // TODO FIRE EVENT FOR SWINGING
+                meleeComponent.setAttacking(true);
+                // TODO FIRE EVENT FOR PUNCHING
             }
         }
     }
@@ -60,17 +56,16 @@ public class LaserSwordSystem extends EntitySystem{
     public void update(float dt) {
         // See if punch duration is over
 
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(LaserSwordComponent.ID)){
-            LaserSwordComponent laserSword = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(MeleeComponent.ID)){
+            MeleeComponent meleeComponent = (MeleeComponent)entity.getComponent(MeleeComponent.ID);
             //Check if the punch duration is over, if so hide the punch
-            if(laserSword.isSwinging()){
-                if(laserSword.getDurationTimer().isDone()){
-                    laserSword.setSwinging(false);
-                    laserSword.getCooldown().reset();
+            if(meleeComponent.isAttacking()) {
+                if (meleeComponent.getDurationTimer().isDone()) {
+                    meleeComponent.getCooldown().reset();
                     removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+                    meleeComponent.setAttacking(false);
                 }
             }
-
         }
     }
 
@@ -83,7 +78,7 @@ public class LaserSwordSystem extends EntitySystem{
      */
     private void createAttackBox(PhysicsComponent phys){
         CircleShape shape = new CircleShape();
-        shape.setRadius(phys.getWidth() * 1.5f);
+        shape.setRadius(phys.getWidth() * 0.5f);
 
         Vector2 position = null;
         switch (phys.getDirection()) {
@@ -101,7 +96,7 @@ public class LaserSwordSystem extends EntitySystem{
         punchFixture.shape = shape;
 
         Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.HITBOX_LABEL_MELEE);
-        hitbox.damage = Config.LASER_SWORD_DAMAGE;
+        hitbox.damage = Config.PUNCH_DAMAGE;
 
 
         phys.getBody().createFixture(punchFixture).setUserData(hitbox);
@@ -122,6 +117,10 @@ public class LaserSwordSystem extends EntitySystem{
             }
         }
     }
+
+
+
+
 
 
 

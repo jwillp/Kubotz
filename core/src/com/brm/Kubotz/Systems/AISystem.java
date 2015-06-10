@@ -1,8 +1,7 @@
 package com.brm.Kubotz.Systems;
 
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.AI.Pathfinding.Pathfinder;
+import com.brm.GoatEngine.AI.Pathfinding.Pathfinder;
 import com.brm.Kubotz.Constants;
 
 /**

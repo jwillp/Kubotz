@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.Kubotz.DroneGauntlet.Systems.DroneGauntletSystem;
+import com.brm.Kubotz.Features.DroneGauntlet.Systems.DroneGauntletSystem;
 
 /**
  * Used to process Skills... most active skills
