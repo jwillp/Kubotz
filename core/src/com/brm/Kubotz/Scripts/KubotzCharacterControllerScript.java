@@ -2,6 +2,7 @@ package com.brm.Kubotz.Scripts;
 
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 public class KubotzCharacterControllerScript extends EntityScript {
 
     @Override
-    public void onUpdate(Entity entity){ }
+    public void onUpdate(Entity entity, EntityManager entityManager){ }
 
 
     @Override

@@ -3,6 +3,7 @@ package com.brm.Kubotz.Scripts;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
@@ -51,7 +52,7 @@ public class KubotzAnimationScript extends EntityScript {
     }
 
     @Override
-    public void onUpdate(Entity entity) {
+    public void onUpdate(Entity entity, EntityManager entityManager) {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);

@@ -32,8 +32,8 @@ public class Entity {
     // Wrapper methods //
     /**
      * WRAPPER METHOD adds a component to the entity in the entity manager
-     * @param cp
-     * @param compId
+     * @param cp the component
+     * @param compId the id of the Component
      * @return this for chaining
      */
     public Entity addComponent(EntityComponent cp, String compId){
@@ -63,7 +63,7 @@ public class Entity {
 
     /**
      * WRAPPER METHOD Gets a component using its ID
-     * @param componentId
+     * @param componentId the id of the component
      * @return
      */
     public EntityComponent getComponent(String componentId){
@@ -81,7 +81,7 @@ public class Entity {
 
     /**
      * WRAPPER METHOD Returns whether or not the entity has a certain Component
-     * @param componentId
+     * @param componentId the id of the component
      * @return
      */
     public boolean hasComponent(String componentId){

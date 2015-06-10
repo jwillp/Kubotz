@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
@@ -69,7 +70,7 @@ public class BlockFactory extends EntityFactory {
 
         //Tags
         TagsComponent tagComp = new TagsComponent();
-        tagComp.addTag("block");
+        tagComp.addTag(Constants.ENTITY_TAG_PLATFORM);
 
 
         block.addComponent(physics, PhysicsComponent.ID);

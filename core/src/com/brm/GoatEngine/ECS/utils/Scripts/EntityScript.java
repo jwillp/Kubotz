@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.utils.Scripts;
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Events.CollisionEvent;
@@ -18,15 +19,14 @@ public abstract class EntityScript{
     /**
      * Called when a script is added to an entity
      */
-    public void onInit(Entity entity){}
-
+    public void onInit(Entity entity, EntityManager entityManager){}
 
 
     /**
      * Called every frame
      * @param entity the entity to update with the script
      */
-    public abstract void onUpdate(Entity entity);
+    public abstract void onUpdate(Entity entity, EntityManager entityManager);
 
     /**
      * Called when the entity this script is attached to presses one or more buttons
@@ -41,7 +41,7 @@ public abstract class EntityScript{
      * two entities touch
      * @param contact
      */
-    public <T extends Event> void onCollision(CollisionEvent contact){
+    public void onCollision(CollisionEvent contact){
 
     }
 

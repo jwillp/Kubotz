@@ -3,6 +3,7 @@ package com.brm.Kubotz.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
@@ -14,9 +15,12 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.GParticleEffect;
+import com.brm.Kubotz.AI.Components.AIComponent;
+import com.brm.Kubotz.AI.Pathfinding.PathNode;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
+import com.brm.Kubotz.Systems.AISystem;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
 
@@ -67,9 +71,10 @@ public class RenderingSystem extends EntitySystem {
         Gdx.gl.glClearColor(26f/255f,26f/255f,26f/255f,0);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
-        World world = getSystemManager().getSystem(PhysicsSystem.class).getWorld();
+
         if(Config.DEBUG_RENDERING_ENABLED) {
-            this.renderDebug(world); //TODO get FROM System Manager
+            this.renderDebug(getSystemManager().getSystem(PhysicsSystem.class).getWorld());
+            //this.renderPathfinding();
         }
 
         if(Config.TEXTURE_RENDERING_ENABLED){
@@ -80,14 +85,21 @@ public class RenderingSystem extends EntitySystem {
 
     }
 
+
+
+
     public void renderHud(float dt){
         this.hudSystem.update(dt);
     }
 
     public void renderMap(MapRenderer mapRenderer){
-        mapRenderer.setView(getCamera());
-        mapRenderer.render();
+        if(!Config.DEBUG_RENDERING_ENABLED){
+            mapRenderer.setView(getCamera());
+            mapRenderer.render();
+        }
+
     }
+
 
 
 
@@ -97,16 +109,11 @@ public class RenderingSystem extends EntitySystem {
      */
     private void renderTextures(float deltaTime){
 
-
-
-
-
-
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
 
         //BACKGROUND
         spriteBatch.begin();
-        spriteBatch.draw(this.background,0,0, 52, 37);
+        //spriteBatch.draw(this.background,0,0, 52, 37);
 
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){
@@ -180,24 +187,96 @@ public class RenderingSystem extends EntitySystem {
 
         /** FPS **/
 
-        //BitmapFont font = new BitmapFont();
+       // BitmapFont font = new BitmapFont();
         //spriteBatch.begin();
-        //font.draw(spriteBatch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
-        /*
-        font.draw(sb, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
+        /*font.draw(spriteBatch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
+
+        font.draw(spriteBatch, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
 
 
         String velText = "Velocity: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getVelocity();
-        font.draw(sb, velText, 0, Gdx.graphics.getHeight() - 50);
+        font.draw(spriteBatch, velText, 0, Gdx.graphics.getHeight() - 50);
 
-        font.draw(sb, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJujmps(), 0, Gdx.graphics.getHeight() - 80);
-        font.draw(sb, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
-        font.draw(sb, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);
-        */
+        font.draw(spriteBatch, "NB JUMPS: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJujmps(), 0, Gdx.graphics.getHeight() - 80);
+        font.draw(spriteBatch, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
+        font.draw(spriteBatch, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);*/
+
         //spriteBatch.end();
 
 
     }
+
+
+    /**
+     * Debug method to render the path and nodes of AI
+     */
+    private void renderPathfinding() {
+        float NODE_SIZE = 0.4f;
+
+        for(PathNode node: AISystem.pathfinder.nodes) {
+            shapeRenderer.setProjectionMatrix(this.getCamera().combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            if (node.isWalkable)
+                shapeRenderer.setColor(Color.RED);
+            shapeRenderer.rect(node.position.x, node.position.y, NODE_SIZE, NODE_SIZE);
+            shapeRenderer.end();
+        }
+
+        //Pathfinding display
+        for (Entity e : this.getEntityManager().getEntitiesWithComponent(AIComponent.ID)){
+
+            AIComponent aiComp = (AIComponent) e.getComponent(AIComponent.ID);
+
+            //NODES
+            for(PathNode node: aiComp.getCurrentPath()) {
+                shapeRenderer.setProjectionMatrix(this.getCamera().combined);
+                shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+                if (node.isWalkable)
+                    shapeRenderer.setColor(Color.RED);
+                if(aiComp.getCurrentPath().indexOf(node) == 0)
+                    shapeRenderer.setColor(Color.GREEN);
+                if(aiComp.getCurrentPath().indexOf(node) == aiComp.getCurrentPath().size()-1)
+                    shapeRenderer.setColor(Color.MAGENTA);
+                shapeRenderer.rect(node.position.x, node.position.y, NODE_SIZE, NODE_SIZE);
+                shapeRenderer.end();
+            }
+
+            // PATH
+            for(PathNode node: aiComp.getCurrentPath()){
+                if(node.parent != null){
+                    shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // shape type
+                    shapeRenderer.setColor(1, 0, 0, 1); // line's color
+
+                    float offset = NODE_SIZE/2;
+                    shapeRenderer.line(
+                            node.position.x + offset , node.position.y + offset,
+                            node.parent.position.x + offset, node.parent.position.y + offset
+                    );
+                    shapeRenderer.end();
+                }
+            }
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

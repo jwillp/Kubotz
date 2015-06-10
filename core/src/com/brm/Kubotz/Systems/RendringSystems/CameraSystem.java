@@ -11,7 +11,8 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
-import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.Utils.Math.GameMath;
+import com.brm.GoatEngine.Utils.Math.Vectors;
 
 /**
  * A system handling all cameras and their movements
@@ -115,7 +116,7 @@ public class CameraSystem extends EntitySystem {
     private void updateZoom(Vector2 leftMost, Vector2 rightMost){
 
         //Pythagorean distance
-        float zoomFactor = (float)(GameMath.distance(leftMost, rightMost)/10.0f); //TODO 10? what was I thinking?
+        float zoomFactor = (float)(Vectors.euclideanDistance(leftMost, rightMost)/10.0f); //TODO 10? what was I thinking?
         zoomFactor = MathUtils.clamp(zoomFactor, mainCamera.getMinimumZoom(), mainCamera.getMaximumZoom());
 
         //if the camera has no particular zoom speed, we'll define one based on camera speed

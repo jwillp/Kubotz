@@ -6,7 +6,8 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.GameMath;
+import com.brm.GoatEngine.Utils.Math.GameMath;
+import com.brm.GoatEngine.Utils.Math.Vectors;
 import com.brm.Kubotz.Components.Movements.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -128,7 +129,7 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
         // Do we need to disable?
-        if (GameMath.distance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x || dashComp.getTravelDuration().isDone()) {
+        if (Vectors.euclideanDistance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x || dashComp.getTravelDuration().isDone()) {
             dashComp.setPhase(DashComponent.Phase.DECELERATION);
         }else{
             Vector2 velocity = new Vector2();

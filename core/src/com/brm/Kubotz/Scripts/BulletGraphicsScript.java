@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Scripts;
 
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
@@ -15,7 +16,7 @@ public class BulletGraphicsScript extends EntityScript {
     public static int lol = 0;
 
     @Override
-    public void onInit(Entity entity) {
+    public void onInit(Entity entity, EntityManager entityManager) {
         //ooaddSmokeEffect(entity);
 
     }
@@ -26,7 +27,7 @@ public class BulletGraphicsScript extends EntityScript {
     }
 
     @Override
-    public void onUpdate(Entity entity){}
+    public void onUpdate(Entity entity, EntityManager entityManager){}
 
 
     /**

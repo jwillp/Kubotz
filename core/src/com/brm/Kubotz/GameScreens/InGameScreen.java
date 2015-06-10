@@ -17,11 +17,14 @@ import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.AI.Components.AIComponent;
+import com.brm.Kubotz.AI.Scripts.KubotzBehaviourScript;
 import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
@@ -91,6 +94,9 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(RespawnSystem.class, new RespawnSystem());
 
 
+        systemManager.addSystem(AISystem.class, new AISystem());
+
+
         //INIT SYSTEMS
         systemManager.initSystems();
 
@@ -156,11 +162,21 @@ public class InGameScreen extends GameScreen {
 
 
 
-        Entity bo = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(7,12))
-                .withHeight(2.0f)
-                .withCameraTargetComponent().build();
-        bo.disableComponent(VirtualGamePad.ID);
-        bo.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
+        /*for(int i=0; i<1; i++){
+            Entity ba = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(8 + i,7))
+                    .withHeight(1.0f)
+                    .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
+                    .withCameraTargetComponent().build();
+            ba.addComponent(new AIComponent(), AIComponent.ID);
+
+            //Scripts
+            ScriptComponent script = new ScriptComponent();
+            script.addScript(new KubotzBehaviourScript());
+            ba.addComponent(script, ScriptComponent.ID);
+
+            //ba.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
+
+        }*/
 
         Logger.log("In Game State initialised");
     }
@@ -176,9 +192,11 @@ public class InGameScreen extends GameScreen {
     @Override
     public void handleInput(GameScreenManager engine){
 
-
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
-        systemManager.getSystem(ScriptSystem.class).handleInput();
+
+        //Since Scripts Can produce Input during their update phase
+        systemManager.getSystem(ScriptSystem.class).update(0);
+
         systemManager.getSystem(MovementSystem.class).handleInput();
         systemManager.getSystem(GrabSystem.class).handleInput();
         systemManager.getSystem(SkillsSystem.class).handleInput();
@@ -190,6 +208,7 @@ public class InGameScreen extends GameScreen {
     @Override
     public void update(GameScreenManager engine, float deltaTime) {
 
+        systemManager.getSystem(AISystem.class).update(deltaTime);
 
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
         systemManager.getSystem(TrackerSystem.class).update(deltaTime);

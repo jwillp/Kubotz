@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ECS.utils.Systems;
 
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
@@ -50,11 +51,11 @@ public class ScriptSystem extends EntitySystem {
 
                 //ON INIT
                 if(!script.isInitialized()){
-                    script.onInit(entity);
+                    script.onInit(entity, getEntityManager());
                     script.setInitialized(true);
                 }
                 // ON UPDATE
-                script.onUpdate(entity);
+                script.onUpdate(entity, getEntityManager());
             }
         }
     }

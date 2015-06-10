@@ -47,6 +47,7 @@ public class EntityManager {
      * @param entityId: The Id of the entity
      * @return EntityManager for chaining
      */
+    @SuppressWarnings("unchecked")
     public EntityManager addComponent(String componentId, EntityComponent component, String entityId){
 
         HashMap componentContainer = this.components.get(componentId);

@@ -1,16 +1,11 @@
 package com.brm.Kubotz.Systems;
 
-import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.Utils.GameMath;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.DamageComponent;
+import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
-import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
 import com.brm.Kubotz.Events.TakeDamageEvent;
