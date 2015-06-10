@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Components.Powerups;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Makes an entity Not visible for it's ennemy (Ok partly invisible like 20% alpha)

@@ -1,10 +1,9 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.JumpComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Movements.DashComponent;
@@ -18,9 +17,7 @@ public class DashBootsSystem extends EntitySystem {
 
 
 
-    public DashBootsSystem(EntityManager em) {
-        super(em);
-    }
+    public DashBootsSystem(){}
 
     @Override
     public void init(){}
@@ -28,17 +25,25 @@ public class DashBootsSystem extends EntitySystem {
 
     @Override
     public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponent(DashBootsComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(DashBootsComponent.ID)){
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
             DashBootsComponent boots = (DashBootsComponent) entity.getComponent(DashBootsComponent.ID);
 
-            if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+            if(gamePad.isButtonPressed(GameButton.BUTTON_X)){
+                gamePad.releaseButton(GameButton.BUTTON_X);
 
-                //Can we Dash?
-                if(!entity.hasComponent(DashComponent.ID)) {
-                    Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
-                    if (boots.getCooldown().isDone())
-                        turnDashOn(entity);
+                boolean up, down, left, right;
+                up = gamePad.isButtonPressed(GameButton.DPAD_UP);
+                down = gamePad.isButtonPressed(GameButton.DPAD_DOWN);
+                left = gamePad.isButtonPressed(GameButton.DPAD_LEFT);
+                right = gamePad.isButtonPressed(GameButton.DPAD_RIGHT);
+                if(up || down || left || right) {
+                    //Can we Dash?
+                    if(!entity.hasComponent(DashComponent.ID)) {
+                        Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
+                        if (boots.getCooldown().isDone())
+                            turnDashOn(entity);
+                    }
                 }
             }
         }
@@ -66,7 +71,7 @@ public class DashBootsSystem extends EntitySystem {
     public void update(float dt) {
 
         //Check if we need to put any Dashing entity in recovery mode
-        for(Entity entity: em.getEntitiesWithComponent(DashBootsComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(DashBootsComponent.ID)){
             DashBootsComponent boots = (DashBootsComponent)entity.getComponent(DashBootsComponent.ID);
 
             if(entity.hasComponent(DashComponent.ID)){

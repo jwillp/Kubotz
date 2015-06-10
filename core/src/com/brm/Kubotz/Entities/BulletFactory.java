@@ -5,6 +5,7 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -14,7 +15,19 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
+import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.Kubotz.Components.DamageComponent;
+import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Scripts.BulletGraphicsScript;
 
 /**
  * Used to generate bullets
@@ -111,7 +124,19 @@ public class BulletFactory extends EntityFactory {
         bullet.addComponent(this.buildBody(bullet), PhysicsComponent.ID);
 
         //Tags Component
+        this.tagsComponent.addTag(Constants.ENTITY_TAG_BULLET);
         bullet.addComponent(this.tagsComponent, TagsComponent.ID);
+
+
+        // Particle Effect
+        bullet.addComponent(new ParticleEffectComponent(), ParticleEffectComponent.ID);
+
+
+
+        // SCRIPTS
+        ScriptComponent scriptComp = new ScriptComponent();
+        scriptComp.addScript(new BulletGraphicsScript());
+        bullet.addComponent(scriptComp, ScriptComponent.ID);
 
         return bullet;
     }
@@ -126,7 +151,7 @@ public class BulletFactory extends EntityFactory {
         position = new Vector2(position.x + size.x, position.y + size.y);
 
         // Physics
-        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.KinematicBody, position, size.x, size.y);
+        PhysicsComponent physics = new PhysicsComponent(world, BodyDef.BodyType.DynamicBody, position, size.x, size.y);
 
         PolygonShape polyShape = new PolygonShape();
         polyShape.setAsBox(physics.getWidth(), physics.getHeight());
@@ -136,7 +161,12 @@ public class BulletFactory extends EntityFactory {
 
         fixtureDef.isSensor = true;
 
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_BULLET);
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.ENTITY_TAG_BULLET);
+        hitbox.damage = this.dmgComp.getDamage();
+
+
+
+        physics.getBody().createFixture(fixtureDef).setUserData(hitbox);
         polyShape.dispose();
 
 
@@ -155,6 +185,8 @@ public class BulletFactory extends EntityFactory {
         physics.getBody().setBullet(true);
 
         physics.setDirection(this.direction);
+
+        physics.getBody().setGravityScale(0);
 
         return physics;
     }

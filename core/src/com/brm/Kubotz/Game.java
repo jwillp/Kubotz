@@ -9,27 +9,38 @@ import com.brm.Kubotz.GameScreens.InGameScreen;
 public class Game extends ApplicationAdapter {
 
 
-	private GameScreenManager stateManager;
+	private GameScreenManager screenManager;
 	private int accum;
 
 	@Override
 	public void create () {
-		stateManager = new GameScreenManager();
-		stateManager.init();
-		stateManager.addScreen(new InGameScreen());
+
+		// READ GAME PROPERTIES FROM FILE
+		Config.load();
+		if(Config.FULL_SCREEN){
+			Gdx.graphics.setDisplayMode(
+					Gdx.graphics.getDesktopDisplayMode().width,
+					Gdx.graphics.getDesktopDisplayMode().height,
+					Config.FULL_SCREEN
+			);
+		}
+		screenManager = new GameScreenManager();
+		screenManager.init();
+		screenManager.addScreen(new InGameScreen());
 	}
 
 
 	@Override
 	public void render () {
-		stateManager.handleEvents();
-		stateManager.update(Gdx.graphics.getDeltaTime());
-		stateManager.draw();
+		float deltaTime = Gdx.graphics.getDeltaTime();
+		screenManager.handleEvents();
+		screenManager.update(deltaTime);
+		screenManager.draw(deltaTime);
 
 	}
 
-
-
-
-
+	@Override
+	public void dispose() {
+		Config.save();
+	}
 }

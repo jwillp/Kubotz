@@ -2,21 +2,27 @@ package com.brm.Kubotz.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.Cameras.CameraTargetComponent;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brashmonkey.spriter.Spriter;
+import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.*;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.GrabComponent;
+import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.DroneGauntletComponent;
+import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Components.Parts.Boots.DashBootsComponent;
+import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpsContainerComponent;
-import com.brm.Kubotz.Components.PunchComponent;
+import com.brm.Kubotz.Components.MeleeComponent;
+import com.brm.Kubotz.Components.RespawnComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Scripts.KubotzAnimationScript;
 
 
 /**
@@ -97,47 +103,42 @@ public class KubotzFactory extends EntityFactory {
         Entity character = new Entity();
         entityManager.registerEntity(character);
 
+        // PHYSICS
         PhysicsComponent physics = this.buildBody(character);
         character.addComponent(physics, PhysicsComponent.ID);
-
-
 
         //TAGS
         tagsComponent.addTag(Constants.ENTITY_TAG_KUBOTZ);
         character.addComponent(this.tagsComponent, TagsComponent.ID);
 
+        // INPUT
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
-
 
         // JUMP
         character.addComponent(new RunningComponent(), RunningComponent.ID);
         character.addComponent(new JumpComponent(2), JumpComponent.ID);
 
-
-
         //CAM
         if(hasCamTargetComponent) character.addComponent(new CameraTargetComponent(), CameraTargetComponent.ID);
 
-
+        //HEALTH
+        character.addComponent(new HealthComponent(100), HealthComponent.ID);
+        character.addComponent(new ManaComponent(100), ManaComponent.ID);
         /* Flying Component */
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         /* PUNCH Component*/
-        character.addComponent(new PunchComponent(physics), PunchComponent.ID);
+        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
         /* TURRET GAUNTLET */
         character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
 
-
-
-        //HEALTH
-        character.addComponent(new HealthComponent(100), HealthComponent.ID);
 
         //GRAB
         character.addComponent(new GrabComponent(), GrabComponent.ID);
@@ -146,8 +147,41 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new PowerUpsContainerComponent(), PowerUpsContainerComponent.ID);
 
 
+
+        //Scripts
+        ScriptComponent scriptComponent = new ScriptComponent();
+        scriptComponent.addScript(new KubotzAnimationScript());
+        character.addComponent(scriptComponent, ScriptComponent.ID);
+
+
+
+
+        // GRAPHICS
+        //ANIMATION
+        character.addComponent(
+                new SpriterAnimationComponent(
+                        Spriter.newPlayer("animations/kubotz.scml", "Kubotz"),
+                        -physics.getWidth()/2 +0.25f,
+                        -physics.getHeight()/2-0.5f,
+                        0.005f
+                ),
+                SpriterAnimationComponent.ID
+        );
+        // UI Health Bar
+        character.addComponent(new UIHealthComponent(), UIHealthComponent.ID);
+        //Particle effect
+        character.addComponent(new ParticleEffectComponent(), ParticleEffectComponent.ID);
+
         return character;
     }
+
+
+
+
+
+
+
+
 
 
     /**
@@ -173,7 +207,7 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_TORSO);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_TORSO));
         polyShape.dispose();
 
         // Circle TOP
@@ -183,7 +217,7 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeTop;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_HEAD);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_HEAD));
         circleShapeTop.dispose();
 
 
@@ -194,16 +228,16 @@ public class KubotzFactory extends EntityFactory {
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeBottom;
         fixtureDef.density = 0.1f;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_LEGS);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable, Constants.HITBOX_LABEL_LEGS));
         circleShapeBottom.dispose();
 
 
-        //foot fixture
+        //FEET FIXTURE
         PolygonShape footSensor = new PolygonShape();
         footSensor.setAsBox(0.1f,0.1f, new Vector2(0, -size.y), 0);
         fixtureDef.isSensor = true;
         fixtureDef.shape = footSensor;
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.FIXTURE_FEET_SENSOR);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Damageable,Constants.HITBOX_LABEL_FEET));
 
 
 

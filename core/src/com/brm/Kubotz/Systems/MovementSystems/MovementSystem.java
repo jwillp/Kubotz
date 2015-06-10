@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 
+
 import com.brm.GoatEngine.ECS.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.Entity.Entity;
@@ -10,6 +11,13 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Constants;
 
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.Input.GameButton;
+
+
 
 /**
  * System handling the controllable Entities such as most characters
@@ -17,17 +25,15 @@ import com.brm.Kubotz.Constants;
 public class MovementSystem extends EntitySystem {
 
 
-    public MovementSystem(EntityManager em) {
-        super(em);
-
+    public MovementSystem() {
 
     }
 
     @Override
     public void init() {
-        getSystemManager().addSystem(RunningSystem.class, new RunningSystem(em));
-        getSystemManager().addSystem(FlySystem.class, new FlySystem(em));
-        getSystemManager().addSystem(DashSystem.class, new DashSystem(em));
+        getSystemManager().addSystem(RunningSystem.class, new RunningSystem());
+        getSystemManager().addSystem(FlySystem.class, new FlySystem());
+        getSystemManager().addSystem(DashSystem.class, new DashSystem());
     }
 
 
@@ -36,33 +42,21 @@ public class MovementSystem extends EntitySystem {
         getSystemManager().getSystem(FlySystem.class).handleInput();
         getSystemManager().getSystem(DashSystem.class).handleInput();
         getSystemManager().getSystem(RunningSystem.class).handleInput();
-    }
 
 
+        // Set direction
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
+            if(gamePad.isButtonPressed(GameButton.DPAD_RIGHT))
+                phys.setDirection(PhysicsComponent.Direction.RIGHT);
+            else if(gamePad.isButtonPressed(GameButton.DPAD_LEFT))
+                phys.setDirection(PhysicsComponent.Direction.LEFT);
 
-    /**
-     * Updates the property describing if an entity is grounded or not
-     */
-    public void updateIsGrounded(){
-
-
-        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i< phys.getContacts().size(); i++){
-                EntityContact contact = phys.getContacts().get(i);
-                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
-                    phys.setGrounded(true);
-                    phys.getContacts().remove(i);
-
-                    //REMOVE OTHER contact for other entity
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.getContacts().remove(contact);
-                }
-            }
         }
-
     }
+
 
     @Override
     public void update(float dt){
@@ -87,10 +81,10 @@ public class MovementSystem extends EntitySystem {
         phys.getBody().setLinearVelocity(velocity, phys.getVelocity().y);
 
         //SET DIRECTION
-        if(velocity > 0)
+        /*if(velocity > 0)
             phys.setDirection(PhysicsComponent.Direction.RIGHT);
         else if(velocity < 0)
-            phys.setDirection(PhysicsComponent.Direction.LEFT);
+            phys.setDirection(PhysicsComponent.Direction.LEFT);*/
     }
 
     /**

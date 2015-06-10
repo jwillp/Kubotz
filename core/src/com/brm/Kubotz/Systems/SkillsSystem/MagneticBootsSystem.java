@@ -1,10 +1,9 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
 import com.badlogic.gdx.math.MathUtils;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Parts.Boots.MagneticBootsComponent;
@@ -16,9 +15,7 @@ import com.brm.Kubotz.Input.GameButton;
 public class MagneticBootsSystem extends EntitySystem{
 
 
-    public MagneticBootsSystem(EntityManager em) {
-        super(em);
-    }
+    public MagneticBootsSystem(){}
 
     @Override
     public void init() {}
@@ -27,7 +24,7 @@ public class MagneticBootsSystem extends EntitySystem{
      * Handles the input for every entity with magnetic boots
      */
     public void handleInput() {
-        for (Entity entity : em.getEntitiesWithComponent(MagneticBootsComponent.ID)) {
+        for (Entity entity : getEntityManager().getEntitiesWithComponent(MagneticBootsComponent.ID)) {
             if(entity.hasComponent(VirtualGamePad.ID)){
                 handleInputForEntity(entity);
             }
@@ -43,7 +40,7 @@ public class MagneticBootsSystem extends EntitySystem{
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         MagneticBootsComponent boots = (MagneticBootsComponent)entity.getComponent(MagneticBootsComponent.ID);
 
-        if(gamePad.isButtonPressed(GameButton.ACTIVE_SKILL_BUTTON)){
+        if(gamePad.isButtonPressed(GameButton.BUTTON_X)){
 
             if(boots.isEnabled()){
                 processMagno(entity, false);
@@ -51,7 +48,7 @@ public class MagneticBootsSystem extends EntitySystem{
                 processMagno(entity, true);
             }
             //Simulate a small jump
-            gamePad.pressButton(GameButton.MOVE_UP);
+            gamePad.pressButton(GameButton.DPAD_UP);
         }
     }
 

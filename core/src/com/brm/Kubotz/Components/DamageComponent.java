@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Components;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Used to make an entity deal damage when it comes in contact with something

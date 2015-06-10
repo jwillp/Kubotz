@@ -2,9 +2,8 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Input.UserInput;
@@ -16,9 +15,7 @@ import com.brm.Kubotz.Input.UserInput;
 public class InputTranslationSystem extends EntitySystem {
 
 
-    public InputTranslationSystem(EntityManager em) {
-        super(em);
-    }
+    public InputTranslationSystem(){}
 
     @Override
     public void init(){}
@@ -31,7 +28,7 @@ public class InputTranslationSystem extends EntitySystem {
     @Override
     public void handleInput(){
         //find player
-        for(Entity e: em.getEntitiesWithComponent(VirtualGamePad.ID)){
+        for(Entity e: getEntityManager().getEntitiesWithComponent(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
             gamePad.releaseAll(); //Release for everyone so with don't attack the button
 
@@ -42,38 +39,38 @@ public class InputTranslationSystem extends EntitySystem {
 
                     // Movement Buttons
                     // up XOR down ==> prevalence of UP
-                    if (Gdx.input.isKeyPressed(UserInput.MOVE_UP)) {
-                        gamePad.pressButton(GameButton.MOVE_UP);
-                    } else if (Gdx.input.isKeyPressed(UserInput.MOVE_DOWN)) {
-                        gamePad.pressButton(GameButton.MOVE_DOWN);
+                    if (Gdx.input.isKeyPressed(UserInput.DPAD_UP)) {
+                        gamePad.pressButton(GameButton.DPAD_UP);
+                    } else if (Gdx.input.isKeyPressed(UserInput.DPAD_DOWN)) {
+                        gamePad.pressButton(GameButton.DPAD_DOWN);
                     }
 
                     // left XOR right ==> prevalence of left
-                    if (Gdx.input.isKeyPressed(UserInput.MOVE_LEFT)) {
-                        gamePad.pressButton(GameButton.MOVE_LEFT);
-                    } else if (Gdx.input.isKeyPressed(UserInput.MOVE_RIGHT)) {
-                        gamePad.pressButton(GameButton.MOVE_RIGHT);
+                    if (Gdx.input.isKeyPressed(UserInput.DPAD_LEFT)) {
+                        gamePad.pressButton(GameButton.DPAD_LEFT);
+                    } else if (Gdx.input.isKeyPressed(UserInput.DPAD_RIGHT)) {
+                        gamePad.pressButton(GameButton.DPAD_RIGHT);
                     }
 
                     //Action buttons
-                    if (Gdx.input.isKeyJustPressed(UserInput.PRIMARY_ACTION_BUTTON)) {
-                        gamePad.pressButton(GameButton.PRIMARY_ACTION_BUTTON);
+                    if (Gdx.input.isKeyJustPressed(UserInput.BUTTON_B)) {
+                        gamePad.pressButton(GameButton.BUTTON_B);
                     }
 
-                    if (Gdx.input.isKeyJustPressed(UserInput.SECONDARY_ACTION_BUTTON)) {
-                        gamePad.pressButton(GameButton.SECONDARY_ACTION_BUTTON);
+                    if (Gdx.input.isKeyJustPressed(UserInput.BUTTON_Y)) {
+                        gamePad.pressButton(GameButton.BUTTON_Y);
                     }
 
                     if (Gdx.input.isKeyJustPressed(UserInput.START)) {
                         gamePad.pressButton(GameButton.START_BUTTON);
                     }
 
-                    if (Gdx.input.isKeyJustPressed(UserInput.PUNCH)) {
-                        gamePad.pressButton(GameButton.PUNCH_BUTTON);
+                    if (Gdx.input.isKeyJustPressed(UserInput.BUTTON_A)) {
+                        gamePad.pressButton(GameButton.BUTTON_A);
                     }
 
-                    if (Gdx.input.isKeyJustPressed(UserInput.ACTIVE_SKILL)) {
-                        gamePad.pressButton(GameButton.ACTIVE_SKILL_BUTTON);
+                    if (Gdx.input.isKeyJustPressed(UserInput.BUTTON_X)) {
+                        gamePad.pressButton(GameButton.BUTTON_X);
                     }
                 }
             }

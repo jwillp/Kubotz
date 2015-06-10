@@ -4,9 +4,9 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.Kubotz.Constants;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
  * Lets an entity have a Sensor of a certain radius
  * Detecing all other entities within the sensor's bounds
  */
-public class SensorComponent extends EntityComponent{
+public class SensorComponent extends EntityComponent {
 
     public final static String ID = "SENSOR_COMP";
 
@@ -58,7 +58,7 @@ public class SensorComponent extends EntityComponent{
         def.isSensor = true;
         def.shape = circle;
         Fixture fixture = phys.getBody().createFixture(def);
-        fixture.setUserData(Constants.FIXTURE_SENSOR_COMP);
+        //fixture.setUserData(Constants.FIXTURE_SENSOR_COMP);
 
         circle.dispose();
 

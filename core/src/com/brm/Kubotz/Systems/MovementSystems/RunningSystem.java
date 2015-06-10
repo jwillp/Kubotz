@@ -1,17 +1,17 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.JumpComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Movements.RunningComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -20,45 +20,39 @@ import com.brm.Kubotz.Input.GameButton;
 public class RunningSystem extends EntitySystem {
 
 
-    public RunningSystem(EntityManager em){
-        super(em);
+    public RunningSystem(){}
+
+    @Override
+    public void init() {
     }
 
-    @Override
-    public void init(){}
-
 
     @Override
-    public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponentEnabled(RunningComponent.ID)){
-            if(entity.hasComponent(VirtualGamePad.ID)){
+    public void handleInput() {
+        for (Entity entity : getEntityManager().getEntitiesWithComponentEnabled(RunningComponent.ID)) {
+            if (entity.hasComponent(VirtualGamePad.ID)) {
                 handleInputForEntity(entity);
             }
         }
     }
 
 
-
-
-
     /**
      * Process a Movement Button for the entities
      */
-    private void handleInputForEntity(Entity entity){
+    private void handleInputForEntity(Entity entity) {
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
-            if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+            if (gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                 jump(entity);
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
-                moveDown(entity); // TODO test if crouch or fall down
-            }
-
-            if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
+                moveDown(entity);
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 moveRight(entity);
-            } else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+            } else if (gamePad.isButtonPressed(GameButton.DPAD_LEFT)) {
                 moveLeft(entity);
             } else {
                 //No movement made we decelerate
@@ -71,20 +65,19 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public void update(float dt) {
-        updateIsGrounded();
         updateJumps();
     }
 
     /**
      * If an entity is Grounded resets the number of jumps to 0
      */
-    private void updateJumps(){
+    private void updateJumps() {
 
         //RESET JUMPS
-        for(Entity entity: em.getEntitiesWithComponent(JumpComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        for (Entity entity : getEntityManager().getEntitiesWithComponent(JumpComponent.ID)) {
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-            if(phys.isGrounded()){
+            if (phys.isGrounded()) {
                 jp.setNbJujmps(0);
             }
         }
@@ -92,39 +85,47 @@ public class RunningSystem extends EntitySystem {
     }
 
 
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == CollisionEvent.class){
+           this.onCollision((CollisionEvent)event);
+        }
+    }
+
+
     /**
-     * Updates the property describing if an entity is grounded or not
+     * Called when a collision occurs between two entities
+     * @param contact
      */
-    private void updateIsGrounded(){
-        // TODO only do it for Running Entities
-        for(EntityComponent comp: em.getComponents(PhysicsComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) comp;
-            for(int i=0; i< phys.getContacts().size(); i++){
-                EntityContact contact = phys.getContacts().get(i);
-                if(contact.fixtureA.getUserData() == Constants.FIXTURE_FEET_SENSOR){
-                    phys.setGrounded(true);
-                    phys.getContacts().remove(i);
-                    //REMOVE OTHER contact for other entity
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.getContacts().remove(contact);
+    private void onCollision(CollisionEvent contact){
+        if(contact.getEntityA() != null){
+            Hitbox hitbox = (Hitbox) contact.getFixtureA().getUserData();
+            if(hitbox != null) {
+                if (hitbox.label.equals(Constants.HITBOX_LABEL_FEET)) {
+                    if (contact.getEntityA().hasComponentEnabled(RunningComponent.ID)) {
+                        PhysicsComponent phys = (PhysicsComponent) contact.getEntityA().getComponent(PhysicsComponent.ID);
+                        phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
+                    }
                 }
             }
         }
+
     }
 
 
 
 
-    /***
+
+    /**
      * Makes the entity move left (whether it is during flying or walking or dashing)
      */
-    private void moveLeft(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+    private void moveLeft(Entity entity) {
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
 
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x - phys.getAcceleration().x;
 
-        if(Math.abs(resultingVelocity) > phys.getMaxSpeed().x){
+        if (Math.abs(resultingVelocity) > phys.getMaxSpeed().x) {
             resultingVelocity = -phys.getMaxSpeed().x;
         }
 
@@ -134,29 +135,27 @@ public class RunningSystem extends EntitySystem {
     /**
      * Makes the entity move right (whether it is during flying or walking or dashing)
      */
-    private void moveRight(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+    private void moveRight(Entity entity) {
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity();
         float resultingVelocity = vel.x + phys.getAcceleration().x;
-        if(resultingVelocity > phys.getMaxSpeed().x){
+        if (resultingVelocity > phys.getMaxSpeed().x) {
             resultingVelocity = phys.getMaxSpeed().x;
         }
         MovementSystem.moveInX(entity, resultingVelocity);
     }
 
 
-
-
     /**
      * Makes the entity jump
      */
-    private void jump(Entity entity){
-        if(entity.hasComponent(JumpComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+    private void jump(Entity entity) {
+        if (entity.hasComponent(JumpComponent.ID)) {
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
 
-            if(jp.getNbJujmps() < jp.getNbJumpsMax()){
-                if(jp.getCooldown().isDone()){
+            if (jp.getNbJujmps() < jp.getNbJumpsMax()) {
+                if (jp.getCooldown().isDone()) {
                     float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
                     MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                     phys.setGrounded(false);
@@ -170,15 +169,15 @@ public class RunningSystem extends EntitySystem {
     /**
      * Makes the entity fall faster when not on ground
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
-    private void moveDown(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+    private void moveDown(Entity entity) {
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
         Vector2 vel = phys.getVelocity().cpy();
 
 
-        if(Math.abs(vel.y) > phys.getMaxSpeed().y){
+        if (Math.abs(vel.y) > phys.getMaxSpeed().y) {
             vel.y = -phys.getMaxSpeed().y;
         }
-        float resultingVelocity = vel.y -  phys.getAcceleration().y*0.2f * phys.getBody().getGravityScale();
+        float resultingVelocity = vel.y - phys.getAcceleration().y * 0.2f * phys.getBody().getGravityScale();
         resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);
         // it's half a jump
         MovementSystem.moveInY(entity, resultingVelocity);
@@ -187,11 +186,12 @@ public class RunningSystem extends EntitySystem {
     /**
      * Gradually stops the entity by applying deceleration
      * to its velocity
+     *
      * @param entity the entity to stop
      */
-    private void decelerate(Entity entity){
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-        if(phys.isGrounded()){
+    private void decelerate(Entity entity) {
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        if (phys.isGrounded()) {
             Vector2 vel = phys.getVelocity();
             // DECELERATION (the character needs to slow down!)
             float finalVel = (vel.x > 0) ?
@@ -199,4 +199,6 @@ public class RunningSystem extends EntitySystem {
             MovementSystem.moveInX(entity, finalVel);
         }
     }
+
 }
+

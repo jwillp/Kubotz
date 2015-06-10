@@ -1,7 +1,6 @@
 package com.brm.Kubotz.Systems.SkillsSystem;
 
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 
 /**
  * Used to process Skills... most active skills
@@ -9,8 +8,12 @@ import com.brm.GoatEngine.ECS.Systems.EntitySystem;
  */
 public class SkillsSystem extends EntitySystem {
 
-    public SkillsSystem(EntityManager em) {
-        super(em);
+
+    MagneticBootsSystem magneticBootsSystem;
+    FlyingBootsSystem flyingBootsSystem;
+    DashBootsSystem dashBootsSystem;
+
+    public SkillsSystem() {
 
 
 
@@ -18,14 +21,13 @@ public class SkillsSystem extends EntitySystem {
 
     @Override
     public void init(){
-        //Boots
-        this.getSystemManager().addSystem(MagneticBootsSystem.class, new MagneticBootsSystem(em));
-        this.getSystemManager().addSystem(FlyingBootsSystem.class, new FlyingBootsSystem(em));
-        this.getSystemManager().addSystem(DashBootsSystem.class, new DashBootsSystem(em));
-
-
         //Gauntlets
-        this.getSystemManager().addSystem(DroneGauntletSystem.class, new DroneGauntletSystem(em));
+        this.getSystemManager().addSystem(DroneGauntletSystem.class, new DroneGauntletSystem());
+
+        getSystemManager().addSystem(MagneticBootsSystem.class,  new MagneticBootsSystem());
+        getSystemManager().addSystem(FlyingBootsSystem.class, new FlyingBootsSystem());
+        getSystemManager().addSystem(DashBootsSystem.class, new DashBootsSystem());
+
     }
 
 

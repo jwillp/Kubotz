@@ -1,15 +1,21 @@
 package com.brm.Kubotz.Systems.AttackSystems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.badlogic.gdx.physics.box2d.CircleShape;
+import com.badlogic.gdx.physics.box2d.Fixture;
+import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Components.MeleeComponent;
 import com.brm.Kubotz.Components.Parts.Weapons.LaserSwordComponent;
+import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BulletFactory;
+import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -17,9 +23,7 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class LaserSwordSystem extends EntitySystem{
 
-    public LaserSwordSystem(EntityManager em) {
-        super(em);
-    }
+    public LaserSwordSystem(){}
 
     @Override
     public void init(){}
@@ -27,100 +31,107 @@ public class LaserSwordSystem extends EntitySystem{
 
     @Override
     public void handleInput() {
-
-        for(Entity entity: em.getEntitiesWithComponent(LaserSwordComponent.ID)){
-            VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-            LaserSwordComponent laserSwordComponent = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
-            PhysicsComponent physicsComponent = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-
-            //Triggers the punch
-            if(gamePad.isButtonPressed(GameButton.PUNCH_BUTTON)){
-                if(laserSwordComponent.getCooldown().isDone() && laserSwordComponent.getLaserBox() == null){
-
-                    //CREATE A "PUNCH BULLET"
-                    Entity box = this.createHitBox(physicsComponent, laserSwordComponent);
-                    laserSwordComponent.setLaserBox(box);
-                    ((LifespanComponent)box.getComponent(LifespanComponent.ID)).startLife();
-                    laserSwordComponent.getDurationTimer().reset();
-
-                }
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(LaserSwordComponent.ID)) {
+            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
+                handleInputForEntity(entity);
             }
         }
-
     }
 
 
-    @Override
+    private void handleInputForEntity(Entity entity){
+        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+        LaserSwordComponent laserSword = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+        //Triggers the punch
+        if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
+            Logger.log(laserSword.getCooldown().getRemainingTime());
+            Logger.log(laserSword.getCooldown().isDone());
+
+            if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone()){
+                Logger.log("OK");
+                laserSword.getDurationTimer().reset();
+                createAttackBox(phys);
+                laserSword.setSwinging(true);
+                // TODO FIRE EVENT FOR SWINGING
+            }
+        }
+    }
+
+
     public void update(float dt) {
         // See if punch duration is over
-        // Update the punch's position according to the puncher's position
 
-        for(Entity entity: em.getEntitiesWithComponent(LaserSwordComponent.ID)){
-            LaserSwordComponent laserSwordComponent = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
-
-            //If the entity is punching
-            if(laserSwordComponent.getLaserBox() != null){
-                //Check if the punch duration is done, if so hide the punch
-                if(laserSwordComponent.getDurationTimer().isDone()){
-                    laserSwordComponent.getCooldown().reset();
-                    laserSwordComponent.setLaserBox(null);
-                }else{
-
-
-                    //Update pos of Bullet to follow player precisely
-                    PhysicsComponent puncherPhys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-                    PhysicsComponent hitbox = (PhysicsComponent) laserSwordComponent.getLaserBox().getComponent(PhysicsComponent.ID);
-
-
-                    Vector2 position = new Vector2(puncherPhys.getWidth() + 0.45f, 0);
-                    if(puncherPhys.getDirection() == PhysicsComponent.Direction.LEFT){
-                        position.x *= -1;
-                    }
-
-                    position.add(puncherPhys.getBody().getPosition());
-                    hitbox.getBody().setTransform(position, hitbox.getBody().getAngle());
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(LaserSwordComponent.ID)){
+            LaserSwordComponent laserSword = (LaserSwordComponent)entity.getComponent(LaserSwordComponent.ID);
+            //Check if the punch duration is over, if so hide the punch
+            if(laserSword.isSwinging()){
+                if(laserSword.getDurationTimer().isDone()){
+                    laserSword.setSwinging(false);
+                    laserSword.getCooldown().reset();
+                    removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
                 }
             }
+
         }
     }
+
+
 
 
     /**
-     * Creates a "PUNCH BULLET"
-     * @param agentPhys the PhysicsComponent of the puncher
-     * @return the new Bullet
+     * Creates an attack box for the melee attack
+     * @param phys
      */
-    private Entity createHitBox(PhysicsComponent agentPhys, LaserSwordComponent laserSwordComponent){
+    private void createAttackBox(PhysicsComponent phys){
+        CircleShape shape = new CircleShape();
+        shape.setRadius(phys.getWidth() * 1.5f);
 
-        // Put the punch at the right place according to the
-        // direction the puncher is facing
         Vector2 position = null;
-        switch (agentPhys.getDirection()) {
+        switch (phys.getDirection()) {
             case RIGHT:
-                position = new Vector2(
-                        agentPhys.getPosition().x + agentPhys.getWidth() * 2,
-                        agentPhys.getPosition().y
-                );
-
+                position = new Vector2(phys.getWidth() + phys.getWidth()/2, 0);
                 break;
             case LEFT:
-                position = new Vector2(
-                        agentPhys.getPosition().x - agentPhys.getWidth() * 2,
-                        agentPhys.getPosition().y
-                );
-
+                position = new Vector2(-phys.getWidth()-phys.getWidth()/2, 0);
                 break;
         }
+        shape.setPosition(position);
 
-        position.add(agentPhys.getPosition());
-        return new BulletFactory(this.em, agentPhys.getBody().getWorld(), position)
-                .withDamage(laserSwordComponent.getDamage())
-                .withSize(agentPhys.getWidth() * 3.0f, agentPhys.getHeight() * 2.1f)
-                .withKnockBack(laserSwordComponent.getKnockBack())
-                .withLifespan(laserSwordComponent.getDurationTimer().getDelay())
-                .withTag(Constants.ENTITY_TAG_PUNCH)
-                .withDirection(agentPhys.getDirection())
-                .build();
+        FixtureDef punchFixture = new FixtureDef();
+        punchFixture.isSensor = true;
+        punchFixture.shape = shape;
+
+        Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.HITBOX_LABEL_MELEE);
+        hitbox.damage = Config.LASER_SWORD_DAMAGE;
+
+
+        phys.getBody().createFixture(punchFixture).setUserData(hitbox);
+        shape.dispose();
+
     }
+
+    /**
+     * Removes the attack box
+     * @param phys
+     */
+    public void removeAttackBox(PhysicsComponent phys){
+        for(int i=0; i<phys.getBody().getFixtureList().size ;i++){
+            Fixture fixture = phys.getBody().getFixtureList().get(i);
+            Hitbox hitbox = (Hitbox) fixture.getUserData();
+            if(hitbox.label.equals(Constants.HITBOX_LABEL_MELEE)) {
+                phys.getBody().destroyFixture(fixture);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
 }
 

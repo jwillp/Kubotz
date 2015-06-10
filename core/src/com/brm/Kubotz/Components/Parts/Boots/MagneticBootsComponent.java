@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Components.Parts.Boots;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Boots giving a Kubotz the ability to reverse the effect of gravity on itself

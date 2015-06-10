@@ -1,10 +1,9 @@
 package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Components.Movements.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;
@@ -15,16 +14,14 @@ import com.brm.Kubotz.Input.GameButton;
 public class FlySystem extends EntitySystem {
 
 
-    public FlySystem(EntityManager em) {
-        super(em);
-    }
+    public FlySystem(){}
 
     @Override
     public void init(){}
 
 
     public void handleInput(){
-        for(Entity entity: em.getEntitiesWithComponent(FlyComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(FlyComponent.ID)){
            if(entity.hasComponent(VirtualGamePad.ID)){
                handleInputForEntity(entity);
            }
@@ -40,13 +37,14 @@ public class FlySystem extends EntitySystem {
         FlyComponent flyComponent = (FlyComponent) entity.getComponent(FlyComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         if(flyComponent.isEnabled()){
-            if (gamePad.isButtonPressed(GameButton.MOVE_UP)) {
+            if (gamePad.isButtonPressed(GameButton.DPAD_UP)) {
                 flyUp(entity);
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_DOWN)) {
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
                 flyDown(entity);
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_RIGHT)) {
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 flyRight(entity);
-            }else if (gamePad.isButtonPressed(GameButton.MOVE_LEFT)) {
+
+            }else if (gamePad.isButtonPressed(GameButton.DPAD_LEFT)) {
                 flyLeft(entity);
             }else{
                 //No movement made? we decelerate
@@ -57,7 +55,7 @@ public class FlySystem extends EntitySystem {
 
     @Override
     public void update(float dt) {
-        for(Entity entity: em.getEntitiesWithComponent(FlyComponent.ID)) {
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(FlyComponent.ID)) {
 
             // Make sure gravity does not affect entities with FlyComp
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);

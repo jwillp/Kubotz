@@ -3,8 +3,6 @@ package com.brm.Kubotz.GameScreens;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -12,13 +10,14 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Components.ScriptComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystemManager;
-import com.brm.GoatEngine.ECS.Systems.ScriptSystem;
+import com.brashmonkey.spriter.Spriter;
+import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
+import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
+import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
@@ -26,20 +25,28 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.AIComponent;
 import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.SpawnPointComponent;
+
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Scripts.AI.KubotzBehaviourScript;
 import com.brm.Kubotz.Systems.*;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Entities.BlockFactory;
+import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
-import com.brm.Kubotz.Systems.AttackSystems.PunchSystem;
+import com.brm.Kubotz.Systems.AttackSystems.MeleeSystem;
+import com.brm.Kubotz.Systems.*;
 import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
+import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
 import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
 
 
 public class InGameScreen extends GameScreen {
 
+    private ECSManager ecsManager = new ECSManager();
     private EntityManager entityManager;
 
     private AISystem aiSystem;
@@ -56,29 +63,29 @@ public class InGameScreen extends GameScreen {
     private Entity player;
 
 
-    public InGameScreen(){}
-
-
     @Override
     public void init(GameScreenManager engine) {
 
         Logger.log("In Game State initialisation");
 
 
-
-
         // Systems Init
-        entityManager = new EntityManager();
-        systemManager = new EntitySystemManager();
+        entityManager = ecsManager.getEntityManager();
+        systemManager = ecsManager.getSystemManager();
 
-        systemManager.addSystem(PhysicsSystem.class, new PhysicsSystem(this.entityManager));
-        systemManager.addSystem(RenderingSystem.class, new RenderingSystem(this.entityManager));
-        systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem(this.entityManager));
-        systemManager.addSystem(MovementSystem.class, new MovementSystem(this.entityManager));
+        systemManager.addSystem(PhysicsSystem.class, new PhysicsSystem());
+        systemManager.addSystem(RenderingSystem.class, new RenderingSystem());
+        systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem());
+        systemManager.addSystem(MovementSystem.class, new MovementSystem());
 
-        systemManager.addSystem(GrabSystem.class, new GrabSystem(this.entityManager));
 
-        systemManager.addSystem(SkillsSystem.class, new SkillsSystem(this.entityManager));
+        systemManager.addSystem(TrackerSystem.class, new TrackerSystem());
+
+        systemManager.addSystem(GrabSystem.class, new GrabSystem());
+
+
+        systemManager.addSystem(SkillsSystem.class, new SkillsSystem());
+
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem(this.entityManager));
         systemManager.addSystem(PunchSystem.class, new PunchSystem(this.entityManager));
@@ -86,8 +93,26 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(DamageSystem.class, new DamageSystem(this.entityManager));
         systemManager.addSystem(AttackSystem.class, new AttackSystem(this.entityManager));
         systemManager.addSystem(ScriptSystem.class, new ScriptSystem(this.entityManager));
+
+
+        systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem());
+
+        systemManager.addSystem(MeleeSystem.class, new MeleeSystem());
+
+        systemManager.addSystem(LifespanSystem.class, new LifespanSystem());
+
+        systemManager.addSystem(DamageSystem.class, new DamageSystem());
+
+        systemManager.addSystem(AttackSystem.class, new AttackSystem());
+
+        systemManager.addSystem(ScriptSystem.class, new ScriptSystem());
+
         systemManager.addSystem(AISystem.class, new AISystem(this.entityManager));
 
+        systemManager.addSystem(AnimationSystem.class, new AnimationSystem());
+
+
+        systemManager.addSystem(RespawnSystem.class, new RespawnSystem());
 
         systemManager.addSystem(SensorSystem.class, new SensorSystem(this.entityManager));
 
@@ -98,11 +123,21 @@ public class InGameScreen extends GameScreen {
 
 
 
+        // Init Animation Manager
+        Spriter.setDrawerDependencies(
+                systemManager.getSystem(RenderingSystem.class).getSpriteBatch(),
+                systemManager.getSystem(RenderingSystem.class).getShapeRenderer()
+        );
+        Spriter.init(LibGdxSpriterLoader.class, LibGdxSpriterDrawer.class);
+        Spriter.load(Gdx.files.internal(Constants.KUBOTZ_ANIM_FILE).read(), Constants.KUBOTZ_ANIM_FILE);
+
+
+
+
         // MAP
-
-
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load(Constants.MAIN_MAP_FILE);
+
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 
@@ -126,18 +161,17 @@ public class InGameScreen extends GameScreen {
             if(objType.equals("PLAYER_SPAWN")){
                 this.player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withHeight(1.0f)
+                        .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .withTag("player")
                         .build();
-            }else if (objType.equals("STATIC_PLATFORM") || objType.equals("WALL") || objType.equals("WARP_ZONE")) {
-                    String tag = objType.equals("STATIC_PLATFORM") ? Constants.ENTITY_TAG_PLATFORM : Constants.ENTITY_TAG_PLATFORM;
 
-                    new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
-                            new Vector2(rect.getX() / tileSize, rect.getY() / tileSize))
-                            .withSize(rect.getWidth() / tileSize, rect.getHeight() / tileSize)
-                            .withTag(tag)
-                            .build();
+                Entity entity = new Entity();
+                entityManager.registerEntity(entity);
+                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
+                        SpawnPointComponent.Type.Player), SpawnPointComponent.ID);
+
+
             }else if(objType.equals("BONUS_SPAWN")){
                 Entity entity = new Entity();
                 entityManager.registerEntity(entity);
@@ -147,12 +181,11 @@ public class InGameScreen extends GameScreen {
             }else{
                 new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withSize(0.5f,0.5f)
                         .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
+                        .withTag(Constants.ENTITY_TAG_PLATFORM)
                         .build();
             }
         }
-
 
 
         for(int i=0; i<1; i++){
@@ -173,20 +206,19 @@ public class InGameScreen extends GameScreen {
 
 
         Logger.log("In Game State initialized");
-    }
-
-    @Override
-    public void cleanUp() {
 
     }
 
-    @Override
-    public void resume() {
 
-    }
 
     @Override
-    public void handleInput(GameScreenManager engine) {
+    public void cleanUp(){}
+
+    @Override
+    public void resume(){}
+
+    @Override
+    public void handleInput(GameScreenManager engine){
 
 
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
@@ -207,7 +239,9 @@ public class InGameScreen extends GameScreen {
     public void update(GameScreenManager engine, float deltaTime) {
 
 
+
         systemManager.getSystem(AISystem.class).update(deltaTime);
+
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
         systemManager.getSystem(SkillsSystem.class).update(deltaTime);
 
@@ -218,27 +252,24 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(LifespanSystem.class).update(deltaTime);
         systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
 
+
         systemManager.getSystem(SensorSystem.class).update(deltaTime);
 
+        systemManager.getSystem(ScriptSystem.class).update(deltaTime);
+
+
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
-        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
+        systemManager.getSystem(AnimationSystem.class).update(deltaTime);
 
 
+        systemManager.getSystem(RespawnSystem.class).update(deltaTime);
     }
 
     @Override
-    public void draw(GameScreenManager engine) {
-        // CLEAR SCREEN
-        //Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 1);
-        Gdx.gl.glClearColor(0.07f, 0.2f, 0.3f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+    public void draw(GameScreenManager engine, float deltaTime) {
 
         // DRAW WORLD
-
-        systemManager.getSystem(RenderingSystem.class).render();
-        this.mapRenderer.setView(systemManager.getSystem(RenderingSystem.class).getCamera());
-        this.mapRenderer.render();
 
         //TODO move this to renderer
         // FPS
@@ -260,7 +291,9 @@ public class InGameScreen extends GameScreen {
             sb.end();
         }
 
-
+        systemManager.getSystem(RenderingSystem.class).update(deltaTime);
+        systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
+        systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
 
     }
 }

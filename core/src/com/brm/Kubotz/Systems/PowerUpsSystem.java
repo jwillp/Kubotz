@@ -2,10 +2,9 @@ package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Components.Powerups.PowerUp;
 import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
@@ -26,8 +25,7 @@ public class PowerUpsSystem extends EntitySystem {
 
     private Timer spawnTimer; //Timer responsible to determine whether or not we should spawn a new power up
 
-    public PowerUpsSystem(EntityManager em) {
-        super(em);
+    public PowerUpsSystem() {
         int delay = MathUtils.random(Constants.MIN_DELAY_BONUS_SPAWN, Constants.MAX_DELAY_BONUS_SPAWN);
         spawnTimer = new Timer(delay);
         spawnTimer.start();
@@ -49,7 +47,7 @@ public class PowerUpsSystem extends EntitySystem {
      * Terminates all PowerUps if needed
      */
     private void updatePowerUps(){
-        for(Entity entity: em.getEntitiesWithComponent(PowerUpsContainerComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(PowerUpsContainerComponent.ID)){
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) entity.getComponent(PowerUpsContainerComponent.ID);
             ArrayList<PowerUp> powerUps = container.getPowerUps();
@@ -70,7 +68,7 @@ public class PowerUpsSystem extends EntitySystem {
     private void updateSpawns(){
         if(this.spawnTimer.isDone()){
             this.spawnTimer.setDelay(MathUtils.random(Constants.MIN_DELAY_BONUS_SPAWN, Constants.MAX_DELAY_BONUS_SPAWN));
-            if(em.getEntitiesWithComponent(PowerUpComponent.ID).size() < Constants.MAX_NB_BONUS){
+            if(getEntityManager().getEntitiesWithComponent(PowerUpComponent.ID).size() < Constants.MAX_NB_BONUS){
                 this.spawnPowerUp();
             }
             this.spawnTimer.reset();
@@ -85,8 +83,8 @@ public class PowerUpsSystem extends EntitySystem {
 
 
         //Get PowerUps Spawns
-        ArrayList<EntityComponent> spawns = em.getComponents(SpawnPointComponent.ID);
-        for (int i = 0, spawnsSize = spawns.size(); i < spawnsSize; i++) {
+        ArrayList<EntityComponent> spawns = getEntityManager().getComponents(SpawnPointComponent.ID);
+        for (int i = 0; i < spawns.size(); i++) {
             if (((SpawnPointComponent) spawns.get(i)).getType() != SpawnPointComponent.Type.PowerUp) {
                 spawns.remove(i);
             }
@@ -94,7 +92,7 @@ public class PowerUpsSystem extends EntitySystem {
 
         //Get a Random Spawn Point
         int index = MathUtils.random(spawns.size()-1);
-        Entity entity = em.getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
+        Entity entity = getEntityManager().getEntitiesWithComponent(SpawnPointComponent.ID).get(index);
         SpawnPointComponent spawn = (SpawnPointComponent)entity.getComponent(SpawnPointComponent.ID);
 
         //Randomize position
@@ -102,18 +100,59 @@ public class PowerUpsSystem extends EntitySystem {
         pos.x = MathUtils.random(pos.x-0.1f, pos.x+0.1f);
         pos.y = MathUtils.random(pos.y-0.1f, pos.y+0.1f);
 
-        //TODO RANDOMIZE EFFECT
-        PowerUpEffect effect = new PowerUpEffect.LaserGunMkIProvider();
-
 
         // Make a random PowerUp
-        new PowerUpFactory(em, this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
-            .withEffect(effect)
+        new PowerUpFactory(getEntityManager(), this.getSystemManager().getSystem(PhysicsSystem.class).getWorld())
+            .withEffect(getRandomEffect())
             .withDuration(Timer.TEN_SECONDS * 3)
             .withLifeTime(Timer.TEN_SECONDS * 2)
             .withPosition(pos)
             .build();
     }
+
+
+    /**
+     * Chosses a random PowerUpEffect and returns it
+     * @return
+     */
+    private PowerUpEffect getRandomEffect(){
+        PowerUpEffect effect = null;
+
+        int rand = MathUtils.random(1,9);
+        if (rand == 1) {
+            effect = new PowerUpEffect.LaserGunMkIProvider();
+
+        } else if (rand == 2) {
+            effect = new PowerUpEffect.HealthModifier();
+
+        } else if (rand == 3) {
+            effect = new PowerUpEffect.EnergyModifier();
+
+        } else if (rand == 4) {
+            effect = new PowerUpEffect.EnergyModifier();
+
+        } else if (rand == 5) {
+            effect = new PowerUpEffect.JumpModifier();
+
+        } else if (rand == 6) {
+            effect = new PowerUpEffect.LaserGunMkIProvider();
+
+        } else if (rand == 7) {
+            effect = new PowerUpEffect.LaserSwordProvider();
+
+        } else if (rand == 8) {
+            effect = new PowerUpEffect.InvincibilityProvider();
+
+        } else if (rand == 9) {
+            effect = new PowerUpEffect.ShieldProvider();
+        }
+
+
+        return effect;
+    }
+
+
+
 
 
 }

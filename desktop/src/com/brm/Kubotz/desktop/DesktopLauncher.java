@@ -7,12 +7,13 @@ import com.brm.Kubotz.Game;
 
 public class DesktopLauncher {
 	public static void main (String[] arg) {
-		LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
+		LwjglApplicationConfiguration cfg = new LwjglApplicationConfiguration();
 
-		config.title = Config.TITLE;
-		config.width = Config.V_WIDTH;
-		config.height = Config.V_HEIGHT;
+		cfg.title = Config.TITLE;
+		cfg.width = Config.V_WIDTH;
+		cfg.height = Config.V_HEIGHT;
+		cfg.fullscreen = Config.FULL_SCREEN;
 
-		new LwjglApplication(new Game(), config);
+		new LwjglApplication(new Game(), cfg);
 	}
 }

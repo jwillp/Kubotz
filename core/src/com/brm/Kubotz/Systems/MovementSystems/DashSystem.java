@@ -2,10 +2,9 @@ package com.brm.Kubotz.Systems.MovementSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.GameMath.Vectors;
 import com.brm.Kubotz.Components.Movements.DashComponent;
@@ -16,9 +15,7 @@ import com.brm.Kubotz.Input.GameButton;
  */
 public class DashSystem extends EntitySystem{
 
-    public DashSystem(EntityManager em) {
-        super(em);
-    }
+    public DashSystem(){}
 
     @Override
     public void init(){
@@ -28,7 +25,7 @@ public class DashSystem extends EntitySystem{
 
 
     public void handleInput(){
-        for(Entity entity : em.getEntitiesWithComponent(DashComponent.ID)){
+        for(Entity entity : getEntityManager().getEntitiesWithComponent(DashComponent.ID)){
             if(entity.hasComponentEnabled(VirtualGamePad.ID)){
                 this.handleInputForEntity(entity);
             }
@@ -45,18 +42,19 @@ public class DashSystem extends EntitySystem{
         DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
 
+
         if(dashComp.getPhase() == DashComponent.Phase.NONE){
 
             boolean isDashValid = true;
 
             //Find dash direction
-            if(gamePad.isButtonPressed(GameButton.MOVE_RIGHT)){
+            if(gamePad.isButtonPressed(GameButton.DPAD_RIGHT)){
                 dashComp.getDirection().x = DashComponent.RIGHT;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_LEFT)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_LEFT)){
                 dashComp.getDirection().x = DashComponent.LEFT;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_UP)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_UP)){
                 dashComp.getDirection().y = DashComponent.UP;
-            }else if(gamePad.isButtonPressed(GameButton.MOVE_DOWN)){
+            }else if(gamePad.isButtonPressed(GameButton.DPAD_DOWN)){
                 dashComp.getDirection().y = DashComponent.DOWN;
             }else{
                 isDashValid = false;
@@ -81,7 +79,7 @@ public class DashSystem extends EntitySystem{
      */
     @Override
     public void update(float dt){
-        for(Entity entity : this.em.getEntitiesWithComponent(DashComponent.ID)) {
+        for(Entity entity : this.getEntityManager().getEntitiesWithComponent(DashComponent.ID)) {
             DashComponent dashComp = (DashComponent) entity.getComponent(DashComponent.ID);
 
             if (dashComp.isEnabled()) {

@@ -7,14 +7,14 @@
 * [x] Renommer la classe Component pour EntityComponent
 * [ ] Modifier Entity Manager pour pouvoir utiliser des Templates Class<T> plutôt que des ID
 * [ ] Multiplayer
-* [ ] Disable Punch
+* [x] Disable Punch
 * [ ] Clean GunSystem + Bullet
 * [x] A TeamComponent
 
 * [x] A PlayerScoreComponent
 * [ ] CheckFor Enabling Disabling
 * [ ] Extraire PositionComopnent, VelocityComponent, CollisionComponent From PhysicsComponent
-* [ ] Système de Respawn
+* [x] Système de Respawn
 * [ ] Vérifier les boutons pour chacun des skills
 * [ ] Se débarasser d'un objet
 * [x] Script Component
@@ -22,6 +22,7 @@
 * [ ] Une Doc Propre
 * [ ] IN CODE TODO
 
+* [ ] Better Melee system with Sensors
 
 ***
 

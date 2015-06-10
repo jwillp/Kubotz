@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Components.Powerups;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * Gives a shield to an entity. The Shield will absorb Damage

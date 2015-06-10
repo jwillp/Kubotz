@@ -1,16 +1,21 @@
 package com.brm.Kubotz.Systems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityContact;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.Utils.GameMath;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.DamageComponent;
 import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
 import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Events.DamageTakenEvent;
+import com.brm.Kubotz.Events.TakeDamageEvent;
+import com.brm.Kubotz.Hitbox.Hitbox;
 
 
 /**
@@ -19,8 +24,7 @@ import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
 public class DamageSystem extends EntitySystem{
 
 
-    public DamageSystem(EntityManager em) {
-        super(em);
+    public DamageSystem() {
     }
 
     @Override
@@ -29,73 +33,84 @@ public class DamageSystem extends EntitySystem{
 
     @Override
     public void update(float dt){
-        //Process collisions
-        for(Entity e: em.getEntitiesWithComponent(DamageComponent.ID)){
-            PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
-
-            for(int i=0; i< phys.getContacts().size(); i++){
-                EntityContact contact = phys.getContacts().get(i);
-                //The the other entity can be Hit handle damage
-                if(contact.getEntityB().hasComponent(HealthComponent.ID)){
-
-                    handleDamage(contact.getEntityA(), contact.getEntityB());
-                    //REMOVE CONTACTS
-                    phys.getContacts().remove(i);
-                    PhysicsComponent physB = (PhysicsComponent) contact.getEntityB().getComponent(PhysicsComponent.ID);
-                    physB.getContacts().remove(contact);
-                }
-            }
-        }
+        // TODO ON GOING DAMAGE ? LIKE BURNING
     }
 
 
-    /**
-     * Process damage between an entity and a target entity
-     * @param damageAgent the entity dealing damage
-     * @param target the entity receiving the damage
-     */
-    private void handleDamage(Entity damageAgent, Entity target){
-        //Damager
-        PhysicsComponent damagerPhys = (PhysicsComponent) damageAgent.getComponent(PhysicsComponent.ID);
-        DamageComponent damageComp = (DamageComponent)damageAgent.getComponent(DamageComponent.ID);
-
-
-        //Target
-        PhysicsComponent targetPhys = (PhysicsComponent) target.getComponent(PhysicsComponent.ID);
-        HealthComponent targetHealth = (HealthComponent) target.getComponent(HealthComponent.ID);
-
-
-        //Damage Health
-        //Invinvible
-        if(target.hasComponent(InvincibilityComponent.ID)){
-            return;
-        }//Energetic Shield
-        else if(target.hasComponent(EnergeticShieldComponent.ID)){
-            EnergeticShieldComponent shield = (EnergeticShieldComponent) target.getComponent(EnergeticShieldComponent.ID);
-            shield.takeDamage(damageComp.getDamage());
-
-            //Is shield dead? If so remove it
-            if(shield.isDead()){
-                target.removeComponent(EnergeticShieldComponent.ID);
-            }
-        }else{
-            targetHealth.substractAmount(damageComp.getDamage());
-
-            //KnockBack
-            Vector2 knockBack = damageComp.getKnockBack().cpy();
-            if(damagerPhys.getDirection() == PhysicsComponent.Direction.LEFT){
-                knockBack.x *= -1;
-            }
-
-            targetPhys.getBody().applyLinearImpulse(knockBack.x, knockBack.y,
-                    targetPhys.getPosition().x,
-                    targetPhys.getPosition().y,
-                    true);
-
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == TakeDamageEvent.class){
+            onTakeDamage((TakeDamageEvent) event);
+        }else if(event.getClass() == CollisionEvent.class){
+            onCollision((CollisionEvent) event);
         }
-        Logger.log(targetHealth.getAmount());
 
 
+
+    }
+
+    private void onCollision(CollisionEvent event) {
+        Hitbox hitboxA = (Hitbox) event.getFixtureA().getUserData();
+        if(hitboxA == null){
+            return;
+        }
+        if(hitboxA.type == Hitbox.Type.Offensive){
+            Hitbox hitboxB = (Hitbox) event.getFixtureB().getUserData();
+            TakeDamageEvent tkDmgEv;
+            tkDmgEv = new TakeDamageEvent(event.getEntityB().getID(), hitboxB, event.getEntityA().getID(), hitboxA);
+            this.fireEvent(tkDmgEv);
+        }
+    }
+
+    /**
+     * Listens to take damage events.
+     * Tries to apply damage according
+     * to the situation and the data
+     * provided by the event
+     * @param e
+     */
+    private void onTakeDamage(TakeDamageEvent e){
+        Entity targetEntity = getEntityManager().getEntity(e.getEntityId());
+        Entity damagerEntity = getEntityManager().getEntity(e.getDamagerId());
+
+        //We take for granted that, the damager Hitbox is of type Offensive
+
+        //Offensive + Offensive
+        if(e.getTargetHitbox().type == Hitbox.Type.Offensive){
+            if(GameMath.isMoreOrLess(e.getTargetHitbox().damage, e.getDamagerHitbox().damage, Constants.CLASH_THRESHOLD)){
+                 // THERE IS A CLASH (NOT DAMAGE WILL BE TAKEN)
+                //TODO SEND an Clash Event
+                return;
+            }
+            //TODO decide if do the same as Damageable box OR diminish the lowest attack to the greatest (as a form of resistance)
+        }
+
+        // Offensive + Damageable
+        if(e.getTargetHitbox().type == Hitbox.Type.Damageable){
+            // TODO Actually take damage
+            //Send an event damageTaken ? to let other system play animations and sounds?
+            HealthComponent health = (HealthComponent) targetEntity.getComponent(HealthComponent.ID);
+            health.substractAmount(e.getDamagerHitbox().damage);
+
+            //Apply knockback
+            PhysicsComponent phys = (PhysicsComponent) targetEntity.getComponent(PhysicsComponent.ID);
+            phys.getBody().applyLinearImpulse(e.getKnockback(), 0, 0, 0, true);
+
+
+            //Fire the Event
+            this.fireEvent(new DamageTakenEvent(e.getEntityId()));
+        }
+
+        // Offensive + Shield
+        if(e.getTargetHitbox().type == Hitbox.Type.Shield){
+            // Give the damage to the shield
+            EnergeticShieldComponent shield = (EnergeticShieldComponent) targetEntity.getComponent(EnergeticShieldComponent.ID);
+            shield.takeDamage(e.getDamagerHitbox().damage);
+
+            // HALF knocback applied //TODO move apply kockback in a separate function
+            PhysicsComponent phys = (PhysicsComponent) targetEntity.getComponent(PhysicsComponent.ID);
+            phys.getBody().applyLinearImpulse(e.getKnockback()/2, 0, 0, 0, true);
+        }
     }
 
 

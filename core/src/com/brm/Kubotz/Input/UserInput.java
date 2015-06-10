@@ -11,19 +11,21 @@ import com.badlogic.gdx.Input;
  */
 public class UserInput {
 
-    // D-PAD
-    public static int MOVE_UP = Input.Keys.W;
-    public static int MOVE_LEFT = Input.Keys.A;
-    public static int MOVE_DOWN = Input.Keys.S;
-    public static int MOVE_RIGHT = Input.Keys.D;
 
+    public static int DPAD_UP = Input.Keys.W;
+    public static int DPAD_LEFT = Input.Keys.A;
+    public static int DPAD_DOWN = Input.Keys.S;
+    public static int DPAD_RIGHT = Input.Keys.D;
 
     public static int START = Input.Keys.ESCAPE;
 
-    public static int PRIMARY_ACTION_BUTTON = Input.Keys.I;
-    public static int SECONDARY_ACTION_BUTTON = Input.Keys.SPACE;
-    public static int PUNCH = Input.Keys.O;
-    public static int ACTIVE_SKILL = Input.Keys.SHIFT_LEFT;
+    public static int BUTTON_A = Input.Keys.O;
+    public static int BUTTON_B = Input.Keys.I;
+
+    public static int BUTTON_X = Input.Keys.SHIFT_LEFT;
+    public static int BUTTON_Y = Input.Keys.SPACE;
+
+
 
 
 }

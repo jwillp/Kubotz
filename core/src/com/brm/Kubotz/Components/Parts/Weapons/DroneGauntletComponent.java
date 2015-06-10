@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Components.Parts.Weapons;
 
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
+
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 import java.util.ArrayList;

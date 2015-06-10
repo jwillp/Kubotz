@@ -1,10 +1,11 @@
 package com.brm.Kubotz.Components.Parts.Weapons;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.Utils.Timer;
+import com.brm.Kubotz.Config;
 
 /**
  * Laser Sword
@@ -13,21 +14,22 @@ public class LaserSwordComponent extends EntityComponent {
 
     public static final String ID = "LASER_SWORD_COMPONENT";
 
-    private int damage = 10; //Number of damage per hit
+    private int damage = Config.LASER_SWORD_DAMAGE; //Number of damage per hit
 
     private Timer durationTimer = new Timer(200); //The Duration of the hit
-    private Timer cooldown = new Timer(100); //The delay between hits
+    private Timer cooldown = new Timer(Config.LASER_SWORD_COOLDOWN); //The delay between hits
 
     private PhysicsComponent phys;
 
-    private Vector2 knockBack = new Vector2(0.1f, 0.0f);
+    private Vector2 knockBack = new Vector2(0.2f, 0.0f);
 
     private Entity laserBox;
+    private boolean swinging = false;
 
 
     public LaserSwordComponent(){
-        this.durationTimer.start();
         this.cooldown.start();
+        this.durationTimer.start();
     }
 
 
@@ -77,5 +79,13 @@ public class LaserSwordComponent extends EntityComponent {
 
     public void setLaserBox(Entity laserBox) {
         this.laserBox = laserBox;
+    }
+
+    public boolean isSwinging() {
+        return swinging;
+    }
+
+    public void setSwinging(boolean swinging) {
+        this.swinging = swinging;
     }
 }

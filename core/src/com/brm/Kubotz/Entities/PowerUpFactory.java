@@ -2,16 +2,17 @@ package com.brm.Kubotz.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.Entity.Entity;
-import com.brm.GoatEngine.ECS.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
+import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.Kubotz.Components.GrabbableComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUp;
 import com.brm.Kubotz.Components.Powerups.PowerUpComponent;
 import com.brm.Kubotz.Components.Powerups.PowerUpEffect;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Hitbox.Hitbox;
 
 /**
  * Used to Create PowerUps
@@ -115,7 +116,7 @@ public class PowerUpFactory extends EntityFactory {
 
         fixtureDef.isSensor = false;
 
-        physics.getBody().createFixture(fixtureDef).setUserData(Constants.ENTITY_TAG_POWERUP);
+        physics.getBody().createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Inert, Constants.ENTITY_TAG_POWERUP));
         circleShape.dispose();
 
 
