@@ -21,9 +21,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
      * Used to initialise the system
      */
     @Override
-    public void init() {
-
-    }
+    public void init(){}
 
     /**
      * Called once per game frame

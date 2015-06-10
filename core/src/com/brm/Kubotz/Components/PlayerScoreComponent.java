@@ -4,10 +4,14 @@ import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 
 /**
  * A Component used to store the scores of a player
+ * and some other useful information
+ * like player Id ==> player1, player2 CPU
  */
 public class PlayerScoreComponent extends EntityComponent {
 
     public final static String ID = "PLAYER_SCORE_COMPONENT";
+
+    private int playerId = -1;      // -1 means CPU, 1 means player1 and 2 means player 2
 
     private int nbKills = 0;
 
@@ -33,5 +37,13 @@ public class PlayerScoreComponent extends EntityComponent {
 
     public int getNbLives() {
         return nbLives;
+    }
+
+    public int getPlayerId() {
+        return playerId;
+    }
+
+    public void setPlayerId(int playerId) {
+        this.playerId = playerId;
     }
 }
