@@ -45,4 +45,39 @@ public class Constants {
 
 
     public static final int CLASH_THRESHOLD = 5; //The maex number cuasing a clash
+
+
+
+
+
+
+
+
+
+
+
+    // RENDERING
+    public static final String KUBOTZ_ANIM_FILE = "animations/kubotz.scml";
+
+    public static final String MAIN_MAP_FILE = "maps/DebugMap.tmx";
+
+
+
+
+    // PARTICLE
+    public static final String PARTICLES_LANDING_DUST = "particles/landingDust.pe";
+    public static final String PARTICLES_HIT_STARS = "particles/stars.pe";
+    public static final String PARTICLES_LASER_SMOKE = "particles/laserSmoke.pe";
+
+
+
+
+
+
+
+
+
+
+
+
 }

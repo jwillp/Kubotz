@@ -5,6 +5,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
 
 /**
@@ -12,13 +13,9 @@ import com.brm.Kubotz.Events.CollisionEvent;
  */
 public class BulletGraphicsScript extends EntityScript {
 
-    public static int lol = 0;
 
     @Override
-    public void onInit(Entity entity) {
-        //ooaddSmokeEffect(entity);
-
-    }
+    public void onInit(Entity entity){}
 
     @Override
     public void onCollision(CollisionEvent contact) {
@@ -40,7 +37,7 @@ public class BulletGraphicsScript extends EntityScript {
 
         if(pe.getEffects().size() <= 2){
             pe.addEffect(
-                    Gdx.files.internal("particles/laserSmoke.pe"),
+                    Gdx.files.internal(Constants.PARTICLES_LASER_SMOKE),
                     phys.getPosition(),
                     true
             );

@@ -13,6 +13,7 @@ import com.brm.Kubotz.Components.Powerups.EnergeticShieldComponent;
 import com.brm.Kubotz.Components.Powerups.InvincibilityComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Events.DamageTakenEvent;
 import com.brm.Kubotz.Events.TakeDamageEvent;
 import com.brm.Kubotz.Hitbox.Hitbox;
 
@@ -90,8 +91,13 @@ public class DamageSystem extends EntitySystem{
             HealthComponent health = (HealthComponent) targetEntity.getComponent(HealthComponent.ID);
             health.substractAmount(e.getDamagerHitbox().damage);
 
-            //Apply hitbox
-            // TODO
+            //Apply knockback
+            PhysicsComponent phys = (PhysicsComponent) targetEntity.getComponent(PhysicsComponent.ID);
+            phys.getBody().applyLinearImpulse(e.getKnockback(), 0, 0, 0, true);
+
+
+            //Fire the Event
+            this.fireEvent(new DamageTakenEvent(e.getEntityId()));
         }
 
         // Offensive + Shield
@@ -100,7 +106,9 @@ public class DamageSystem extends EntitySystem{
             EnergeticShieldComponent shield = (EnergeticShieldComponent) targetEntity.getComponent(EnergeticShieldComponent.ID);
             shield.takeDamage(e.getDamagerHitbox().damage);
 
-            // TODO Apply half of knockback?
+            // HALF knocback applied //TODO move apply kockback in a separate function
+            PhysicsComponent phys = (PhysicsComponent) targetEntity.getComponent(PhysicsComponent.ID);
+            phys.getBody().applyLinearImpulse(e.getKnockback()/2, 0, 0, 0, true);
         }
     }
 

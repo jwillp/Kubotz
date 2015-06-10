@@ -50,8 +50,6 @@ public class InGameScreen extends GameScreen {
     private Entity player;
 
 
-
-
     @Override
     public void init(GameScreenManager engine) {
 
@@ -72,7 +70,6 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(GrabSystem.class, new GrabSystem());
 
         systemManager.addSystem(SkillsSystem.class, new SkillsSystem());
-
 
         systemManager.addSystem(PowerUpsSystem.class, new PowerUpsSystem());
 
@@ -102,13 +99,13 @@ public class InGameScreen extends GameScreen {
                 systemManager.getSystem(RenderingSystem.class).getShapeRenderer()
         );
         Spriter.init(LibGdxSpriterLoader.class, LibGdxSpriterDrawer.class);
-        Spriter.load(Gdx.files.internal("animations/kubotz.scml").read(), "animations/kubotz.scml");
+        Spriter.load(Gdx.files.internal(Constants.KUBOTZ_ANIM_FILE).read(), Constants.KUBOTZ_ANIM_FILE);
 
 
 
         // MAP
         //LOAD MAP
-        tiledMap = new TmxMapLoader().load("maps/BasicCube.tmx");
+        tiledMap = new TmxMapLoader().load(Constants.MAIN_MAP_FILE);
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
 

@@ -106,7 +106,7 @@ public class RenderingSystem extends EntitySystem {
 
         //BACKGROUND
         spriteBatch.begin();
-        spriteBatch.draw(this.background,0,0, 52, 37);
+        //spriteBatch.draw(this.background,0,0, 52, 37);
 
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){

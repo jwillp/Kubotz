@@ -34,6 +34,9 @@
         <file id="3" name="head/Helmet5.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
         <file id="4" name="head/Helmet5-grey.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
     </folder>
+    <folder id="5" name="misc">
+        <file id="0" name="misc/dashOrb.png" width="500" height="500" pivot_x="0" pivot_y="1"/>
+    </folder>
     <entity id="0" name="Kubotz">
         <obj_info name="body_bone" type="bone" w="53.5917" h="10"/>
         <obj_info name="torso_bone" type="bone" w="124.476" h="10"/>
@@ -3816,6 +3819,7 @@
                     <object_ref id="12" parent="3" timeline="4" key="0" z_index="12"/>
                     <object_ref id="13" parent="5" timeline="5" key="0" z_index="13"/>
                     <object_ref id="14" parent="4" timeline="28" key="0" z_index="14"/>
+                    <object_ref id="15" timeline="29" key="0" z_index="15"/>
                 </key>
                 <key id="1" time="6">
                     <bone_ref id="0" timeline="12" key="0"/>
@@ -3848,6 +3852,7 @@
                     <object_ref id="12" parent="3" timeline="4" key="0" z_index="12"/>
                     <object_ref id="13" parent="5" timeline="5" key="0" z_index="13"/>
                     <object_ref id="14" parent="4" timeline="28" key="0" z_index="14"/>
+                    <object_ref id="15" timeline="29" key="1" z_index="15"/>
                 </key>
                 <key id="2" time="200">
                     <bone_ref id="0" timeline="12" key="0"/>
@@ -3880,6 +3885,7 @@
                     <object_ref id="12" parent="3" timeline="4" key="0" z_index="12"/>
                     <object_ref id="13" parent="5" timeline="5" key="0" z_index="13"/>
                     <object_ref id="14" parent="4" timeline="28" key="0" z_index="14"/>
+                    <object_ref id="15" timeline="29" key="2" z_index="15"/>
                 </key>
             </mainline>
             <timeline id="0" name="torso_0012">
@@ -4052,6 +4058,17 @@
             <timeline id="28" name="fore_arm_000">
                 <key id="0" spin="0">
                     <object folder="3" file="0" x="-2.611922" y="4.331383" pivot_x="0.072508" pivot_y="0.111111" angle="327.412219"/>
+                </key>
+            </timeline>
+            <timeline id="29" name="dashOrb">
+                <key id="0" spin="0">
+                    <object folder="5" file="0" x="-456.97591" y="665.307184" scale_x="1.941797" scale_y="1.769056"/>
+                </key>
+                <key id="1" time="6" spin="0">
+                    <object folder="5" file="0" x="-456.97591" y="665.307184" scale_x="1.941797" scale_y="1.769056"/>
+                </key>
+                <key id="2" time="200" spin="0">
+                    <object folder="5" file="0" x="-456.97591" y="665.307184" scale_x="1.941797" scale_y="1.769056"/>
                 </key>
             </timeline>
         </animation>
