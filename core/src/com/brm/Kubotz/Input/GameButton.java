@@ -16,7 +16,7 @@ public enum GameButton implements VirtualButton {
 
 
     // MIDDLE BUTTONS
-    START_BUTTON,
+    BUTTON_START,
 
 
     // ACTION BUTTONS
@@ -24,6 +24,12 @@ public enum GameButton implements VirtualButton {
     BUTTON_B,
     BUTTON_X,
     BUTTON_Y,
+
     BUTTON_R,
+
+
+
+
+
 
 }

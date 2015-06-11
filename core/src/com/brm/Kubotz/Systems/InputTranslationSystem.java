@@ -1,14 +1,20 @@
 package com.brm.Kubotz.Systems;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.controllers.Controller;
+import com.badlogic.gdx.controllers.ControllerAdapter;
+import com.badlogic.gdx.controllers.Controllers;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
+
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
+import com.brm.Kubotz.Input.DiaronController;
 import com.brm.Kubotz.Input.GameButton;
+import com.brm.Kubotz.Input.Xbox360Controller;
 
 
 import java.util.HashMap;
@@ -29,16 +35,40 @@ public class InputTranslationSystem extends EntitySystem {
     private HashMap<GameButton, Integer> player1Map = new HashMap<GameButton, Integer>();
     private HashMap<GameButton, Integer> player2Map = new HashMap<GameButton, Integer>();
 
+    private Controller player1Controller = null;
+    private Controller player2Controller = null;
+
     public InputTranslationSystem(){
 
-        // PLAYER 1
+        if(Config.PLAYER_1_USE_GAMEPAD){
+            player1Controller = Controllers.getControllers().first(); // DIARON
+        }
 
+        if(Config.PLAYER_2_USE_GAMEPAD){
+            player2Controller = Controllers.getControllers().get(1); // XBOX
+        }
+
+        this.mapKeyboard();
+
+    }
+
+
+
+    @Override
+    public void init(){}
+
+
+    /**
+     * Maps the Keyboard keys to Virtual GamePad
+     */
+    private void mapKeyboard(){
+        // PLAYER 1
         player1Map.put(GameButton.DPAD_UP, Config.PLAYER_1_MOVE_UP);
         player1Map.put(GameButton.DPAD_DOWN, Config.PLAYER_1_MOVE_DOWN);
         player1Map.put(GameButton.DPAD_LEFT, Config.PLAYER_1_MOVE_LEFT);
         player1Map.put(GameButton.DPAD_RIGHT, Config.PLAYER_1_MOVE_RIGHT);
 
-        player1Map.put(GameButton.START_BUTTON, Config.PLAYER_1_START);
+        player1Map.put(GameButton.BUTTON_START, Config.PLAYER_1_START);
 
         player1Map.put(GameButton.BUTTON_A, Config.PLAYER_1_ATTACK_BUTTON);
         player1Map.put(GameButton.BUTTON_B, Config.PLAYER_1_GRAB_BUTTON);
@@ -54,7 +84,7 @@ public class InputTranslationSystem extends EntitySystem {
         player2Map.put(GameButton.DPAD_LEFT, Config.PLAYER_2_MOVE_LEFT);
         player2Map.put(GameButton.DPAD_RIGHT, Config.PLAYER_2_MOVE_RIGHT);
 
-        player2Map.put(GameButton.START_BUTTON, Config.PLAYER_2_START);
+        player2Map.put(GameButton.BUTTON_START, Config.PLAYER_2_START);
 
         player2Map.put(GameButton.BUTTON_A, Config.PLAYER_2_ATTACK_BUTTON);
         player2Map.put(GameButton.BUTTON_B, Config.PLAYER_2_GRAB_BUTTON);
@@ -62,16 +92,12 @@ public class InputTranslationSystem extends EntitySystem {
         player2Map.put(GameButton.BUTTON_Y, Config.PLAYER_2_MOVE_UP);
         player2Map.put(GameButton.BUTTON_R, Config.PLAYER_2_THROW_BUTTON);
 
-
     }
 
 
 
 
 
-
-    @Override
-    public void init(){}
 
 
 
@@ -87,55 +113,12 @@ public class InputTranslationSystem extends EntitySystem {
 
             if (gamePad.isEnabled()) {
                 //Translation of the USER INPUT
-                if (gamePad.inputSource == VirtualGamePad.InputSource.USER_INPUT && Gdx.input.isKeyPressed(Input.Keys.ANY_KEY)){
+                if (gamePad.inputSource == VirtualGamePad.InputSource.USER_INPUT) {
                     PlayerScoreComponent playerInfo = (PlayerScoreComponent) e.getComponent(PlayerScoreComponent.ID);
-                    HashMap<GameButton, Integer> map = null;
-                    // DEFINE MAP TO USE BASED ON INPUT ID
-
-                    switch (playerInfo.getPlayerId()){
-                        case 1:
-                            map = this.player1Map;
-                            break;
-                        case 2:
-
-                            map = this.player2Map;
-                            break;
-                    }
-                    // LETS GO!
-                    // Movement Buttons
-                    // up XOR down ==> prevalence of UP
-                    if (Gdx.input.isKeyPressed( map.get(GameButton.DPAD_UP) )) {
-                        gamePad.pressButton(GameButton.DPAD_UP);
-                    } else if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_DOWN) )) {
-                        gamePad.pressButton(GameButton.DPAD_DOWN);
-                    }
-
-                    // left XOR right ==> prevalence of left
-                    if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_LEFT) )) {
-                        gamePad.pressButton(GameButton.DPAD_LEFT);
-                    } else if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_RIGHT) )) {
-                        gamePad.pressButton(GameButton.DPAD_RIGHT);
-                    }
-
-                    //Action buttons
-                    if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_B) )) {
-                        gamePad.pressButton(GameButton.BUTTON_B);
-                    }
-
-                    if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_Y) )) {
-                        gamePad.pressButton(GameButton.BUTTON_Y);
-                    }
-
-                    if (Gdx.input.isKeyJustPressed(map.get(GameButton.START_BUTTON) )) {
-                        gamePad.pressButton(GameButton.START_BUTTON);
-                    }
-
-                    if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_A) )) {
-                        gamePad.pressButton(GameButton.BUTTON_A);
-                    }
-
-                    if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_X) )) {
-                        gamePad.pressButton(GameButton.BUTTON_X);
+                    if(playerInfo.getPlayerId() == 1 && Config.PLAYER_1_USE_GAMEPAD){
+                        translateController(playerInfo.getPlayerId(), gamePad);
+                    }else{
+                        translateKeyboard(playerInfo.getPlayerId(), gamePad);
                     }
                 }
             }
@@ -145,5 +128,189 @@ public class InputTranslationSystem extends EntitySystem {
 
     @Override
     public void update(float dt) {}
+
+    /**
+     * When using a Physical GamePad
+     */
+    private void translateController(int playerId, VirtualGamePad gamePad){
+
+
+
+        Controller controller = null;
+        if (playerId == 1) {
+            controller = this.player1Controller;
+        } else if (playerId == 2) {
+            controller = this.player2Controller;
+        }
+        assert controller != null;
+
+
+        //XBOX360
+        /*if(controller.getButton(Xbox360Controller.BUTTON_A)){
+            gamePad.pressButton(GameButton.BUTTON_A);
+        }
+
+        if(controller.getButton(Xbox360Controller.BUTTON_B)){
+            gamePad.pressButton(GameButton.BUTTON_B);
+        }
+
+        if(controller.getButton(Xbox360Controller.BUTTON_X)){
+            gamePad.pressButton(GameButton.BUTTON_X);
+        }
+
+        if(controller.getButton(Xbox360Controller.BUTTON_Y)){
+            gamePad.pressButton(GameButton.DPAD_UP);
+        }
+
+        if(controller.getButton(Xbox360Controller.BUTTON_RB)){
+            gamePad.pressButton(GameButton.BUTTON_R);
+        }
+
+        if(controller.getButton(Xbox360Controller.BUTTON_START)){
+            gamePad.pressButton(GameButton.BUTTON_START);
+        }
+
+        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_X) == -1){
+            gamePad.pressButton(GameButton.DPAD_LEFT);
+        }
+        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_X) == 1){
+            gamePad.pressButton(GameButton.DPAD_RIGHT);
+        }
+        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_Y) == -1){
+            gamePad.pressButton(GameButton.DPAD_UP);
+        }
+        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_Y) == 1){
+            gamePad.pressButton(GameButton.DPAD_DOWN);
+        }*/
+
+
+
+        //DIARON
+        if(controller.getButton(DiaronController.BUTTON_A)){
+            gamePad.pressButton(GameButton.BUTTON_A);
+        }
+
+        if(controller.getButton(DiaronController.BUTTON_B)){
+            gamePad.pressButton(GameButton.BUTTON_B);
+        }
+
+        if(controller.getButton(DiaronController.BUTTON_X)){
+            gamePad.pressButton(GameButton.BUTTON_X);
+        }
+
+        if(controller.getButton(DiaronController.BUTTON_Y)){
+            gamePad.pressButton(GameButton.DPAD_UP);
+        }
+
+        if(controller.getButton(DiaronController.BUTTON_R1)){
+            gamePad.pressButton(GameButton.BUTTON_R);
+        }
+
+        if(controller.getButton(DiaronController.BUTTON_START)){
+            gamePad.pressButton(GameButton.BUTTON_START);
+        }
+
+
+        //Analog Stick
+        if(controller.getAxis(DiaronController.AXIS_LEFT_X) == -1){
+            gamePad.pressButton(GameButton.DPAD_LEFT);
+        }
+        if(controller.getAxis(DiaronController.AXIS_LEFT_X) == 1){
+            gamePad.pressButton(GameButton.DPAD_RIGHT);
+        }
+        if(controller.getAxis(DiaronController.AXIS_LEFT_Y) == -1){
+            gamePad.pressButton(GameButton.DPAD_UP);
+        }
+        if(controller.getAxis(DiaronController.AXIS_LEFT_Y) == 1){
+            gamePad.pressButton(GameButton.DPAD_DOWN);
+        }
+
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+
+    /**
+     * Translates the keyboard to Virtual GamePad
+     */
+    private void translateKeyboard(int playerId, VirtualGamePad gamePad){
+        if (Gdx.input.isKeyPressed(Input.Keys.ANY_KEY)){
+            HashMap<GameButton, Integer> map = null;
+            // DEFINE MAP TO USE BASED ON INPUT ID
+            switch (playerId) {
+                case 1:
+                    map = this.player1Map;
+                    break;
+                case 2:
+
+                    map = this.player2Map;
+                    break;
+            }
+            // LETS GO!
+            // Movement Buttons
+            // up XOR down ==> prevalence of UP
+            if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_UP))) {
+                gamePad.pressButton(GameButton.DPAD_UP);
+            } else if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_DOWN))) {
+                gamePad.pressButton(GameButton.DPAD_DOWN);
+            }
+
+            // left XOR right ==> prevalence of left
+            if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_LEFT))) {
+                gamePad.pressButton(GameButton.DPAD_LEFT);
+            } else if (Gdx.input.isKeyPressed(map.get(GameButton.DPAD_RIGHT))) {
+                gamePad.pressButton(GameButton.DPAD_RIGHT);
+            }
+
+            //Action buttons
+            if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_B))) {
+                gamePad.pressButton(GameButton.BUTTON_B);
+            }
+
+            if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_Y))) {
+                gamePad.pressButton(GameButton.BUTTON_Y);
+            }
+
+            if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_START))) {
+                gamePad.pressButton(GameButton.BUTTON_START);
+            }
+
+            if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_A))) {
+                gamePad.pressButton(GameButton.BUTTON_A);
+            }
+
+            if (Gdx.input.isKeyJustPressed(map.get(GameButton.BUTTON_X))) {
+                gamePad.pressButton(GameButton.BUTTON_X);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 }

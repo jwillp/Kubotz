@@ -43,31 +43,37 @@ public class Config {
 
 
     //INPUT CONTROLS SETTINGS
+    public static boolean PLAYER_1_USE_GAMEPAD = true;
+    public static boolean PLAYER_2_USE_GAMEPAD = false;
+
+
     //Player 1
-    public static final int PLAYER_1_MOVE_UP = Input.Keys.W;
-    public static final int PLAYER_1_MOVE_LEFT = Input.Keys.A;
-    public static final int PLAYER_1_MOVE_DOWN = Input.Keys.S;
-    public static final int PLAYER_1_MOVE_RIGHT = Input.Keys.D;
+    public static int PLAYER_1_MOVE_UP = Input.Keys.Q;
+    public static int PLAYER_1_MOVE_DOWN = Input.Keys.W;
+    public static int PLAYER_1_MOVE_LEFT = Input.Keys.E;
+    public static int PLAYER_1_MOVE_RIGHT = Input.Keys.R;
 
-    public static final int PLAYER_1_START = Input.Keys.ESCAPE;
+    public static int PLAYER_1_START = Input.Keys.ESCAPE;
 
-    public static final int PLAYER_1_GRAB_BUTTON = Input.Keys.I;
-    public static final int PLAYER_1_THROW_BUTTON = Input.Keys.SPACE;
-    public static final int PLAYER_1_ATTACK_BUTTON = Input.Keys.O;
-    public static final int PLAYER_1_SPECIAL_BUTTON = Input.Keys.SHIFT_LEFT;
+    public static int PLAYER_1_ATTACK_BUTTON = Input.Keys.T;
+    public static int PLAYER_1_GRAB_BUTTON = Input.Keys.Y;
+    public static int PLAYER_1_SPECIAL_BUTTON = Input.Keys.U;
+    public static int PLAYER_1_THROW_BUTTON = Input.Keys.O;
+
+    // TODO Jump ALT
 
     //Player 2
-    public static final int PLAYER_2_MOVE_UP = Input.Keys.Z;
-    public static final int PLAYER_2_MOVE_LEFT = Input.Keys.X;
-    public static final int PLAYER_2_MOVE_DOWN = Input.Keys.S;
-    public static final int PLAYER_2_MOVE_RIGHT = Input.Keys.D;
+    public static int PLAYER_2_MOVE_UP = Input.Keys.A;
+    public static int PLAYER_2_MOVE_DOWN = Input.Keys.S;
+    public static int PLAYER_2_MOVE_LEFT = Input.Keys.D;
+    public static int PLAYER_2_MOVE_RIGHT = Input.Keys.F;
 
-    public static final int PLAYER_2_START = Input.Keys.ESCAPE;
+    public static int PLAYER_2_START = Input.Keys.ESCAPE;
 
-    public static final int PLAYER_2_GRAB_BUTTON = Input.Keys.I;
-    public static final int PLAYER_2_THROW_BUTTON = Input.Keys.SPACE;
-    public static final int PLAYER_2_ATTACK_BUTTON = Input.Keys.O;
-    public static final int PLAYER_2_SPECIAL_BUTTON = Input.Keys.SHIFT_LEFT;
+    public static int PLAYER_2_ATTACK_BUTTON = Input.Keys.G;
+    public static int PLAYER_2_GRAB_BUTTON = Input.Keys.H;
+    public static int PLAYER_2_SPECIAL_BUTTON = Input.Keys.J;
+    public static int PLAYER_2_THROW_BUTTON = Input.Keys.L;
 
 
 
@@ -110,7 +116,10 @@ public class Config {
     public static void load() {
         try {
             FileInputStream inputStream = new FileInputStream(CONFIG_FILE);
+            OrderedProperties prop = new OrderedProperties();
+            prop.load(inputStream);
 
+            loadControlsProperties(prop);
             //TODO READ
 
             inputStream.close();
@@ -238,5 +247,40 @@ public class Config {
         output.write("\n\n".getBytes());
         output.flush();
     }
+
+
+
+
+    private static void loadControlsProperties(OrderedProperties prop){
+        PLAYER_1_MOVE_UP = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_UP"));
+        PLAYER_1_MOVE_LEFT = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_LEFT"));
+        PLAYER_1_MOVE_DOWN = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_DOWN"));
+        PLAYER_1_MOVE_RIGHT = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_RIGHT"));
+        PLAYER_1_START = Integer.parseInt(prop.getProperty("PLAYER_1_START"));
+        PLAYER_1_GRAB_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_1_PRIMARY_ACTION_BUTTON"));
+        PLAYER_1_THROW_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_1_SECONDARY_ACTION_BUTTON"));
+        PLAYER_1_ATTACK_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_1_PUNCH"));
+        PLAYER_1_SPECIAL_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_1_ACTIVE_SKILL"));
+
+        //Player 2
+        PLAYER_2_MOVE_UP = Integer.parseInt(prop.getProperty("PLAYER_2_MOVE_UP"));
+        PLAYER_2_MOVE_LEFT = Integer.parseInt(prop.getProperty("PLAYER_2_MOVE_LEFT"));
+        PLAYER_2_MOVE_DOWN = Integer.parseInt(prop.getProperty("PLAYER_2_MOVE_DOWN"));
+        PLAYER_2_MOVE_RIGHT = Integer.parseInt(prop.getProperty("PLAYER_2_MOVE_RIGHT"));
+        PLAYER_2_START = Integer.parseInt(prop.getProperty("PLAYER_2_START"));
+        PLAYER_2_GRAB_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_2_PRIMARY_ACTION_BUTTON"));
+        PLAYER_2_THROW_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_2_SECONDARY_ACTION_BUTTON"));
+        PLAYER_2_ATTACK_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_2_PUNCH"));
+        PLAYER_2_SPECIAL_BUTTON = Integer.parseInt(prop.getProperty("PLAYER_2_ACTIVE_SKILL"));
+
+
+
+    }
+
+
+
+
+
+
 
 }
