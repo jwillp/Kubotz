@@ -11,6 +11,9 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
+import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent;
+import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
+import com.brm.Kubotz.Features.KubotzCharacter.Components.TerminatorHeadComponent;
 import com.brm.Kubotz.Features.LaserGuns.Events.FinishGunShotEvent;
 import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
 import com.brm.Kubotz.Features.LaserSword.Events.FinishSwordSwingEvent;
@@ -253,6 +256,13 @@ public class KubotzAnimationScript extends EntityScript {
 
         anim.getPlayer().characterMaps = new com.brashmonkey.spriter.Entity.CharacterMap[3];
         // HEADS
+        if(entity.hasComponent(BigBuffHeadComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_bigbuff");
+        } else if(entity.hasComponent(SkullHeadComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_skull");
+        } else if(entity.hasComponent(TerminatorHeadComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_terminator");
+        }
 
 
         // ARMS
