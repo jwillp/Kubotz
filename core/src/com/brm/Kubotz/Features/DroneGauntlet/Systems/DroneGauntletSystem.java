@@ -49,11 +49,14 @@ public class DroneGauntletSystem extends EntitySystem {
             gamePad.releaseButton(GameButton.BUTTON_X);
             //can we spawn a turret?
             if(gauntlet.getCooldown().isDone()){
-                String droneId = this.spawnDrone(physicsComponent, entity).getID();
-                gauntlet.addDrone(droneId);
-                this.createVisionBox(physicsComponent);
-                gauntlet.getCooldown().reset();
-                //TODO fire event DRONE SPAWNED
+                if(gauntlet.getDrones().size() < gauntlet.getNbDronesLimint()) {
+                    String droneId = this.spawnDrone(physicsComponent, entity).getID();
+                    gauntlet.addDrone(droneId);
+                    this.createVisionBox(physicsComponent);
+                    gauntlet.getCooldown().reset();
+                    //TODO fire event DRONE SPAWNED
+
+                }
             }
         }
     }

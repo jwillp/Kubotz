@@ -13,9 +13,12 @@ import java.util.ArrayList;
 public class DroneGauntletComponent extends EntityComponent {
     public final static String ID = "DRONE_GAUNTLET_COMPONENT";
 
+    private final int nbDronesLimint = 2;   //the maximum number of drones at once
+
     private Timer cooldown = new Timer(Timer.FIVE_SECONDS);
 
     private ArrayList<String> drones = new ArrayList<String>();
+
 
     public DroneGauntletComponent(){
         cooldown.start();
@@ -37,5 +40,9 @@ public class DroneGauntletComponent extends EntityComponent {
 
     public ArrayList<String> getDrones(){
         return drones;
+    }
+
+    public int getNbDronesLimint() {
+        return nbDronesLimint;
     }
 }

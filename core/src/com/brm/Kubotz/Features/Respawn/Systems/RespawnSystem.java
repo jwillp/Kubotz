@@ -72,11 +72,7 @@ public class RespawnSystem extends EntitySystem {
 
         entity.disableComponent(CameraTargetComponent.ID);
 
-        // TODO DO NOT RESPAWN IF NOT ENOUGH LIVES IN PLAYER INFO
-
         respawn.setState(RespawnComponent.State.WAITING);
-
-
     }
 
     /**
