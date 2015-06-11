@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="126">
+ <tileset firstgid="1" name="Ground" tilewidth="512" tileheight="128">
+  <tile id="0">
+   <image width="512" height="128" source="bottom_fade.png"/>
+  </tile>
+  <tile id="1">
+   <image width="128" height="128" source="corner_bottom_left.png"/>
+  </tile>
+  <tile id="2">
+   <image width="128" height="128" source="corner_bottom_right.png"/>
+  </tile>
+  <tile id="3">
+   <image width="128" height="128" source="corner_top_left.png"/>
+  </tile>
+  <tile id="4">
+   <image width="128" height="128" source="corner_top_right.png"/>
+  </tile>
+  <tile id="5">
+   <image width="128" height="128" source="ground_01.png"/>
+  </tile>
+  <tile id="6">
+   <image width="128" height="128" source="ground_02.png"/>
+  </tile>
+  <tile id="7">
+   <image width="128" height="128" source="ground_03.png"/>
+  </tile>
+  <tile id="8">
+   <image width="128" height="128" source="ground_04.png"/>
+  </tile>
+  <tile id="9">
+   <image width="512" height="128" source="groundComplete.png"/>
+  </tile>
+  <tile id="10">
+   <image width="128" height="128" source="left_fade_01.png"/>
+  </tile>
+  <tile id="11">
+   <image width="128" height="128" source="left_fade_02.png"/>
+  </tile>
+  <tile id="12">
+   <image width="128" height="128" source="platform_01.png"/>
+  </tile>
+  <tile id="13">
+   <image width="128" height="128" source="platform_02.png"/>
+  </tile>
+  <tile id="14">
+   <image width="128" height="128" source="platform_03.png"/>
+  </tile>
+  <tile id="15">
+   <image width="124" height="128" source="platform_04.png"/>
+  </tile>
+  <tile id="16">
+   <image width="128" height="128" source="right_fade_01.png"/>
+  </tile>
+  <tile id="17">
+   <image width="128" height="128" source="right_fade_02.png"/>
+  </tile>
+  <tile id="18">
+   <image width="128" height="128" source="side01.png"/>
+  </tile>
+  <tile id="19">
+   <image width="128" height="128" source="side02.png"/>
+  </tile>
+  <tile id="20">
+   <image width="128" height="128" source="side03.png"/>
+  </tile>
+  <tile id="21">
+   <image width="128" height="128" source="side4.png"/>
+  </tile>
+  <tile id="22">
+   <image width="128" height="128" source="top_01.png"/>
+  </tile>
+  <tile id="23">
+   <image width="128" height="128" source="top_02.png"/>
+  </tile>
+  <tile id="24">
+   <image width="128" height="128" source="top_03.png"/>
+  </tile>
+  <tile id="25">
+   <image width="128" height="128" source="top_04.png"/>
+  </tile>
+  <tile id="26">
+   <image width="512" height="128" source="top_fade.png"/>
+  </tile>
+  <tile id="27">
+   <image width="128" height="128" source="blank.png"/>
+  </tile>
+ </tileset>
+ <layer name="background" width="52" height="38" visible="0">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+3BMQEAAADCoPVPbQ0PoAAAAAAAAADg3wBUpWHX4B4AAA==
+  </data>
+ </layer>
+ <layer name="images_layer" width="52" height="38">
+  <data encoding="base64" compression="gzip">
+   H4sIAAAAAAAAC+1Zi27CMAzM2MaKYINN2gZb//87wZotLMtO0/XFRZwUuU2q1tdwF6e0KaXWNMJv8uH1R9d2jQ0Zb53o8UBBKZ8njsdLO3HUrbQvZcZz99DPzh0/Z/jUADs3W+7/XCyjfpA8Pzgia4fQxWfH/V8z5zUWrI7QIO89mh80/VhE2hE+b9z2Kh5my+4PryoPnQtB8nznGOkHFZG/ofhBqX5QEdU7KH7Qtf6M6dmRjqVN5SseHzT9RP6GuKZ6EC+QWv1nwVz64Juj3p/QXNXgbRq1/M4I5HUl86P9SrxqCo+yvvif59Q0P3f93Da0fhru2wy8p2jA1gRaf2Nob83xJV1zFz61oM/+lN77HHs67XG5Z5V+30GrrwWWC+r+NKpHBWj1NcGrrVHXIPG0MfSjvbmvT5TqPoLO0/smj6yf3H8MaPqJ+CCvqzk+K466ntCxCc6j/ui89Dp7LvXYo+EQ8UGD522WI+Gh4z5Lj0dzcgYM5MwL4B4AAA==
+  </data>
+ </layer>
+ <objectgroup name="objects">
+  <object id="49" type="WALL" x="384" y="64" width="2560" height="128"/>
+  <object id="50" type="WALL" x="2944" y="192" width="128" height="832"/>
+  <object id="51" type="WALL" x="256" y="192" width="128" height="832"/>
+  <object id="53" type="WALL" x="256" y="1600" width="128" height="704"/>
+  <object id="55" type="WALL" x="2944" y="1600" width="128" height="704"/>
+  <object id="59" type="STATIC_PLATFORM" x="640" y="1600" width="256" height="64"/>
+  <object id="60" type="STATIC_PLATFORM" x="2304" y="1600" width="320" height="64"/>
+  <object id="61" type="STATIC_PLATFORM" x="1280" y="1472" width="704" height="64"/>
+  <object id="62" type="STATIC_PLATFORM" x="576" y="1216" width="448" height="64"/>
+  <object id="63" type="STATIC_PLATFORM" x="2240" y="1216" width="448" height="64"/>
+  <object id="64" type="STATIC_PLATFORM" x="1344" y="832" width="640" height="64"/>
+  <object id="76" type="BONUS_SPAWN" x="768" y="1024" width="64" height="64"/>
+  <object id="77" type="BONUS_SPAWN" x="2432" y="1024" width="64" height="64"/>
+  <object id="78" type="BONUS_SPAWN" x="768" y="1408" width="64" height="64"/>
+  <object id="79" type="BONUS_SPAWN" x="2432" y="1408" width="64" height="64"/>
+  <object id="82" type="WALL" x="64" y="1024" width="320" height="128"/>
+  <object id="86" type="WALL" x="2944" y="1024" width="320" height="128"/>
+  <object id="87" type="WALL" x="2944" y="1472" width="320" height="128"/>
+  <object id="88" type="WALL" x="64" y="1472" width="320" height="128"/>
+  <object id="91" type="WARP_ZONE" x="64" y="1152" width="64" height="320"/>
+  <object id="92" type="WARP_ZONE" x="3200" y="1152" width="64" height="320"/>
+  <object id="117" type="WALL" x="384" y="2176" width="2560" height="192"/>
+  <object id="118" type="STATIC_PLATFORM" x="960" y="1920" width="320" height="64"/>
+  <object id="119" type="STATIC_PLATFORM" x="1920" y="1920" width="320" height="64"/>
+  <object id="120" type="STATIC_PLATFORM" x="384" y="512" width="448" height="64"/>
+  <object id="121" type="STATIC_PLATFORM" x="2496" y="512" width="448" height="64"/>
+  <object id="125" type="PLAYER_SPAWN" x="640" y="1984" width="64" height="64"/>
+ </objectgroup>
+</map>
