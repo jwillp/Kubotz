@@ -11,7 +11,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.Kubotz.Features.DroneGauntlet.Scripts.DroneBehaviourScript;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 
 /**

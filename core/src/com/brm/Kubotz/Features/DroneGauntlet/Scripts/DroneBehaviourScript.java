@@ -8,7 +8,7 @@ import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.AI.Components.AIComponent;
-import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 import java.util.ArrayList;
 

@@ -4,7 +4,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.Input.VirtualButton;
-import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 import java.util.ArrayList;
 

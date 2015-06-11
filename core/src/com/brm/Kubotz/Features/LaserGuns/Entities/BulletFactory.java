@@ -11,11 +11,11 @@ import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.Kubotz.Components.DamageComponent;
-import com.brm.Kubotz.Components.LifespanComponent;
-import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Common.Components.DamageComponent;
+import com.brm.Kubotz.Common.Components.LifespanComponent;
+import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 import com.brm.Kubotz.Features.LaserGuns.Scripts.BulletGraphicsScript;
 
 /**

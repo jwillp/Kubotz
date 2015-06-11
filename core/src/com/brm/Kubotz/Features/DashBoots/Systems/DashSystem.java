@@ -9,7 +9,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.Vectors;
 import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 
 /**
  * Handles Dash Movements

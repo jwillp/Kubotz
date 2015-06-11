@@ -11,7 +11,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 

@@ -9,10 +9,10 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Events.CollisionEvent;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 
 /**
  * On Ground Movement System: Running + Jumping

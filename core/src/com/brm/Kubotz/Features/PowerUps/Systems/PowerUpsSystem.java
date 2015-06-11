@@ -13,7 +13,7 @@ import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.PowerUps.Entities.PowerUpFactory;
-import com.brm.Kubotz.Systems.PhysicsSystem;
+import com.brm.Kubotz.Common.Systems.PhysicsSystem;
 
 import java.util.ArrayList;
 

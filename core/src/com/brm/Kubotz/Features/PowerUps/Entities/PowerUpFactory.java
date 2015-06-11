@@ -7,12 +7,12 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.Kubotz.Features.Grab.Components.GrabbableComponent;
-import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUp;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUpEffect;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 /**
  * Used to Create PowerUps

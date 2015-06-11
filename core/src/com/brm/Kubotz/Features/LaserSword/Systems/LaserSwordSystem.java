@@ -12,7 +12,8 @@ import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.Kubotz.Features.LaserSword.Events.SwordSwungEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -50,7 +51,8 @@ public class LaserSwordSystem extends EntitySystem{
                 laserSword.getDurationTimer().reset();
                 createAttackBox(phys);
                 laserSword.setSwinging(true);
-                // TODO FIRE EVENT FOR SWINGING
+
+                fireEvent(new SwordSwungEvent(entity.getID()));
 
 
                 //DISABLE GAMEPAD

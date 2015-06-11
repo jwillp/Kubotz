@@ -5,9 +5,9 @@ import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
-import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 /**
  * Used to handle visual apsects of bullets

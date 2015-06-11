@@ -10,12 +10,12 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
-import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Features.Grab.Events.GrabEvent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpComponent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
-import com.brm.Kubotz.Events.CollisionEvent;
-import com.brm.Kubotz.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**

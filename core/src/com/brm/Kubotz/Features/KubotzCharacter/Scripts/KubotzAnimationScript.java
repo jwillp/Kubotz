@@ -9,12 +9,17 @@ import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
-import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
+import com.brm.Kubotz.Common.Events.DamageTakenEvent;
+import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
+import com.brm.Kubotz.Features.LaserSword.Events.SwordSwungEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -31,8 +36,14 @@ public class KubotzAnimationScript extends EntityScript {
     public static final String AIR_KICKING = "Air Kicking";
     public static final String KICKING = "Kicking";
 
+
     public static final String SHOOTING = "Shooting";
-    public static final String SWORD_SLASH = "Sword_slash_01";
+    public static final String SWORD_SLASH = "Sword_slash1";
+
+    public static final String HURT = "HURT";
+
+
+
 
     public static final int CHAR_MAP_HEAD_ID = 0;
     public static final int CHAR_MAP_ARM_ID = 0;
@@ -48,6 +59,16 @@ public class KubotzAnimationScript extends EntityScript {
 
     @Override
     public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == GunShotEvent.class){
+            onGunShot((GunShotEvent) event);
+
+        }else if(event.getClass() == SwordSwungEvent.class){
+            onSwordSwing((SwordSwungEvent) event);
+
+        }else if(event.getClass() == PunchEvent.class){
+            onPunch((PunchEvent) event);
+        }
+
 
     }
 
@@ -56,35 +77,25 @@ public class KubotzAnimationScript extends EntityScript {
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
         SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad)entity.getComponent(VirtualGamePad.ID);
-        HealthComponent health = (HealthComponent) entity.getComponent(HealthComponent.ID);
-
 
 
         handleRunning(entity, phys, gamePad, anim);
 
-        // PUNCH
-        if(entity.hasComponentEnabled(MeleeComponent.ID)){
-            MeleeComponent punch = (MeleeComponent) entity.getComponent(MeleeComponent.ID);
-            this.handlePunch(punch);
-        }
-
-        //GUNS
-        if(entity.hasComponentEnabled(GunComponent.ID)){
-            GunComponent gun = (GunComponent) entity.getComponent(GunComponent.ID);
-            this.handleGuns(gun);
-        }
-
-        // SWORD
-        /*if(entity.hasComponent(LaserSwordComponent.ID)){
-            LaserSwordComponent laserSword = (LaserSwordComponent) entity.getComponent(LaserSwordComponent.ID);
-            this.handleLaserSword(laserSword);
-        }*/
 
         this.handleCharacterMaps(entity, anim);
         anim.setAnimation(currentState);
         if(!currentState.equals(JUMPING)) {
             handleFlip(phys, anim);
         }
+
+
+        if(currentState.equals(HURT)){
+            //createSwordTrail(entity);
+            createHurtParticles(entity, phys);
+        }
+
+
+
 
     }
 
@@ -93,6 +104,37 @@ public class KubotzAnimationScript extends EntityScript {
 
 
 
+
+
+    /**
+     * Called when the entity shoots a gun
+     * @param e the event
+     */
+    private void onGunShot(GunShotEvent e){
+        currentState = SHOOTING;
+    }
+
+    /**
+     * Called when the entity swings a sword
+     * @param e the event
+     */
+    private void onSwordSwing(SwordSwungEvent e){
+        currentState = SWORD_SLASH;
+    }
+
+    /**
+     * Called when an entity punches
+     * @param e
+     */
+    private void onPunch(PunchEvent e){
+        currentState = AIR_KICKING;
+    }
+
+
+
+    private void onDamageTaken(DamageTakenEvent e){
+        currentState = HURT;
+    }
 
 
     /**
@@ -181,61 +223,6 @@ public class KubotzAnimationScript extends EntityScript {
         }
     }
 
-    /**
-     * Handles animation when entity is punching
-     * @param punch
-     */
-    private void handlePunch(MeleeComponent punch){
-
-        if(currentState.equals(PUNCHING) || currentState.equals(KICKING) || currentState.equals(AIR_KICKING) ){
-            if(punch.getDurationTimer().isDone()){
-                currentState = IDLE;
-            }
-        }
-    }
-
-
-    /**
-    * Handles Kubotz with Guns
-    * @param gun
-    */
-    private void handleGuns(GunComponent gun) {
-        if(gun.isShooting()){
-            if(!currentState.equals(SHOOTING)) {
-                currentState = SHOOTING;
-            }
-        }
-        if(currentState.equals(SHOOTING)){
-            if(gun.getCooldown().isDone()){
-                currentState = DEFAULT;
-            }
-
-        }
-    }
-
-
-    /**
-     * Handles Kubotz with Laser Sword
-     * @param laserSword
-     */
-    private void handleLaserSword(LaserSwordComponent laserSword) {
-        if(laserSword.isSwinging()){
-            if(!currentState.equals(SWORD_SLASH)) {
-                currentState = SWORD_SLASH;
-            }
-        }
-        if(currentState.equals(SWORD_SLASH)){
-            if(laserSword.getDurationTimer().isDone()){
-                currentState = DEFAULT;
-            }
-
-        }
-
-    }
-
-
-
-
 
 
 
@@ -274,6 +261,36 @@ public class KubotzAnimationScript extends EntityScript {
         pos.y -= phys.getHeight();
         pef.addEffect(Gdx.files.internal(Constants.PARTICLES_LANDING_DUST), pos);
     }
+
+    private void createHurtParticles(Entity entity, PhysicsComponent phys){
+        ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+        Vector2 pos = phys.getPosition().cpy();
+        pos.y -= phys.getHeight();
+        pef.addEffect(Gdx.files.internal(Constants.PARTICLES_LANDING_DUST), pos);
+    }
+
+
+
+
+    /**
+     * Creates a sword trail
+     * @param entity
+     */
+    private void createSwordTrail(Entity entity){
+        if(true){   //TODO Take this off
+            return;
+        }
+        ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+        SpriterAnimationComponent anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
+        float x = anim.getPlayer().getBone("hand_bone_front").position.x;
+        float y = anim.getPlayer().getBone("hand_bone_front").position.y;
+
+        pef.addEffect(Gdx.files.internal(Constants.PARTICLES_HIT_STARS), new Vector2(x,y));
+
+    }
+
+
+
 
 
 

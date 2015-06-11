@@ -21,7 +21,7 @@ import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Systems.AISystem;
+import com.brm.Kubotz.Common.Systems.AISystem;
 
 
 import java.util.Hashtable;

@@ -20,22 +20,25 @@ import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Common.Systems.AISystem;
+import com.brm.Kubotz.Common.Systems.AttackSystems.DamageSystem;
+import com.brm.Kubotz.Common.Systems.LifespanSystem;
+import com.brm.Kubotz.Common.Systems.PhysicsSystem;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Entities.BlockFactory;
+import com.brm.Kubotz.Features.Rooms.Entities.BlockFactory;
 import com.brm.Kubotz.Features.KubotzCharacter.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.Grab.Systems.GrabSystem;
 import com.brm.Kubotz.Features.Respawn.Systems.RespawnSystem;
 import com.brm.Kubotz.Input.InputTranslationSystem;
-import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
+import com.brm.Kubotz.Common.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Features.MeleeAttacks.Systems.MeleeSystem;
-import com.brm.Kubotz.Systems.*;
-import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
-import com.brm.Kubotz.Systems.RendringSystems.AnimationSystem;
-import com.brm.Kubotz.Systems.RendringSystems.RenderingSystem;
-import com.brm.Kubotz.Systems.SkillsSystem.SkillsSystem;
+import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Common.Systems.RendringSystems.AnimationSystem;
+import com.brm.Kubotz.Common.Systems.RendringSystems.RenderingSystem;
+import com.brm.Kubotz.Common.Systems.SkillsSystem.SkillsSystem;
 
 
 public class InGameScreen extends GameScreen {
