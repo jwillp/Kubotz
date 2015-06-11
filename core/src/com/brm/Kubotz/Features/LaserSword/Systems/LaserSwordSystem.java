@@ -46,7 +46,7 @@ public class LaserSwordSystem extends EntitySystem{
             Logger.log(laserSword.getCooldown().getRemainingTime());
             Logger.log(laserSword.getCooldown().isDone());
 
-            if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone()){
+            if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone() && !laserSword.isSwinging()){
                 Logger.log("OK");
                 laserSword.getDurationTimer().reset();
                 createAttackBox(phys);

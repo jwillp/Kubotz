@@ -12,6 +12,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
+import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
@@ -131,13 +132,16 @@ public class KubotzFactory extends EntityFactory {
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
+        // DRONE GAUNTLET
         character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
+
         /* PUNCH Component*/
         character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
         //Respawn
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 
+        character.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
 
         //GRAB
         character.addComponent(new GrabComponent(), GrabComponent.ID);
@@ -158,7 +162,7 @@ public class KubotzFactory extends EntityFactory {
         //ANIMATION
         character.addComponent(
                 new SpriterAnimationComponent(
-                        Spriter.newPlayer("animations/kubotz.scml", "Kubotz"),
+                        Spriter.newPlayer(Constants.KUBOTZ_ANIM_FILE, "Kubotz"),
                         -physics.getWidth()/2 +0.25f,
                         -physics.getHeight()/2-0.5f,
                         0.005f
@@ -175,10 +179,6 @@ public class KubotzFactory extends EntityFactory {
 
         return character;
     }
-
-
-
-
 
 
 

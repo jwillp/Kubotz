@@ -92,7 +92,7 @@ public class Config {
     public static int DASHBOOTS_COOLDOWN = 200;
 
     public static int LASER_SWORD_DAMAGE = 10;
-    public static int LASER_SWORD_COOLDOWN = 100;
+    public static int LASER_SWORD_COOLDOWN = 200;
 
     public static int LASER_GUN_MK_I_DAMAGE = 5;
     public static float LASER_GUN_MK_I_SPEED = 30;
