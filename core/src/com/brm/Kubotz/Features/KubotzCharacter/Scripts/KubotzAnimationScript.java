@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Scripts;
+package com.brm.Kubotz.Features.KubotzCharacter.Scripts;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;

@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Scripts;
+package com.brm.Kubotz.Features.KubotzCharacter.Scripts;
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;

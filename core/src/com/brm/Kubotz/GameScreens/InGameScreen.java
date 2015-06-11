@@ -25,7 +25,7 @@ import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Entities.BlockFactory;
-import com.brm.Kubotz.Entities.KubotzFactory;
+import com.brm.Kubotz.Features.KubotzCharacter.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.Grab.Systems.GrabSystem;
 import com.brm.Kubotz.Features.Respawn.Systems.RespawnSystem;
 import com.brm.Kubotz.Input.InputTranslationSystem;
@@ -67,7 +67,6 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem());
         systemManager.addSystem(MovementSystem.class, new MovementSystem());
 
-        systemManager.addSystem(TrackerSystem.class, new TrackerSystem());
 
         systemManager.addSystem(GrabSystem.class, new GrabSystem());
 
@@ -210,7 +209,7 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(AISystem.class).update(deltaTime);
 
         systemManager.getSystem(MovementSystem.class).update(deltaTime);
-        systemManager.getSystem(TrackerSystem.class).update(deltaTime);
+
         systemManager.getSystem(SkillsSystem.class).update(deltaTime);
 
         systemManager.getSystem(AttackSystem.class).update(deltaTime);
