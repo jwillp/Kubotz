@@ -5,17 +5,16 @@ import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
-import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
+import com.brm.Kubotz.Features.LaserGuns.Events.FinishGunShotEvent;
 import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
-import com.brm.Kubotz.Features.LaserSword.Events.SwordSwungEvent;
-import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
+import com.brm.Kubotz.Features.LaserSword.Events.FinishSwordSwingEvent;
+import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
@@ -59,15 +58,35 @@ public class KubotzAnimationScript extends EntityScript {
 
     @Override
     public <T extends Event> void onEvent(T event) {
+
+
+        //GunShot
         if(event.getClass() == GunShotEvent.class){
             onGunShot((GunShotEvent) event);
-
-        }else if(event.getClass() == SwordSwungEvent.class){
-            onSwordSwing((SwordSwungEvent) event);
-
-        }else if(event.getClass() == PunchEvent.class){
-            onPunch((PunchEvent) event);
+            return;
         }
+        if(event.getClass() == FinishGunShotEvent.class){
+            currentState = DEFAULT;
+        }
+
+        //SwordSwing
+        if(event.getClass() == SwordSwingEvent.class){
+            onSwordSwing((SwordSwingEvent) event);
+            return;
+        }
+        if(event.getClass() == FinishSwordSwingEvent.class){
+            currentState = DEFAULT;
+        }
+
+
+
+        //Punches
+        if(event.getClass() == PunchEvent.class){
+            onPunch((PunchEvent) event);
+            return;
+        }
+
+
 
 
     }
@@ -118,7 +137,7 @@ public class KubotzAnimationScript extends EntityScript {
      * Called when the entity swings a sword
      * @param e the event
      */
-    private void onSwordSwing(SwordSwungEvent e){
+    private void onSwordSwing(SwordSwingEvent e){
         currentState = SWORD_SLASH;
     }
 

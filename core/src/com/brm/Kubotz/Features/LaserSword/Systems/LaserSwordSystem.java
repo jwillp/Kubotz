@@ -13,7 +13,8 @@ import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
-import com.brm.Kubotz.Features.LaserSword.Events.SwordSwungEvent;
+import com.brm.Kubotz.Features.LaserSword.Events.FinishSwordSwingEvent;
+import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -52,7 +53,7 @@ public class LaserSwordSystem extends EntitySystem{
                 createAttackBox(phys);
                 laserSword.setSwinging(true);
 
-                fireEvent(new SwordSwungEvent(entity.getID()));
+                fireEvent(new SwordSwingEvent(entity.getID()));
 
 
                 //DISABLE GAMEPAD
@@ -76,6 +77,9 @@ public class LaserSwordSystem extends EntitySystem{
 
                     //Re-enable game pad
                     entity.enableComponent(VirtualGamePad.ID);
+
+
+                    fireEvent(new FinishSwordSwingEvent(entity.getID()));
                 }
             }
 

@@ -5,13 +5,13 @@ import com.brm.GoatEngine.ECS.core.Entity.Event;
 /**
  * Triggered when an Entity swings a sword
  */
-public class SwordSwungEvent extends Event {
+public class SwordSwingEvent extends Event {
 
     /**
      *
      * @param entityId the entity swinging the sword
      */
-    public SwordSwungEvent(String entityId) {
+    public SwordSwingEvent(String entityId) {
         super(entityId);
     }
 }

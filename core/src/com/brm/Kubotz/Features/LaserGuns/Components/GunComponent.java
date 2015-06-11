@@ -12,6 +12,9 @@ public class GunComponent extends EntityComponent {
 
     public static final String ID = "GUN_COMPONENT";
 
+
+
+
     // TYPES OF GUN
     public enum Type{
         LASER_MK_I,   //MEDIUM POWER GUN
@@ -30,6 +33,12 @@ public class GunComponent extends EntityComponent {
     protected boolean isShooting = false;
 
 
+    private Timer durationTimer = new Timer(600);
+
+    /**
+     * Ctor
+     * @param type type of gun
+     */
     public GunComponent(Type type){
 
         switch (type) {
@@ -46,6 +55,8 @@ public class GunComponent extends EntityComponent {
                 );
                 break;
         }
+
+
 
     }
 
@@ -106,6 +117,16 @@ public class GunComponent extends EntityComponent {
     public void setShooting(boolean isShooting) {
         this.isShooting = isShooting;
     }
+
+
+    public Timer getDurationTimer() {
+        return durationTimer;
+    }
+
+
+
+
+
 
 
 }

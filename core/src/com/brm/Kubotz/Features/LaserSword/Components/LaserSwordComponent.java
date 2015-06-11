@@ -16,7 +16,7 @@ public class LaserSwordComponent extends EntityComponent {
 
     private int damage = Config.LASER_SWORD_DAMAGE; //Number of damage per hit
 
-    private Timer durationTimer = new Timer(200); //The Duration of the hit
+    private Timer durationTimer = new Timer(800); //The Duration of the hit
     private Timer cooldown = new Timer(Config.LASER_SWORD_COOLDOWN); //The delay between hits
 
     private PhysicsComponent phys;

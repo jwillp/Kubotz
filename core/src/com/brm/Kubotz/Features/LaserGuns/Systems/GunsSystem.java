@@ -3,21 +3,23 @@ package com.brm.Kubotz.Features.LaserGuns.Systems;
 
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
-import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
-import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Features.LaserGuns.Entities.BulletFactory;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
+import com.brm.Kubotz.Features.LaserGuns.Entities.BulletFactory;
+import com.brm.Kubotz.Features.LaserGuns.Events.FinishGunShotEvent;
 import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 
 /**
  * Used to update entities using a gun
@@ -53,6 +55,7 @@ public class GunsSystem extends EntitySystem {
                     gunComponent.getCooldown().reset();
                     gunComponent.setShooting(true);
 
+                    gamePad.setEnabled(false);
 
                     //CREATE A BULLET
                     Entity bullet = this.createBullet(physComp, gunComponent);
@@ -65,7 +68,7 @@ public class GunsSystem extends EntitySystem {
 
 
                     this.fireEvent(new GunShotEvent(entity.getID()));
-                    // TODO a knockback when shooting
+                    // TODO a SMAAALLL knockback when shooting
 
 
                 }
@@ -77,7 +80,24 @@ public class GunsSystem extends EntitySystem {
     @Override
     public void update(float dt) {
 
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(GunComponent.ID)){
+            GunComponent gun = (GunComponent)entity.getComponent(GunComponent.ID);
+            //Check if the punch duration is over, if so hide the punch
+            if(gun.isShooting()){
+                if(gun.getDurationTimer().isDone()){
+                    gun.setShooting(false);
+                    gun.getCooldown().reset();
 
+
+                    //Re-enable game pad
+                    entity.enableComponent(VirtualGamePad.ID);
+
+
+                    fireEvent(new FinishGunShotEvent(entity.getID()));
+                }
+            }
+
+        }
 
     }
 
@@ -99,11 +119,11 @@ public class GunsSystem extends EntitySystem {
             if (collision.getEntityA().hasComponent(TagsComponent.ID)) {
                 TagsComponent tags = (TagsComponent) collision.getEntityA().getComponent(TagsComponent.ID);
                 if (tags.hasTag(Constants.ENTITY_TAG_BULLET)) {
-                    PhysicsComponent phys = (PhysicsComponent) collision.getEntityA().getComponent(PhysicsComponent.ID);
-                    phys.getBody().setActive(false);
-
-                    //TODO send a TakeDamageEvent
-
+                    Hitbox hitboxB = (Hitbox) collision.getFixtureB().getUserData();
+                    if(hitboxB.type != Hitbox.Type.Intangible){
+                        PhysicsComponent phys = (PhysicsComponent) collision.getEntityA().getComponent(PhysicsComponent.ID);
+                        phys.getBody().setActive(false);
+                    }
                 }
             }
         }

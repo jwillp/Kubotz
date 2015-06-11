@@ -44,7 +44,8 @@ public class Timer {
 
     public boolean isDone() {
         if (startTime == -1 || lastCheck == -1) {
-            throw new TimerException("The Timer was not started, call function start() before using Timer");
+            //throw new TimerException("The Timer was not started, call function start() before using Timer");
+            this.start();
         }
         return System.currentTimeMillis() - this.lastCheck >= this.delay;
     }
