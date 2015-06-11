@@ -5,7 +5,7 @@ import com.badlogic.gdx.controllers.PovDirection;
 // This code was taken from http://www.java-gaming.org/index.php?topic=29223.0
 // With thanks that is!
 
-public class Xbox360Controller {
+public class Xbox360ControllerMap implements ControllerMap {
     /*
      * It seems there are different versions of gamepads with different ID
      Strings.
@@ -45,4 +45,63 @@ public class Xbox360Controller {
     public static final int AXIS_RIGHT_TRIGGER = 4; //value 0 to -1f
 
 
+    @Override
+    public int getButtonX() {
+        return BUTTON_X;
+    }
+
+    @Override
+    public int getButtonY() {
+        return BUTTON_Y;
+    }
+
+    @Override
+    public int getButtonA() {
+        return BUTTON_A;
+    }
+
+    @Override
+    public int getButtonB() {
+        return BUTTON_B;
+    }
+
+    @Override
+    public int getButtonR1() {
+        return BUTTON_RB;
+    }
+
+    @Override
+    public int getButtonR2() {
+        return BUTTON_R3;
+    }
+
+    @Override
+    public int getButtonL1() {
+        return BUTTON_LB;
+    }
+
+    @Override
+    public int getButtonL2() {
+        return BUTTON_L3;
+    }
+
+    @Override
+    public int getButtonStart() {
+        return BUTTON_START;
+    }
+
+    @Override
+    public int getButtonSelect() {
+        return BUTTON_BACK;
+    }
+
+    @Override
+    public int getAxisLeftX() {
+        return AXIS_LEFT_X;
+    }
+
+    @Override
+    public int getAxisLeftY() {
+        return AXIS_RIGHT_Y;
+    }
 }

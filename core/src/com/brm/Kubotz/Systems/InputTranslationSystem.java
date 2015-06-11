@@ -1,10 +1,8 @@
 package com.brm.Kubotz.Systems;
 
-import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.ControllerAdapter;
 import com.badlogic.gdx.controllers.Controllers;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
@@ -12,9 +10,10 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
-import com.brm.Kubotz.Input.DiaronController;
+import com.brm.Kubotz.Input.DiaronControllerMap;
 import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Input.Xbox360Controller;
+import com.brm.Kubotz.Input.ControllerMap;
+import com.brm.Kubotz.Input.Xbox360ControllerMap;
 
 
 import java.util.HashMap;
@@ -134,94 +133,56 @@ public class InputTranslationSystem extends EntitySystem {
      */
     private void translateController(int playerId, VirtualGamePad gamePad){
 
-
-
         Controller controller = null;
+        ControllerMap map = null;
+
         if (playerId == 1) {
             controller = this.player1Controller;
+            map = new DiaronControllerMap();
         } else if (playerId == 2) {
             controller = this.player2Controller;
+            map = new Xbox360ControllerMap();
         }
         assert controller != null;
 
 
-        //XBOX360
-        /*if(controller.getButton(Xbox360Controller.BUTTON_A)){
-            gamePad.pressButton(GameButton.BUTTON_A);
-        }
-
-        if(controller.getButton(Xbox360Controller.BUTTON_B)){
-            gamePad.pressButton(GameButton.BUTTON_B);
-        }
-
-        if(controller.getButton(Xbox360Controller.BUTTON_X)){
-            gamePad.pressButton(GameButton.BUTTON_X);
-        }
-
-        if(controller.getButton(Xbox360Controller.BUTTON_Y)){
-            gamePad.pressButton(GameButton.DPAD_UP);
-        }
-
-        if(controller.getButton(Xbox360Controller.BUTTON_RB)){
-            gamePad.pressButton(GameButton.BUTTON_R);
-        }
-
-        if(controller.getButton(Xbox360Controller.BUTTON_START)){
-            gamePad.pressButton(GameButton.BUTTON_START);
-        }
-
-        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_X) == -1){
-            gamePad.pressButton(GameButton.DPAD_LEFT);
-        }
-        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_X) == 1){
-            gamePad.pressButton(GameButton.DPAD_RIGHT);
-        }
-        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_Y) == -1){
-            gamePad.pressButton(GameButton.DPAD_UP);
-        }
-        if(controller.getAxis(Xbox360Controller.AXIS_LEFT_Y) == 1){
-            gamePad.pressButton(GameButton.DPAD_DOWN);
-        }*/
-
-
-
         //DIARON
-        if(controller.getButton(DiaronController.BUTTON_A)){
+        if(controller.getButton(map.getButtonA())){
             gamePad.pressButton(GameButton.BUTTON_A);
         }
 
-        if(controller.getButton(DiaronController.BUTTON_B)){
+        if(controller.getButton(map.getButtonB())){
             gamePad.pressButton(GameButton.BUTTON_B);
         }
 
-        if(controller.getButton(DiaronController.BUTTON_X)){
+        if(controller.getButton(map.getButtonX())){
             gamePad.pressButton(GameButton.BUTTON_X);
         }
 
-        if(controller.getButton(DiaronController.BUTTON_Y)){
+        if(controller.getButton(map.getButtonY())){
             gamePad.pressButton(GameButton.DPAD_UP);
         }
 
-        if(controller.getButton(DiaronController.BUTTON_R1)){
+        if(controller.getButton(map.getButtonR1())){
             gamePad.pressButton(GameButton.BUTTON_R);
         }
 
-        if(controller.getButton(DiaronController.BUTTON_START)){
+        if(controller.getButton(map.getButtonStart())){
             gamePad.pressButton(GameButton.BUTTON_START);
         }
 
 
         //Analog Stick
-        if(controller.getAxis(DiaronController.AXIS_LEFT_X) == -1){
+        if(controller.getAxis(map.getAxisLeftX()) == -1){
             gamePad.pressButton(GameButton.DPAD_LEFT);
         }
-        if(controller.getAxis(DiaronController.AXIS_LEFT_X) == 1){
+        if(controller.getAxis(map.getAxisLeftX()) == 1){
             gamePad.pressButton(GameButton.DPAD_RIGHT);
         }
-        if(controller.getAxis(DiaronController.AXIS_LEFT_Y) == -1){
+        if(controller.getAxis(map.getAxisLeftY()) == -1){
             gamePad.pressButton(GameButton.DPAD_UP);
         }
-        if(controller.getAxis(DiaronController.AXIS_LEFT_Y) == 1){
+        if(controller.getAxis(map.getAxisLeftY()) == 1){
             gamePad.pressButton(GameButton.DPAD_DOWN);
         }
 
