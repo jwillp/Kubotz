@@ -46,6 +46,11 @@ public class Xbox360ControllerMap implements ControllerMap {
 
 
     @Override
+    public String getID() {
+        return "ID";
+    }
+
+    @Override
     public int getButtonX() {
         return BUTTON_X;
     }
@@ -102,6 +107,6 @@ public class Xbox360ControllerMap implements ControllerMap {
 
     @Override
     public int getAxisLeftY() {
-        return AXIS_RIGHT_Y;
+        return AXIS_LEFT_Y;
     }
 }

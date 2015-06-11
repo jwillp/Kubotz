@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems;
+package com.brm.Kubotz.Input;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Input.DiaronControllerMap;
@@ -114,7 +115,8 @@ public class InputTranslationSystem extends EntitySystem {
                 //Translation of the USER INPUT
                 if (gamePad.inputSource == VirtualGamePad.InputSource.USER_INPUT) {
                     PlayerScoreComponent playerInfo = (PlayerScoreComponent) e.getComponent(PlayerScoreComponent.ID);
-                    if(playerInfo.getPlayerId() == 1 && Config.PLAYER_1_USE_GAMEPAD){
+
+                    if(playerInfo.getPlayerId() == 1 && Config.PLAYER_1_USE_GAMEPAD || playerInfo.getPlayerId() == 2 && Config.PLAYER_2_USE_GAMEPAD){
                         translateController(playerInfo.getPlayerId(), gamePad);
                     }else{
                         translateKeyboard(playerInfo.getPlayerId(), gamePad);
@@ -133,20 +135,26 @@ public class InputTranslationSystem extends EntitySystem {
      */
     private void translateController(int playerId, VirtualGamePad gamePad){
 
-        Controller controller = null;
-        ControllerMap map = null;
 
+        //Determine Controller to use
+        Controller controller = null;
         if (playerId == 1) {
             controller = this.player1Controller;
-            map = new DiaronControllerMap();
         } else if (playerId == 2) {
             controller = this.player2Controller;
-            map = new Xbox360ControllerMap();
         }
         assert controller != null;
 
+        //Determine Controller Map
+        ControllerMap map = null;
+        if(controller.getName().toLowerCase().contains("xbox") && controller.getName().contains("360")){
+            map = new Xbox360ControllerMap();
+        }else{
+            map = new DiaronControllerMap();
+        }
 
-        //DIARON
+
+
         if(controller.getButton(map.getButtonA())){
             gamePad.pressButton(GameButton.BUTTON_A);
         }
@@ -206,7 +214,7 @@ public class InputTranslationSystem extends EntitySystem {
     private void translateKeyboard(int playerId, VirtualGamePad gamePad){
         if (Gdx.input.isKeyPressed(Input.Keys.ANY_KEY)){
             HashMap<GameButton, Integer> map = null;
-            // DEFINE MAP TO USE BASED ON INPUT ID
+            // Determine MAP TO USE BASED ON INPUT ID
             switch (playerId) {
                 case 1:
                     map = this.player1Map;

@@ -8,6 +8,8 @@ package com.brm.Kubotz.Input;
  */
 public interface ControllerMap {
 
+    public String getID();
+
     public int getButtonX();
     public int getButtonY();
 

@@ -17,17 +17,16 @@ public class DiaronControllerMap implements ControllerMap {
     private static final int BUTTON_R2 = 7;
 
 
-    public static final int BUTTON_B = BUTTON_2;
-    public static final int BUTTON_X = BUTTON_4;
-
-
-
-    public static final int BUTTON_Y = BUTTON_1;
 
     public static final int BUTTON_START = 0;
     public static final int AXIS_LEFT_X = 1; //-1 is left | +1 is right
     public static final int AXIS_LEFT_Y = 0; //-1 is up | +1 is down
 
+
+    @Override
+    public String getID() {
+        return NAME;
+    }
 
     @Override
     public int getButtonX() {
@@ -36,7 +35,7 @@ public class DiaronControllerMap implements ControllerMap {
 
     @Override
     public int getButtonY() {
-        return BUTTON_Y;
+        return BUTTON_1;
     }
 
     @Override

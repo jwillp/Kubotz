@@ -44,7 +44,7 @@ public class Config {
 
     //INPUT CONTROLS SETTINGS
     public static boolean PLAYER_1_USE_GAMEPAD = true;
-    public static boolean PLAYER_2_USE_GAMEPAD = false;
+    public static boolean PLAYER_2_USE_GAMEPAD = true;
 
 
     //Player 1
@@ -183,7 +183,13 @@ public class Config {
 
     private static void writeControlsProperies(FileOutputStream output) throws IOException {
         OrderedProperties prop = new OrderedProperties();
+
+
+
+
+
         //Player 1
+        prop.setProperty("PLAYER_1_USE_GAMEPAD", String.valueOf(PLAYER_1_USE_GAMEPAD));
         prop.setProperty("PLAYER_1_MOVE_UP", String.valueOf(PLAYER_1_MOVE_UP));
         prop.setProperty("PLAYER_1_MOVE_LEFT", String.valueOf(PLAYER_1_MOVE_LEFT));
         prop.setProperty("PLAYER_1_MOVE_DOWN", String.valueOf(PLAYER_1_MOVE_DOWN));
@@ -195,6 +201,7 @@ public class Config {
         prop.setProperty("PLAYER_1_ACTIVE_SKILL", String.valueOf(PLAYER_1_SPECIAL_BUTTON));
 
         //Player 2
+        prop.setProperty("PLAYER_2_USE_GAMEPAD", String.valueOf(PLAYER_2_USE_GAMEPAD));
         prop.setProperty("PLAYER_2_MOVE_UP", String.valueOf(PLAYER_2_MOVE_UP));
         prop.setProperty("PLAYER_2_MOVE_LEFT", String.valueOf(PLAYER_2_MOVE_LEFT));
         prop.setProperty("PLAYER_2_MOVE_DOWN", String.valueOf(PLAYER_2_MOVE_DOWN));
@@ -252,6 +259,11 @@ public class Config {
 
 
     private static void loadControlsProperties(OrderedProperties prop){
+
+        PLAYER_1_USE_GAMEPAD = Boolean.parseBoolean(prop.getProperty("PLAYER_1_USE_GAMEPAD"));
+        PLAYER_2_USE_GAMEPAD = Boolean.parseBoolean(prop.getProperty("PLAYER_2_USE_GAMEPAD"));
+
+
         PLAYER_1_MOVE_UP = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_UP"));
         PLAYER_1_MOVE_LEFT = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_LEFT"));
         PLAYER_1_MOVE_DOWN = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_DOWN"));
