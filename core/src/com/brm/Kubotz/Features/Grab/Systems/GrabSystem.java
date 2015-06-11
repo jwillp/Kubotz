@@ -11,6 +11,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Components.LifespanComponent;
+import com.brm.Kubotz.Features.Grab.Events.GrabEvent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpComponent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
 import com.brm.Kubotz.Events.CollisionEvent;
@@ -27,6 +28,33 @@ public class GrabSystem extends EntitySystem{
 
     @Override
     public void init(){}
+
+    public void handleInput(){
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(GrabComponent.ID)) {
+            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
+                handleInputForEntity(entity);
+            }
+        }
+    }
+
+    private void handleInputForEntity(Entity entity){
+        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+        GrabComponent grabComp = (GrabComponent)entity.getComponent(GrabComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+
+        //Triggers the punch
+        if(gamePad.isButtonPressed(GameButton.BUTTON_B)){
+            if (grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone() && !grabComp.isGrabbing()) {
+                gamePad.releaseButton(GameButton.BUTTON_B);
+                grabComp.getDurationTimer().reset();
+                createGrabBox(phys);
+                grabComp.setGrabbing(true);
+                // TODO FIRE EVENT FOR GRAB_ATTEMPT
+                fireEvent(new GrabEvent(entity.getID()));
+            }
+        }
+    }
+
 
     @Override
     public void update(float dt) {
@@ -45,31 +73,6 @@ public class GrabSystem extends EntitySystem{
     }
 
 
-    public void handleInput(){
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(GrabComponent.ID)) {
-            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
-                handleInputForEntity(entity);
-            }
-        }
-    }
-
-    private void handleInputForEntity(Entity entity){
-        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        GrabComponent grabComp = (GrabComponent)entity.getComponent(GrabComponent.ID);
-        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
-
-        //Triggers the punch
-        if(gamePad.isButtonPressed(GameButton.BUTTON_B)){
-            if(grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone()){
-                grabComp.getDurationTimer().reset();
-                createGrabBox(phys);
-                grabComp.setGrabbing(true);
-                // TODO FIRE EVENT FOR GRAB_ATTEMPT
-
-            }
-        }
-    }
-
 
     /**
      * Makes an entity pickup an object
@@ -81,6 +84,7 @@ public class GrabSystem extends EntitySystem{
 
         //Grab PowerUp
         if(grabbable.hasComponent(PowerUpComponent.ID)){
+            //TODO maybe this should be processed by the PowerUp on GrabbedEvent
             PowerUpComponent powerUpComp = (PowerUpComponent) grabbable.getComponent(PowerUpComponent.ID);
             PowerUpsContainerComponent container;
             container = (PowerUpsContainerComponent) agent.getComponent(PowerUpsContainerComponent.ID);

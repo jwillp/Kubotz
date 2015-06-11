@@ -17,10 +17,12 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.GParticleEffect;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
+import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
 import com.brm.Kubotz.Systems.AISystem;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
@@ -122,22 +124,35 @@ public class RenderingSystem extends EntitySystem {
         //spriteBatch.draw(this.background,0,0, 52, 37);
 
         //UPDATE SPRITER
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriterAnimationComponent.ID)){
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
             PhysicsComponent phys = (PhysicsComponent)  entity.getComponent(PhysicsComponent.ID);
 
+            if(!anim.isEnabled()){
+                anim.getPlayer().setScale(0); // Fake not draw
+                //TODO Fix this
 
-            //float scale = phys.getHeight()/anim.getPlayer().get
-            float posX = phys.getPosition().x + anim.getOffsetX();
-            float posY =  phys.getPosition().y + anim.getOffsetY();
+            }else{
+                if(anim.getPlayer().getScale() == 0) {
+                    anim.getPlayer().setScale(1); //In case the scale was 0
+                }
 
-            anim.getPlayer().setPosition(posX, posY);
-            anim.getPlayer().setAngle(phys.getBody().getAngle());
-            anim.getPlayer().setScale(anim.getScale());
+                //float scale = phys.getHeight()/anim.getPlayer().get
+                float posX = phys.getPosition().x + anim.getOffsetX();
+                float posY =  phys.getPosition().y + anim.getOffsetY();
+
+                anim.getPlayer().setPosition(posX, posY);
+                anim.getPlayer().setAngle(phys.getBody().getAngle());
+                anim.getPlayer().setScale(anim.getScale());
+            }
+
+
+
 
 
         }
         Spriter.draw();
+
 
 
         spriteBatch.end();
@@ -192,30 +207,34 @@ public class RenderingSystem extends EntitySystem {
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(PlayerScoreComponent.ID)){
             PlayerScoreComponent info = (PlayerScoreComponent) entity.getComponent(PlayerScoreComponent.ID);
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            SpriterAnimationComponent graphics = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
 
-            Texture label = null;
+            if(graphics.isEnabled()){
+                Texture label = null;
 
-            if (info.getPlayerId() == -1) {
-                label = this.cpuLabel;
+                if (info.getPlayerId() == -1) {
+                    label = this.cpuLabel;
 
-            } else if (info.getPlayerId() == 1) {
-                label = player1Label;
+                } else if (info.getPlayerId() == 1) {
+                    label = player1Label;
 
-            } else if (info.getPlayerId() == 2) {
-                label = player2Label;
+                } else if (info.getPlayerId() == 2) {
+                    label = player2Label;
 
+                }
+
+                float size = 1.5f;
+                size *= this.cameraSystem.getMainCamera().zoom*1.8f;
+                if(size<1){size = 1;}
+                Vector2 labelPos =  new Vector2(
+                        phys.getPosition().x - size/2,
+                        phys.getPosition().y + phys.getHeight() + 1
+                );
+
+
+                spriteBatch.draw(label, labelPos.x, labelPos.y, size, size);
             }
 
-            float size = 1.5f;
-            size *= this.cameraSystem.getMainCamera().zoom*1.8f;
-            if(size<1){size = 1;}
-            Vector2 labelPos =  new Vector2(
-                    phys.getPosition().x - size/2,
-                    phys.getPosition().y + phys.getHeight() + 1
-            );
-
-
-            spriteBatch.draw(label, labelPos.x, labelPos.y, size, size);
         }
 
 
