@@ -12,15 +12,7 @@ import com.brm.Kubotz.Features.MagneticBoots.Systems.MagneticBootsSystem;
  */
 public class SkillsSystem extends EntitySystem {
 
-    MagneticBootsSystem magneticBootsSystem;
-    FlyingBootsSystem flyingBootsSystem;
-    DashBootsSystem dashBootsSystem;
-
-    public SkillsSystem() {
-
-
-
-    }
+    public SkillsSystem(){}
 
     @Override
     public void init(){

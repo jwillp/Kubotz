@@ -3,7 +3,7 @@ package com.brm.Kubotz.Input;
 import com.brm.GoatEngine.Input.VirtualButton;
 
 /**
- * The Game buttons
+ * The Virtual Game buttons
  */
 public enum GameButton implements VirtualButton {
 

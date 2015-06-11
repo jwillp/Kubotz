@@ -17,6 +17,13 @@ public class PlayerScoreComponent extends EntityComponent {
 
     private int nbLives = 3; //The number of lives i.e. the max nb of times the player can die
 
+
+    public PlayerScoreComponent(int playerId){
+        this.playerId = playerId;
+    }
+
+
+
     public int getNbKills() {
         return nbKills;
     }

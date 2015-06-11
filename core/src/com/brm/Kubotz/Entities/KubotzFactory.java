@@ -12,7 +12,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
 import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;

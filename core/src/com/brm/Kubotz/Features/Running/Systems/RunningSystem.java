@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Systems.MovementSystems;
+package com.brm.Kubotz.Features.Running.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.utils.Components.JumpComponent;
@@ -7,11 +7,12 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Events.CollisionEvent;
 import com.brm.Kubotz.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
+import com.brm.Kubotz.Systems.MovementSystems.MovementSystem;
 
 /**
  * On Ground Movement System: Running + Jumping

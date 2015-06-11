@@ -9,17 +9,22 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.brashmonkey.spriter.Player;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
+import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
+import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
@@ -27,6 +32,7 @@ import com.brm.Kubotz.Entities.BlockFactory;
 import com.brm.Kubotz.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.Grab.Systems.GrabSystem;
 import com.brm.Kubotz.Features.Respawn.Systems.RespawnSystem;
+import com.brm.Kubotz.Scripts.KubotzBehaviourScript;
 import com.brm.Kubotz.Systems.AttackSystems.AttackSystem;
 import com.brm.Kubotz.Features.MeleeAttacks.Systems.MeleeSystem;
 import com.brm.Kubotz.Systems.*;
@@ -133,6 +139,8 @@ public class InGameScreen extends GameScreen {
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();
+                this.player.addComponent(new PlayerScoreComponent(1), PlayerScoreComponent.ID);
+
                 Entity entity = new Entity();
                 entityManager.registerEntity(entity);
                 entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
@@ -156,21 +164,22 @@ public class InGameScreen extends GameScreen {
 
 
 
-        /*for(int i=0; i<1; i++){
+        for(int i=0; i<1; i++){
             Entity ba = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(8 + i,7))
-                    .withHeight(1.0f)
-                    .withInputSource(VirtualGamePad.InputSource.AI_INPUT)
+                    .withHeight(2.0f)
                     .withCameraTargetComponent().build();
-            ba.addComponent(new AIComponent(), AIComponent.ID);
+            //ba.addComponent(new AIComponent(), AIComponent.ID);
+            ba.addComponent(new PlayerScoreComponent(2), PlayerScoreComponent.ID);
+
 
             //Scripts
-            ScriptComponent script = new ScriptComponent();
-            script.addScript(new KubotzBehaviourScript());
-            ba.addComponent(script, ScriptComponent.ID);
+            //ScriptComponent script = new ScriptComponent();
+            //script.addScript(new KubotzBehaviourScript());
+            //ba.addComponent(script, ScriptComponent.ID);
 
             //ba.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
 
-        }*/
+        }
 
         Logger.log("In Game State initialised");
     }

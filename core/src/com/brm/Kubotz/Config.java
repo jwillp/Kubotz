@@ -51,23 +51,23 @@ public class Config {
 
     public static final int PLAYER_1_START = Input.Keys.ESCAPE;
 
-    public static final int PLAYER_1_PRIMARY_ACTION_BUTTON = Input.Keys.I;
-    public static final int PLAYER_1_SECONDARY_ACTION_BUTTON = Input.Keys.SPACE;
-    public static final int PLAYER_1_PUNCH = Input.Keys.O;
-    public static final int PLAYER_1_ACTIVE_SKILL = Input.Keys.SHIFT_LEFT;
+    public static final int PLAYER_1_GRAB_BUTTON = Input.Keys.I;
+    public static final int PLAYER_1_THROW_BUTTON = Input.Keys.SPACE;
+    public static final int PLAYER_1_ATTACK_BUTTON = Input.Keys.O;
+    public static final int PLAYER_1_SPECIAL_BUTTON = Input.Keys.SHIFT_LEFT;
 
     //Player 2
-    public static final int PLAYER_2_MOVE_UP = Input.Keys.W;
-    public static final int PLAYER_2_MOVE_LEFT = Input.Keys.A;
+    public static final int PLAYER_2_MOVE_UP = Input.Keys.Z;
+    public static final int PLAYER_2_MOVE_LEFT = Input.Keys.X;
     public static final int PLAYER_2_MOVE_DOWN = Input.Keys.S;
     public static final int PLAYER_2_MOVE_RIGHT = Input.Keys.D;
 
     public static final int PLAYER_2_START = Input.Keys.ESCAPE;
 
-    public static final int PLAYER_2_PRIMARY_ACTION_BUTTON = Input.Keys.I;
-    public static final int PLAYER_2_SECONDARY_ACTION_BUTTON = Input.Keys.SPACE;
-    public static final int PLAYER_2_PUNCH = Input.Keys.O;
-    public static final int PLAYER_2_ACTIVE_SKILL = Input.Keys.SHIFT_LEFT;
+    public static final int PLAYER_2_GRAB_BUTTON = Input.Keys.I;
+    public static final int PLAYER_2_THROW_BUTTON = Input.Keys.SPACE;
+    public static final int PLAYER_2_ATTACK_BUTTON = Input.Keys.O;
+    public static final int PLAYER_2_SPECIAL_BUTTON = Input.Keys.SHIFT_LEFT;
 
 
 
@@ -180,10 +180,10 @@ public class Config {
         prop.setProperty("PLAYER_1_MOVE_DOWN", String.valueOf(PLAYER_1_MOVE_DOWN));
         prop.setProperty("PLAYER_1_MOVE_RIGHT", String.valueOf(PLAYER_1_MOVE_RIGHT));
         prop.setProperty("PLAYER_1_START", String.valueOf(PLAYER_1_START));
-        prop.setProperty("PLAYER_1_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_1_PRIMARY_ACTION_BUTTON));
-        prop.setProperty("PLAYER_1_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_1_SECONDARY_ACTION_BUTTON));
-        prop.setProperty("PLAYER_1_PUNCH", String.valueOf(PLAYER_1_PUNCH));
-        prop.setProperty("PLAYER_1_ACTIVE_SKILL", String.valueOf(PLAYER_1_ACTIVE_SKILL));
+        prop.setProperty("PLAYER_1_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_1_GRAB_BUTTON));
+        prop.setProperty("PLAYER_1_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_1_THROW_BUTTON));
+        prop.setProperty("PLAYER_1_PUNCH", String.valueOf(PLAYER_1_ATTACK_BUTTON));
+        prop.setProperty("PLAYER_1_ACTIVE_SKILL", String.valueOf(PLAYER_1_SPECIAL_BUTTON));
 
         //Player 2
         prop.setProperty("PLAYER_2_MOVE_UP", String.valueOf(PLAYER_2_MOVE_UP));
@@ -191,10 +191,10 @@ public class Config {
         prop.setProperty("PLAYER_2_MOVE_DOWN", String.valueOf(PLAYER_2_MOVE_DOWN));
         prop.setProperty("PLAYER_2_MOVE_RIGHT", String.valueOf(PLAYER_2_MOVE_RIGHT));
         prop.setProperty("PLAYER_2_START", String.valueOf(PLAYER_2_START));
-        prop.setProperty("PLAYER_2_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_2_PRIMARY_ACTION_BUTTON));
-        prop.setProperty("PLAYER_2_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_2_SECONDARY_ACTION_BUTTON));
-        prop.setProperty("PLAYER_2_PUNCH", String.valueOf(PLAYER_2_PUNCH));
-        prop.setProperty("PLAYER_2_ACTIVE_SKILL", String.valueOf(PLAYER_2_ACTIVE_SKILL));
+        prop.setProperty("PLAYER_2_PRIMARY_ACTION_BUTTON", String.valueOf(PLAYER_2_GRAB_BUTTON));
+        prop.setProperty("PLAYER_2_SECONDARY_ACTION_BUTTON", String.valueOf(PLAYER_2_THROW_BUTTON));
+        prop.setProperty("PLAYER_2_PUNCH", String.valueOf(PLAYER_2_ATTACK_BUTTON));
+        prop.setProperty("PLAYER_2_ACTIVE_SKILL", String.valueOf(PLAYER_2_SPECIAL_BUTTON));
 
         prop.store(output, "INPUT CONTROLS SETTINGS");
         output.write("\n\n".getBytes());

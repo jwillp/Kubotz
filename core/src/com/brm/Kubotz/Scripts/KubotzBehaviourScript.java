@@ -1,4 +1,4 @@
-package com.brm.Kubotz;
+package com.brm.Kubotz.Scripts;
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
@@ -19,6 +19,7 @@ import com.brm.GoatEngine.AI.BehaviourTree.Selector;
 import com.brm.GoatEngine.AI.BehaviourTree.Sequence;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
+import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Systems.AISystem;
 

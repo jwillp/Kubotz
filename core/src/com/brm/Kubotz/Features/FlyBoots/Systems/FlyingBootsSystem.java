@@ -6,7 +6,7 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Features.FlyBoots.Components.FlyComponent;
-import com.brm.Kubotz.Components.Movements.RunningComponent;
+import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
 import com.brm.Kubotz.Input.GameButton;
 
