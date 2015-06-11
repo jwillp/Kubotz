@@ -133,7 +133,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
 
         // DRONE GAUNTLET
-        character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
+        //character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
 
         /* PUNCH Component*/
         character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);

@@ -47,11 +47,14 @@ public class LaserSwordSystem extends EntitySystem{
             Logger.log(laserSword.getCooldown().isDone());
 
             if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone() && !laserSword.isSwinging()){
-                Logger.log("OK");
                 laserSword.getDurationTimer().reset();
                 createAttackBox(phys);
                 laserSword.setSwinging(true);
                 // TODO FIRE EVENT FOR SWINGING
+
+
+                //DISABLE GAMEPAD
+                gamePad.setEnabled(false); //To prevent punching ir jumping at the same time
             }
         }
     }
@@ -68,6 +71,9 @@ public class LaserSwordSystem extends EntitySystem{
                     laserSword.setSwinging(false);
                     laserSword.getCooldown().reset();
                     removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
+
+                    //Re-enable game pad
+                    entity.enableComponent(VirtualGamePad.ID);
                 }
             }
 

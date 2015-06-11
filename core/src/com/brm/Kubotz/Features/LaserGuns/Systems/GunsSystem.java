@@ -53,7 +53,6 @@ public class GunsSystem extends EntitySystem {
                     gunComponent.getCooldown().reset();
                     gunComponent.setShooting(true);
 
-                    this.fireEvent(new GunShotEvent(entity.getID()));
 
                     //CREATE A BULLET
                     Entity bullet = this.createBullet(physComp, gunComponent);
@@ -62,6 +61,13 @@ public class GunsSystem extends EntitySystem {
                     int direction = (physComp.getDirection() == PhysicsComponent.Direction.RIGHT) ? 1 : -1;
                     MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
                     MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
+
+
+
+                    this.fireEvent(new GunShotEvent(entity.getID()));
+                    // TODO a knockback when shooting
+
+
                 }
             }
     }
@@ -72,14 +78,6 @@ public class GunsSystem extends EntitySystem {
     public void update(float dt) {
 
 
-        //Delete bullet that collided
-        for(Entity entity: getEntityManager().getEntitiesWithTag(Constants.ENTITY_TAG_BULLET)){
-
-            /*PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            if(!phys.getContacts().isEmpty()){
-                phys.getBody().setActive(false);
-            }*/ // TODO REPAIR THIS
-        }
 
     }
 
