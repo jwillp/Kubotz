@@ -8,12 +8,16 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.*;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.Kubotz.Components.Graphics.UIHealthComponent;
 import com.brm.Kubotz.Config;
+import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
+
+
 
 /**
  * Sub System responsible of rendering HUD, on screen elements
@@ -32,6 +36,11 @@ public class HUDSystem extends EntitySystem {
     private Texture badge = new Texture(Gdx.files.internal("hud-multi-badge.png"));
     private Texture timer = new Texture(Gdx.files.internal("hud-multi-timer.png"));
     private Texture bars = new Texture(Gdx.files.internal("hud-multi-bars.png"));
+
+
+
+
+
 
     public HUDSystem(ShapeRenderer shapeRenderer, SpriteBatch spriteBatch) {
         this.shapeRenderer = new ShapeRenderer();
@@ -56,11 +65,11 @@ public class HUDSystem extends EntitySystem {
     public void update(float dt){
         this.renderMiniHealthBars();
 
-        int currentWidth = Gdx.graphics.getWidth();
+
+
+        /*int currentWidth = Gdx.graphics.getWidth();
         int currentHeight = Gdx.graphics.getHeight();
-
         viewport.update(currentWidth, currentHeight);
-
 
 
         //HUD
@@ -77,11 +86,10 @@ public class HUDSystem extends EntitySystem {
                 this.badge.getWidth(), this.badge.getHeight());
 
 
-        spriteBatch.end();
+        spriteBatch.end();*/
 
 
     }
-
 
 
 
@@ -95,13 +103,16 @@ public class HUDSystem extends EntitySystem {
             PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
             HealthComponent health = (HealthComponent)entity.getComponent(HealthComponent.ID);
 
+
+            Vector2 outlineSize = new Vector2(1.5f, 0.2f);
+            float healthWidth = health.getAmount() * outlineSize.x/health.getMaxAmount();
+
+
             Vector2 barPos =  new Vector2(
-                    phys.getPosition().x - phys.getWidth()*2,
-                    phys.getPosition().y + phys.getHeight() + 0.1f
+                    phys.getPosition().x - phys.getWidth() - healthWidth/8,
+                    phys.getPosition().y + phys.getHeight() + 0.5f
             );
 
-            Vector2 outlineSize = new Vector2(1, 0.1f);
-            float healthWidth = health.getAmount() * outlineSize.x/health.getMaxAmount();
 
             shapeRenderer.setProjectionMatrix(getSystemManager().getSystem(RenderingSystem.class).getCamera().combined);
 
@@ -122,7 +133,6 @@ public class HUDSystem extends EntitySystem {
 
         }
     }
-
 
 
 

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brashmonkey.spriter.Spriter;
@@ -19,6 +20,7 @@ import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.Kubotz.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
+import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Systems.AISystem;
 import com.brm.Kubotz.Visuals.Renderers.CameraDebugRenderer;
 import com.brm.Kubotz.Systems.PhysicsSystem;
@@ -43,6 +45,10 @@ public class RenderingSystem extends EntitySystem {
     private final OrthographicCamera backgroundCamera;
     private final Texture background;
 
+
+    private Texture player1Label = new Texture(Gdx.files.internal("hud/player1_label.png"));
+    private Texture player2Label = new Texture(Gdx.files.internal("hud/player2_label.png"));
+    private Texture cpuLabel = new Texture(Gdx.files.internal("hud/cpu_label.png"));
 
 
     public RenderingSystem() {
@@ -78,6 +84,7 @@ public class RenderingSystem extends EntitySystem {
 
         if(Config.TEXTURE_RENDERING_ENABLED){
             renderTextures(dt);
+            renderPlayerLabels();
         }
 
 
@@ -167,6 +174,80 @@ public class RenderingSystem extends EntitySystem {
 
 
     }
+
+
+
+
+
+
+
+    /**
+     * Renders images on top of players labeling their player ID
+     * wheter P1 , P2 or CPU
+     */
+    private void renderPlayerLabels() {
+
+        spriteBatch.begin();
+
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(PlayerScoreComponent.ID)){
+            PlayerScoreComponent info = (PlayerScoreComponent) entity.getComponent(PlayerScoreComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+
+            Texture label = null;
+
+            if (info.getPlayerId() == -1) {
+                label = this.cpuLabel;
+
+            } else if (info.getPlayerId() == 1) {
+                label = player1Label;
+
+            } else if (info.getPlayerId() == 2) {
+                label = player2Label;
+
+            }
+
+            float size = 1.5f;
+            size *= this.cameraSystem.getMainCamera().zoom*1.8f;
+            if(size<1){size = 1;}
+            Vector2 labelPos =  new Vector2(
+                    phys.getPosition().x - size/2,
+                    phys.getPosition().y + phys.getHeight() + 1
+            );
+
+
+            spriteBatch.draw(label, labelPos.x, labelPos.y, size, size);
+        }
+
+
+        spriteBatch.end();
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
