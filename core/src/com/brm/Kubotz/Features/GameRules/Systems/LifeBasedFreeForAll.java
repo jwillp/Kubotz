@@ -1,15 +1,18 @@
 package com.brm.Kubotz.Features.GameRules.Systems;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
-import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent;
-import com.brm.Kubotz.Features.GameRules.Events.PlayerEliminatedEvent;
-import com.brm.Kubotz.Features.GameRules.Events.PlayerKillEvent;
+import com.brm.Kubotz.Features.GameRules.Events.*;
+import com.brm.Kubotz.Features.Narrator.Systems.NarratorSystem;
 import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
 
 /**
@@ -21,11 +24,27 @@ import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
  * the winner.
  */
 public class LifeBasedFreeForAll extends EntitySystem {
+
+    private Timer countdown = new Timer(Timer.ONE_SECOND);
+    private int secondsRemaining = 4;
+
+
+
     /**
      * Used to initialise the system
      */
     @Override
-    public void init(){}
+    public void init(){
+
+        Music music = Gdx.audio.newMusic(Gdx.files.internal("audio/TechnoTheme.ogg"));
+        music.setLooping(true);
+        music.play();
+
+        getSystemManager().addSystem(NarratorSystem.class, new NarratorSystem());
+
+
+
+    }
 
     /**
      * Called once per game frame
@@ -34,13 +53,32 @@ public class LifeBasedFreeForAll extends EntitySystem {
      */
     @Override
     public void update(float dt) {
-        if(getEntityManager().getComponents(PlayerScoreComponent.ID).size() == 1){
 
+        updateCountdown();
+
+        if(getEntityManager().getComponents(PlayerScoreComponent.ID).size() == 1){
             Logger.log("WE HAVE A WIIIIIINNNNER! GAME!");
+            String winner = getEntityManager().getEntitiesWithComponent(PlayerScoreComponent.ID).get(0).getID();
+            fireEvent(new GameWinEvent(winner));
         }
-        // TODO Code
-        // if playersNotEliminatedList.size == 1
-            // WE HAVE A WINNER! stop the current game
+
+    }
+
+
+    public void updateCountdown(){
+
+        if(secondsRemaining > 0){
+                if(countdown.isDone()){
+                Logger.log( String.valueOf((--secondsRemaining))  + " SECONDS");
+                countdown.reset();
+
+                fireEvent(new CountdownEndEvent(secondsRemaining));
+
+                if(secondsRemaining == 0){
+                    fireEvent(new GameStartedEvent());
+                }
+            }
+        }
     }
 
 

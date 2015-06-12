@@ -1,3 +1,7 @@
+##PROJECT SPECIFIC
+core/assets/audio/*
+
+
 ## Java
 
 *.class

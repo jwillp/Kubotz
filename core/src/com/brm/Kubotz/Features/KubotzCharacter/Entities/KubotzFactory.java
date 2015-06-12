@@ -13,6 +13,7 @@ import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
+import com.brm.Kubotz.Features.KubotzCharacter.Scripts.KubotzAudioScript;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Features.Running.Components.RunningComponent;
@@ -153,6 +154,7 @@ public class KubotzFactory extends EntityFactory {
         //Scripts
         ScriptComponent scriptComponent = new ScriptComponent();
         scriptComponent.addScript(new KubotzAnimationScript());
+        scriptComponent.addScript(new KubotzAudioScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
         character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);

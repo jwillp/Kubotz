@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.KubotzCharacter.Scripts;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
@@ -8,6 +9,8 @@ import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
@@ -162,6 +165,15 @@ public class KubotzAnimationScript extends EntityScript {
         if(currentState.equals(HURT)){
             //createSwordTrail(entity);
             createHurtParticles(entity, phys);
+        }
+
+
+        if(currentState.equals(RUNNING)){
+            int currentTime = anim.getPlayer().getTime();
+            if(GameMath.isMoreOrLess(currentTime, 300, 10) || GameMath.isMoreOrLess(currentTime, 800, 10)){
+                Sound sound = Gdx.audio.newSound(Gdx.files.internal("audio/step.mp3"));
+                sound.play();
+            }
         }
 
 

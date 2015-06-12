@@ -11,7 +11,12 @@ public class PlayerScoreComponent extends EntityComponent {
 
     public final static String ID = "PLAYER_SCORE_COMPONENT";
 
-    private int playerId = -1;      // -1 means CPU, 1 means player1 and 2 means player 2
+    public final static int PLAYER_CPU = 0;
+    public final static int PLAYER_1 = 1;
+    public final static int PLAYER_2 = 2;
+
+
+    private int playerId = 0;      // 0 means CPU, 1 means player1 and 2 means player 2
 
     private int nbKills = 0;
 
