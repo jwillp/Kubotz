@@ -27,7 +27,7 @@ public class Game extends ApplicationAdapter {
 		}
 		screenManager = new GameScreenManager();
 		screenManager.init();
-		screenManager.addScreen(new TitleScreen());
+		screenManager.addScreen(new InGameScreen());
 	}
 
 

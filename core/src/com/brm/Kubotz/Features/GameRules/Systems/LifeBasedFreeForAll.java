@@ -61,6 +61,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
         updateCountdown();
 
+
         if(getEntityManager().getComponents(PlayerScoreComponent.ID).size() == 1){
             Logger.log("WE HAVE A WIIIIIINNNNER! GAME!");
             String winner = getEntityManager().getEntitiesWithComponent(PlayerScoreComponent.ID).get(0).getID();

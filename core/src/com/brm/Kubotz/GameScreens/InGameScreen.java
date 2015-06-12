@@ -9,6 +9,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.brashmonkey.spriter.Player;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
@@ -55,6 +56,10 @@ public class InGameScreen extends GameScreen {
 
     //PLAYER
     private Entity player;
+
+
+
+    private boolean isPlayerOneSpawned = false;
 
 
     @Override
@@ -141,12 +146,18 @@ public class InGameScreen extends GameScreen {
 
 
             if(objType.equals("PLAYER_SPAWN")){
-                this.player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
+                Logger.log("OK");
+                Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();
-                this.player.addComponent(new PlayerScoreComponent(1), PlayerScoreComponent.ID);
+
+                int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
+                if(id == PlayerScoreComponent.PLAYER_1)
+                    isPlayerOneSpawned = true;
+                
+                player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
 
                 Entity entity = new Entity();
                 entityManager.registerEntity(entity);
@@ -170,23 +181,6 @@ public class InGameScreen extends GameScreen {
         }
 
 
-
-        for(int i=0; i<1; i++){
-            Entity ba = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(), new Vector2(8 + i,7))
-                    .withHeight(2.0f)
-                    .withCameraTargetComponent().build();
-            //ba.addComponent(new AIComponent(), AIComponent.ID);
-            ba.addComponent(new PlayerScoreComponent(2), PlayerScoreComponent.ID);
-
-
-            //Scripts
-            //ScriptComponent script = new ScriptComponent();
-            //script.addScript(new KubotzBehaviourScript());
-            //ba.addComponent(script, ScriptComponent.ID);
-
-            //ba.addComponent(new GrabbableComponent(), GrabbableComponent.ID);
-
-        }
 
         Logger.log("In Game State initialised");
     }
