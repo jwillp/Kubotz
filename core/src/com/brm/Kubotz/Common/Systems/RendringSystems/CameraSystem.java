@@ -6,12 +6,15 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Math.Vectors;
+import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 
 /**
  * A system handling all cameras and their movements
@@ -64,6 +67,8 @@ public class CameraSystem extends EntitySystem {
         //Make sure the camera does not display anything outside the world
         updateBoundaries();
 
+        // Update camera Shake effect
+        updateCameraShake(dt);
 
         //Update the camera
         mainCamera.update();
@@ -149,16 +154,53 @@ public class CameraSystem extends EntitySystem {
 
 
     /**
-     * Used to make the camera shake.
-     * Process all entities and finds the ones Shaking
+     * Makes the camera shake when needed
+     * Source: http://gamedev.stackexchange.com/questions/32013/shaky-camera-effect-2d
      */
-    private void cameraShake(){
-        //TODO Shake that CAMERA!
+    private void updateCameraShake(float delta){
+        if(mainCamera.getShakeDuration().isDone()){
+            mainCamera.setShaking(false);
+            mainCamera.getOffset().set(0,0);
+        }
+
+        if(mainCamera.isShaking()){
+
+            if(mainCamera.getShakeDirection()){
+                mainCamera.getOffset().x -= mainCamera.getShakeStrength() * delta;
+                if(mainCamera.getOffset().x < -mainCamera.getMaxShakeOffset()){
+                    mainCamera.getOffset().x = -mainCamera.getMaxShakeOffset();
+                    mainCamera.setShakeDirection(!mainCamera.getShakeDirection());
+                }
+                mainCamera.getOffset().y = mainCamera.getOffset().x;
+            }else{
+                mainCamera.getOffset().x += mainCamera.getShakeStrength() * delta;
+                if(mainCamera.getOffset().x > mainCamera.getMaxShakeOffset()){
+                    mainCamera.getOffset().x = mainCamera.getMaxShakeOffset();
+                    mainCamera.setShakeDirection(!mainCamera.getShakeDirection());
+                }
+                mainCamera.getOffset().y = -mainCamera.getOffset().x;
+
+            }
+
+            mainCamera.position.x = mainCamera.getVirtualPosition().x + mainCamera.getOffset().x;
+            mainCamera.position.y = mainCamera.getVirtualPosition().y + mainCamera.getOffset().y;
+
+        }else{
+
+            mainCamera.getVirtualPosition().x = mainCamera.position.x;
+            mainCamera.getVirtualPosition().y = mainCamera.position.y;
+        }
+
     }
 
 
-
-
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.getClass() == DamageTakenEvent.class){
+            mainCamera.setShaking(true);
+            mainCamera.getShakeDuration().reset();
+        }
+    }
 
     /**
      * Returns the orthographic camera

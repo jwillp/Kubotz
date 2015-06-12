@@ -2,6 +2,7 @@ package com.brm.GoatEngine;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.Utils.Timer;
 
 /**
  * A Camera with speed of movement and of zoom
@@ -20,6 +21,19 @@ public class GameCamera extends OrthographicCamera {
 
     private boolean isXAxisLocked = false;
     private boolean isYAxisLocked = false;
+
+
+    // SHAKING
+    private final Vector2 virtualPosition = new Vector2();
+    private final Timer shakeDuration = new Timer(200);
+
+    private float maxShakeOffset = 0.1f; // In world unit Max possible offset
+    private float shakeStrength = 3;
+
+    private boolean shaking = false;
+
+    private final Vector2 offset = new Vector2(); //Curent offset from real position
+    private boolean shakeDirection = false; // false = bottom_left,  true = top_right
 
 
     public GameCamera(){
@@ -100,4 +114,49 @@ public class GameCamera extends OrthographicCamera {
     }
 
 
+    public Timer getShakeDuration() {
+        return shakeDuration;
+    }
+
+
+    public boolean isShaking() {
+        return shaking;
+    }
+
+    public void setShaking(boolean shaking) {
+        this.shaking = shaking;
+    }
+
+    public float getMaxShakeOffset() {
+        return maxShakeOffset;
+    }
+
+    public void setMaxShakeOffset(int maxShakeOffset) {
+        this.maxShakeOffset = maxShakeOffset;
+    }
+
+
+    public Vector2 getOffset() {
+        return offset;
+    }
+
+    public boolean getShakeDirection() {
+        return shakeDirection;
+    }
+
+    public void setShakeDirection(boolean shakeDirection) {
+        this.shakeDirection = shakeDirection;
+    }
+
+    public Vector2 getVirtualPosition() {
+        return virtualPosition;
+    }
+
+    public float getShakeStrength() {
+        return shakeStrength;
+    }
+
+    public void setShakeStrength(float shakeStrength) {
+        this.shakeStrength = shakeStrength;
+    }
 }
