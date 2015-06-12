@@ -203,7 +203,8 @@ public class DashSystem extends EntitySystem{
         if(entityA.hasComponentEnabled(DashComponent.ID)){
             DashComponent dash = (DashComponent) entityA.getComponent(DashComponent.ID);
             if(dash.getPhase() == DashComponent.Phase.TRAVEL){
-                //dash.setPhase(DashComponent.Phase.DONE);
+                dash.setPhase(DashComponent.Phase.DECELERATION);
+
             }
         }
     }

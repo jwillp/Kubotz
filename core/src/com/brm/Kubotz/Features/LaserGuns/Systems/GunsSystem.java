@@ -65,7 +65,7 @@ public class GunsSystem extends EntitySystem {
                     MovementSystem.moveInX(bullet, gunComponent.getBulletSpeed().x  * direction);
                     MovementSystem.moveInY(bullet, gunComponent.getBulletSpeed().y);
 
-
+                    //Put playerInfo
 
                     this.fireEvent(new GunShotEvent(entity.getID()));
                     // TODO a SMAAALLL knockback when shooting

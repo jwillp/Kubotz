@@ -105,7 +105,10 @@ public class LifeBasedFreeForAll extends EntitySystem {
     public void onPlayerKill(PlayerKillEvent e){
         PlayerScoreComponent playerScores;
         playerScores = (PlayerScoreComponent) getEntityManager().getComponent(PlayerScoreComponent.ID, e.getEntityId());
-        playerScores.addKills(1);
+        if(playerScores != null)
+            playerScores.addKills(1);
+        //else it is something like a bullet that kill the player
+
     }
 
 

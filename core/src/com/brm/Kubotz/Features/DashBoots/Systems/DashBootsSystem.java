@@ -53,13 +53,14 @@ public class DashBootsSystem extends EntitySystem {
      * @param entity
      */
     private void turnDashOn(Entity entity) {
-        Logger.log("DASH ON");
         //Remove Running Component + Jumping Component //TODO maybe disabling would be more suited
-        //entity.removeComponent(RunningComponent.ID);
-        entity.getComponent(JumpComponent.ID).setEnabled(false);
+        //entity.disableComponent(RunningComponent.ID);
+        entity.disableComponent(JumpComponent.ID);
 
         // Give a Dash Component to the entity
         entity.addComponent(new DashComponent(), DashComponent.ID);
+
+
 
     }
 
@@ -78,13 +79,20 @@ public class DashBootsSystem extends EntitySystem {
                 PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
 
-                Logger.log(dashComp.getPhase());
-                // DO we need to put the entity in RECOVERY MODE?
+                //Logger.log(dashComp.getPhase());
+                // Do we need to put the entity in RECOVERY MODE?
                 // Is the entity done decelerating (last phase of dash)
                 if(dashComp.getPhase() == DashComponent.Phase.DONE){
                         phys.getBody().setGravityScale(1);
                         boots.setInRecovery(true);
                 }
+
+                if(dashComp.getPhase() == DashComponent.Phase.PREPARATION){
+                    entity.disableComponent(VirtualGamePad.ID);
+                }
+
+
+
             }
 
             if(boots.isInRecovery()){
@@ -105,6 +113,7 @@ public class DashBootsSystem extends EntitySystem {
     private void updateRecoveryPhase(Entity entity){
         DashBootsComponent boots = (DashBootsComponent)entity.getComponent(DashBootsComponent.ID);
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        entity.enableComponent(VirtualGamePad.ID);
 
 
         // The dash is Done we can remove it
