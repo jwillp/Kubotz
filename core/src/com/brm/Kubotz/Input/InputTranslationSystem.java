@@ -107,7 +107,7 @@ public class InputTranslationSystem extends EntitySystem {
     @Override
     public void handleInput(){
         //find player
-        for(Entity e: getEntityManager().getEntitiesWithComponent(VirtualGamePad.ID)){
+        for(Entity e: getEntityManager().getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
             gamePad.releaseAll(); //Release for everyone, prevents button bashing :)
 

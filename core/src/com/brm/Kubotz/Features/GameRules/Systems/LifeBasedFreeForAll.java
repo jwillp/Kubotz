@@ -3,10 +3,12 @@ package com.brm.Kubotz.Features.GameRules.Systems;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
+import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
@@ -42,7 +44,10 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
         getSystemManager().addSystem(NarratorSystem.class, new NarratorSystem());
 
-
+        // We enable all game controllers
+        for(EntityComponent comp: getEntityManager().getComponents(VirtualGamePad.ID)){
+            comp.setEnabled(false);
+        }
 
     }
 
@@ -98,6 +103,11 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
     }
 
+
+    /**
+     * Called when a player takes some damage
+     * @param e
+     */
     private void onDamageTaken(DamageTakenEvent e) {
 
         HealthComponent healthComponent;
@@ -148,6 +158,25 @@ public class LifeBasedFreeForAll extends EntitySystem {
         //else it is something like a bullet that kill the player
 
     }
+
+
+    /**
+     * Called when the game starts
+     * @param e
+     */
+    public void onGameStart(GameStartedEvent e){
+
+        // We enable all game controllers
+        for(EntityComponent comp: getEntityManager().getComponents(VirtualGamePad.ID)){
+            comp.setEnabled(true);
+        }
+
+    }
+
+
+
+
+
 
 
 

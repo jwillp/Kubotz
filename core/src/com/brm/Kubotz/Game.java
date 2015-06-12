@@ -4,13 +4,14 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.Kubotz.GameScreens.InGameScreen;
+import com.brm.Kubotz.GameScreens.LoadingScreen;
+import com.brm.Kubotz.GameScreens.TitleScreen;
 
 
 public class Game extends ApplicationAdapter {
 
 
 	private GameScreenManager screenManager;
-	private int accum;
 
 	@Override
 	public void create () {
@@ -26,7 +27,7 @@ public class Game extends ApplicationAdapter {
 		}
 		screenManager = new GameScreenManager();
 		screenManager.init();
-		screenManager.addScreen(new InGameScreen());
+		screenManager.addScreen(new TitleScreen());
 	}
 
 
