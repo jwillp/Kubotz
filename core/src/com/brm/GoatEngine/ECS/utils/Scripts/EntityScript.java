@@ -59,5 +59,5 @@ public abstract class EntityScript{
         this.isInitialized = isInitialized;
     }
 
-    public <T extends Event> void onEvent(T event){};
+    public <T extends Event> void onEvent(T event, Entity entity){};
 }

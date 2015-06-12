@@ -107,7 +107,7 @@ public class Config {
     public static float GRAVITY_X = 0.0f;
     public static float GRAVITY_Y = 50.0f;
 
-    public static final int RESPAWN_DELAY = 2000;
+    public static final int RESPAWN_DELAY = 3500;
 
 
     /**

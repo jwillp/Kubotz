@@ -12,8 +12,7 @@ import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Common.Events.StunnedFinishedEvent;
-import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
-import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
+import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.TerminatorHeadComponent;
@@ -24,7 +23,6 @@ import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Features.MagneticBoots.Components.MagneticBootsComponent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
 import com.brm.Kubotz.Input.GameButton;
@@ -49,6 +47,8 @@ public class KubotzAnimationScript extends EntityScript {
 
     public static final String HURT = "Hit";
 
+    public static final String DYING = "Dying";
+
 
 
 
@@ -65,7 +65,7 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends Event> void onEvent(T event, Entity entity) {
 
 
         //GunShot
@@ -108,6 +108,12 @@ public class KubotzAnimationScript extends EntityScript {
         }
 
 
+
+        // DEAD
+        if(event.getClass() == PlayerDeadEvent.class){
+           onPlayerDead((PlayerDeadEvent) event, entity);
+        }
+
     }
 
     @Override
@@ -118,6 +124,8 @@ public class KubotzAnimationScript extends EntityScript {
 
 
         handleRunning(entity, phys, gamePad, anim);
+
+
 
 
         this.handleCharacterMaps(entity, anim);
@@ -131,6 +139,7 @@ public class KubotzAnimationScript extends EntityScript {
             //createSwordTrail(entity);
             createHurtParticles(entity, phys);
         }
+
 
 
 
@@ -175,6 +184,16 @@ public class KubotzAnimationScript extends EntityScript {
     }
 
 
+    private void onPlayerDead(PlayerDeadEvent e, Entity entity){
+        SpriterAnimationComponent anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
+        anim.setAnimation(DYING);
+        // TODO dying Particle Effect set object alpha to 0
+        ParticleEffectComponent pe = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
+        Vector2 pos = phys.getPosition().cpy();
+        pos.y -= phys.getHeight()/2;
+        pe.addEffect(Gdx.files.internal("particles/deathDust.pe"), pos, true);
+    }
 
 
 

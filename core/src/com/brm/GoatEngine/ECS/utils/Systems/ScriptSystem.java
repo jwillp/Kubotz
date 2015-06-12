@@ -69,7 +69,7 @@ public class ScriptSystem extends EntitySystem {
                 if(event.getClass() == CollisionEvent.class){
                     script.onCollision((CollisionEvent)event); //TODO get rid of this! generify!
                 }else{
-                    script.onEvent(event);
+                    script.onEvent(event, entity);
                 }
             }
         }
