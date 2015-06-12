@@ -1,11 +1,15 @@
 package com.brm.Kubotz.Features.PowerUps.Entities;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
 import com.brm.Kubotz.Features.Grab.Components.GrabbableComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUp;
@@ -27,11 +31,15 @@ public class PowerUpFactory extends EntityFactory {
     private final World world;
 
 
+    private SpriteComponent sprite;
+
+
     public PowerUpFactory(EntityManager entityManager, World world) {
         super(entityManager);
         this.world = world;
         powerUpComponent = new PowerUpComponent(new PowerUp(null));
         lifespanComp = new LifespanComponent();
+        sprite = new SpriteComponent();
     }
 
 
@@ -42,6 +50,27 @@ public class PowerUpFactory extends EntityFactory {
      */
     public PowerUpFactory withEffect(PowerUpEffect effect){
         powerUpComponent.getPowerUp().setEffect(effect);
+        String imageFile = "entities/bonus_jump.png";
+        if(effect.getClass() == PowerUpEffect.HealthModifier.class){
+            imageFile =  "entities/bonus_health.png";
+        }
+        if(effect.getClass() == PowerUpEffect.SpeedModifier.class){
+            imageFile =  "entities/bonus_speed.png";
+        }
+        if(effect.getClass() == PowerUpEffect.JumpModifier.class){
+            imageFile =  "entities/bonus_jump.png";
+        }
+        if(effect.getClass() == PowerUpEffect.LaserGunMkIProvider.class){
+            imageFile =  "entities/bonus_gun.png";
+        }
+        if(effect.getClass() == PowerUpEffect.LaserSwordProvider.class){
+            imageFile =  "entities/bonus_laserSword.png";
+        }
+
+        sprite.setCurrentSprite(new TextureRegion(new Texture(Gdx.files.internal(imageFile))));
+
+        sprite.offsetY = 1;
+        sprite.offsetX = +0.25f;
         return this;
     }
 
@@ -79,6 +108,7 @@ public class PowerUpFactory extends EntityFactory {
 
 
 
+
     @Override
     public Entity build() {
 
@@ -92,6 +122,7 @@ public class PowerUpFactory extends EntityFactory {
 
 
         //TODO Sprite + Animation Component
+        powerUp.addComponent(sprite, SpriteComponent.ID);
 
         lifespanComp.getCounter().start();
 

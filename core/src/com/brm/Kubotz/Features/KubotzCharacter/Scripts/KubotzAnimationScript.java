@@ -366,6 +366,7 @@ public class KubotzAnimationScript extends EntityScript {
             anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_bigbuff");
         } else if(entity.hasComponent(SkullHeadComponent.ID)){
             anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_skull");
+            Logger.log(anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] );
         } else if(entity.hasComponent(TerminatorHeadComponent.ID)){
             anim.getPlayer().characterMaps[CHAR_MAP_HEAD_ID] = anim.getPlayer().getEntity().getCharacterMap("head_terminator");
         }

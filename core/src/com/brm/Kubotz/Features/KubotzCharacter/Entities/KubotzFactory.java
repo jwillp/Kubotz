@@ -129,7 +129,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
@@ -138,7 +138,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
 
         /* PUNCH Component*/
-        //character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
+        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
         //Respawn
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
@@ -157,7 +157,7 @@ public class KubotzFactory extends EntityFactory {
         scriptComponent.addScript(new KubotzAudioScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
-        character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
+        //character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
 
 
         // GRAPHICS

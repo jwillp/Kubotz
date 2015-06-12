@@ -75,7 +75,9 @@ public class RenderingSystem extends EntitySystem {
     public void update(float dt){
         this.cameraSystem.update(dt);
 
-        Gdx.gl.glClearColor(26f/255f,26f/255f,26f/255f,0);
+        //Gdx.gl.glClearColor(26f/255f,26f/255f,26f/255f,0);
+        Gdx.gl.glClearColor(0,0,0,0);
+
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
 
@@ -86,7 +88,6 @@ public class RenderingSystem extends EntitySystem {
 
         if(Config.TEXTURE_RENDERING_ENABLED){
             renderTextures(dt);
-            renderPlayerLabels();
         }
 
 
@@ -120,8 +121,13 @@ public class RenderingSystem extends EntitySystem {
         spriteBatch.setProjectionMatrix(this.getCamera().combined);
 
         //BACKGROUND
+        //shapeRenderer.rect();
+
+
+
+
         spriteBatch.begin();
-        //spriteBatch.draw(this.background,0,0, 52, 37);
+        spriteBatch.draw(this.background,0,0, 52, 37);
 
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponent(SpriterAnimationComponent.ID)){
@@ -156,8 +162,8 @@ public class RenderingSystem extends EntitySystem {
             float ratio = sprite.getCurrentSprite().getRegionWidth()/sprite.getCurrentSprite().getRegionHeight();
             float width = phys.getWidth() * 2;
             spriteBatch.draw(sprite.getCurrentSprite(),
-                    phys.getPosition().x - width,
-                    phys.getPosition().y - phys.getHeight()*4,
+                    phys.getPosition().x - width + sprite.offsetX,
+                    phys.getPosition().y - phys.getHeight()*4 + sprite.offsetY,
                     width,
                     width * ratio
 
@@ -196,9 +202,6 @@ public class RenderingSystem extends EntitySystem {
             spriteBatch.end();
         }
 
-
-
-
     }
 
 
@@ -211,7 +214,7 @@ public class RenderingSystem extends EntitySystem {
      * Renders images on top of players labeling their player ID
      * wheter P1 , P2 or CPU
      */
-    private void renderPlayerLabels() {
+    public void renderPlayerLabels() {
 
         spriteBatch.begin();
 
@@ -368,8 +371,6 @@ public class RenderingSystem extends EntitySystem {
 
 
         }
-
-
     }
 
 

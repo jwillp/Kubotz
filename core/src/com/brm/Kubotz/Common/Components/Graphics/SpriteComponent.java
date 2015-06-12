@@ -19,6 +19,9 @@ public class SpriteComponent extends EntityComponent {
     private TextureRegion currentSprite;
     private Color color = Color.WHITE;
 
+    public float offsetX = 0;
+    public float offsetY = 0;
+
     private int zIndex = 0;
 
     public TextureRegion getCurrentSprite() {

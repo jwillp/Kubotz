@@ -25,9 +25,13 @@ import com.brm.Kubotz.Common.Systems.AISystem;
 import com.brm.Kubotz.Common.Systems.AttackSystems.DamageSystem;
 import com.brm.Kubotz.Common.Systems.LifespanSystem;
 import com.brm.Kubotz.Common.Systems.PhysicsSystem;
+import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
+import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.GameRules.Systems.GameRulesSystem;
 import com.brm.Kubotz.Features.GameRules.Systems.LifeBasedFreeForAll;
+import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
+import com.brm.Kubotz.Features.MagneticBoots.Components.MagneticBootsComponent;
 import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
@@ -146,18 +150,29 @@ public class InGameScreen extends GameScreen {
 
 
             if(objType.equals("PLAYER_SPAWN")){
-                Logger.log("OK");
+                int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
+
+
                 Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();
 
-                int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
-                if(id == PlayerScoreComponent.PLAYER_1)
-                    isPlayerOneSpawned = true;
-                
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
+
+                if(id == PlayerScoreComponent.PLAYER_1){
+                    isPlayerOneSpawned = true;
+                    player.addComponent(new SkullHeadComponent(), SkullHeadComponent.ID);
+                    player.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+                }else{
+                    player.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+                }
+
+
+
+
+
 
                 Entity entity = new Entity();
                 entityManager.registerEntity(entity);
@@ -247,5 +262,11 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
         systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
         systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
+
+        // Labels
+        systemManager.getSystem(RenderingSystem.class).renderPlayerLabels();
+
+
+
     }
 }
