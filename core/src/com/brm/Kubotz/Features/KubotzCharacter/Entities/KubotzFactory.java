@@ -13,6 +13,7 @@ import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
+import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
@@ -136,7 +137,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
 
         /* PUNCH Component*/
-        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
+        //character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
         //Respawn
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
@@ -154,7 +155,7 @@ public class KubotzFactory extends EntityFactory {
         scriptComponent.addScript(new KubotzAnimationScript());
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
-
+        character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
 
 
         // GRAPHICS

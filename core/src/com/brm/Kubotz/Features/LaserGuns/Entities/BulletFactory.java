@@ -5,6 +5,7 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
@@ -12,6 +13,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.Kubotz.Common.Components.DamageComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
@@ -110,7 +112,8 @@ public class BulletFactory extends EntityFactory {
         bullet.addComponent(this.lifespanComp, LifespanComponent.ID);
 
         //Physics body
-        bullet.addComponent(this.buildBody(bullet), PhysicsComponent.ID);
+        PhysicsComponent phys = this.buildBody(bullet);
+        bullet.addComponent(phys, PhysicsComponent.ID);
 
         //Tags Component
         this.tagsComponent.addTag(Constants.ENTITY_TAG_BULLET);
@@ -119,6 +122,17 @@ public class BulletFactory extends EntityFactory {
 
         // Particle Effect
         bullet.addComponent(new ParticleEffectComponent(), ParticleEffectComponent.ID);
+
+
+        // Appearance
+        bullet.addComponent(new SpriterAnimationComponent(
+                        Spriter.newPlayer(Constants.BULLET_ANIM_FILE, "bullet"),
+                        -phys.getWidth()/2,
+                        -phys.getHeight()/2,
+                        0.005f
+                ),
+                SpriterAnimationComponent.ID
+        );
 
 
 

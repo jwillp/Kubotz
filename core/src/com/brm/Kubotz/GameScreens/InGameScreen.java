@@ -117,7 +117,7 @@ public class InGameScreen extends GameScreen {
         );
         Spriter.init(LibGdxSpriterLoader.class, LibGdxSpriterDrawer.class);
         Spriter.load(Gdx.files.internal(Constants.KUBOTZ_ANIM_FILE).read(), Constants.KUBOTZ_ANIM_FILE);
-
+        Spriter.load(Gdx.files.internal(Constants.BULLET_ANIM_FILE).read(), Constants.BULLET_ANIM_FILE);
 
 
         // MAP

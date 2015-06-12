@@ -6,6 +6,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
@@ -16,7 +17,12 @@ public class BulletGraphicsScript extends EntityScript {
 
 
     @Override
-    public void onInit(Entity entity,  EntityManager entityManager){}
+    public void onInit(Entity entity,  EntityManager entityManager){
+        SpriterAnimationComponent anim;
+        anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
+
+        anim.setAnimation("default");
+    }
 
 
     @Override

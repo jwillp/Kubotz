@@ -57,10 +57,11 @@ public class Constants {
 
 
     // RENDERING
-    public static final String KUBOTZ_ANIM_FILE = "animations/kubotz.scml";
+    public static final String KUBOTZ_ANIM_FILE = "animations/Kubotz/kubotz.scml";
+    public static final String BULLET_ANIM_FILE = "animations/Bullets/bullet.scml";
+
 
     public static final String MAIN_MAP_FILE = "maps/DebugMap.tmx";
-
 
 
 
@@ -69,15 +70,6 @@ public class Constants {
     public static final String PARTICLES_HIT_STARS = "particles/eclatRouille.pe";
     public static final String PARTICLES_LASER_SMOKE = "particles/laserSmoke.pe";
     public static final String DEATH_DUST = "particles/deathDust.pe";
-
-
-
-
-
-
-
-
-
 
 
 
