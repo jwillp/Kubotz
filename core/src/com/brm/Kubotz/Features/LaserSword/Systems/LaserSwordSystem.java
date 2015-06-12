@@ -45,8 +45,6 @@ public class LaserSwordSystem extends EntitySystem{
 
         //Triggers the punch
         if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
-            Logger.log(laserSword.getCooldown().getRemainingTime());
-            Logger.log(laserSword.getCooldown().isDone());
 
             if(laserSword.getCooldown().isDone() && laserSword.getDurationTimer().isDone() && !laserSword.isSwinging()){
                 laserSword.getDurationTimer().reset();
@@ -95,7 +93,7 @@ public class LaserSwordSystem extends EntitySystem{
      */
     private void createAttackBox(PhysicsComponent phys){
         CircleShape shape = new CircleShape();
-        shape.setRadius(phys.getWidth() * 1.5f);
+        shape.setRadius(phys.getWidth() * 2.5f);
 
         Vector2 position = null;
         switch (phys.getDirection()) {
@@ -114,6 +112,8 @@ public class LaserSwordSystem extends EntitySystem{
 
         Hitbox hitbox = new Hitbox(Hitbox.Type.Offensive, Constants.HITBOX_LABEL_MELEE);
         hitbox.damage = Config.LASER_SWORD_DAMAGE;
+        int dir = (phys.getDirection() == PhysicsComponent.Direction.LEFT) ? -1 : 1;
+        hitbox.knockback = 2 * dir;
 
 
         phys.getBody().createFixture(punchFixture).setUserData(hitbox);

@@ -33,7 +33,8 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         world.step(1 / 60f, 6, 2);
 
         // UPDATE CALLBACKS
-        for(CollisionEvent event: collisions){
+        for (int i = 0; i < collisions.size(); i++) {
+            CollisionEvent event = collisions.get(i);
             this.fireEvent(event);
         }
         collisions.clear();

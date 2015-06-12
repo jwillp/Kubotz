@@ -130,7 +130,6 @@ public class RenderingSystem extends EntitySystem {
             if(!anim.isEnabled()){
                 //anim.getPlayer().setScale(0); // Fake not draw
                 //TODO Fix this
-                Logger.log(anim.getPlayer().getScale());
 
             }else{
                 if(anim.getPlayer().getScale() == 0) {

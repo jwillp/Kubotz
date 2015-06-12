@@ -32,7 +32,7 @@ public class Hitbox{
 
     // These are public for simplicity of use
     public float damage = 0;        // The damage dealt by the hitbox
-    public float knockback = 0;     // The knockback dealt by the hitbox
+    public float knockback = 0;     // The knockback dealt by the hitbox; positive => right, negative => left
     public float angle = 0;         // The angle of the knocback
     public float freezeFrames = 0;  // The number of frames to freeze for the entities on impact
 

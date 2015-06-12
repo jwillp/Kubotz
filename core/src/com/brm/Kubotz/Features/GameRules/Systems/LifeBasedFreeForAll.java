@@ -3,10 +3,14 @@ package com.brm.Kubotz.Features.GameRules.Systems;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent;
 import com.brm.Kubotz.Features.GameRules.Events.PlayerEliminatedEvent;
 import com.brm.Kubotz.Features.GameRules.Events.PlayerKillEvent;
+import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
 
 /**
  * RULE: Players all start with a certain amount of lives.
@@ -30,12 +34,9 @@ public class LifeBasedFreeForAll extends EntitySystem {
      */
     @Override
     public void update(float dt) {
+        if(getEntityManager().getComponents(PlayerScoreComponent.ID).size() == 1){
 
-        for(Entity entity : getEntityManager().getEntitiesWithComponentEnabled(PlayerScoreComponent.ID)){
-            PlayerScoreComponent score = (PlayerScoreComponent) entity.getComponent(PlayerScoreComponent.ID);
-            if(score.getNbLives() == 0){
-                this.fireEvent(new PlayerEliminatedEvent(entity.getID()));
-            }
+            Logger.log("WE HAVE A WIIIIIINNNNER! GAME!");
         }
         // TODO Code
         // if playersNotEliminatedList.size == 1
@@ -45,7 +46,29 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
     @Override
     public <T extends Event> void onEvent(T event) {
-        super.onEvent(event);
+        if(event.getClass() == DamageTakenEvent.class){
+            onDamageTaken((DamageTakenEvent)event);
+        }
+
+        if(event.getClass() == PlayerDeadEvent.class){
+           onPlayerDead((PlayerDeadEvent)event);
+        }
+
+        if(event.getClass() == PlayerKillEvent.class){
+            onPlayerKill((PlayerKillEvent)event);
+        }
+
+    }
+
+    private void onDamageTaken(DamageTakenEvent e) {
+
+        HealthComponent healthComponent;
+        healthComponent = (HealthComponent) getEntityManager().getEntity(e.getEntityId()).getComponent(HealthComponent.ID);
+
+        if(healthComponent.isDead()){
+            fireEvent(new PlayerDeadEvent(e.getEntityId()));
+            fireEvent(new PlayerKillEvent(e.getAttackerId()));
+        }
     }
 
     /**
@@ -55,7 +78,23 @@ public class LifeBasedFreeForAll extends EntitySystem {
     public void onPlayerDead(PlayerDeadEvent e){
         PlayerScoreComponent playerScores;
         playerScores = (PlayerScoreComponent) getEntityManager().getComponent(PlayerScoreComponent.ID, e.getEntityId());
+
         playerScores.addDeath(1);
+        Logger.log("DEAD!" + String.valueOf(playerScores.getNbLives()));
+
+
+        if(playerScores.getNbLives() == 0){
+
+            Entity entity = getEntityManager().getEntity(e.getEntityId());
+            // TODO remove the respawn component
+            entity.removeComponent(RespawnComponent.ID);
+
+            getEntityManager().deleteEntity(entity.getID());
+
+            this.fireEvent(new PlayerEliminatedEvent(entity.getID()));
+        }
+
+
     }
 
 

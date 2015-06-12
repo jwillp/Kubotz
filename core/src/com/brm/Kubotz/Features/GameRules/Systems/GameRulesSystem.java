@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
  */
 public class GameRulesSystem extends EntitySystem {
 
-    public EntitySystem activeRuleSystem;   // The active game rule chosen by the player
+    private EntitySystem activeRuleSystem;   // The active game rule chosen by the player
 
 
     /**
@@ -26,18 +26,17 @@ public class GameRulesSystem extends EntitySystem {
     @Override
     public void update(float dt) {
 
-
+        this.activeRuleSystem.update(dt);
 
     }
 
 
+    public EntitySystem getActiveRuleSystem() {
+        return activeRuleSystem;
+    }
 
-
-
-
-
-
-
-
+    public <T extends EntitySystem> void setActiveRuleSystem(Class<T> className, EntitySystem activeRuleSystem) {
+        this.activeRuleSystem = activeRuleSystem;
+        this.getSystemManager().addSystem(className, activeRuleSystem);
+    }
 }
-

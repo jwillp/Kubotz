@@ -40,7 +40,6 @@ public class DashBootsSystem extends EntitySystem {
                 if(up || down || left || right) {
                     //Can we Dash?
                     if(!entity.hasComponent(DashComponent.ID)) {
-                        Logger.log(boots.getCooldown().isDone() + " " + boots.getCooldown().getDelay());
                         if (boots.getCooldown().isDone())
                             turnDashOn(entity);
                     }

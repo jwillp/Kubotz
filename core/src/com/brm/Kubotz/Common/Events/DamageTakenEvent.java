@@ -8,12 +8,19 @@ import com.brm.GoatEngine.Utils.Logger;
  */
 public class DamageTakenEvent extends Event{
 
+    private String attackerId;
+
     /**
      * The entity who took the damage
-     * @param entityId
+     * @param entityId the entity taking the damage
+     * @param attackerId the entity dealing the damage
      */
-    public DamageTakenEvent(String entityId) {
+    public DamageTakenEvent(String entityId, String attackerId) {
         super(entityId);
-        Logger.log("DAMAGE TAKEN");
+        this.attackerId = attackerId;
+    }
+
+    public String getAttackerId() {
+        return attackerId;
     }
 }

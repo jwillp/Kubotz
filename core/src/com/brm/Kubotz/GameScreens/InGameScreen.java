@@ -25,6 +25,8 @@ import com.brm.Kubotz.Common.Systems.AttackSystems.DamageSystem;
 import com.brm.Kubotz.Common.Systems.LifespanSystem;
 import com.brm.Kubotz.Common.Systems.PhysicsSystem;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
+import com.brm.Kubotz.Features.GameRules.Systems.GameRulesSystem;
+import com.brm.Kubotz.Features.GameRules.Systems.LifeBasedFreeForAll;
 import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
@@ -91,8 +93,16 @@ public class InGameScreen extends GameScreen {
 
         systemManager.addSystem(RespawnSystem.class, new RespawnSystem());
 
-
         systemManager.addSystem(AISystem.class, new AISystem());
+
+
+        // LIFE BASED FREE FOR ALL
+        systemManager.addSystem(GameRulesSystem.class, new GameRulesSystem());
+        systemManager.getSystem(GameRulesSystem.class).setActiveRuleSystem(LifeBasedFreeForAll.class, new LifeBasedFreeForAll());
+
+
+
+
 
 
         //INIT SYSTEMS
@@ -229,6 +239,11 @@ public class InGameScreen extends GameScreen {
 
 
         systemManager.getSystem(RespawnSystem.class).update(deltaTime);
+
+
+        systemManager.getSystem(GameRulesSystem.class).update(deltaTime);
+
+
     }
 
     @Override

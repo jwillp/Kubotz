@@ -5,7 +5,10 @@ import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.GameMath;
+import com.brm.Kubotz.Common.Components.StunnedComponent;
+import com.brm.Kubotz.Common.Events.ClashEvent;
 import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
@@ -29,6 +32,18 @@ public class DamageSystem extends EntitySystem{
     @Override
     public void update(float dt){
         // TODO ON GOING DAMAGE ? LIKE BURNING
+
+
+        //STUNNED ENTITIES
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(StunnedComponent.ID)){
+            StunnedComponent stunnedComponent = (StunnedComponent) entity.getComponent(StunnedComponent.ID);
+            if(stunnedComponent.getDuration().isDone()){
+                entity.removeComponent(StunnedComponent.ID);
+                entity.enableComponent(VirtualGamePad.ID);
+            }
+
+        }
+
     }
 
 
@@ -40,8 +55,6 @@ public class DamageSystem extends EntitySystem{
             onCollision((CollisionEvent) event);
         }
 
-
-
     }
 
     private void onCollision(CollisionEvent event) {
@@ -50,9 +63,20 @@ public class DamageSystem extends EntitySystem{
             return;
         }
         if(hitboxA.type == Hitbox.Type.Offensive){
+            if(event.getEntityB() == null){
+                return;
+            }
+
             Hitbox hitboxB = (Hitbox) event.getFixtureB().getUserData();
             TakeDamageEvent tkDmgEv;
-            tkDmgEv = new TakeDamageEvent(event.getEntityB().getID(), hitboxB, event.getEntityA().getID(), hitboxA);
+
+            tkDmgEv = new TakeDamageEvent(event.getEntityB().getID(),
+                    hitboxB,
+                    event.getEntityA().getID(),
+                    hitboxA,
+                    hitboxA.knockback
+            );
+
             this.fireEvent(tkDmgEv);
         }
     }
@@ -68,6 +92,11 @@ public class DamageSystem extends EntitySystem{
         Entity targetEntity = getEntityManager().getEntity(e.getEntityId());
         Entity damagerEntity = getEntityManager().getEntity(e.getDamagerId());
 
+        //We cant hit stunned entities
+        if(targetEntity.hasComponentEnabled(StunnedComponent.ID)){
+            return;
+        }
+
         //We take for granted that, the damager Hitbox is of type Offensive
 
         //Offensive + Offensive
@@ -75,6 +104,7 @@ public class DamageSystem extends EntitySystem{
             if(GameMath.isMoreOrLess(e.getTargetHitbox().damage, e.getDamagerHitbox().damage, Constants.CLASH_THRESHOLD)){
                  // THERE IS A CLASH (NOT DAMAGE WILL BE TAKEN)
                 //TODO SEND an Clash Event
+                fireEvent(new ClashEvent(e.getEntityId(), e.getDamagerId()));
                 return;
             }
             //TODO decide if do the same as Damageable box OR diminish the lowest attack to the greatest (as a form of resistance)
@@ -92,8 +122,12 @@ public class DamageSystem extends EntitySystem{
             phys.getBody().applyLinearImpulse(e.getKnockback(), 0, 0, 0, true);
 
 
+            //Stun the other player for a few seconds
+            targetEntity.addComponent(new StunnedComponent(), StunnedComponent.ID);
+            targetEntity.disableComponent(VirtualGamePad.ID);
+
             //Fire the Event
-            this.fireEvent(new DamageTakenEvent(e.getEntityId()));
+            this.fireEvent(new DamageTakenEvent(e.getEntityId(), e.getDamagerId()));
         }
 
         // Offensive + Shield
@@ -102,9 +136,11 @@ public class DamageSystem extends EntitySystem{
             EnergeticShieldComponent shield = (EnergeticShieldComponent) targetEntity.getComponent(EnergeticShieldComponent.ID);
             shield.takeDamage(e.getDamagerHitbox().damage);
 
-            // HALF knocback applied //TODO move apply kockback in a separate function
+            // HALF knockback applied //TODO move apply kockback in a separate function
             PhysicsComponent phys = (PhysicsComponent) targetEntity.getComponent(PhysicsComponent.ID);
             phys.getBody().applyLinearImpulse(e.getKnockback()/2, 0, 0, 0, true);
+
+
         }
     }
 

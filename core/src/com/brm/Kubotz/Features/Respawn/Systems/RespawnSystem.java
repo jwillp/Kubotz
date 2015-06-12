@@ -159,7 +159,6 @@ public class RespawnSystem extends EntitySystem {
         pos.x = MathUtils.random(pos.x-0.1f, pos.x+0.1f);
         pos.y = MathUtils.random(pos.y-0.1f, pos.y+0.1f);
 
-        Logger.log(pos);
 
         return pos;
     }
