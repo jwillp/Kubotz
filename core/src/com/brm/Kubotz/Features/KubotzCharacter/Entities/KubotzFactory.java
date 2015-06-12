@@ -9,6 +9,7 @@ import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Components.*;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
@@ -126,7 +127,7 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
 
         /* DASH Component */
-        //character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+        character.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
 
         /* MAGNETIC FEET */
         //character.addComponent(new MagneticBootsComponent(), MagneticBootsComponent.ID);
@@ -135,12 +136,11 @@ public class KubotzFactory extends EntityFactory {
         //character.addComponent(new DroneGauntletComponent(), DroneGauntletComponent.ID);
 
         /* PUNCH Component*/
-        //character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
+        character.addComponent(new MeleeComponent(physics), MeleeComponent.ID);
 
         //Respawn
         character.addComponent(new RespawnComponent(), RespawnComponent.ID);
 
-        character.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
 
         //GRAB
         character.addComponent(new GrabComponent(), GrabComponent.ID);

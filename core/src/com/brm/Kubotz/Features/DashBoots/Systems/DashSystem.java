@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.Vectors;
 import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
+import com.brm.Kubotz.Features.DashBoots.Events.DashPhaseChangeEvent;
 import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 
@@ -93,6 +94,7 @@ public class DashSystem extends EntitySystem{
                     updateDecelerationPhase(entity);
                 }else if(dashComp.getPhase() == DashComponent.Phase.DONE){
                     dashComp.setPhase(DashComponent.Phase.NONE); //Reset
+                    fireEvent(new DashPhaseChangeEvent(entity.getID(), DashComponent.Phase.NONE));
                 }
 
             }
@@ -114,6 +116,8 @@ public class DashSystem extends EntitySystem{
             dashComp.getTravelDuration().reset();
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             phys.getBody().setGravityScale(0);
+
+            fireEvent(new DashPhaseChangeEvent(entity.getID(), DashComponent.Phase.TRAVEL));
         }else{
             MovementSystem.stopXY(entity);
         }
@@ -131,6 +135,7 @@ public class DashSystem extends EntitySystem{
         // Do we need to disable?
         if (Vectors.euclideanDistance(phys.getPosition(), dashComp.getStartPosition()) >= dashComp.getDistance().x || dashComp.getTravelDuration().isDone()) {
             dashComp.setPhase(DashComponent.Phase.DECELERATION);
+            fireEvent(new DashPhaseChangeEvent(entity.getID(), DashComponent.Phase.DECELERATION));
         }else{
             Vector2 velocity = new Vector2();
             velocity.x = dashComp.getDirection().x * (phys.getVelocity().x + dashComp.getSpeed().x) * Gdx.graphics.getDeltaTime();
@@ -174,6 +179,7 @@ public class DashSystem extends EntitySystem{
             dashComp.getDirection().set(0, 0);
             phys.getBody().setGravityScale(1);
             dashComp.setPhase(DashComponent.Phase.DONE);
+            fireEvent(new DashPhaseChangeEvent(entity.getID(), DashComponent.Phase.DONE));
         }
 
     }

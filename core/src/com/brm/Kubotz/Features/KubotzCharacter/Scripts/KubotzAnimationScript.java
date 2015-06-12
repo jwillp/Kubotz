@@ -12,6 +12,8 @@ import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Common.Events.StunnedFinishedEvent;
+import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
+import com.brm.Kubotz.Features.DashBoots.Events.DashPhaseChangeEvent;
 import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
@@ -25,6 +27,7 @@ import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
+import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -48,6 +51,12 @@ public class KubotzAnimationScript extends EntityScript {
     public static final String HURT = "Hit";
 
     public static final String DYING = "Dying";
+
+    public static final String DASH_BEGIN = "Dash_begin";
+    public static final String DASH_DASHIN = "Dash_dashin";
+
+
+
 
 
 
@@ -114,7 +123,22 @@ public class KubotzAnimationScript extends EntityScript {
            onPlayerDead((PlayerDeadEvent) event, entity);
         }
 
+
+        //DASH
+        if(event.getClass() == DashPhaseChangeEvent.class){
+            onDash((DashPhaseChangeEvent)event, entity);
+        }
+
+
+
+
+
+
+
+
     }
+
+
 
     @Override
     public void onUpdate(Entity entity, EntityManager entityManager) {
@@ -178,12 +202,19 @@ public class KubotzAnimationScript extends EntityScript {
     }
 
 
-
+    /**
+     * Called when the entity takes some damage
+     * @param e
+     */
     private void onDamageTaken(DamageTakenEvent e){
         currentState = HURT;
     }
 
-
+    /**
+     * Called when the player dies
+     * @param e
+     * @param entity
+     */
     private void onPlayerDead(PlayerDeadEvent e, Entity entity){
         SpriterAnimationComponent anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
@@ -196,7 +227,26 @@ public class KubotzAnimationScript extends EntityScript {
     }
 
 
+    /**
+     * Called when there is a change in the dash comp
+     * @param e
+     * @param entity
+     */
+    private void onDash(DashPhaseChangeEvent e, Entity entity) {
+        SpriterAnimationComponent anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
+        switch (e.getPhase()) {
+            case PREPARATION:
+                currentState = DASH_BEGIN;
+                break;
+            case TRAVEL:
+                currentState = DASH_DASHIN;
+                break;
 
+            case DONE:
+                currentState = DEFAULT;
+                break;
+        }
+    }
 
 
 
@@ -325,7 +375,6 @@ public class KubotzAnimationScript extends EntityScript {
         }else if(entity.hasComponent(DashBootsComponent.ID)){
             anim.getPlayer().characterMaps[CHAR_MAP_BOOTS_ID] = anim.getPlayer().getEntity().getCharacterMap("boots_dash");
         }*/
-
 
 
     }
