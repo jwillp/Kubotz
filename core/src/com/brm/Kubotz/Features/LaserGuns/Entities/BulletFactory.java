@@ -1,5 +1,8 @@
 package com.brm.Kubotz.Features.LaserGuns.Entities;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
@@ -13,6 +16,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.Kubotz.Common.Components.DamageComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
@@ -125,14 +129,9 @@ public class BulletFactory extends EntityFactory {
 
 
         // Appearance
-        bullet.addComponent(new SpriterAnimationComponent(
-                        Spriter.newPlayer(Constants.BULLET_ANIM_FILE, "bullet"),
-                        -phys.getWidth()/2,
-                        -phys.getHeight()/2,
-                        0.005f
-                ),
-                SpriterAnimationComponent.ID
-        );
+        SpriteComponent sprite = new SpriteComponent();
+        sprite.setCurrentSprite(new TextureRegion(new Texture(Gdx.files.internal("entities/bullet.png"))));
+        bullet.addComponent(sprite, SpriteComponent.ID);
 
 
 

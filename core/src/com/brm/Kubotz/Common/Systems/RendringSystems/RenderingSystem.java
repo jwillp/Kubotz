@@ -18,6 +18,7 @@ import com.brm.GoatEngine.Utils.GParticleEffect;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Config;
@@ -133,7 +134,7 @@ public class RenderingSystem extends EntitySystem {
 
             }else{
                 if(anim.getPlayer().getScale() == 0) {
-                    anim.getPlayer().setScale(1); //In case the scale was 0
+                    //anim.getPlayer().setScale(1); //In case the scale was 0
                 }
 
                 //float scale = phys.getHeight()/anim.getPlayer().get
@@ -144,13 +145,24 @@ public class RenderingSystem extends EntitySystem {
                 anim.getPlayer().setAngle(phys.getBody().getAngle());
                 anim.getPlayer().setScale(anim.getScale());
             }
-
-
-
-
-
         }
         Spriter.draw();
+
+        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriteComponent.ID)){
+            SpriteComponent sprite = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+
+
+            float ratio = sprite.getCurrentSprite().getRegionWidth()/sprite.getCurrentSprite().getRegionHeight();
+            float width = phys.getWidth() * 2;
+            spriteBatch.draw(sprite.getCurrentSprite(),
+                    phys.getPosition().x - width,
+                    phys.getPosition().y - phys.getHeight()*4,
+                    width,
+                    width * ratio
+
+            );
+        }
 
 
 

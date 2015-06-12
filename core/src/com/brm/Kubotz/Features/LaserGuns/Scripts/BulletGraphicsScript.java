@@ -6,6 +6,7 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
+import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
@@ -18,20 +19,28 @@ public class BulletGraphicsScript extends EntityScript {
 
     @Override
     public void onInit(Entity entity,  EntityManager entityManager){
-        SpriterAnimationComponent anim;
-        anim = (SpriterAnimationComponent) entity.getComponent(SpriterAnimationComponent.ID);
 
-        anim.setAnimation("default");
     }
 
 
     @Override
     public void onCollision(CollisionEvent contact, Entity entity) {
         addSmokeEffect(entity);
+        entity.disableComponent(SpriteComponent.ID);
     }
 
     @Override
-    public void onUpdate(Entity entity, EntityManager entityManager){}
+    public void onUpdate(Entity entity, EntityManager entityManager){
+
+        SpriteComponent sprite = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+
+        //RIGHT
+        if(phys.getVelocity().x > 0){
+            sprite.getCurrentSprite().flip(true, false);
+        }
+
+    }
 
 
     /**
@@ -42,6 +51,8 @@ public class BulletGraphicsScript extends EntityScript {
         PhysicsComponent phys = (PhysicsComponent) bullet.getComponent(PhysicsComponent.ID);
         ParticleEffectComponent pe = (ParticleEffectComponent) bullet.getComponent(ParticleEffectComponent.ID);
         // New Smoke effect
+
+
 
         if(pe.getEffects().size() <= 2){
             pe.addEffect(
