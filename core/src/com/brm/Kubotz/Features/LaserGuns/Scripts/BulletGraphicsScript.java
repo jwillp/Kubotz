@@ -20,8 +20,8 @@ public class BulletGraphicsScript extends EntityScript {
 
 
     @Override
-    public void onCollision(CollisionEvent contact) {
-        addSmokeEffect(contact.getEntityA());
+    public void onCollision(CollisionEvent contact, Entity entity) {
+        addSmokeEffect(entity);
     }
 
     @Override

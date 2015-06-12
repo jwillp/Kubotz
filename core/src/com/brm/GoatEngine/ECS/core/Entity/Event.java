@@ -16,4 +16,12 @@ public abstract class Event {
     public String getEntityId() {
         return entityId;
     }
+
+
+
+    public <T extends Event> boolean isOfType(Class<T> type){
+        return this.getClass() == type;
+    }
+
+
 }

@@ -59,7 +59,7 @@ public class DroneBehaviourScript extends EntityScript {
 
 
     @Override
-    public void onCollision(CollisionEvent contact) {
+    public void onCollision(CollisionEvent contact, Entity entity) {
 
     }
 

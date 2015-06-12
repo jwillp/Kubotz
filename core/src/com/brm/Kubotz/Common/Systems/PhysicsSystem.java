@@ -3,6 +3,7 @@ package com.brm.Kubotz.Common.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
@@ -53,11 +54,30 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
+
+        Entity entityA = (Entity) fixtureA.getBody().getUserData();
+        Entity entityB = (Entity) fixtureB.getBody().getUserData();
+
+
+
+
         if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
-            this.collisions.add(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.BEGIN));
+            this.collisions.add(new CollisionEvent(
+                            entityA.getID(),
+                            fixtureA,
+                            entityB.getID(),
+                            fixtureB,
+                            CollisionEvent.Describer.BEGIN)
+            );
         }
         if(fixtureB.getUserData() != null && fixtureB.getBody().getUserData() != null) {
-            this.collisions.add(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.BEGIN));
+            this.collisions.add(new CollisionEvent(
+                            entityB.getID(),
+                            fixtureB,
+                            entityA.getID(),
+                            fixtureA,
+                            CollisionEvent.Describer.BEGIN)
+            );
         }
 
 
@@ -74,11 +94,30 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
         Fixture fixtureA = contact.getFixtureA();
         Fixture fixtureB = contact.getFixtureB();
+
+        Entity entityA = (Entity) fixtureA.getBody().getUserData();
+        Entity entityB = (Entity) fixtureB.getBody().getUserData();
+
+
+
+
         if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
-            this.collisions.add(new CollisionEvent(fixtureA, fixtureB, CollisionEvent.Describer.END));
+            this.collisions.add(new CollisionEvent(
+                            entityA.getID(),
+                            fixtureA,
+                            entityB.getID(),
+                            fixtureB,
+                            CollisionEvent.Describer.END)
+            );
         }
         if(fixtureB.getUserData() != null && fixtureB.getBody().getUserData() != null) {
-            this.collisions.add(new CollisionEvent(fixtureB, fixtureA, CollisionEvent.Describer.END));
+            this.collisions.add(new CollisionEvent(
+                            entityB.getID(),
+                            fixtureB,
+                            entityA.getID(),
+                            fixtureA,
+                            CollisionEvent.Describer.END)
+            );
         }
     }
 

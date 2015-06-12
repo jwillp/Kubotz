@@ -40,8 +40,9 @@ public abstract class EntityScript{
      * Called when a collision occurs between two entities. This will be called as long as
      * two entities touch
      * @param contact
+     * @param entity
      */
-    public void onCollision(CollisionEvent contact){
+    public void onCollision(CollisionEvent contact, Entity entity){
 
     }
 

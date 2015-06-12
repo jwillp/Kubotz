@@ -67,7 +67,7 @@ public class ScriptSystem extends EntitySystem {
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(EntityScript script: scripts.getScripts()){
                 if(event.getClass() == CollisionEvent.class){
-                    script.onCollision((CollisionEvent)event); //TODO get rid of this! generify!
+                    script.onCollision((CollisionEvent)event, entity); //TODO get rid of this! generify!
                 }else{
                     script.onEvent(event, entity);
                 }

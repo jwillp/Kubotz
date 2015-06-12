@@ -69,9 +69,9 @@ public class DamageSystem extends EntitySystem{
             Hitbox hitboxB = (Hitbox) event.getFixtureB().getUserData();
             TakeDamageEvent tkDmgEv;
 
-            tkDmgEv = new TakeDamageEvent(event.getEntityB().getID(),
+            tkDmgEv = new TakeDamageEvent(event.getEntityB(),
                     hitboxB,
-                    event.getEntityA().getID(),
+                    event.getEntityA(),
                     hitboxA,
                     hitboxA.knockback
             );

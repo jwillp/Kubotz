@@ -17,6 +17,9 @@ public class CollisionEvent extends Event {
     private final Fixture fixtureB;
     private final Describer describer;
 
+    private final String entityA;
+    private final String entityB;
+
 
 
     public enum Describer{
@@ -24,10 +27,14 @@ public class CollisionEvent extends Event {
         END,   //When a contact no longer occurs
     }
 
-    public CollisionEvent(Fixture fixtureA, Fixture fixtureB, Describer describer){
+    public CollisionEvent(String entityA, Fixture fixtureA, String entityB, Fixture fixtureB, Describer describer){
         super((String)((Entity)fixtureA.getBody().getUserData()).getID());
+        this.entityA = entityA;
         this.fixtureA = fixtureA;
+
+        this.entityB = entityB;
         this.fixtureB = fixtureB;
+
         this.describer = describer;
     }
 
@@ -43,16 +50,16 @@ public class CollisionEvent extends Event {
      * Returns the entity A
      * @return
      */
-    public Entity getEntityA(){
-        return (Entity) this.fixtureA.getBody().getUserData();
+    public String getEntityA(){
+        return entityA;
     }
 
     /**
      * Returns the entity B
      * @return
      */
-    public Entity getEntityB(){
-        return (Entity) this.fixtureB.getBody().getUserData();
+    public String getEntityB(){
+        return entityB;
     }
 
     /**

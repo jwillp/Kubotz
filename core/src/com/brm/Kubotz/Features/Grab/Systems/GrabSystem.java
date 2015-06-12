@@ -115,9 +115,11 @@ public class GrabSystem extends EntitySystem{
     private void onCollision(CollisionEvent contact){
         if(contact.getDescriber() == CollisionEvent.Describer.BEGIN){
             if(contact.getEntityA() != null && contact.getEntityB() != null){
+                Entity entityA = getEntityManager().getEntity(contact.getEntityA());
+                Entity entityB = getEntityManager().getEntity(contact.getEntityB());
                 Hitbox hitbox = (Hitbox) contact.getFixtureA().getUserData();
                 if(hitbox.type == Hitbox.Type.Grab){
-                    this.pickupObject(contact.getEntityA(), contact.getEntityB());
+                    this.pickupObject(entityA, entityB);
                 }
             }
         }

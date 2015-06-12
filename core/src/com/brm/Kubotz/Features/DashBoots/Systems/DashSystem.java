@@ -2,11 +2,14 @@ package com.brm.Kubotz.Features.DashBoots.Systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
+import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Math.Vectors;
+import com.brm.Kubotz.Common.Events.CollisionEvent;
 import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
 import com.brm.Kubotz.Features.DashBoots.Events.DashPhaseChangeEvent;
 import com.brm.Kubotz.Input.GameButton;
@@ -185,9 +188,24 @@ public class DashSystem extends EntitySystem{
     }
 
 
+    @Override
+    public <T extends Event> void onEvent(T event) {
+        if(event.isOfType(CollisionEvent.class)){
+            this.onCollision((CollisionEvent) event);
+        }
+    }
 
 
 
 
+    public void onCollision(CollisionEvent e){
+        Entity entityA = getEntityManager().getEntity(e.getEntityA());
+        if(entityA.hasComponentEnabled(DashComponent.ID)){
+            DashComponent dash = (DashComponent) entityA.getComponent(DashComponent.ID);
+            if(dash.getPhase() == DashComponent.Phase.TRAVEL){
+                //dash.setPhase(DashComponent.Phase.DONE);
+            }
+        }
+    }
 
 }

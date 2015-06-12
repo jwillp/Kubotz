@@ -116,12 +116,13 @@ public class GunsSystem extends EntitySystem {
      */
     private void onCollision(CollisionEvent collision){
         if(collision.getEntityA() != null) {
-            if (collision.getEntityA().hasComponent(TagsComponent.ID)) {
-                TagsComponent tags = (TagsComponent) collision.getEntityA().getComponent(TagsComponent.ID);
+            Entity entityA = getEntityManager().getEntity(collision.getEntityA());
+            if (entityA.hasComponent(TagsComponent.ID)) {
+                TagsComponent tags = (TagsComponent) entityA.getComponent(TagsComponent.ID);
                 if (tags.hasTag(Constants.ENTITY_TAG_BULLET)) {
                     Hitbox hitboxB = (Hitbox) collision.getFixtureB().getUserData();
                     if(hitboxB.type != Hitbox.Type.Intangible){
-                        PhysicsComponent phys = (PhysicsComponent) collision.getEntityA().getComponent(PhysicsComponent.ID);
+                        PhysicsComponent phys = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
                         phys.getBody().setActive(false);
                     }
                 }
