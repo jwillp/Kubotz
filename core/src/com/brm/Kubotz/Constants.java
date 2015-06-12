@@ -66,7 +66,7 @@ public class Constants {
 
     // PARTICLE
     public static final String PARTICLES_LANDING_DUST = "particles/landingDust.pe";
-    public static final String PARTICLES_HIT_STARS = "particles/stars.pe";
+    public static final String PARTICLES_HIT_STARS = "particles/eclatRouille.pe";
     public static final String PARTICLES_LASER_SMOKE = "particles/laserSmoke.pe";
 
 

@@ -8,12 +8,9 @@ import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.Kubotz.Common.Components.StunnedComponent;
-import com.brm.Kubotz.Common.Events.ClashEvent;
+import com.brm.Kubotz.Common.Events.*;
 import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Common.Events.CollisionEvent;
-import com.brm.Kubotz.Common.Events.DamageTakenEvent;
-import com.brm.Kubotz.Common.Events.TakeDamageEvent;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 /**
@@ -40,6 +37,8 @@ public class DamageSystem extends EntitySystem{
             if(stunnedComponent.getDuration().isDone()){
                 entity.removeComponent(StunnedComponent.ID);
                 entity.enableComponent(VirtualGamePad.ID);
+
+                fireEvent(new StunnedFinishedEvent(entity.getID()));
             }
 
         }

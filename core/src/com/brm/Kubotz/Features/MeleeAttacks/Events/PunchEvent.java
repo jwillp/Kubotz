@@ -10,7 +10,7 @@ public class PunchEvent extends Event {
      *
      * @param entityId the entity punching
      */
-    protected PunchEvent(String entityId) {
+    public PunchEvent(String entityId) {
         super(entityId);
     }
 }

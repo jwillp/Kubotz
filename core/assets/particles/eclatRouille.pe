@@ -63,7 +63,7 @@ timeline0: 0.0
 lowMin: 0.01
 lowMax: 0.01
 highMin: 0.02
-highMax: 1.0
+highMax: 0.5
 relative: false
 scalingCount: 3
 scaling0: 1.0
@@ -213,7 +213,7 @@ timeline0: 0.0
 lowMin: 0.01
 lowMax: 0.01
 highMin: 0.02
-highMax: 1.0
+highMax: 0.5
 relative: false
 scalingCount: 3
 scaling0: 1.0
@@ -363,7 +363,7 @@ timeline0: 0.0
 lowMin: 0.01
 lowMax: 0.01
 highMin: 0.02
-highMax: 1.0
+highMax: 0.5
 relative: false
 scalingCount: 3
 scaling0: 1.0

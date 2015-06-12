@@ -11,6 +11,9 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
+import com.brm.Kubotz.Common.Events.StunnedFinishedEvent;
+import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
+import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.TerminatorHeadComponent;
@@ -21,6 +24,8 @@ import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Features.MagneticBoots.Components.MagneticBootsComponent;
+import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -42,7 +47,7 @@ public class KubotzAnimationScript extends EntityScript {
     public static final String SHOOTING = "Shooting";
     public static final String SWORD_SLASH = "Sword_slash1";
 
-    public static final String HURT = "HURT";
+    public static final String HURT = "Hit";
 
 
 
@@ -70,6 +75,7 @@ public class KubotzAnimationScript extends EntityScript {
         }
         if(event.getClass() == FinishGunShotEvent.class){
             currentState = DEFAULT;
+            return;
         }
 
         //SwordSwing
@@ -79,17 +85,27 @@ public class KubotzAnimationScript extends EntityScript {
         }
         if(event.getClass() == FinishSwordSwingEvent.class){
             currentState = DEFAULT;
+            return;
         }
-
-
 
         //Punches
         if(event.getClass() == PunchEvent.class){
             onPunch((PunchEvent) event);
             return;
         }
+        if(event.getClass() == FinishPunchEvent.class){
+            currentState = DEFAULT;
+            return;
+        }
 
-
+        //STUNNED HIT HURT
+        if(event.getClass() == DamageTakenEvent.class){
+            onDamageTaken((DamageTakenEvent) event);
+            return;
+        }
+        if(event.getClass() == StunnedFinishedEvent.class){
+            currentState = DEFAULT;
+        }
 
 
     }
@@ -157,6 +173,15 @@ public class KubotzAnimationScript extends EntityScript {
     private void onDamageTaken(DamageTakenEvent e){
         currentState = HURT;
     }
+
+
+
+
+
+
+
+
+
 
 
     /**
@@ -273,7 +298,16 @@ public class KubotzAnimationScript extends EntityScript {
             anim.getPlayer().characterMaps[CHAR_MAP_ARM_ID] = anim.getPlayer().getEntity().getCharacterMap("weapon_laserGunMkI");
         }
         
-        // BOOTS
+        // BOOTS //TODO complete!
+        /*if(entity.hasComponentEnabled(FlyingBootsComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_BOOTS_ID] = anim.getPlayer().getEntity().getCharacterMap("boots_fly");
+        }else if(entity.hasComponent(MagneticBootsComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_BOOTS_ID] = anim.getPlayer().getEntity().getCharacterMap("boots_magnetic");
+        }else if(entity.hasComponent(DashBootsComponent.ID)){
+            anim.getPlayer().characterMaps[CHAR_MAP_BOOTS_ID] = anim.getPlayer().getEntity().getCharacterMap("boots_dash");
+        }*/
+
+
 
     }
 
@@ -294,8 +328,7 @@ public class KubotzAnimationScript extends EntityScript {
     private void createHurtParticles(Entity entity, PhysicsComponent phys){
         ParticleEffectComponent pef = (ParticleEffectComponent) entity.getComponent(ParticleEffectComponent.ID);
         Vector2 pos = phys.getPosition().cpy();
-        pos.y -= phys.getHeight();
-        pef.addEffect(Gdx.files.internal(Constants.PARTICLES_LANDING_DUST), pos);
+        pef.addEffect(Gdx.files.internal(Constants.PARTICLES_HIT_STARS), pos);
     }
 
 

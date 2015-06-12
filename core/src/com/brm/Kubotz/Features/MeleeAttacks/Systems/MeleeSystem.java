@@ -12,6 +12,8 @@ import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent;
+import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -48,6 +50,7 @@ public class MeleeSystem extends EntitySystem{
                 createAttackBox(phys);
                 meleeComponent.setAttacking(true);
                 // TODO FIRE EVENT FOR PUNCHING
+                fireEvent(new PunchEvent(entity.getID()));
             }
         }
     }
@@ -64,6 +67,7 @@ public class MeleeSystem extends EntitySystem{
                     meleeComponent.getCooldown().reset();
                     removeAttackBox((PhysicsComponent) entity.getComponent(PhysicsComponent.ID));
                     meleeComponent.setAttacking(false);
+                    fireEvent(new FinishPunchEvent(entity.getID()));
                 }
             }
         }
