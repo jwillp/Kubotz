@@ -116,8 +116,11 @@ public class InputManager implements InputProcessor{
     }
 
 
+    public GameControllerManager getGameControllerManager() {
+        return gameControllerManager;
+    }
 
-
-
-
+    public KeyboardInputManager getKeyboardInputManager() {
+        return keyboardInputManager;
+    }
 }

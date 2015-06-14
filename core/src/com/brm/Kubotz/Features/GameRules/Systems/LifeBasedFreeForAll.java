@@ -38,9 +38,9 @@ public class LifeBasedFreeForAll extends EntitySystem {
     @Override
     public void init(){
 
-        /*Music music = Gdx.audio.newMusic(Gdx.files.internal("audio/TechnoTheme.ogg"));
+        Music music = Gdx.audio.newMusic(Gdx.files.internal("audio/TechnoTheme.ogg"));
         music.setLooping(true);
-        music.play();*/
+        music.play();
 
         getSystemManager().addSystem(NarratorSystem.class, new NarratorSystem());
 

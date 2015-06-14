@@ -1,6 +1,6 @@
 package com.brm.GoatEngine;
 
-import com.brm.GoatEngine.ScreenManager.GameScreen;
+import com.brm.Kubotz.GameScreens.TitleScreen;
 import com.strongjoshua.console.CommandExecutor;
 
 /**
@@ -18,7 +18,7 @@ public class ScriptCommandExecutor extends CommandExecutor {
 
 
     /**
-     * Pauses the game screen amanger
+     * Pauses the game screen manager
      */
     public void pauseGame(){
         GoatEngine.gameScreenManager.pause();
@@ -29,11 +29,14 @@ public class ScriptCommandExecutor extends CommandExecutor {
     }
 
 
-    public void changeScreen(GameScreen screen){
+    public void changeScreen(String name){
 
+        if(name.equals("title_screen")){
+            GoatEngine.gameScreenManager.changeScreen(new TitleScreen());
+        }
 
-        GoatEngine.gameScreenManager.changeScreen(screen);
     }
+
 
 
 

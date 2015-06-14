@@ -8,6 +8,8 @@ import com.badlogic.gdx.controllers.Controller;
 import com.badlogic.gdx.controllers.Controllers;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.GoatEngine;
+import com.brm.GoatEngine.Input.GameControllerManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
@@ -41,14 +43,18 @@ public class InputTranslationSystem extends EntitySystem {
 
 
         if(Config.PLAYER_1_USE_GAMEPAD){
-            player1Controller = Controllers.getControllers().first(); // DIARON
+            try{
+                player1Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
+            }catch (GameControllerManager.NoControllersAvailableException e){
+                Config.PLAYER_1_USE_GAMEPAD = false;
+            }
         }
 
         if(Config.PLAYER_2_USE_GAMEPAD){
-            if(player1Controller != null){
-                player2Controller = Controllers.getControllers().get(1); // XBOX
-            }else{
-                player2Controller = Controllers.getControllers().first();
+            try{
+                player2Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
+            }catch (GameControllerManager.NoControllersAvailableException e){
+                Config.PLAYER_2_USE_GAMEPAD = false;
             }
         }
 
