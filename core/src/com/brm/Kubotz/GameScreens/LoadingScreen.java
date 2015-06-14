@@ -50,7 +50,7 @@ public class LoadingScreen extends GameScreen {
 
     @Override
     public void cleanUp() {
-        AudioManager.getMusic("audio/dashboard.ogg").stop();
+        //AudioManager.getMusic("audio/dashboard.ogg").stop();
 
     }
 

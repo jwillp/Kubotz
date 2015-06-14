@@ -6,7 +6,10 @@ import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
+import sun.org.mozilla.javascript.internal.Context;
+import sun.org.mozilla.javascript.internal.Scriptable;
 
 
 /**
@@ -18,6 +21,15 @@ public class ScriptSystem extends EntitySystem {
 
     @Override
     public void init() {
+
+        Context ctx = Context.enter();
+        Scriptable scope = ctx.initStandardObjects();
+
+        String script = "var s = 'Hello Script World!'; s;";
+
+
+        Object obj = ctx.evaluateString(scope, script, "TestScript", 1, null);
+        Logger.log("OBJECT: " + obj);
 
     }
 
@@ -50,6 +62,7 @@ public class ScriptSystem extends EntitySystem {
 
                 //ON INIT
                 if(!script.isInitialized()){
+                    script.setSystem(this);
                     script.onInit(entity, getEntityManager());
                     script.setInitialized(true);
                 }

@@ -3,6 +3,7 @@ package com.brm.GoatEngine.ECS.utils.Scripts;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 public abstract class EntityScript{
 
     private boolean isInitialized = false;
+    private ScriptSystem system;  //a reference to the script system
 
     /**
      * Called when a script is added to an entity
@@ -61,4 +63,8 @@ public abstract class EntityScript{
     }
 
     public <T extends Event> void onEvent(T event, Entity entity){};
+
+    public void setSystem(ScriptSystem system) {
+        this.system = system;
+    }
 }

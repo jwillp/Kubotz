@@ -3,27 +3,23 @@ package com.brm.Kubotz.Features.KubotzCharacter.Entities;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
 import com.brm.GoatEngine.ECS.utils.Components.*;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
-import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
-import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
-import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
-import com.brm.Kubotz.Features.KubotzCharacter.Scripts.KubotzAudioScript;
-import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
-import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
-import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
-import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
-import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
-import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
-import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
+import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Scripts.KubotzAnimationScript;
+import com.brm.Kubotz.Features.KubotzCharacter.Scripts.KubotzAudioScript;
+import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
+import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
+import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
+import com.brm.Kubotz.Features.Running.Components.RunningComponent;
 
 
 /**

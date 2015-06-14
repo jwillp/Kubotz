@@ -69,7 +69,7 @@ public class TitleScreen extends GameScreen{
         Music music;
         music = AudioManager.addMusic("audio/dashboard.ogg", Gdx.audio.newMusic(Gdx.files.internal("audio/dashboard.ogg")));
         music.setLooping(true);
-        music.play();
+        //music.play();
 
     }
 
