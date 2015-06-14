@@ -3,31 +3,34 @@
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
-
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
     <title>Kubotz by fireraccoon</title>
   </head>
 
   <body>
-    <header>
+    <div id="container">
       <div class="inner">
-        <h1>Kubotz</h1>
-        <h2></h2>
-        <a href="https://github.com/fireraccoon/Kubotz" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
+        <header>
+          <h1>Kubotz</h1>
+          <h2></h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/fireraccoon/Kubotz/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/fireraccoon/Kubotz/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/fireraccoon/Kubotz" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
           <h3>
 <a id="présentation-sommaire" class="anchor" href="#pr%C3%A9sentation-sommaire" aria-hidden="true"><span class="octicon octicon-link"></span></a>Présentation sommaire</h3>
 
@@ -40,7 +43,14 @@
 <h3>
 <a id="captures-décran" class="anchor" href="#captures-d%C3%A9cran" aria-hidden="true"><span class="octicon octicon-link"></span></a>Captures d'écran</h3>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<p><img src="https://raw.githubusercontent.com/fireraccoon/Kubotz/gh-pages/images/punch.png" alt="Player Punching"> 
+Un joueur frappant son adversaire</p>
+
+<p><img src="https://raw.githubusercontent.com/fireraccoon/Kubotz/gh-pages/images/sword.png" alt="Player With Laser Sword"> 
+Un joueur muni d'une épée laser</p>
+
+<p><img src="https://raw.githubusercontent.com/fireraccoon/Kubotz/gh-pages/images/shoot.png" alt="Player With Laser Sword"> 
+Un joueur tirant au fusil laser</p>
 
 <h3>
 <a id="outils-technologique-de-développement" class="anchor" href="#outils-technologique-de-d%C3%A9veloppement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Outils technologique de développement</h3>
@@ -49,17 +59,37 @@
 <a id="programmation" class="anchor" href="#programmation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Programmation</h4>
 
 <ul>
-<li>IDE: IntelliJ</li>
-<li>Langage: Java</li>
-<li>Librairie: LibGDX =&gt; Dépendance Gradle</li>
-<li>Librairie de physique: Box2D</li>
-<li>Gestionnaire de vesrion Git + Github</li>
-<li>Tiled Map Editor</li>
-<li><p>Librairie: SpriterJava</p></li>
-<li><p>Entity Component System (ECS)</p></li>
-<li>Intelligence artificielle</li>
-<li>Behaviour Tree</li>
-<li>A*</li>
+<li>Langage de programamtion: <strong>Java</strong>
+</li>
+<li>IDE: <strong>IntelliJ</strong>
+</li>
+<li>Librairie: <strong>LibGDX</strong>
+</li>
+<li>Moteur de dépendance: <strong>Dépendance Gradle</strong>
+</li>
+<li>Librairie de physique: <strong>Box2D</strong>
+</li>
+<li>Gestionnaire de vesrion: <strong>Git + Github</strong>
+</li>
+<li>Éditeur de niveau: <strong>Tiled Map Editor</strong>
+</li>
+<li><p>Librairie d'animation skelétique: <strong>SpriterJava</strong></p></li>
+<li>
+<p>Architectures logicielles:  </p>
+
+<ul>
+<li>Entity Component System (ECS) </li>
+<li>Programmation Orientée Objet (POO)</li>
+</ul>
+</li>
+<li>Intelligence artificielle:
+
+<ul>
+<li><strong>Behaviour Tree</strong></li>
+<li>*<em>A * *</em>
+</li>
+</ul>
+</li>
 </ul>
 
 <h4>
@@ -83,29 +113,22 @@
 <h3>
 <a id="temps-investi" class="anchor" href="#temps-investi" aria-hidden="true"><span class="octicon octicon-link"></span></a>Temps investi</h3>
 
+<p>Une centaine d'heure fut investi dans le projet.</p>
+
 <h3>
 <a id="contact" class="anchor" href="#contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contact</h3>
 
-<p><a href="mailto:jwilliam.perreault@gmail.com">jwilliam.perreault@gmail.com</a></p>
+<p>courriel: <a href="mailto:jwilliam.perreault@gmail.com">jwilliam.perreault@gmail.com</a>
+github: <a href="https://github.com/fireraccoon" class="user-mention">@fireraccoon</a></p>
         </section>
 
-        <aside id="sidebar">
-          <a href="https://github.com/fireraccoon/Kubotz/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/fireraccoon/Kubotz/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
+        <footer>
+          Kubotz is maintained by <a href="https://github.com/fireraccoon">fireraccoon</a><br>
+          This page was generated by <a href="https://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
 
-          <p class="repo-owner"><a href="https://github.com/fireraccoon/Kubotz"></a> is maintained by <a href="https://github.com/fireraccoon">fireraccoon</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
+        
       </div>
     </div>
-
-  
   </body>
 </html>
