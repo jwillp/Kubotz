@@ -78,8 +78,6 @@ public class DashBootsSystem extends EntitySystem {
                 DashComponent dashComp = (DashComponent)entity.getComponent(DashComponent.ID);
                 PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
-
-                //Logger.log(dashComp.getPhase());
                 // Do we need to put the entity in RECOVERY MODE?
                 // Is the entity done decelerating (last phase of dash)
                 if(dashComp.getPhase() == DashComponent.Phase.DONE){

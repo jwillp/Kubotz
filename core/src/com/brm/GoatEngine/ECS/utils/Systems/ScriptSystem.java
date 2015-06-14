@@ -28,12 +28,15 @@ public class ScriptSystem extends EntitySystem {
     @Override
     public void init() {
         Context ctx = Context.enter();
+        ctx.setOptimizationLevel(-1);
         Scriptable scope = ctx.initStandardObjects();
 
         String script = this.loadScript("scripts/ScriptSystemInit.js");
 
-        Object obj = ctx.evaluateString(scope, script, "TestScript", 1, null);
-        Logger.log("OBJECT: " + obj);
+        Object wrappedOut = Context.javaToJS(new ScriptAPI(this), scope);
+        scope.put("Engine", scope, wrappedOut);
+
+        Object obj = ctx.evaluateString(scope, script, "MainScript", 1, null);
     }
 
     @Override

@@ -91,7 +91,6 @@ public class DroneGauntletSystem extends EntitySystem {
 
 
     private Entity spawnDrone(PhysicsComponent physicsComponent, Entity master){
-        Logger.log("SPAWN");
         Entity turret = new DroneFactory(getEntityManager(),  physicsComponent.getBody().getWorld(), master)
                 .withPosition(new Vector2(physicsComponent.getPosition().x - 1, physicsComponent.getPosition().y + 1))
                 .withDistance(new Vector2(MathUtils.random(1,2),MathUtils.random(1,2)))

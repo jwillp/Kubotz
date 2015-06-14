@@ -75,7 +75,6 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
         if(secondsRemaining > 0){
                 if(countdown.isDone()){
-                Logger.log( String.valueOf((--secondsRemaining))  + " SECONDS");
                 countdown.reset();
 
                 fireEvent(new CountdownEndEvent(secondsRemaining));

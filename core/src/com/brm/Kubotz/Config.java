@@ -121,8 +121,7 @@ public class Config {
             prop.load(inputStream);
 
             loadControlsProperties(prop);
-            Logger.log("RESULTAT");
-            Logger.log(PLAYER_1_USE_GAMEPAD);
+
             //TODO READ
 
             inputStream.close();
