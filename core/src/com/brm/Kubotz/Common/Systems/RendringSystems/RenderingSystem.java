@@ -75,10 +75,6 @@ public class RenderingSystem extends EntitySystem {
     public void update(float dt){
         this.cameraSystem.update(dt);
 
-        //Gdx.gl.glClearColor(26f/255f,26f/255f,26f/255f,0);
-        Gdx.gl.glClearColor(0,0,0,0);
-
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
 
 
         if(Config.DEBUG_RENDERING_ENABLED) {

@@ -134,5 +134,19 @@ public class GameScreenManager {
     }
 
 
+    /**
+     * Pauses the whole manager until it resumes
+     */
+    public void pause(){
+        this.isRunning = false;
+    }
+
+    /**
+     * Resumes the manager after a pause
+     */
+    public void resume(){
+        this.isRunning = true;
+    }
+
 
 }

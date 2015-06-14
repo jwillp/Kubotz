@@ -2,6 +2,7 @@ package com.brm.Kubotz;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.Kubotz.GameScreens.InGameScreen;
 import com.brm.Kubotz.GameScreens.LoadingScreen;
@@ -11,10 +12,12 @@ import com.brm.Kubotz.GameScreens.TitleScreen;
 public class Game extends ApplicationAdapter {
 
 
-	private GameScreenManager screenManager;
 
 	@Override
 	public void create () {
+
+		GoatEngine.init();
+
 
 		// READ GAME PROPERTIES FROM FILE
 		Config.load();
@@ -25,19 +28,14 @@ public class Game extends ApplicationAdapter {
 					Config.FULL_SCREEN
 			);
 		}
-		screenManager = new GameScreenManager();
-		screenManager.init();
-		screenManager.addScreen(new InGameScreen());
+
+		GoatEngine.gameScreenManager.addScreen(new InGameScreen());
 	}
 
 
 	@Override
 	public void render () {
-		float deltaTime = Gdx.graphics.getDeltaTime();
-		screenManager.handleEvents();
-		screenManager.update(deltaTime);
-		screenManager.draw(deltaTime);
-
+		GoatEngine.update();
 	}
 
 	@Override

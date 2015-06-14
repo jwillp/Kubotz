@@ -3,26 +3,23 @@ package com.brm.Kubotz.GameScreens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.ControllerAdapter;
-import com.badlogic.gdx.controllers.ControllerListener;
 import com.badlogic.gdx.controllers.Controllers;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.brm.GoatEngine.MusicManager;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.AudioManager;
+import com.brm.GoatEngine.ScriptCommandExecutor;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Input.ControllerMap;
 import com.brm.Kubotz.Input.DiaronControllerMap;
-import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Input.Xbox360ControllerMap;
+import com.strongjoshua.console.Console;
+
 
 /**
  * Title screen
@@ -44,6 +41,7 @@ public class TitleScreen extends GameScreen{
 
     private Controller controller;
 
+    private Console console;
 
     @Override
     public void init(GameScreenManager engine) {
@@ -60,6 +58,13 @@ public class TitleScreen extends GameScreen{
 
         //Init Music
         initMusic();
+
+
+        console = new Console();
+        console.setCommandExecutor(new ScriptCommandExecutor());
+
+        console.log("Yay!", Console.LogLevel.SUCCESS);
+
     }
 
     /**
@@ -67,7 +72,7 @@ public class TitleScreen extends GameScreen{
      */
     public void initMusic(){
         Music music;
-        music = AudioManager.addMusic("audio/dashboard.ogg", Gdx.audio.newMusic(Gdx.files.internal("audio/dashboard.ogg")));
+        music = MusicManager.loadMusic("audio/dashboard.ogg", Gdx.audio.newMusic(Gdx.files.internal("audio/dashboard.ogg")));
         music.setLooping(true);
         //music.play();
 
@@ -212,6 +217,9 @@ public class TitleScreen extends GameScreen{
         }
 
         spriteBatch.end();
+
+
+        console.draw();
 
     }
 

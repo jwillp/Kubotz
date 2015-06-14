@@ -24,9 +24,10 @@ function onCollision(contact, entity) {
 
 
 function onEvent(event, entity){
-	Engine.print("EVENT:" + event);
+	Engine.print("EVENT:" + entity);
 	Engine.killOne();
 }
+
 
 
 
