@@ -11,6 +11,12 @@ import com.brm.Kubotz.Common.Events.CollisionEvent;
 import sun.org.mozilla.javascript.internal.Context;
 import sun.org.mozilla.javascript.internal.Scriptable;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Scanner;
+
 
 /**
  * Responsible for updateing sripts
@@ -21,16 +27,13 @@ public class ScriptSystem extends EntitySystem {
 
     @Override
     public void init() {
-
         Context ctx = Context.enter();
         Scriptable scope = ctx.initStandardObjects();
 
-        String script = "var s = 'Hello Script World!'; s;";
-
+        String script = this.loadScript("scripts/ScriptSystemInit.js");
 
         Object obj = ctx.evaluateString(scope, script, "TestScript", 1, null);
         Logger.log("OBJECT: " + obj);
-
     }
 
     @Override
@@ -87,6 +90,34 @@ public class ScriptSystem extends EntitySystem {
             }
         }
     }
+
+
+
+
+    public String loadScript(String scriptFile){
+        try {
+            byte[] encoded  = Files.readAllBytes(Paths.get(scriptFile));
+            return new String(encoded, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("SCRIPT NOT FOUND");
+        }
+
+    }
+
+
+    /**
+     * Exception for Script not found
+     */
+    public static class ScriptNotFoundException extends RuntimeException{
+
+        public ScriptNotFoundException(String scriptName){
+            super("The Script: " + scriptName + " was not found");
+        }
+
+    }
+
+
 
 
 
