@@ -3,7 +3,7 @@ package com.brm.Kubotz.Common.Events;
 import com.brm.GoatEngine.ECS.core.Entity.Event;
 
 /**
- * A SImple Test Event to be sent by Scripts
+ * A Simple Test Event to be sent by Scripts
  */
 public class ScriptEvent extends Event {
 

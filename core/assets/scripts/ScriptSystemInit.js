@@ -1,10 +1,34 @@
 // SCRIPT USED TO INIT THE SCRIPTS SYSTEMS OF THE ENGINE
+kubotzPackage = Packages.com.brm.Kubotz;
 
-Engine.print("Script System initliazing...");
 
-Engine.getSystem().fireEvent(new com.brm.Kubotz.Common.Events.ScriptEvent("0"));
+function onInit(entity, entityManager) {
+	Engine.getSystem().fireEvent(new kubotzPackage.Common.Events.ScriptEvent("0"));
+}
 
-Engine.print("Script System initialized");
+
+
+function onUpdate(entity, entityManager) {
+
+}
+
+
+function onInput(entity, buttons) {
+	Engine.print("Input!!");
+}
+
+function onCollision(contact, entity) {
+	
+}
+
+
+
+function onEvent(event, entity){
+	Engine.print("EVENT:" + event);
+	Engine.killOne();
+}
+
+
 
 
 

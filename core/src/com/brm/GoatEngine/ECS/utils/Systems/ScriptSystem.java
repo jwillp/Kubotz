@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
+import sun.font.Script;
 import sun.org.mozilla.javascript.internal.Context;
 import sun.org.mozilla.javascript.internal.Scriptable;
 
@@ -23,13 +24,18 @@ import java.util.Scanner;
  */
 public class ScriptSystem extends EntitySystem {
 
+    private Context context = Context.enter();
+    private Scriptable scope;
+
+
     public ScriptSystem(){}
+
 
     @Override
     public void init() {
         Context ctx = Context.enter();
         ctx.setOptimizationLevel(-1);
-        Scriptable scope = ctx.initStandardObjects();
+        scope = ctx.initStandardObjects();
 
         String script = this.loadScript("scripts/ScriptSystemInit.js");
 
@@ -55,6 +61,7 @@ public class ScriptSystem extends EntitySystem {
         for(EntityScript script: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
                 script.onInput(entity, gamePad.getPressedButtons());
+                context.evaluateString(scope, "onInput();", "MainScript", 1, null);
             }
         }
     }
@@ -74,6 +81,7 @@ public class ScriptSystem extends EntitySystem {
                 }
                 // ON UPDATE
                 script.onUpdate(entity, getEntityManager());
+                context.evaluateString(scope, "onUpdate();", "MainScript", 1, null);
             }
         }
     }
@@ -87,8 +95,10 @@ public class ScriptSystem extends EntitySystem {
             for(EntityScript script: scripts.getScripts()){
                 if(event.getClass() == CollisionEvent.class){
                     script.onCollision((CollisionEvent)event, entity); //TODO get rid of this! generify!
+                    context.evaluateString(scope, "onCollision();", "MainScript", 1, null);
                 }else{
                     script.onEvent(event, entity);
+                    context.evaluateString(scope, "onEvent();", "MainScript", 1, null);
                 }
             }
         }
@@ -103,7 +113,7 @@ public class ScriptSystem extends EntitySystem {
             return new String(encoded, StandardCharsets.UTF_8);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new RuntimeException("SCRIPT NOT FOUND");
+            throw new ScriptNotFoundException("SCRIPT NOT FOUND");
         }
 
     }
