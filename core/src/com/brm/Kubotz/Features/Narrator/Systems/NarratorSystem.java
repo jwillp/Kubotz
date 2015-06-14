@@ -80,7 +80,7 @@ public class NarratorSystem extends EntitySystem {
 
     public void onPlayerEliminated(PlayerEliminatedEvent e){
         PlayerScoreComponent player;
-        player = (PlayerScoreComponent) getEntityManager().getEntity(e.getEntityId()).getComponent(PlayerScoreComponent.ID);
+        /*player = (PlayerScoreComponent) getEntityManager().getEntity(e.getEntityId()).getComponent(PlayerScoreComponent.ID);
         switch (player.getPlayerId()) {
             case PlayerScoreComponent.PLAYER_1:
                 playSound("audio/narrator_player1_defeated.mp3");
@@ -91,7 +91,7 @@ public class NarratorSystem extends EntitySystem {
             case PlayerScoreComponent.PLAYER_CPU:
                 playSound("audio/narrator_cpu_defeated.mp3");
                 break;
-        }
+        }*/
     }
 
 

@@ -35,7 +35,6 @@ public class TitleScreen extends GameScreen{
 
     private Viewport viewport;
 
-
     private Texture titleBackground = new Texture(Gdx.files.internal("screens/title/background.png"));
 
     private Texture btnSelected = new Texture(Gdx.files.internal("screens/title/btn_selected.png"));
@@ -45,22 +44,40 @@ public class TitleScreen extends GameScreen{
 
     private Controller controller;
 
+
     @Override
     public void init(GameScreenManager engine) {
         this.spriteBatch = new SpriteBatch();
 
+        //init Camera
         camera = new OrthographicCamera(Config.V_WIDTH, Config.V_HEIGHT);
         viewport = new FitViewport(Config.V_WIDTH, Config.V_HEIGHT, camera);
 
-        controller = Controllers.getControllers().first();
+        // Init GameControllers
+        if(Config.PLAYER_1_USE_GAMEPAD){
+            controller = Controllers.getControllers().first();
+        }
 
+        //Init Music
+        initMusic();
+    }
+
+    /**
+     * Initialises the music
+     */
+    public void initMusic(){
         Music music;
         music = AudioManager.addMusic("audio/dashboard.ogg", Gdx.audio.newMusic(Gdx.files.internal("audio/dashboard.ogg")));
         music.setLooping(true);
         music.play();
 
-
     }
+
+
+
+
+
+
 
     @Override
     public void cleanUp() {
@@ -75,38 +92,94 @@ public class TitleScreen extends GameScreen{
     @Override
     public void handleInput(GameScreenManager engine) {
 
-        //Determine Controller Map
-        ControllerMap map = null;
-        if(controller.getName().toLowerCase().contains("xbox") && controller.getName().contains("360")){
-            map = new Xbox360ControllerMap();
+        if(controller != null){
+            handleController(engine);
         }else{
-            map = new DiaronControllerMap();
-        }
-
-
-        if(controller.getButton(map.getButtonA())){
-            onSelect(engine);
-        }
-
-        if(controller.getAxis(map.getAxisLeftY()) == -1){
-            currentSelection--;
-        }
-        if(controller.getAxis(map.getAxisLeftY()) == 1){
-            currentSelection++;
+            handleKeyboard(engine);
         }
 
         currentSelection = MathUtils.clamp(currentSelection, 0,1);
+    }
+
+    /**
+     * Handles the input in the case of a Controller
+     * @param engine
+     */
+    private void handleController(GameScreenManager engine){
+            //Determine Controller Map
+            ControllerMap map = null;
+            if(controller.getName().toLowerCase().contains("xbox") && controller.getName().contains("360")){
+                map = new Xbox360ControllerMap();
+            }else{
+                map = new DiaronControllerMap();
+            }
+
+            if(controller.getButton(map.getButtonA())){
+                onSelect(engine);
+            }
+
+            if(controller.getAxis(map.getAxisLeftY()) == -1){
+                onCursorMoveDown();
+            }
+            if(controller.getAxis(map.getAxisLeftY()) == 1){
+                onCursorMoveUp();
+            }
+
+
 
     }
 
+    /**
+     * Handles the input in the case of a keyboard
+     * @param engine
+     */
+    private void handleKeyboard(GameScreenManager engine){
+
+        if(Gdx.input.isKeyPressed(Config.PLAYER_1_MOVE_UP)){
+            onCursorMoveUp();
+        }else if(Gdx.input.isKeyPressed(Config.PLAYER_1_MOVE_DOWN)){
+            onCursorMoveDown();
+        }else if(Gdx.input.isKeyPressed(Config.PLAYER_1_ATTACK_BUTTON)){
+            onSelect(engine);
+        }
+    }
+
+
+
+
+
+    /**
+     * Called when a button is selected
+     * @param engine
+     */
     private void onSelect(GameScreenManager engine) {
         if(currentSelection == 0){
             engine.changeScreen(new LoadingScreen());
         }else{
             Gdx.app.exit();
         }
-
     }
+
+
+    /**
+     * Called when the user moves the cursor up
+     */
+    private void onCursorMoveUp(){
+        currentSelection--;
+    }
+
+    /**
+     * Called when the user moves the cursor down
+     */
+    private void onCursorMoveDown(){
+        currentSelection++;
+    }
+
+
+
+
+
+
 
 
 
@@ -117,6 +190,7 @@ public class TitleScreen extends GameScreen{
 
     @Override
     public void draw(GameScreenManager engine, float deltaTime) {
+        Gdx.gl.glClearColor(0,0,0,0);
         spriteBatch.setProjectionMatrix(this.camera.combined);
         spriteBatch.begin();
 

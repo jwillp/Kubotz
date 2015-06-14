@@ -24,7 +24,7 @@ public class LoadingScreen extends GameScreen {
 
 
     private Texture background;
-    private Timer timer = new Timer(Timer.TEN_SECONDS * 2);
+    private Timer timer = new Timer(Timer.FIVE_SECONDS);
 
 
 

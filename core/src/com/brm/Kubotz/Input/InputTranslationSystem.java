@@ -1,5 +1,7 @@
 package com.brm.Kubotz.Input;
 
+
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.controllers.Controller;
@@ -7,15 +9,8 @@ import com.badlogic.gdx.controllers.Controllers;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
-import com.brm.Kubotz.Input.DiaronControllerMap;
-import com.brm.Kubotz.Input.GameButton;
-import com.brm.Kubotz.Input.ControllerMap;
-import com.brm.Kubotz.Input.Xbox360ControllerMap;
-
 
 import java.util.HashMap;
 
@@ -38,14 +33,23 @@ public class InputTranslationSystem extends EntitySystem {
     private Controller player1Controller = null;
     private Controller player2Controller = null;
 
+
+
     public InputTranslationSystem(){
+
+        //TODO Instead of doing ifs, create w list of available controllers and pop them from the list when assigning them
+
 
         if(Config.PLAYER_1_USE_GAMEPAD){
             player1Controller = Controllers.getControllers().first(); // DIARON
         }
 
         if(Config.PLAYER_2_USE_GAMEPAD){
-            player2Controller = Controllers.getControllers().get(1); // XBOX
+            if(player1Controller != null){
+                player2Controller = Controllers.getControllers().get(1); // XBOX
+            }else{
+                player2Controller = Controllers.getControllers().first();
+            }
         }
 
         this.mapKeyboard();

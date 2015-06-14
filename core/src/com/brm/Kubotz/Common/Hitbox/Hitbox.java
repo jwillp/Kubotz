@@ -5,7 +5,7 @@ package com.brm.Kubotz.Common.Hitbox;
  * the execution of an attack. It is also used to represent how the physical structure
  * of the entities in the game interact with attacks.
  */
-public class Hitbox{
+public class Hitbox implements Cloneable{
 
     public final static String DEFAULT_LABEL = "UNDEFINED"; // A generic label for hitbox with none provided
 
@@ -27,7 +27,7 @@ public class Hitbox{
 
     public Type type;
 
-    public String label;
+    public final String label;
 
 
     // These are public for simplicity of use

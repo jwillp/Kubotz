@@ -2,6 +2,7 @@ package com.brm.Kubotz;
 
 
 import com.badlogic.gdx.Input;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.OrderedProperties;
 
 import java.io.FileInputStream;
@@ -43,37 +44,37 @@ public class Config {
 
 
     //INPUT CONTROLS SETTINGS
-    public static boolean PLAYER_1_USE_GAMEPAD = true;
-    public static boolean PLAYER_2_USE_GAMEPAD = true;
+    public static boolean PLAYER_1_USE_GAMEPAD = false;
+    public static boolean PLAYER_2_USE_GAMEPAD = false;
 
 
     //Player 1
-    public static int PLAYER_1_MOVE_UP = Input.Keys.Q;
-    public static int PLAYER_1_MOVE_DOWN = Input.Keys.W;
-    public static int PLAYER_1_MOVE_LEFT = Input.Keys.E;
-    public static int PLAYER_1_MOVE_RIGHT = Input.Keys.R;
+    public static int PLAYER_1_MOVE_UP = Input.Keys.W;
+    public static int PLAYER_1_MOVE_DOWN = Input.Keys.S;
+    public static int PLAYER_1_MOVE_LEFT = Input.Keys.A;
+    public static int PLAYER_1_MOVE_RIGHT = Input.Keys.D;
 
     public static int PLAYER_1_START = Input.Keys.ESCAPE;
 
-    public static int PLAYER_1_ATTACK_BUTTON = Input.Keys.T;
-    public static int PLAYER_1_GRAB_BUTTON = Input.Keys.Y;
-    public static int PLAYER_1_SPECIAL_BUTTON = Input.Keys.U;
-    public static int PLAYER_1_THROW_BUTTON = Input.Keys.O;
+    public static int PLAYER_1_ATTACK_BUTTON = Input.Keys.I;
+    public static int PLAYER_1_GRAB_BUTTON = Input.Keys.O;
+    public static int PLAYER_1_SPECIAL_BUTTON = Input.Keys.SHIFT_LEFT;
+    public static int PLAYER_1_THROW_BUTTON = Input.Keys.P;
 
     // TODO Jump ALT
 
     //Player 2
-    public static int PLAYER_2_MOVE_UP = Input.Keys.A;
-    public static int PLAYER_2_MOVE_DOWN = Input.Keys.S;
-    public static int PLAYER_2_MOVE_LEFT = Input.Keys.D;
-    public static int PLAYER_2_MOVE_RIGHT = Input.Keys.F;
+    public static int PLAYER_2_MOVE_UP = Input.Keys.UP;
+    public static int PLAYER_2_MOVE_DOWN = Input.Keys.DOWN;
+    public static int PLAYER_2_MOVE_LEFT = Input.Keys.LEFT;
+    public static int PLAYER_2_MOVE_RIGHT = Input.Keys.RIGHT;
 
     public static int PLAYER_2_START = Input.Keys.ESCAPE;
 
-    public static int PLAYER_2_ATTACK_BUTTON = Input.Keys.G;
-    public static int PLAYER_2_GRAB_BUTTON = Input.Keys.H;
-    public static int PLAYER_2_SPECIAL_BUTTON = Input.Keys.J;
-    public static int PLAYER_2_THROW_BUTTON = Input.Keys.L;
+    public static int PLAYER_2_ATTACK_BUTTON = Input.Keys.NUMPAD_1;
+    public static int PLAYER_2_GRAB_BUTTON = Input.Keys.NUMPAD_2;
+    public static int PLAYER_2_SPECIAL_BUTTON = Input.Keys.NUMPAD_0;
+    public static int PLAYER_2_THROW_BUTTON = Input.Keys.NUMPAD_3;
 
 
 
@@ -120,6 +121,8 @@ public class Config {
             prop.load(inputStream);
 
             loadControlsProperties(prop);
+            Logger.log("RESULTAT");
+            Logger.log(PLAYER_1_USE_GAMEPAD);
             //TODO READ
 
             inputStream.close();
@@ -183,8 +186,6 @@ public class Config {
 
     private static void writeControlsProperies(FileOutputStream output) throws IOException {
         OrderedProperties prop = new OrderedProperties();
-
-
 
 
 
@@ -262,6 +263,8 @@ public class Config {
 
         PLAYER_1_USE_GAMEPAD = Boolean.parseBoolean(prop.getProperty("PLAYER_1_USE_GAMEPAD"));
         PLAYER_2_USE_GAMEPAD = Boolean.parseBoolean(prop.getProperty("PLAYER_2_USE_GAMEPAD"));
+
+
 
 
         PLAYER_1_MOVE_UP = Integer.parseInt(prop.getProperty("PLAYER_1_MOVE_UP"));

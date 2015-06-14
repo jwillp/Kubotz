@@ -98,7 +98,7 @@ public class DamageSystem extends EntitySystem{
 
         //We take for granted that, the damager Hitbox is of type Offensive
 
-        //Offensive + Offensive
+        //Offensive + Offensive //TODO Sometimes the body get destroyed before getting here so HitBox does not exist anymore
         if(e.getTargetHitbox().type == Hitbox.Type.Offensive){
             if(GameMath.isMoreOrLess(e.getTargetHitbox().damage, e.getDamagerHitbox().damage, Constants.CLASH_THRESHOLD)){
                  // THERE IS A CLASH (NOT DAMAGE WILL BE TAKEN)
