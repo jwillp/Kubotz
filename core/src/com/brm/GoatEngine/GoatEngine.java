@@ -11,18 +11,24 @@ import com.strongjoshua.console.Console;
  *     - init (for startup)
  *     - loop
  *     - shutdown
+ *
+ *     SINGLETON CLASS
  */
 public class GoatEngine {
 
-    public static MusicManager musicManager;
 
-    public static InputManager inputManager;
+    private static GoatEngine instance = null;
 
-    public static GameScriptEngine scriptEngine;
 
-    public static GameScreenManager gameScreenManager; //This is where the real "Game" is happening
+    private MusicManager musicManager;
 
-    public static Console console;
+    private InputManager inputManager;
+
+    private GameScriptEngine scriptEngine;
+
+    private GameScreenManager gameScreenManager; //This is where the real "Game" is happening
+
+    private Konsole console;
 
     // TODO Global Event Manager?
 
@@ -30,32 +36,40 @@ public class GoatEngine {
 
 
 
+    public static GoatEngine get(){
+        if(instance == null){
+            instance = new GoatEngine();
+        }
+        return instance;
+    }
+
+
 
     /**
      * This initializes the Game Engine
      */
-    public static void init(){
+    public void init(){
 
-        musicManager = new MusicManager();
-        inputManager = new InputManager();
-        scriptEngine = new GameScriptEngine();
+        setMusicManager(new MusicManager());
+        setInputManager(new InputManager());
+        setScriptEngine(new GameScriptEngine());
 
         //Game Screen manager
-        gameScreenManager = new GameScreenManager();
-        gameScreenManager.init();
+        setGameScreenManager(new GameScreenManager());
+        getGameScreenManager().init();
 
 
         //Init the console
-        console = new Console();
-        console.setCommandExecutor(new ScriptCommandExecutor());
-        console.log("Console inited", Console.LogLevel.SUCCESS);
+        setConsole(new Konsole());
+        getConsole().setCommandExecutor(new ConsoleCommandeExecutor());
+        getConsole().log("Console inited", Console.LogLevel.SUCCESS);
     }
 
 
     /**
      * Updates the engine for ONE frame
      */
-    public static void update(){
+    public void update(){
         float deltaTime = Gdx.graphics.getDeltaTime();
 
         //Script Engine
@@ -64,29 +78,69 @@ public class GoatEngine {
         //Clears the screen
         Gdx.gl.glClearColor(0,0,0,0);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
-        if(gameScreenManager.isRunning()){
+        if(getGameScreenManager().isRunning()){
             //Game Screen Manager
-            gameScreenManager.handleEvents();
-            gameScreenManager.update(deltaTime);
+            getGameScreenManager().handleEvents();
+            getGameScreenManager().update(deltaTime);
         }
-        gameScreenManager.draw(deltaTime);
+        getGameScreenManager().draw(deltaTime);
 
         //Draw Console
-        console.draw();
+        getConsole().refresh();
+        getConsole().draw();
 
     }
 
 
-    public static void cleanUp(){
+    public void cleanUp(){
         //GameScreen Manager
-        gameScreenManager.cleanUp();
+        getGameScreenManager().cleanUp();
 
         //Dispose Script
-        scriptEngine.dispose();
+        getScriptEngine().dispose();
 
         //Dispose Console
-        console.dispose();
+        getConsole().dispose();
     }
 
 
+    public MusicManager getMusicManager() {
+        return musicManager;
+    }
+
+    public void setMusicManager(MusicManager musicManager) {
+        this.musicManager = musicManager;
+    }
+
+    public InputManager getInputManager() {
+        return inputManager;
+    }
+
+    public void setInputManager(InputManager inputManager) {
+        this.inputManager = inputManager;
+    }
+
+    public GameScriptEngine getScriptEngine() {
+        return scriptEngine;
+    }
+
+    public void setScriptEngine(GameScriptEngine scriptEngine) {
+        this.scriptEngine = scriptEngine;
+    }
+
+    public GameScreenManager getGameScreenManager() {
+        return gameScreenManager;
+    }
+
+    public void setGameScreenManager(GameScreenManager gameScreenManager) {
+        this.gameScreenManager = gameScreenManager;
+    }
+
+    public Console getConsole() {
+        return console;
+    }
+
+    public void setConsole(Konsole console) {
+        this.console = console;
+    }
 }

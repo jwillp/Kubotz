@@ -1,6 +1,5 @@
 package com.brm.GoatEngine;
 
-import com.brm.GoatEngine.ECS.utils.Systems.ScriptAPI;
 import sun.org.mozilla.javascript.internal.Context;
 import sun.org.mozilla.javascript.internal.Scriptable;
 
@@ -25,14 +24,22 @@ public class GameScriptEngine{
         context.setOptimizationLevel(-1);
         scope = context.initStandardObjects();
 
-        String script = this.loadScript("scripts/ScriptSystemInit.js");
-
-        context.evaluateString(scope, script, "MainScript", 1, null);
+        //Pass the engine to the current scope that way we have access to the whole engine (and game)
+        scope.put("GoatEngine", scope, Context.javaToJS(GoatEngine.get(), scope));
     }
 
 
     /**
-     * Loads a script
+     * Runs a script
+     * @param script a script content as a String
+     */
+    public void runScript(String script){
+        context.evaluateString(scope, script, script, 1, null);
+    }
+
+
+    /**
+     * Loads a script as a string
      * @param scriptFile a script file path
      * @return the script as a string
      */
@@ -49,7 +56,7 @@ public class GameScriptEngine{
     }
 
     public void dispose() {
-        this.context.exit();
+        Context.exit();
     }
 
     /**

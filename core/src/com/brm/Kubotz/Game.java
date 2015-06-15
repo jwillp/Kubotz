@@ -3,10 +3,7 @@ package com.brm.Kubotz;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.GoatEngine;
-import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.Kubotz.GameScreens.InGameScreen;
-import com.brm.Kubotz.GameScreens.LoadingScreen;
-import com.brm.Kubotz.GameScreens.TitleScreen;
 
 
 public class Game extends ApplicationAdapter {
@@ -16,7 +13,7 @@ public class Game extends ApplicationAdapter {
 	@Override
 	public void create () {
 
-		GoatEngine.init();
+		GoatEngine.get().init();
 
 
 		// READ GAME PROPERTIES FROM FILE
@@ -29,13 +26,13 @@ public class Game extends ApplicationAdapter {
 			);
 		}
 
-		GoatEngine.gameScreenManager.addScreen(new TitleScreen());
+		GoatEngine.get().getGameScreenManager().addScreen(new InGameScreen());
 	}
 
 
 	@Override
 	public void render () {
-		GoatEngine.update();
+		GoatEngine.get().update();
 	}
 
 	@Override

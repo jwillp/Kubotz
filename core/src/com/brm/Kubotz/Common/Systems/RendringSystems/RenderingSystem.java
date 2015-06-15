@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
@@ -118,9 +119,6 @@ public class RenderingSystem extends EntitySystem {
 
         //BACKGROUND
         //shapeRenderer.rect();
-
-
-
 
         spriteBatch.begin();
         spriteBatch.draw(this.background,0,0, 52, 37);

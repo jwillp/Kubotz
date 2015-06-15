@@ -5,7 +5,6 @@ package com.brm.Kubotz.Input;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.controllers.Controller;
-import com.badlogic.gdx.controllers.Controllers;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.GoatEngine;
@@ -44,7 +43,7 @@ public class InputTranslationSystem extends EntitySystem {
 
         if(Config.PLAYER_1_USE_GAMEPAD){
             try{
-                player1Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
+                player1Controller = GoatEngine.get().getInputManager().getGameControllerManager().captureController();
             }catch (GameControllerManager.NoControllersAvailableException e){
                 Config.PLAYER_1_USE_GAMEPAD = false;
             }
@@ -52,7 +51,7 @@ public class InputTranslationSystem extends EntitySystem {
 
         if(Config.PLAYER_2_USE_GAMEPAD){
             try{
-                player2Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
+                player2Controller = GoatEngine.get().getInputManager().getGameControllerManager().captureController();
             }catch (GameControllerManager.NoControllersAvailableException e){
                 Config.PLAYER_2_USE_GAMEPAD = false;
             }
