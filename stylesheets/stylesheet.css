@@ -196,6 +196,19 @@ svg:not(:root) {
 /* Grouping content
    ========================================================================== */
 
+/* PETIT ADD-ON */
+.big{
+  font-size: 20px;
+  color: #25A7DB;
+}
+
+.screen{
+  border: 3px solid #000;
+  border-radius: 10px;
+}
+
+
+
 /**
  * Address margin not present in IE 8/9 and Safari.
  */
