@@ -50,19 +50,24 @@ public class GoatEngine {
      */
     public void init(){
 
+        //Init the console
+        setConsole(new Konsole());
+        getConsole().setCommandExecutor(new ConsoleCommandeExecutor());
+        getConsole().log("Console inited", Console.LogLevel.SUCCESS);
+
         setMusicManager(new MusicManager());
         setInputManager(new InputManager());
+
+        //Script Engine Init
         setScriptEngine(new GameScriptEngine());
+        scriptEngine.init();
 
         //Game Screen manager
         setGameScreenManager(new GameScreenManager());
         getGameScreenManager().init();
 
 
-        //Init the console
-        setConsole(new Konsole());
-        getConsole().setCommandExecutor(new ConsoleCommandeExecutor());
-        getConsole().log("Console inited", Console.LogLevel.SUCCESS);
+
     }
 
 

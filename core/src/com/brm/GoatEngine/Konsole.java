@@ -9,8 +9,18 @@ import com.strongjoshua.console.Console;
 public class Konsole extends Console {
 
 
+
+
     public void setOpacity(float alpha){
         Color c = this.consoleWindow.getColor();
         this.consoleWindow.setColor(c.r, c.b, c.b, alpha);
     }
+
+
+    public void log(String msg, String levelString){
+        this.log("TEST", LogLevel.valueOf(levelString));
+
+    }
+
+
 }

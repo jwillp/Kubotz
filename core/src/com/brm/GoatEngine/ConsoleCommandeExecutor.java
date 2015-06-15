@@ -25,7 +25,8 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
 
         try{
             String script = GoatEngine.get().getScriptEngine().loadScript(scriptName);
-            GoatEngine.get().getScriptEngine().runScript(script);
+            Object result = GoatEngine.get().getScriptEngine().runScript(script);
+            GoatEngine.get().getConsole().log(result.toString(), Console.LogLevel.INFO);
         }catch(GameScriptEngine.ScriptNotFoundException e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
             runScript("scripts/"+scriptName); //Retry in the script folder

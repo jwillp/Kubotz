@@ -19,22 +19,31 @@ public class GameScriptEngine{
 
 
 
-    public GameScriptEngine(){
+    public GameScriptEngine(){}
+
+
+    public void init(){
         context = Context.enter();
         context.setOptimizationLevel(-1);
         scope = context.initStandardObjects();
 
         //Pass the engine to the current scope that way we have access to the whole engine (and game)
         scope.put("GoatEngine", scope, Context.javaToJS(GoatEngine.get(), scope));
+
+
+        //Put some helpers (Console for console.log)
+        scope.put("console", scope, Context.javaToJS(GoatEngine.get().getConsole(), scope));
+
     }
+
 
 
     /**
      * Runs a script
      * @param script a script content as a String
      */
-    public void runScript(String script){
-        context.evaluateString(scope, script, script, 1, null);
+    public Object runScript(String script){
+        return context.evaluateString(scope, script, script, 1, null);
     }
 
 
