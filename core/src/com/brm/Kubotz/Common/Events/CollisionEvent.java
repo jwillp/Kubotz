@@ -2,7 +2,7 @@ package com.brm.Kubotz.Common.Events;
 
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when two entities collide.
@@ -11,7 +11,7 @@ import com.brm.GoatEngine.ECS.core.Entity.Event;
  * As the PhysicsSystem will emit two ContactEvents every time a contact occurs.
  * This will make all other systems easier to handle instead of doing checks twice
  */
-public class CollisionEvent extends Event {
+public class CollisionEvent extends EntityEvent {
 
     private final Fixture fixtureA;
     private final Fixture fixtureB;

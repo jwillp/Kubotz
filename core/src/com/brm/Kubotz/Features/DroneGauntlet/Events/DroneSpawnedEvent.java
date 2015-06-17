@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.DroneGauntlet.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when a Drone is spawned
  */
-public class DroneSpawnedEvent extends Event {
+public class DroneSpawnedEvent extends EntityEvent {
 
     /**
      *

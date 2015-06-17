@@ -1,8 +1,10 @@
 package com.brm.GoatEngine.ECS.core.Systems;
 
 import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.core.Entity.ECSManager;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.ECS.core.ECSManager;
+import com.brm.GoatEngine.EventManager.EntityEvent;
+import com.brm.GoatEngine.EventManager.GameEvent;
+import com.brm.GoatEngine.EventManager.GameEventListener;
 
 import java.util.LinkedHashMap;
 
@@ -10,7 +12,7 @@ import java.util.LinkedHashMap;
  * A Class Managing multiple managers
  * This way any System could access another System's data
  */
-public class EntitySystemManager {
+public class EntitySystemManager implements GameEventListener{
 
     private ECSManager ecsManager;
     private LinkedHashMap<Class, EntitySystem> systems;
@@ -90,9 +92,18 @@ public class EntitySystemManager {
      * Fires an event to all Systems
      * @param event
      */
-    public <T extends Event> void fireEvent(T event) {
-        for(EntitySystem system: this.systems.values()){
-            system.onEvent(event);
+    public <T extends EntityEvent> void fireEvent(T event) {
+
+    }
+
+    @Override
+    public void onEvent(GameEvent e) {
+        if(e.isOfType(EntityEvent.class)){
+            for(EntitySystem system: this.systems.values()){
+                system.onEvent((EntityEvent)e);
+            }
         }
     }
+
+
 }

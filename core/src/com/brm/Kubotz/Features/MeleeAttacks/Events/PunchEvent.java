@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.MeleeAttacks.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when an entity punches something
  */
-public class PunchEvent extends Event {
+public class PunchEvent extends EntityEvent {
     /**
      *
      * @param entityId the entity punching

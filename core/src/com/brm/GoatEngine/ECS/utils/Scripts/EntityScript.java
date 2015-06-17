@@ -2,7 +2,7 @@ package com.brm.GoatEngine.ECS.utils.Scripts;
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
@@ -62,7 +62,7 @@ public abstract class EntityScript{
         this.isInitialized = isInitialized;
     }
 
-    public <T extends Event> void onEvent(T event, Entity entity){};
+    public <T extends EntityEvent> void onEvent(T event, Entity entity){};
 
     public void setSystem(ScriptSystem system) {
         this.system = system;

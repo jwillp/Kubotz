@@ -1,12 +1,12 @@
 package com.brm.Kubotz.Common.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 /**
  * Triggered when an entity MIGHT be taking Damage
  */
-public class TakeDamageEvent extends Event {
+public class TakeDamageEvent extends EntityEvent {
 
 
     private String damagerId;       // The id of the entity dealing the damage

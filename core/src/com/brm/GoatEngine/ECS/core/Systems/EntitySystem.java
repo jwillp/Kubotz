@@ -3,7 +3,7 @@ package com.brm.GoatEngine.ECS.core.Systems;
 
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 public abstract class EntitySystem {
 
@@ -62,7 +62,7 @@ public abstract class EntitySystem {
      * Fires an Event to all systems linked to this system
      * @param event
      */
-    public void fireEvent(Event event){
+    public void fireEvent(EntityEvent event){
         this.systemManager.fireEvent(event);
     }
 
@@ -72,7 +72,7 @@ public abstract class EntitySystem {
      * @param event
      * @param <T>
      */
-    public <T extends Event>  void onEvent(T event){} //TODO ABSTRATIFY
+    public <T extends EntityEvent>  void onEvent(T event){} //TODO ABSTRATIFY
 
 
 

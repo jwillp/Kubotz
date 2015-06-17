@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.GdxRuntimeException;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
@@ -34,7 +34,7 @@ public class NarratorSystem extends EntitySystem {
     }
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         if(event.isOfType(CountdownEndEvent.class)){
             onCountdown((CountdownEndEvent) event);
         }

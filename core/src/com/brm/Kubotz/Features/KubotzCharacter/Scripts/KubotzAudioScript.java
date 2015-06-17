@@ -5,7 +5,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
@@ -27,7 +27,7 @@ public class KubotzAudioScript extends EntityScript {
     }
 
     @Override
-    public <T extends Event> void onEvent(T event, Entity entity) {
+    public <T extends EntityEvent> void onEvent(T event, Entity entity) {
         if(event.isOfType(PunchEvent.class)){
 
 

@@ -2,10 +2,9 @@ package com.brm.Kubotz.Features.GameRules.Systems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
 import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
@@ -37,10 +36,6 @@ public class LifeBasedFreeForAll extends EntitySystem {
      */
     @Override
     public void init(){
-
-        Music music = Gdx.audio.newMusic(Gdx.files.internal("audio/TechnoTheme.ogg"));
-        music.setLooping(true);
-        music.play();
 
         getSystemManager().addSystem(NarratorSystem.class, new NarratorSystem());
 
@@ -88,7 +83,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         if(event.getClass() == DamageTakenEvent.class){
             onDamageTaken((DamageTakenEvent)event);
         }

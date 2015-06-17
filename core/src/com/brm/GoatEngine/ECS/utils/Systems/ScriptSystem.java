@@ -3,21 +3,10 @@ package com.brm.GoatEngine.ECS.utils.Systems;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
-import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
-import sun.font.Script;
-import sun.org.mozilla.javascript.internal.Context;
-import sun.org.mozilla.javascript.internal.Scriptable;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Scanner;
 
 
 /**
@@ -75,7 +64,7 @@ public class ScriptSystem extends EntitySystem {
 
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);

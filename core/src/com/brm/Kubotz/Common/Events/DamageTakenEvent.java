@@ -1,12 +1,11 @@
 package com.brm.Kubotz.Common.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
-import com.brm.GoatEngine.Utils.Logger;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when an entity has taken damage (not to be confused with TakeDamageEvent
  */
-public class DamageTakenEvent extends Event{
+public class DamageTakenEvent extends EntityEvent {
 
     private String attackerId;
 

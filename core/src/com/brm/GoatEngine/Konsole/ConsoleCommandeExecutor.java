@@ -1,17 +1,19 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.Konsole;
 
+import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
+import com.brm.GoatEngine.GoatEngine;
 import com.brm.Kubotz.GameScreens.TitleScreen;
 import com.strongjoshua.console.CommandExecutor;
 import com.strongjoshua.console.Console;
 
 /**
- * Script Command Executor
+ * Script Command Executor specific to the GoatEngine
  */
 public class ConsoleCommandeExecutor extends CommandExecutor {
 
 
-    // SCRIPTING COMMANDS //
 
+    // SCRIPTING COMMANDS //
     /**
      * Loads a script file and runs it
      * @param scriptName the script file name
@@ -23,13 +25,13 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
             scriptName += ".js";
         }
 
+        //runScript("scripts/"+scriptName); //Retry in the script folder
+
         try{
             String script = GoatEngine.get().getScriptEngine().loadScript(scriptName);
-            Object result = GoatEngine.get().getScriptEngine().runScript(script);
-            GoatEngine.get().getConsole().log(result.toString(), Console.LogLevel.INFO);
-        }catch(GameScriptEngine.ScriptNotFoundException e){
+            GoatEngine.get().getScriptEngine().runScript(script);
+        }catch(ScriptingEngine.ScriptNotFoundException e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
-            runScript("scripts/"+scriptName); //Retry in the script folder
         }catch (Exception e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
         }
@@ -42,14 +44,12 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
      */
     public void js(String javascript){
         try{
-            GoatEngine.get().getScriptEngine().runScript(javascript);
+            Object result = GoatEngine.get().getScriptEngine().runScript(javascript);
+            GoatEngine.get().getConsole().log(">>> " + result.toString(), Console.LogLevel.INFO);
         }catch(Exception e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
         }
     }
-
-
-
 
 
 
@@ -66,7 +66,6 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
         GoatEngine.get().getGameScreenManager().resume();
     }
 
-
     public void changeScreen(String name){
 
         if(name.equals("title_screen")){
@@ -74,10 +73,6 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
         }
 
     }
-
-
-
-
 
 
 

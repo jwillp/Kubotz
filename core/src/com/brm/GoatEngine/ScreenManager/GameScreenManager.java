@@ -33,8 +33,6 @@ public class GameScreenManager {
 
         //Graphical Interface initSystems
         Logger.log("Game Engine Init::GUI Initialisation");
-
-
     }
 
     /**
@@ -44,10 +42,6 @@ public class GameScreenManager {
         Logger.log("Game Engine Cleaning Up");
     }
 
-    public void exitWithError(String error){
-        System.out.println(error);
-        System.exit(1);
-    }
 
     /**
      * Exits the engine in a clean way
@@ -110,7 +104,7 @@ public class GameScreenManager {
         if(!this.screens.empty()){
             this.screens.peek().handleInput(this);
         }else{
-            this.exitWithError("Game Engine handle events::There is no screen in the engine's stack.");
+            throw new EmptyScreenManagerException();
         }
 
     }
@@ -120,7 +114,7 @@ public class GameScreenManager {
             this.screens.peek().update(this, deltaTime);
 
         }else{
-            this.exitWithError("Game Engine Update::There is no screen in the engine's stack.");
+            throw new EmptyScreenManagerException();
         }
 
     }
@@ -129,7 +123,7 @@ public class GameScreenManager {
         if(!this.screens.empty()){
             this.screens.peek().draw(this, deltaTime);
         }else{
-            this.exitWithError("Game Engine Draw::There is no screen in the engine's stack.");
+            throw new EmptyScreenManagerException();
         }
     }
 
@@ -147,6 +141,21 @@ public class GameScreenManager {
     public void resume(){
         this.isRunning = true;
     }
+
+
+
+
+
+    public class EmptyScreenManagerException extends RuntimeException{
+
+        public EmptyScreenManagerException(){
+            super("There is no Game Screen in the Screen Manager's stack");
+        }
+    }
+
+
+
+
 
 
 }

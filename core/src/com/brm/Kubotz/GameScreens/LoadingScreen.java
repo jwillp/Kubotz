@@ -79,4 +79,5 @@ public class LoadingScreen extends GameScreen {
         spriteBatch.draw(this.background, 0-Config.V_WIDTH/2,0-Config.V_HEIGHT/2, Config.V_WIDTH, Config.V_HEIGHT);
         spriteBatch.end();
     }
+
 }

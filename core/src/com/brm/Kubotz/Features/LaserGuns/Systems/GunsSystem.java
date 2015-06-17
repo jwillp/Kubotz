@@ -4,7 +4,7 @@ package com.brm.Kubotz.Features.LaserGuns.Systems;
 
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
@@ -103,7 +103,7 @@ public class GunsSystem extends EntitySystem {
 
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         if(event.getClass() == CollisionEvent.class){
             this.onCollision((CollisionEvent) event);
         }

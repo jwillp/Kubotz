@@ -5,7 +5,7 @@ import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
@@ -101,7 +101,7 @@ public class GrabSystem extends EntitySystem{
     }
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         if(event.getClass() == CollisionEvent.class){
             this.onCollision((CollisionEvent) event);
         }

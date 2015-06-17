@@ -6,13 +6,12 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.utils.Components.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
 import com.brm.GoatEngine.GameCamera;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Math.Vectors;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 
@@ -195,7 +194,7 @@ public class CameraSystem extends EntitySystem {
 
 
     @Override
-    public <T extends Event> void onEvent(T event) {
+    public <T extends EntityEvent> void onEvent(T event) {
         if(event.getClass() == DamageTakenEvent.class){
             mainCamera.setShaking(true);
             mainCamera.getShakeDuration().reset();

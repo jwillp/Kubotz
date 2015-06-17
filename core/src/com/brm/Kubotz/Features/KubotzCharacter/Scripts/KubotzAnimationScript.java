@@ -5,17 +5,15 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.core.Entity.Entity;
 import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
 import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Common.Events.StunnedFinishedEvent;
-import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
 import com.brm.Kubotz.Features.DashBoots.Events.DashPhaseChangeEvent;
 import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent;
@@ -30,7 +28,6 @@ import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;
-import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -77,7 +74,7 @@ public class KubotzAnimationScript extends EntityScript {
 
 
     @Override
-    public <T extends Event> void onEvent(T event, Entity entity) {
+    public <T extends EntityEvent> void onEvent(T event, Entity entity) {
 
 
         //GunShot

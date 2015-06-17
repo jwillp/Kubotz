@@ -1,9 +1,13 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.ScriptingEngine;
 
-import sun.org.mozilla.javascript.internal.Context;
-import sun.org.mozilla.javascript.internal.Scriptable;
+import com.brm.GoatEngine.GoatEngine;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.JavaAdapter;
+import org.mozilla.javascript.Scriptable;
+
 
 import java.io.IOException;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -12,14 +16,14 @@ import java.nio.file.Paths;
 /**
  * Script engine used to communicate between the GameEngine and scripts
  */
-public class GameScriptEngine{
+public class ScriptingEngine {
 
     private Context context;
     private Scriptable scope;
 
 
 
-    public GameScriptEngine(){}
+    public ScriptingEngine(){}
 
 
     public void init(){
@@ -27,14 +31,32 @@ public class GameScriptEngine{
         context.setOptimizationLevel(-1);
         scope = context.initStandardObjects();
 
+
+        
+        //EXPOSE GOAT ENGINE API
+
         //Pass the engine to the current scope that way we have access to the whole engine (and game)
-        scope.put("GoatEngine", scope, Context.javaToJS(GoatEngine.get(), scope));
+        addObjectToScope("GoatEngine", GoatEngine.get());
+
+        //Put some helpers (Console for console.log, instead of doing GoatEngine.getConsole())
+        addObjectToScope("console", GoatEngine.get().getConsole());
 
 
-        //Put some helpers (Console for console.log)
-        scope.put("console", scope, Context.javaToJS(GoatEngine.get().getConsole(), scope));
+
 
     }
+
+    /**
+     * Adds an object to the Script Engine's scope
+     * Useful for game specific Script API
+     * @param objectName
+     * @param object
+     * @param <T>
+     */
+    public <T extends Object> void addObjectToScope(String objectName, T object){
+        scope.put(objectName, scope, Context.javaToJS(object, scope));
+    }
+
 
 
 

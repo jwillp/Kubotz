@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.LaserGuns.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when an entity fires a Gun Shot
  */
-public class GunShotEvent extends Event{
+public class GunShotEvent extends EntityEvent {
 
     public final String shooterId; //The entity Shooting
 

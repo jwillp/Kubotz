@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.LaserSword.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when an Entity swings a sword
  */
-public class SwordSwingEvent extends Event {
+public class SwordSwingEvent extends EntityEvent {
 
     /**
      *

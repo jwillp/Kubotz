@@ -13,7 +13,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.brm.GoatEngine.MusicManager;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
-import com.brm.GoatEngine.ConsoleCommandeExecutor;
+import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Input.ControllerMap;
 import com.brm.Kubotz.Input.DiaronControllerMap;

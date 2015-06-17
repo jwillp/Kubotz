@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.GameRules.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * When a player performs a kill i.e killing another player
  */
-public class PlayerKillEvent extends Event{
+public class PlayerKillEvent extends EntityEvent {
 
     /**
      *

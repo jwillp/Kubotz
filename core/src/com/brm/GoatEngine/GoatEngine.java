@@ -1,8 +1,12 @@
 package com.brm.GoatEngine;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.GL20;
+import com.brm.GoatEngine.EventManager.EventManager;
+import com.brm.GoatEngine.GraphicsEngine.GraphicsEngine;
+import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
+import com.brm.GoatEngine.Konsole.Konsole;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
+import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
 import com.strongjoshua.console.Console;
 
 /**
@@ -16,19 +20,27 @@ import com.strongjoshua.console.Console;
  */
 public class GoatEngine {
 
-
     private static GoatEngine instance = null;
 
+    //Scripting Engine
+    private ScriptingEngine scriptEngine;
+
+    //ScreenManager
+    private GameScreenManager gameScreenManager; //This is where the real "Game" is happening
+
+    private EventManager eventManager;
 
     private MusicManager musicManager;
 
     private InputManager inputManager;
 
-    private GameScriptEngine scriptEngine;
-
-    private GameScreenManager gameScreenManager; //This is where the real "Game" is happening
-
     private Konsole console;
+
+    private GraphicsEngine graphicsEngine;
+
+
+
+
 
     // TODO Global Event Manager?
 
@@ -50,6 +62,10 @@ public class GoatEngine {
      */
     public void init(){
 
+        //Graphics Engine
+        graphicsEngine = new GraphicsEngine();
+
+
         //Init the console
         setConsole(new Konsole());
         getConsole().setCommandExecutor(new ConsoleCommandeExecutor());
@@ -59,13 +75,25 @@ public class GoatEngine {
         setInputManager(new InputManager());
 
         //Script Engine Init
-        setScriptEngine(new GameScriptEngine());
+        setScriptEngine(new ScriptingEngine());
         scriptEngine.init();
 
         //Game Screen manager
         setGameScreenManager(new GameScreenManager());
         getGameScreenManager().init();
 
+
+        // Event Manager
+        eventManager = new EventManager();
+
+
+
+        // RUN DEFAULT MAIN SCRIPT
+        try{
+            scriptEngine.runScript(scriptEngine.loadScript("scripts/main.js"));
+        }catch(Exception e){
+            getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
+        }
 
 
     }
@@ -81,8 +109,8 @@ public class GoatEngine {
         //TODO Update?
 
         //Clears the screen
-        Gdx.gl.glClearColor(0,0,0,0);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT);
+        graphicsEngine.clearScreen();
+
         if(getGameScreenManager().isRunning()){
             //Game Screen Manager
             getGameScreenManager().handleEvents();
@@ -125,11 +153,11 @@ public class GoatEngine {
         this.inputManager = inputManager;
     }
 
-    public GameScriptEngine getScriptEngine() {
+    public ScriptingEngine getScriptEngine() {
         return scriptEngine;
     }
 
-    public void setScriptEngine(GameScriptEngine scriptEngine) {
+    public void setScriptEngine(ScriptingEngine scriptEngine) {
         this.scriptEngine = scriptEngine;
     }
 
@@ -147,5 +175,9 @@ public class GoatEngine {
 
     public void setConsole(Konsole console) {
         this.console = console;
+    }
+
+    public EventManager getEventManager() {
+        return eventManager;
     }
 }

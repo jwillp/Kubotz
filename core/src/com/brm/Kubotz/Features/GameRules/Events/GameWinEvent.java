@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.GameRules.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * Triggered when a player wins
  */
-public class GameWinEvent extends Event{
+public class GameWinEvent extends EntityEvent {
 
     /**
      *

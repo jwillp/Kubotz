@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Common.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**
  * A Clash between two attacks
  */
-public class ClashEvent extends Event {
+public class ClashEvent extends EntityEvent {
 
 
     private String entityB;

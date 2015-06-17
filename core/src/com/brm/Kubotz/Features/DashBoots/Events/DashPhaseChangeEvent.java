@@ -1,12 +1,12 @@
 package com.brm.Kubotz.Features.DashBoots.Events;
 
-import com.brm.GoatEngine.ECS.core.Entity.Event;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.Kubotz.Features.DashBoots.Components.DashComponent;
 
 /**
  * Triggered when an entity is dashing and (changing states whithin taht dash)
  */
-public class DashPhaseChangeEvent extends Event{
+public class DashPhaseChangeEvent extends EntityEvent {
 
     private DashComponent.Phase phase;
 
