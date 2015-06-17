@@ -1,4 +1,4 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.Input;
 
 import com.badlogic.gdx.InputProcessor;
 import com.brm.GoatEngine.Input.GameControllerManager;

@@ -1,7 +1,6 @@
 package com.brm.GoatEngine.Input;
 
 import com.badlogic.gdx.InputProcessor;
-import com.brm.GoatEngine.InputManager;
 
 /**
  * Manages Keyboard and Mouse Inputs

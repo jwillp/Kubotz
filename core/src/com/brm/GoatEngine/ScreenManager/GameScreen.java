@@ -1,8 +1,6 @@
 package com.brm.GoatEngine.ScreenManager;
 
-import sun.org.mozilla.javascript.internal.ScriptableObject;
-
-public class GameScreen{
+public abstract class GameScreen{
 
 
     public GameScreen(){}

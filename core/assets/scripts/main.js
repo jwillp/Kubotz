@@ -1,29 +1,60 @@
 // Main entry point
 
+//A very simple class wrapper used to simplyfy Javascript OOP
+var Class = {
+    extend: function (type, objectDef) {
+        return new JavaAdapter(type, objectDef);
+    },
+
+    create: function (objectDef) {
+       objectDef.extend = this.extend; //Add the possibility to extend to a class
+       return objectDef;
+    },
+}
 
 
-obj = {
+/**
+* Simple Enums
+*/
+function Enum(constantsList){
+    enumObj = {}
+    for (var i in constantsList) {
+        enumObj[constantsList[i]] = i;
+    }
+    Object.freeze(enumObj);
+    return enumObj;
+}
 
-	init: function (engine) {
-		// body...
-	},
+
+
+
+var Direction = Enum(['NORTH', 'SOUTH', 'WEST', 'EAST']);
+console.log(Direction.NORTH);
+
+
+/*var screen = Class.extend(ScreenManagerPackage.GameScreen, {
+
+    a: 0,
+
+
+    init: function (engine) {
+        // body...
+    },
        
     handleInput: function (engine) {
-    	// body...
+        // body...
     },
 
     update: function (engine, deltaTime) {
-    	// body...
+        
+
     },
 
     draw: function (engine, deltaTime) {
-    	// body...
+        // body...
     }
 
- };
+});
+GoatEngine.getGameScreenManager().changeScreen(screen);*/
 
 
-var j = new JavaAdapter(com.brm.GoatEngine.ScreenManager.GameScreen, obj);
-
-
-GoatEngine.getGameScreenManager().changeScreen(j);

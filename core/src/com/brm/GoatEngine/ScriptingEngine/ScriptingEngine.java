@@ -2,12 +2,9 @@ package com.brm.GoatEngine.ScriptingEngine;
 
 import com.brm.GoatEngine.GoatEngine;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.JavaAdapter;
 import org.mozilla.javascript.Scriptable;
 
-
 import java.io.IOException;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -32,14 +29,23 @@ public class ScriptingEngine {
         scope = context.initStandardObjects();
 
 
-        
-        //EXPOSE GOAT ENGINE API
 
+        //EXPOSE GOAT ENGINE API
         //Pass the engine to the current scope that way we have access to the whole engine (and game)
         addObjectToScope("GoatEngine", GoatEngine.get());
 
         //Put some helpers (Console for console.log, instead of doing GoatEngine.getConsole())
         addObjectToScope("console", GoatEngine.get().getConsole());
+
+        //Event Manager
+
+        //SCREEN MANAGER
+        //add package
+        this.addPackage("com.brm.GoatEngine.ScreenManager", "ScreenManagerPackage");
+
+        // ECS
+
+
 
 
 
@@ -90,6 +96,22 @@ public class ScriptingEngine {
         Context.exit();
     }
 
+
+    /**
+     * Adds a Package to the scope
+     */
+    public void addPackage(String packageName, String accessName){
+        this.runScript("var " +  accessName+ " = " + packageName);
+    }
+
+
+
+
+
+
+
+
+
     /**
      * Exception for Script not found
      */
@@ -100,13 +122,5 @@ public class ScriptingEngine {
         }
 
     }
-
-
-
-
-
-
-
-
 
 }

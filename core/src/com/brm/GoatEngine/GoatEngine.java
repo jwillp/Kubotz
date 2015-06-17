@@ -3,6 +3,7 @@ package com.brm.GoatEngine;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.EventManager.EventManager;
 import com.brm.GoatEngine.GraphicsEngine.GraphicsEngine;
+import com.brm.GoatEngine.Input.InputManager;
 import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
 import com.brm.GoatEngine.Konsole.Konsole;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
