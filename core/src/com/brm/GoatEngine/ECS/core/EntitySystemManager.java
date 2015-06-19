@@ -21,7 +21,7 @@ public class EntitySystemManager implements GameEventListener{
     public EntitySystemManager(ECSManager manager){
         ecsManager = manager;
         systems = new LinkedHashMap<Class, EntitySystem>();
-        GoatEngine.get().getEventManager().addListener(this);
+        GoatEngine.eventManager.addListener(this);
 
     }
 
@@ -95,7 +95,7 @@ public class EntitySystemManager implements GameEventListener{
      * @param event
      */
     public <T extends EntityEvent> void fireEvent(T event) {
-        GoatEngine.get().getEventManager().fireEvent(event);
+        GoatEngine.eventManager.fireEvent(event);
     }
 
     @Override

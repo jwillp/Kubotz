@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.ECS.common;
 
 import com.brm.GoatEngine.ECS.core.EntityComponent;
-import com.brm.GoatEngine.Renderer;
+import com.brm.GoatEngine.GraphicsEngine.Renderer;
 
 import java.util.HashMap;
 

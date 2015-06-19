@@ -11,7 +11,7 @@ import com.brm.GoatEngine.ECS.common.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntitySystem;
-import com.brm.GoatEngine.GameCamera;
+import com.brm.GoatEngine.GraphicsEngine.GameCamera;
 import com.brm.GoatEngine.Utils.Math.Vectors;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 

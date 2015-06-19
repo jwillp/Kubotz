@@ -43,7 +43,7 @@ public class InputTranslationSystem extends EntitySystem {
 
         if(Config.PLAYER_1_USE_GAMEPAD){
             try{
-                player1Controller = GoatEngine.get().getInputManager().getGameControllerManager().captureController();
+                player1Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
             }catch (GameControllerManager.NoControllersAvailableException e){
                 Config.PLAYER_1_USE_GAMEPAD = false;
             }
@@ -51,7 +51,7 @@ public class InputTranslationSystem extends EntitySystem {
 
         if(Config.PLAYER_2_USE_GAMEPAD){
             try{
-                player2Controller = GoatEngine.get().getInputManager().getGameControllerManager().captureController();
+                player2Controller = GoatEngine.inputManager.getGameControllerManager().captureController();
             }catch (GameControllerManager.NoControllersAvailableException e){
                 Config.PLAYER_2_USE_GAMEPAD = false;
             }

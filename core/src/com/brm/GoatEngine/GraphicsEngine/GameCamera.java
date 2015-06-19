@@ -1,4 +1,4 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.GraphicsEngine;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector2;

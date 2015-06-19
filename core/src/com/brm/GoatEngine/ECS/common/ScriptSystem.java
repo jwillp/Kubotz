@@ -47,8 +47,9 @@ public class ScriptSystem extends EntitySystem {
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
-                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
-                GoatEngine.get().getScriptEngine().callFunction(
+                Logger.log("YUP");
+                Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
+                GoatEngine.scriptEngine.callFunction(
                         "onInput", script.getScope(), entity, gamePad.getPressedButtons()
                 );
             }
@@ -63,23 +64,19 @@ public class ScriptSystem extends EntitySystem {
             for(String scriptFile: scriptComp.getScripts()){
 
                 //See if the script was registered with the engine
-                if(!GoatEngine.get().getScriptEngine().isScriptRegistered(scriptFile)){
-                    Script script = GoatEngine.get().getScriptEngine().registerScript(scriptFile);
-                    GoatEngine.get().getScriptEngine().runScript(script);
+                if(!GoatEngine.scriptEngine.isScriptRegistered(scriptFile)){
+                    Script script = GoatEngine.scriptEngine.registerScript(scriptFile);
+                    GoatEngine.scriptEngine.runScript(script);
                     //GoatEngine.get().getScriptEngine().runScript("onInit()", script.getScope());
-                    GoatEngine.get().getScriptEngine().callFunction(
+                    GoatEngine.scriptEngine.callFunction(
                             "onInit", script.getScope(), entity, entity.getManager()
                     );
-
-
-
                 }
-                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
-                GoatEngine.get().getScriptEngine().callFunction(
+                // ON UPDATE
+                Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
+                GoatEngine.scriptEngine.callFunction(
                         "onUpdate", script.getScope(), entity, entity.getManager()
                 );
-                // ON UPDATE
-                //script.onUpdate(entity, getEntityManager());
             }
         }
     }
@@ -91,15 +88,15 @@ public class ScriptSystem extends EntitySystem {
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(String scriptFile: scripts.getScripts()){
-                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
+                Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
                 if(event.getClass() == CollisionEvent.class){
-                    GoatEngine.get().getScriptEngine().callFunction(
-                            "onCollision", script.getScope(), (CollisionEvent)event, entity
+                    GoatEngine.scriptEngine.callFunction(
+                            "onCollision", script.getScope(), event, entity
                     );
                 }else{
-                    GoatEngine.get().getScriptEngine().callFunction(
-                            "onEvent", script.getScope(), event, entity
-                    );
+                    GoatEngine.scriptEngine.callFunction(
+                           "onEvent", script.getScope(), event, entity
+                   );
                 }
             }
         }

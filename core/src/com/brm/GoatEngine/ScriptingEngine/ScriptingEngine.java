@@ -72,14 +72,20 @@ public class ScriptingEngine {
 
         //EXPOSE GOAT ENGINE API
         //Pass the engine to the current globalScope that way we have access to the whole engine (and game)
-        addObjectToGlobalScope("GoatEngine", GoatEngine.get());
+        addObjectToGlobalScope("GoatEngine", new GoatEngine()); //Dont mind the new we'll only access static methods
 
         //Put some helpers (Console for console.log, instead of doing GoatEngine.getConsole())
-        addObjectToGlobalScope("console", GoatEngine.get().getConsole());
+        addObjectToGlobalScope("console", GoatEngine.console);
 
 
         //SCREEN MANAGER
         this.addPackageToGlobalScope("com.brm.GoatEngine.ScreenManager", "ScreenManagerPackage");
+
+        this.addPackageToGlobalScope("com.brm.GoatEngine.EventManager", "EventManagerPacker");
+
+
+
+
 
     }
 

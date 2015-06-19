@@ -15,7 +15,7 @@ public class Game extends ApplicationAdapter {
 	@Override
 	public void create () {
 
-		GoatEngine.get().init();
+		GoatEngine.init();
 
 		//EXPOSE SCRIPTING API
 
@@ -32,17 +32,18 @@ public class Game extends ApplicationAdapter {
 			);
 		}
 
-		GoatEngine.get().getGameScreenManager().addScreen(new InGameScreen());
+		GoatEngine.gameScreenManager.addScreen(new InGameScreen());
 	}
 
 
 	@Override
 	public void render () {
-		GoatEngine.get().update();
+		GoatEngine.update();
 	}
 
 	@Override
 	public void dispose() {
 		Config.save();
+		GoatEngine.cleanUp();
 	}
 }

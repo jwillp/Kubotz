@@ -30,19 +30,19 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
         //runScript("scripts/"+scriptName); //Retry in the script folder
 
         try{ //TODO see if we run this in the Gobal or register it
-            String script = GoatEngine.get().getScriptEngine().loadScript(scriptName);
-            GoatEngine.get().getScriptEngine().runScriptInGlobalScope(script);
+            String script = GoatEngine.scriptEngine.loadScript(scriptName);
+            GoatEngine.scriptEngine.runScriptInGlobalScope(script);
         }catch(ScriptingEngine.ScriptNotFoundException e){
-            GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
+            GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
         }catch (Exception e){
-            GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
+            GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
         }
 
     }
 
     public void reloadScript(String scriptFileName){
         try{
-            GoatEngine.get().getScriptEngine().reloadScript(scriptFileName);
+            GoatEngine.scriptEngine.reloadScript(scriptFileName);
         }catch(Exception e){
             console.log(e.getMessage(), Console.LogLevel.ERROR);
         }
@@ -57,10 +57,10 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
     public void js(String... javascript){
         String source = Arrays.toString(javascript);
         try{
-            Object result = GoatEngine.get().getScriptEngine().runScriptInGlobalScope(source);
-            GoatEngine.get().getConsole().log(">>> " + result.toString(), Console.LogLevel.INFO);
+            Object result = GoatEngine.scriptEngine.runScriptInGlobalScope(source);
+            GoatEngine.console.log(">>> " + result.toString(), Console.LogLevel.INFO);
         }catch(Exception e){
-            GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
+            GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
         }
     }
 
@@ -76,17 +76,17 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
      * Pauses the game screen manager
      */
     public void pauseGame(){
-        GoatEngine.get().getGameScreenManager().pause();
+        GoatEngine.gameScreenManager.pause();
     }
 
     public void resumeGame(){
-        GoatEngine.get().getGameScreenManager().resume();
+        GoatEngine.gameScreenManager.resume();
     }
 
     public void changeScreen(String name){
 
         if(name.equals("title_screen")){
-            GoatEngine.get().getGameScreenManager().changeScreen(new TitleScreen());
+            GoatEngine.gameScreenManager.changeScreen(new TitleScreen());
         }
 
     }

@@ -1,4 +1,4 @@
-package com.brm.GoatEngine;
+package com.brm.GoatEngine.GraphicsEngine;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;

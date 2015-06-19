@@ -22,81 +22,65 @@ import com.strongjoshua.console.Console;
  */
 public class GoatEngine {
 
-    private static GoatEngine instance = null;
+
 
     //Scripting Engine
-    private ScriptingEngine scriptEngine;
+    public static ScriptingEngine scriptEngine;
 
     //ScreenManager
-    private GameScreenManager gameScreenManager; //This is where the real "Game" is happening
+    public static GameScreenManager gameScreenManager; //This is where the real "Game" is happening
 
-    private EventManager eventManager;
+    public static EventManager eventManager;
 
-    private MusicManager musicManager;
+    public static MusicManager musicManager;
 
-    private InputManager inputManager;
+    public static InputManager inputManager;
 
-    private Konsole console;
+    public static Konsole console;
 
-    private GraphicsEngine graphicsEngine;
+    public static GraphicsEngine graphicsEngine;
 
-
-
-
-
-    // TODO Global Event Manager?
 
     // TODO NetworkManager ?
-
-
-
-    public static GoatEngine get(){
-        if(instance == null){
-            instance = new GoatEngine();
-        }
-        return instance;
-    }
 
 
 
     /**
      * This initializes the Game Engine
      */
-    public void init(){
+    public static void init(){
 
         //Graphics Engine
         graphicsEngine = new GraphicsEngine();
 
 
         //Init the console
-        setConsole(new Konsole());
-        getConsole().setCommandExecutor(new ConsoleCommandeExecutor());
-        getConsole().log("Console inited", Console.LogLevel.SUCCESS);
+        console = new Konsole();
+        console.setCommandExecutor(new ConsoleCommandeExecutor());
+        console.log("Console inited", Console.LogLevel.SUCCESS);
 
-        setMusicManager(new MusicManager());
-        setInputManager(new InputManager());
+        musicManager = new MusicManager();
+        inputManager = new InputManager();
 
         //Script Engine Init
-        setScriptEngine(new ScriptingEngine());
+        scriptEngine = new ScriptingEngine();
         scriptEngine.init();
 
         //Game Screen manager
-        setGameScreenManager(new GameScreenManager());
-        getGameScreenManager().init();
+        gameScreenManager = new GameScreenManager();
+        gameScreenManager.init();
 
 
         // Event Manager
         eventManager = new EventManager();
 
 
-
         // RUN DEFAULT MAIN SCRIPT
         try{
             scriptEngine.runScriptInGlobalScope(scriptEngine.loadScript("scripts/main.js"));
         }catch(Exception e){
-            getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
+            console.log(e.getMessage(), Console.LogLevel.ERROR);
         }
-
 
     }
 
@@ -104,7 +88,7 @@ public class GoatEngine {
     /**
      * Updates the engine for ONE frame
      */
-    public void update(){
+    public static void update(){
         float deltaTime = Gdx.graphics.getDeltaTime();
 
         //Script Engine
@@ -113,79 +97,34 @@ public class GoatEngine {
         //Clears the screen
         graphicsEngine.clearScreen();
 
-        if(getGameScreenManager().isRunning()){
+        if(gameScreenManager.isRunning()){
             //Game Screen Manager
-            getGameScreenManager().handleEvents();
-            getGameScreenManager().update(deltaTime);
+            gameScreenManager.handleEvents();
+            gameScreenManager.update(deltaTime);
         }
-        getGameScreenManager().draw(deltaTime);
+        gameScreenManager.draw(deltaTime);
 
         //Draw Console
-        getConsole().refresh();
-        getConsole().draw();
+        console.refresh();
+        console.draw();
 
     }
 
 
-    public void cleanUp(){
+    public static void cleanUp(){
         //GameScreen Manager
-        getGameScreenManager().cleanUp();
+        gameScreenManager.cleanUp();
 
         //Dispose Script
-        getScriptEngine().dispose();
+        scriptEngine.dispose();
 
         //Dispose Console
-        getConsole().dispose();
+        console.dispose();
     }
 
 
 
-    public GameScreen getCurrentScreen(){
-        return this.getGameScreenManager().getCurrentScreen();
-    }
 
 
-    public MusicManager getMusicManager() {
-        return musicManager;
-    }
 
-    public void setMusicManager(MusicManager musicManager) {
-        this.musicManager = musicManager;
-    }
-
-    public InputManager getInputManager() {
-        return inputManager;
-    }
-
-    public void setInputManager(InputManager inputManager) {
-        this.inputManager = inputManager;
-    }
-
-    public ScriptingEngine getScriptEngine() {
-        return scriptEngine;
-    }
-
-    public void setScriptEngine(ScriptingEngine scriptEngine) {
-        this.scriptEngine = scriptEngine;
-    }
-
-    public GameScreenManager getGameScreenManager() {
-        return gameScreenManager;
-    }
-
-    public void setGameScreenManager(GameScreenManager gameScreenManager) {
-        this.gameScreenManager = gameScreenManager;
-    }
-
-    public Konsole getConsole() {
-        return console;
-    }
-
-    public void setConsole(Konsole console) {
-        this.console = console;
-    }
-
-    public EventManager getEventManager() {
-        return eventManager;
-    }
 }
