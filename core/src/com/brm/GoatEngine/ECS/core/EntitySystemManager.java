@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.EventManager.GameEvent;
 import com.brm.GoatEngine.EventManager.GameEventListener;
+import com.brm.GoatEngine.GoatEngine;
 
 import java.util.LinkedHashMap;
 
@@ -20,6 +21,7 @@ public class EntitySystemManager implements GameEventListener{
     public EntitySystemManager(ECSManager manager){
         ecsManager = manager;
         systems = new LinkedHashMap<Class, EntitySystem>();
+        GoatEngine.get().getEventManager().addListener(this);
 
     }
 
@@ -29,6 +31,7 @@ public class EntitySystemManager implements GameEventListener{
      * @param <T>
      * @return
      */
+    @SuppressWarnings("unchecked")
     public <T extends EntitySystem> T getSystem(Class<T> systemType){
         return (T)this.systems.get(systemType);
     }
@@ -92,15 +95,13 @@ public class EntitySystemManager implements GameEventListener{
      * @param event
      */
     public <T extends EntityEvent> void fireEvent(T event) {
-
+        GoatEngine.get().getEventManager().fireEvent(event);
     }
 
     @Override
     public void onEvent(GameEvent e) {
-        if(e.isOfType(EntityEvent.class)){
-            for(EntitySystem system: this.systems.values()){
-                system.onEvent((EntityEvent)e);
-            }
+        for(EntitySystem system: this.systems.values()){
+            system.onEvent((EntityEvent)e);
         }
     }
 

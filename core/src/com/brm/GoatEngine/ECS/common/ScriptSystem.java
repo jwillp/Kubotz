@@ -6,6 +6,7 @@ import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 import static com.brm.GoatEngine.ScriptingEngine.ScriptingEngine.*;
@@ -44,10 +45,12 @@ public class ScriptSystem extends EntitySystem {
     private void handleInputForEntity(Entity entity){
         ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        for(String script: scriptComp.getScripts()){
+        for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
-                //script.onInput(entity, gamePad.getPressedButtons());
-
+                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
+                GoatEngine.get().getScriptEngine().callFunction(
+                        "onInput", script.getScope(), entity, gamePad.getPressedButtons()
+                );
             }
         }
     }
@@ -87,13 +90,18 @@ public class ScriptSystem extends EntitySystem {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
-            /*for(EntityScript script: scripts.getScripts()){
+            for(String scriptFile: scripts.getScripts()){
+                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
                 if(event.getClass() == CollisionEvent.class){
-                    script.onCollision((CollisionEvent)event, entity); //TODO get rid of this! generify!
+                    GoatEngine.get().getScriptEngine().callFunction(
+                            "onCollision", script.getScope(), (CollisionEvent)event, entity
+                    );
                 }else{
-                    script.onEvent(event, entity);
+                    GoatEngine.get().getScriptEngine().callFunction(
+                            "onEvent", script.getScope(), event, entity
+                    );
                 }
-            }*/
+            }
         }
     }
 

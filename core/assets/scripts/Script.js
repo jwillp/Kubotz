@@ -8,7 +8,7 @@ function onInit(entity, entityManager) {
 
 
 function onUpdate(entity, entityManager) {
-	console.log(entity.getID(), "SUCCESS");
+
 }
 
 
@@ -17,13 +17,13 @@ function onInput(entity, buttons) {
 }
 
 function onCollision(contact, entity) {
-	
+	console.log("COLLISION");
 }
 
 
 
 function onEvent(event, entity){
-	
+	console.log(event, "WARNING");
 }
 
 

@@ -32,7 +32,7 @@ console.log(Direction.NORTH);
 
 
 
-var screen = Class.extend(ScreenManagerPackage.GameScreen, {
+/**var screen = Class.extend(ScreenManagerPackage.GameScreen, {
 
     a: 0,
 
@@ -56,7 +56,7 @@ var screen = Class.extend(ScreenManagerPackage.GameScreen, {
         // body...
     }
 
-});
+});*/
 //GoatEngine.getGameScreenManager().changeScreen(screen);
 
 

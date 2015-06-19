@@ -5,10 +5,8 @@ package com.brm.GoatEngine.EventManager;
  */
 public abstract class GameEvent{
 
-
     public <T extends GameEvent> boolean isOfType(Class<T> type){
         return this.getClass() == type;
     }
-
 
 }
