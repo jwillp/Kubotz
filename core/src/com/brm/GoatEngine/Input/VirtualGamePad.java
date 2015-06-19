@@ -1,6 +1,6 @@
 package com.brm.GoatEngine.Input;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 import java.util.ArrayList;
 import java.util.Collection;

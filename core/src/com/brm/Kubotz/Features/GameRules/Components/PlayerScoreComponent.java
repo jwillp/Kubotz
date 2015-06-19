@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.GameRules.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * A Component used to store the scores of a player

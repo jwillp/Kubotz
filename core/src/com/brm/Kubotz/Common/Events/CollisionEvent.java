@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Common.Events;
 
 import com.badlogic.gdx.physics.box2d.Fixture;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 
 /**

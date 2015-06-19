@@ -3,7 +3,7 @@ package com.brm.Kubotz.Common.Systems.RendringSystems;
 
 
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
 
 /**
  * Responsible for managing Animations

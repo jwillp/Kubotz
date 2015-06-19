@@ -1,10 +1,10 @@
 package com.brm.Kubotz.Features.KubotzCharacter.Scripts;
 
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.common.HealthComponent;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.EntityScript;
 
 import com.badlogic.gdx.math.Vector2;
 

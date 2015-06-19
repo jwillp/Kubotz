@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.GameRules.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * A Component to add An entity to a Team

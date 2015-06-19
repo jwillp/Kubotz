@@ -1,10 +1,10 @@
-package com.brm.GoatEngine.ECS.utils.Components;
+package com.brm.GoatEngine.ECS.common;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World

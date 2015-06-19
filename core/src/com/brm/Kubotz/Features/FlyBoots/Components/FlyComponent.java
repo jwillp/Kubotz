@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Features.FlyBoots.Components;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * Lets an Entity Fly i.e. it is not affected by Gravity

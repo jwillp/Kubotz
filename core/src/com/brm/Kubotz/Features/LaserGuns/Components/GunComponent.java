@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Features.LaserGuns.Components;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
 

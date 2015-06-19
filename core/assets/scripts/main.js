@@ -27,12 +27,12 @@ function Enum(constantsList){
 
 
 
-
 var Direction = Enum(['NORTH', 'SOUTH', 'WEST', 'EAST']);
 console.log(Direction.NORTH);
 
 
-/*var screen = Class.extend(ScreenManagerPackage.GameScreen, {
+
+var screen = Class.extend(ScreenManagerPackage.GameScreen, {
 
     a: 0,
 
@@ -46,7 +46,9 @@ console.log(Direction.NORTH);
     },
 
     update: function (engine, deltaTime) {
-        
+        var entity = GoatEngine.getCurrentScreen().getEntityManager().createEntity();
+        console.log("Entity count: " + GoatEngine.getCurrentScreen().getEntityManager().getEntityCount());
+
 
     },
 
@@ -55,6 +57,6 @@ console.log(Direction.NORTH);
     }
 
 });
-GoatEngine.getGameScreenManager().changeScreen(screen);*/
+//GoatEngine.getGameScreenManager().changeScreen(screen);
 
 

@@ -5,11 +5,11 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityFactory;
+import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 

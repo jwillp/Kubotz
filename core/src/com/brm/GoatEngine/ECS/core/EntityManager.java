@@ -1,7 +1,7 @@
-package com.brm.GoatEngine.ECS.core.Entity;
+package com.brm.GoatEngine.ECS.core;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.common.ScriptComponent;
+import com.brm.GoatEngine.ECS.common.TagsComponent;
 
 
 import java.util.*;
@@ -23,6 +23,19 @@ public class EntityManager {
      */
     public String generateId(){
         return UUID.randomUUID().toString();
+    }
+
+    /**
+     * Creates a new Entity and returns it
+     * The entity has a ScriptComponent
+     * @return
+     */
+    public Entity createEntity(){
+        Entity entity = new Entity();
+        registerEntity(entity);
+        entity.addComponent(new ScriptComponent(), ScriptComponent.ID);
+        return entity;
+
     }
 
 

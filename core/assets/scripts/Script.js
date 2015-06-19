@@ -1,20 +1,19 @@
 // SCRIPT USED TO INIT THE SCRIPTS SYSTEMS OF THE ENGINE
 kubotzPackage = Packages.com.brm.Kubotz;
 
-
 function onInit(entity, entityManager) {
-	Engine.getSystem().fireEvent(new kubotzPackage.Common.Events.ScriptEvent("0"));
+	console.log("SCRIPT INITED", "WARNING");
 }
 
 
 
 function onUpdate(entity, entityManager) {
-
+	//console.log("SCRIPT UPDATE", "SUCCESS");
 }
 
 
 function onInput(entity, buttons) {
-	Engine.print("Input!!");
+	console.log("OK");
 }
 
 function onCollision(contact, entity) {
@@ -24,8 +23,7 @@ function onCollision(contact, entity) {
 
 
 function onEvent(event, entity){
-	Engine.print("EVENT:" + entity);
-	Engine.killOne();
+	
 }
 
 

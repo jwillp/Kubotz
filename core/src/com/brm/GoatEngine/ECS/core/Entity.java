@@ -1,6 +1,4 @@
-package com.brm.GoatEngine.ECS.core.Entity;
-
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+package com.brm.GoatEngine.ECS.core;
 
 public class Entity {
 

@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.Utils.Math;
 
 /**
- * Common Math
+ * common Math
  */
 public abstract class GameMath {
 

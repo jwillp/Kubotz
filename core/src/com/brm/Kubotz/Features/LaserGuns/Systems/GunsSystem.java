@@ -3,11 +3,11 @@ package com.brm.Kubotz.Features.LaserGuns.Systems;
 
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.TagsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Common.Components.LifespanComponent;

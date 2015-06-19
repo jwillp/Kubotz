@@ -6,6 +6,7 @@ import com.brm.GoatEngine.GraphicsEngine.GraphicsEngine;
 import com.brm.GoatEngine.Input.InputManager;
 import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
 import com.brm.GoatEngine.Konsole.Konsole;
+import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
 import com.strongjoshua.console.Console;
@@ -91,7 +92,7 @@ public class GoatEngine {
 
         // RUN DEFAULT MAIN SCRIPT
         try{
-            scriptEngine.runScript(scriptEngine.loadScript("scripts/main.js"));
+            scriptEngine.runScriptInGlobalScope(scriptEngine.loadScript("scripts/main.js"));
         }catch(Exception e){
             getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
         }
@@ -138,6 +139,13 @@ public class GoatEngine {
     }
 
 
+
+    public GameScreen getCurrentScreen(){
+        return this.getGameScreenManager().getCurrentScreen();
+    }
+    
+
+
     public MusicManager getMusicManager() {
         return musicManager;
     }
@@ -170,7 +178,7 @@ public class GoatEngine {
         this.gameScreenManager = gameScreenManager;
     }
 
-    public Console getConsole() {
+    public Konsole getConsole() {
         return console;
     }
 

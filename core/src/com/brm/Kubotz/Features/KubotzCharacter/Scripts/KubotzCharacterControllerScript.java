@@ -1,9 +1,9 @@
 package com.brm.Kubotz.Features.KubotzCharacter.Scripts;
 
 
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.common.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.KubotzActionComponent;

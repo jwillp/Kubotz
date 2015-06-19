@@ -12,11 +12,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
-import com.brm.GoatEngine.ECS.core.ECSManager;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystemManager;
-import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.core.EntitySystemManager;
+import com.brm.GoatEngine.ECS.common.ScriptSystem;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
@@ -48,7 +47,6 @@ import com.brm.Kubotz.Common.Systems.SkillsSystem.SkillsSystem;
 
 public class InGameScreen extends GameScreen {
 
-    private ECSManager ecsManager = new ECSManager();
     private EntityManager entityManager;
     private EntitySystemManager systemManager;
 
@@ -56,19 +54,13 @@ public class InGameScreen extends GameScreen {
     private TiledMap tiledMap;
     private OrthogonalTiledMapRenderer mapRenderer;
 
-    //PLAYER
-    private Entity player;
-
-
 
     private boolean isPlayerOneSpawned = false;
 
 
     @Override
     public void init(GameScreenManager engine) {
-
         Logger.log("In Game State initialisation");
-
 
         // Systems Init
         entityManager = ecsManager.getEntityManager();
@@ -78,7 +70,6 @@ public class InGameScreen extends GameScreen {
         systemManager.addSystem(RenderingSystem.class, new RenderingSystem());
         systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem());
         systemManager.addSystem(MovementSystem.class, new MovementSystem());
-
 
         systemManager.addSystem(GrabSystem.class, new GrabSystem());
 

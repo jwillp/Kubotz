@@ -3,8 +3,8 @@ package com.brm.GoatEngine.AI.Pathfinding;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.Utils.Math.Vectors;
 
 

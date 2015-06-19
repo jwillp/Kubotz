@@ -1,9 +1,7 @@
 package com.brm.Kubotz.Features.Grab.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
-import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Constants;
 
 /**
  * Makes an entity able to grab/pick up objects and throw them away.

@@ -1,7 +1,7 @@
-package com.brm.GoatEngine.ECS.utils.Components;
+package com.brm.GoatEngine.ECS.common;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
 
 import java.util.Collection;
 import java.util.HashMap;

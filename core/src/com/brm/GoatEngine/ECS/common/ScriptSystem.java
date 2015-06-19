@@ -1,21 +1,29 @@
-package com.brm.GoatEngine.ECS.utils.Systems;
+package com.brm.GoatEngine.ECS.common;
 
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
+import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
+
+import static com.brm.GoatEngine.ScriptingEngine.ScriptingEngine.*;
 
 
 /**
- * Responsible for updating sripts
+ * Responsible for updating game scripts
  */
 public class ScriptSystem extends EntitySystem {
 
-    public ScriptSystem(){}
 
+    // The game Scripts follow a strict API
+    // they must absolutely implements these methods
+    public final static String METHOD_ON_INIT = "onInit()";
+
+
+
+    public ScriptSystem(){}
 
     @Override
     public void init() {
@@ -36,9 +44,10 @@ public class ScriptSystem extends EntitySystem {
     private void handleInputForEntity(Entity entity){
         ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        for(EntityScript script: scriptComp.getScripts()){
+        for(String script: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
-                script.onInput(entity, gamePad.getPressedButtons());
+                //script.onInput(entity, gamePad.getPressedButtons());
+
             }
         }
     }
@@ -48,16 +57,22 @@ public class ScriptSystem extends EntitySystem {
 
         for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
             ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
-            for(EntityScript script: scriptComp.getScripts()){
+            for(String scriptFile: scriptComp.getScripts()){
 
-                //ON INIT
-                if(!script.isInitialized()){
-                    script.setSystem(this);
-                    script.onInit(entity, getEntityManager());
-                    script.setInitialized(true);
+                //See if the script was registered with the engine
+                if(!GoatEngine.get().getScriptEngine().isScriptRegistered(scriptFile)){
+                    Script script = GoatEngine.get().getScriptEngine().registerScript(scriptFile);
+                    GoatEngine.get().getScriptEngine().runScript(script);
+                    GoatEngine.get().getScriptEngine().runScript("onInit()", script.getScope());
+
+
+
+
                 }
+                Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
+                GoatEngine.get().getScriptEngine().runScript("onUpdate()", script.getScope());
                 // ON UPDATE
-                script.onUpdate(entity, getEntityManager());
+                //script.onUpdate(entity, getEntityManager());
             }
         }
     }
@@ -68,13 +83,13 @@ public class ScriptSystem extends EntitySystem {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
-            for(EntityScript script: scripts.getScripts()){
+            /*for(EntityScript script: scripts.getScripts()){
                 if(event.getClass() == CollisionEvent.class){
                     script.onCollision((CollisionEvent)event, entity); //TODO get rid of this! generify!
                 }else{
                     script.onEvent(event, entity);
                 }
-            }
+            }*/
         }
     }
 

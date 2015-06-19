@@ -1,12 +1,10 @@
 package com.brm.Kubotz.Features.GameRules.Systems;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
+import com.brm.GoatEngine.ECS.common.HealthComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.GoatEngine.Utils.Timer;

@@ -3,12 +3,12 @@ package com.brm.Kubotz.Features.DroneGauntlet.Entities;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityFactory;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.common.HealthComponent;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.ScriptComponent;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.Kubotz.Features.DroneGauntlet.Scripts.DroneBehaviourScript;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
@@ -135,7 +135,7 @@ public class DroneFactory extends EntityFactory {
 
         //Scripts
         ScriptComponent script = new ScriptComponent();
-        script.addScript(new DroneBehaviourScript());
+        //script.addScript(new DroneBehaviourScript());     // TODO Put in js script
         drone.addComponent(script, ScriptComponent.ID);
 
         return drone;

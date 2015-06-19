@@ -8,16 +8,14 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
-import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Components.ScriptComponent;
-import com.brm.GoatEngine.ECS.utils.Components.TagsComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.ScriptComponent;
+import com.brm.GoatEngine.ECS.common.TagsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityFactory;
+import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.Kubotz.Common.Components.DamageComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
-import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
@@ -137,7 +135,7 @@ public class BulletFactory extends EntityFactory {
 
         // SCRIPTS
         ScriptComponent scriptComp = new ScriptComponent();
-        scriptComp.addScript(new BulletGraphicsScript());
+        //scriptComp.addScript(new BulletGraphicsScript()); // TODO put in JS Script
         bullet.addComponent(scriptComp, ScriptComponent.ID);
 
         return bullet;

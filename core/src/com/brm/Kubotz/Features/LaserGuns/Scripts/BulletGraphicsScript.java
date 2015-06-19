@@ -1,13 +1,12 @@
 package com.brm.Kubotz.Features.LaserGuns.Scripts;
 
 import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.common.EntityScript;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
-import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 

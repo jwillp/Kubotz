@@ -2,9 +2,9 @@ package com.brm.Kubotz.Common.Systems.MovementSystems;
 
 
 
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.DashBoots.Systems.DashSystem;
 import com.brm.Kubotz.Features.FlyBoots.Systems.FlySystem;

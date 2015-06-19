@@ -1,9 +1,8 @@
-package com.brm.GoatEngine.ECS.utils.Scripts;
+package com.brm.GoatEngine.ECS.common;
 
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.utils.Systems.ScriptSystem;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
@@ -16,7 +15,6 @@ import java.util.ArrayList;
 public abstract class EntityScript{
 
     private boolean isInitialized = false;
-    private ScriptSystem system;  //a reference to the script system
 
     /**
      * Called when a script is added to an entity
@@ -44,9 +42,18 @@ public abstract class EntityScript{
      * @param contact
      * @param entity
      */
-    public void onCollision(CollisionEvent contact, Entity entity){
+    public void onCollision(CollisionEvent contact, Entity entity){}
 
-    }
+    /**
+     * When an event occurs
+     * @param event
+     * @param entity
+     * @param <T>
+     */
+    public <T extends EntityEvent> void onEvent(T event, Entity entity){}
+
+
+
 
     /**
      * Called when the script is detached from the entity
@@ -62,9 +69,5 @@ public abstract class EntityScript{
         this.isInitialized = isInitialized;
     }
 
-    public <T extends EntityEvent> void onEvent(T event, Entity entity){};
 
-    public void setSystem(ScriptSystem system) {
-        this.system = system;
-    }
 }

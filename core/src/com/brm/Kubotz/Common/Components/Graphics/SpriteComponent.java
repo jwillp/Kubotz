@@ -3,8 +3,8 @@ package com.brm.Kubotz.Common.Components.Graphics;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
 
 import java.util.Comparator;
 

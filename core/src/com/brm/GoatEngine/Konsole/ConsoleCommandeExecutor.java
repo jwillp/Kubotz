@@ -6,6 +6,8 @@ import com.brm.Kubotz.GameScreens.TitleScreen;
 import com.strongjoshua.console.CommandExecutor;
 import com.strongjoshua.console.Console;
 
+import java.util.Arrays;
+
 /**
  * Script Command Executor specific to the GoatEngine
  */
@@ -27,9 +29,9 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
 
         //runScript("scripts/"+scriptName); //Retry in the script folder
 
-        try{
+        try{ //TODO see if we run this in the Gobal or register it
             String script = GoatEngine.get().getScriptEngine().loadScript(scriptName);
-            GoatEngine.get().getScriptEngine().runScript(script);
+            GoatEngine.get().getScriptEngine().runScriptInGlobalScope(script);
         }catch(ScriptingEngine.ScriptNotFoundException e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
         }catch (Exception e){
@@ -38,18 +40,33 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
 
     }
 
+    public void reloadScript(String scriptFileName){
+        try{
+            GoatEngine.get().getScriptEngine().reloadScript(scriptFileName);
+        }catch(Exception e){
+            console.log(e.getMessage(), Console.LogLevel.ERROR);
+        }
+
+    }
+
+
     /**
      * Runs a Javascript code sample
      * @param javascript
      */
-    public void js(String javascript){
+    public void js(String... javascript){
+        String source = Arrays.toString(javascript);
         try{
-            Object result = GoatEngine.get().getScriptEngine().runScript(javascript);
+            Object result = GoatEngine.get().getScriptEngine().runScriptInGlobalScope(source);
             GoatEngine.get().getConsole().log(">>> " + result.toString(), Console.LogLevel.INFO);
         }catch(Exception e){
             GoatEngine.get().getConsole().log(e.getMessage(), Console.LogLevel.ERROR);
         }
     }
+
+
+
+
 
 
 

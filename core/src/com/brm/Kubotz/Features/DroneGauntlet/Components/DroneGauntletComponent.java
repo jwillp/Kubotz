@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.DroneGauntlet.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
 import java.util.ArrayList;

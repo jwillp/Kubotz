@@ -3,7 +3,7 @@ package com.brm.Kubotz.Common.Components.Graphics;
 import com.badlogic.gdx.graphics.Color;
 import com.brashmonkey.spriter.Mainline;
 import com.brashmonkey.spriter.Player;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * An animation component specialy made for Spriter animations

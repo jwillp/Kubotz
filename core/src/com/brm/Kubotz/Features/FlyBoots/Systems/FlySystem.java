@@ -1,9 +1,9 @@
 package com.brm.Kubotz.Features.FlyBoots.Systems;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.FlyBoots.Components.FlyComponent;
 import com.brm.Kubotz.Input.GameButton;

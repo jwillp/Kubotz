@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.FlyBoots.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
 

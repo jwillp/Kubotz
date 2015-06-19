@@ -1,7 +1,6 @@
-package com.brm.GoatEngine.ECS.core.Systems;
+package com.brm.GoatEngine.ECS.core;
 
 import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.ECS.core.ECSManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.EventManager.GameEvent;
 import com.brm.GoatEngine.EventManager.GameEventListener;

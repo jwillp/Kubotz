@@ -142,8 +142,13 @@ public class GameScreenManager {
         this.isRunning = true;
     }
 
-
-
+    public GameScreen getCurrentScreen() {
+        if(!this.screens.empty()){
+            return this.screens.peek();
+        }else{
+            throw new EmptyScreenManagerException();
+        }
+    }
 
 
     public class EmptyScreenManagerException extends RuntimeException{

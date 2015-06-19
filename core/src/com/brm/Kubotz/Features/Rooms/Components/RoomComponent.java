@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Features.Rooms.Components;
 
 import com.badlogic.gdx.maps.tiled.TiledMap;
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * Represents a Room

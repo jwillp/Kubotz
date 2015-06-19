@@ -1,7 +1,7 @@
 package com.brm.GoatEngine.AI.Components;
 
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.GoatEngine.AI.Pathfinding.PathNode;
 

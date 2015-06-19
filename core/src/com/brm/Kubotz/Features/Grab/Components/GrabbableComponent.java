@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.Grab.Components;
 
-import com.brm.GoatEngine.ECS.core.Components.EntityComponent;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
  * Makes an object grabbable

@@ -1,11 +1,11 @@
 package com.brm.Kubotz.Features.PowerUps;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.utils.Components.HealthComponent;
-import com.brm.GoatEngine.ECS.utils.Components.JumpComponent;
-import com.brm.GoatEngine.ECS.utils.Components.ManaComponent;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
+import com.brm.GoatEngine.ECS.common.HealthComponent;
+import com.brm.GoatEngine.ECS.common.JumpComponent;
+import com.brm.GoatEngine.ECS.common.ManaComponent;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;

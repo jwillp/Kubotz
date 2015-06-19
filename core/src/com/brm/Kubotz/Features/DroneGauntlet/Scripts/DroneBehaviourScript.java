@@ -3,10 +3,10 @@ package com.brm.Kubotz.Features.DroneGauntlet.Scripts;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Components.PhysicsComponent;
-import com.brm.GoatEngine.ECS.utils.Scripts.EntityScript;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.ECS.common.EntityScript;
 import com.brm.GoatEngine.AI.Components.AIComponent;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 

@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.ECS.core.Entity;
+package com.brm.GoatEngine.ECS.core;
 
 /**
  * Used to build an entity according to certain parameters

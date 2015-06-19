@@ -1,6 +1,6 @@
 package com.brm.Kubotz.Features.GameRules.Systems;
 
-import com.brm.GoatEngine.ECS.core.Systems.EntitySystem;
+import com.brm.GoatEngine.ECS.core.EntitySystem;
 
 /**
  * Used for the game rules. It is a Global system with the

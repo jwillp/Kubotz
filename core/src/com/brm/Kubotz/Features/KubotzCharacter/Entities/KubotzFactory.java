@@ -3,10 +3,11 @@ package com.brm.Kubotz.Features.KubotzCharacter.Entities;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.brashmonkey.spriter.Spriter;
-import com.brm.GoatEngine.ECS.core.Entity.Entity;
-import com.brm.GoatEngine.ECS.core.Entity.EntityFactory;
-import com.brm.GoatEngine.ECS.core.Entity.EntityManager;
-import com.brm.GoatEngine.ECS.utils.Components.*;
+import com.brm.GoatEngine.ECS.common.*;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityFactory;
+import com.brm.GoatEngine.ECS.core.EntityManager;
+import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Common.Components.Graphics.SpriterAnimationComponent;
@@ -149,8 +150,9 @@ public class KubotzFactory extends EntityFactory {
 
         //Scripts
         ScriptComponent scriptComponent = new ScriptComponent();
-        scriptComponent.addScript(new KubotzAnimationScript());
-        scriptComponent.addScript(new KubotzAudioScript());
+        //scriptComponent.addScript(new KubotzAnimationScript());
+        //scriptComponent.addScript(new KubotzAudioScript());
+        scriptComponent.addScript("scripts/Script.js");
         character.addComponent(scriptComponent, ScriptComponent.ID);
 
         //character.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
