@@ -2,6 +2,7 @@ package com.brm.GoatEngine.ScriptingEngine;
 
 import com.brm.GoatEngine.GoatEngine;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 
 import java.io.IOException;
@@ -105,10 +106,6 @@ public class ScriptingEngine {
 
 
 
-
-
-
-
     /**
      * Returns whether or not the script was registered to the engine with a scope
      * @param scriptPath the path of the script
@@ -183,15 +180,7 @@ public class ScriptingEngine {
         return this.scopeMap.get(scriptFileName);
     }
     
-    
 
-
-
-
-
-
-    
-    
     
     /**
      * Loads a script as a string from it's source file
@@ -220,13 +209,15 @@ public class ScriptingEngine {
     }
 
 
-
-
     /**
-     * Deinitialises the Script engine
+     * Calls a function with certain parameters
+     * @param scope
+     * @param objects
+     * @return
      */
-    public void dispose() {
-        Context.exit();
+    public Object callFunction( String functionName, Scriptable scope, Object... objects){
+        Function function = (Function) scope.get(functionName, scope);
+        return function.call(context, scope, scope, objects);
     }
 
 
@@ -237,7 +228,12 @@ public class ScriptingEngine {
 
 
 
-
+    /**
+     * Deinitialises the Script engine
+     */
+    public void dispose() {
+        Context.exit();
+    }
 
 
     /**

@@ -63,14 +63,18 @@ public class ScriptSystem extends EntitySystem {
                 if(!GoatEngine.get().getScriptEngine().isScriptRegistered(scriptFile)){
                     Script script = GoatEngine.get().getScriptEngine().registerScript(scriptFile);
                     GoatEngine.get().getScriptEngine().runScript(script);
-                    GoatEngine.get().getScriptEngine().runScript("onInit()", script.getScope());
-
+                    //GoatEngine.get().getScriptEngine().runScript("onInit()", script.getScope());
+                    GoatEngine.get().getScriptEngine().callFunction(
+                            "onInit", script.getScope(), entity, entity.getManager()
+                    );
 
 
 
                 }
                 Script script =  GoatEngine.get().getScriptEngine().getScript(scriptFile);
-                GoatEngine.get().getScriptEngine().runScript("onUpdate()", script.getScope());
+                GoatEngine.get().getScriptEngine().callFunction(
+                        "onUpdate", script.getScope(), entity, entity.getManager()
+                );
                 // ON UPDATE
                 //script.onUpdate(entity, getEntityManager());
             }

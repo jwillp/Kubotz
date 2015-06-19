@@ -8,7 +8,7 @@ function onInit(entity, entityManager) {
 
 
 function onUpdate(entity, entityManager) {
-	//console.log("SCRIPT UPDATE", "SUCCESS");
+	console.log(entity.getID(), "SUCCESS");
 }
 
 

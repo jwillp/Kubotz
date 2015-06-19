@@ -143,7 +143,6 @@ public class GoatEngine {
     public GameScreen getCurrentScreen(){
         return this.getGameScreenManager().getCurrentScreen();
     }
-    
 
 
     public MusicManager getMusicManager() {
