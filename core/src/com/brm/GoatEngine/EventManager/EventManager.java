@@ -16,9 +16,22 @@ public class EventManager{
 
     }
 
+    /**
+     * Adds a new Listener to the listeners list
+     * @param listener
+     */
     public void addListener(GameEventListener listener){
         this.listeners.add(listener);
     }
+
+    /**
+     * Removes a new Listener from the listeners list
+     * @param listener
+     */
+    public void removeListener(GameEventListener listener){
+        this.removeListener(listener);
+    }
+
 
 
     /**

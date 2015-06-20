@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.ECS.common;
+package com.brm.GoatEngine.ECS.core;
 
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;

@@ -15,7 +15,7 @@ import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.ECS.core.EntitySystemManager;
-import com.brm.GoatEngine.ECS.common.ScriptSystem;
+import com.brm.GoatEngine.ECS.core.ScriptSystem;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
@@ -98,9 +98,6 @@ public class InGameScreen extends GameScreen {
         // LIFE BASED FREE FOR ALL
         systemManager.addSystem(GameRulesSystem.class, new GameRulesSystem());
         systemManager.getSystem(GameRulesSystem.class).setActiveRuleSystem(LifeBasedFreeForAll.class, new LifeBasedFreeForAll());
-
-
-
 
 
 
@@ -204,6 +201,7 @@ public class InGameScreen extends GameScreen {
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
 
         //Since Scripts Can produce Input during their update phase
+        systemManager.getSystem(ScriptSystem.class).handleInput();
         systemManager.getSystem(ScriptSystem.class).update(0);
 
         systemManager.getSystem(MovementSystem.class).handleInput();

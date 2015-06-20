@@ -9,7 +9,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
-import com.brm.GoatEngine.ECS.common.ScriptComponent;
+import com.brm.GoatEngine.ECS.core.ScriptComponent;
 import com.brm.GoatEngine.ECS.common.TagsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityFactory;
@@ -20,7 +20,6 @@ import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
-import com.brm.Kubotz.Features.LaserGuns.Scripts.BulletGraphicsScript;
 
 /**
  * Used to generate bullets

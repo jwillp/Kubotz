@@ -1,6 +1,8 @@
 package com.brm.GoatEngine.ScriptingEngine;
 
 import com.badlogic.gdx.Gdx;
+import com.brm.GoatEngine.EventManager.GameEvent;
+import com.brm.GoatEngine.EventManager.GameEventListener;
 import com.brm.GoatEngine.GoatEngine;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -16,7 +18,9 @@ import java.util.HashMap;
 /**
  * Script engine used to communicate between the GameEngine and scripts
  */
-public class ScriptingEngine {
+public class ScriptingEngine implements GameEventListener{
+
+
 
     /**
      * This represents a script
@@ -66,6 +70,9 @@ public class ScriptingEngine {
      * And exposing the basic Game Engine API
      */
     public void init(){
+
+        GoatEngine.eventManager.addListener(this);
+
         context = Context.enter();
         context.setOptimizationLevel(-1);
         globalScope = context.initStandardObjects();
@@ -233,17 +240,28 @@ public class ScriptingEngine {
 
 
 
-
-
-
-
-
     /**
      * Deinitialises the Script engine
      */
     public void dispose() {
         Context.exit();
     }
+
+
+    @Override
+    public void onEvent(GameEvent e) {
+        if(e.isOfType(ReloadScriptEvent.class)){
+            ReloadScriptEvent event = (ReloadScriptEvent) e;
+            this.reloadScript(event.getScriptName());
+        }
+    }
+
+
+
+
+
+
+
 
 
     /**

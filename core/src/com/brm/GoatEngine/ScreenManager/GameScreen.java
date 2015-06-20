@@ -1,6 +1,6 @@
 package com.brm.GoatEngine.ScreenManager;
 
-import com.brm.GoatEngine.ECS.common.ScriptSystem;
+import com.brm.GoatEngine.ECS.core.ScriptSystem;
 import com.brm.GoatEngine.ECS.core.ECSManager;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.GoatEngine;

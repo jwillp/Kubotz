@@ -8,9 +8,8 @@ import com.brm.GoatEngine.ECS.core.EntityFactory;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.ECS.common.HealthComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
-import com.brm.GoatEngine.ECS.common.ScriptComponent;
+import com.brm.GoatEngine.ECS.core.ScriptComponent;
 import com.brm.GoatEngine.AI.Components.AIComponent;
-import com.brm.Kubotz.Features.DroneGauntlet.Scripts.DroneBehaviourScript;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 

@@ -3,8 +3,10 @@ package com.brm.Kubotz;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.GoatEngine;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.Kubotz.GameScreens.InGameScreen;
+import com.brm.Kubotz.Input.GameButton;
 import org.mozilla.javascript.JavaAdapter;
 
 
@@ -17,8 +19,8 @@ public class Game extends ApplicationAdapter {
 
 		GoatEngine.init();
 
-		//EXPOSE SCRIPTING API
-
+		//EXPOSE SCRIPTING API FOR GAME
+		GoatEngine.scriptEngine.addPackageToGlobalScope("com.brm.Kubotz.Input", "InputPackage");
 
 
 

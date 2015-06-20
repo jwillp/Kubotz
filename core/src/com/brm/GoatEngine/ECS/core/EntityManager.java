@@ -1,6 +1,5 @@
 package com.brm.GoatEngine.ECS.core;
 
-import com.brm.GoatEngine.ECS.common.ScriptComponent;
 import com.brm.GoatEngine.ECS.common.TagsComponent;
 
 

@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.common.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.core.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntitySystem;

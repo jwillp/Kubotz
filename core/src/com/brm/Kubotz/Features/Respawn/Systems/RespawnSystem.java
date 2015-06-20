@@ -3,7 +3,7 @@ package com.brm.Kubotz.Features.Respawn.Systems;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.common.CameraTargetComponent;
+import com.brm.GoatEngine.ECS.core.CameraTargetComponent;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.common.HealthComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;

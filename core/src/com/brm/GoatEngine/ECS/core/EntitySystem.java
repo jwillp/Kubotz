@@ -70,7 +70,7 @@ public abstract class EntitySystem {
      * @param event
      * @param <T>
      */
-    public <T extends EntityEvent>  void onEvent(T event){} //TODO ABSTRATIFY
+    public <T extends EntityEvent>  void onEvent(T event){} //TODO ABSTRACTIFY
 
 
 

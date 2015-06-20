@@ -1,11 +1,9 @@
-package com.brm.GoatEngine.ECS.common;
+package com.brm.GoatEngine.ECS.core;
 
-import com.brm.GoatEngine.ECS.core.EntitySystem;
-import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
+import com.brm.GoatEngine.ScriptingEngine.ReloadScriptEvent;
 import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
@@ -47,7 +45,6 @@ public class ScriptSystem extends EntitySystem {
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
         for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
-                Logger.log("YUP");
                 Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
                 GoatEngine.scriptEngine.callFunction(
                         "onInput", script.getScope(), entity, gamePad.getPressedButtons()

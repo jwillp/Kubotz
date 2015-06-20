@@ -1,6 +1,9 @@
 package com.brm.GoatEngine.Input;
 
 import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Input.Buttons;
+import com.brm.GoatEngine.GoatEngine;
 
 /**
  * Manages Keyboard and Mouse Inputs
@@ -22,6 +25,7 @@ public class KeyboardInputManager implements InputProcessor {
      */
     @Override
     public boolean keyDown(int keycode) {
+        GoatEngine.console.log(String.valueOf(keycode), "WARNING");
         return false;
     }
 
