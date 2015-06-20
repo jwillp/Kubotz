@@ -10,7 +10,7 @@ var Class = {
        objectDef.extend = this.extend; //Add the possibility to extend to a class
        return objectDef;
     },
-}
+};
 
 
 /**
@@ -23,7 +23,7 @@ function Enum(constantsList){
     }
     Object.freeze(enumObj);
     return enumObj;
-}
+};
 
 
 

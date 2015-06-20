@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ScriptingEngine;
 
+import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.GoatEngine;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -76,6 +77,9 @@ public class ScriptingEngine {
 
         //Put some helpers (Console for console.log, instead of doing GoatEngine.getConsole())
         addObjectToGlobalScope("console", GoatEngine.console);
+
+        addObjectToGlobalScope("Gdx", new Gdx());
+
 
 
         //SCREEN MANAGER

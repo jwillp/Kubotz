@@ -21,8 +21,6 @@ public class EntitySystemManager implements GameEventListener{
     public EntitySystemManager(ECSManager manager){
         ecsManager = manager;
         systems = new LinkedHashMap<Class, EntitySystem>();
-        GoatEngine.eventManager.addListener(this);
-
     }
 
     /**

@@ -12,7 +12,7 @@ import com.brm.GoatEngine.ECS.core.Entity;
  */
 public class PhysicsComponent extends EntityComponent {
 
-    public final static String ID = "PHYSICS_PROPERTY";
+    public final static String ID = "PHYSICS_COMPONENT";
 
     //The directions an entity can face
     public enum Direction{

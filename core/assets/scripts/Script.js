@@ -8,7 +8,12 @@ function onInit(entity, entityManager) {
 
 
 function onUpdate(entity, entityManager) {
+	entities = entityManager.getEntitiesWithComponent("PLAYER_INFO");
+	if(entities.length == 1){
+		console.log("WIN!", 'SUCCESS');
+		entities[0].removeComponent("PLAYER_INFO");
 
+	}
 }
 
 
@@ -17,7 +22,10 @@ function onInput(entity, buttons) {
 }
 
 function onCollision(contact, entity) {
-	console.log("COLLISION");
+	phys = entity.getComponent('PHYSICS_COMPONENT');
+	pef  = entity.getComponent("PARTICLE_EMITTER_COMPONENT");
+    pos  = phys.getPosition().cpy();
+	pef.addEffect(Gdx.files.internal('particles/eclatRouille.pe'), pos);
 }
 
 

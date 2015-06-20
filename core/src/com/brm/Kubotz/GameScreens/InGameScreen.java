@@ -60,6 +60,7 @@ public class InGameScreen extends GameScreen {
 
     @Override
     public void init(GameScreenManager engine) {
+        super.init(engine);
         Logger.log("In Game State initialisation");
 
         // Systems Init
