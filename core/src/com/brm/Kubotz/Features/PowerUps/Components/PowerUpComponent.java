@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.PowerUps.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUp;
 
@@ -28,5 +29,15 @@ public class PowerUpComponent extends EntityComponent {
 
     public void setPowerUp(PowerUp powerUp) {
         this.powerUp = powerUp;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }

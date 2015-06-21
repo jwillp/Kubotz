@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.Rooms.Components;
 
 import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -31,7 +32,13 @@ public class RoomComponent extends EntityComponent{
     }
 
 
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
 
-
-
+    }
 }

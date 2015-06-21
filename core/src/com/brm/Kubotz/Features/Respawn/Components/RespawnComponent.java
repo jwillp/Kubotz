@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.Respawn.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
@@ -30,7 +31,15 @@ public class RespawnComponent extends EntityComponent {
         this.delay.start();
     }
 
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
 
+    }
 
 
     public Timer getDelay() {

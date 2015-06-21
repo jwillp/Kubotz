@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.DashBoots.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -52,6 +53,16 @@ public class DashComponent extends EntityComponent {
         preparationDuration.start();
         travelDuration.start();
         recoveryDuration.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 

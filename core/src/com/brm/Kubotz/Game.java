@@ -7,6 +7,7 @@ import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.Kubotz.GameScreens.InGameScreen;
+import com.brm.Kubotz.GameScreens.SplashScreen;
 import com.brm.Kubotz.Input.GameButton;
 import org.mozilla.javascript.JavaAdapter;
 
@@ -40,7 +41,7 @@ public class Game extends ApplicationAdapter {
 			);
 		}
 
-		GoatEngine.gameScreenManager.addScreen(new InGameScreen());
+		GoatEngine.gameScreenManager.addScreen(new SplashScreen());
 	}
 
 

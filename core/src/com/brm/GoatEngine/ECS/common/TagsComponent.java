@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ECS.common;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 import java.util.HashSet;
@@ -45,4 +46,13 @@ public class TagsComponent extends EntityComponent {
         return tags;
     }
 
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
+    }
 }

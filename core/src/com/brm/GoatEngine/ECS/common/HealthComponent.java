@@ -1,16 +1,19 @@
 package com.brm.GoatEngine.ECS.common;
 
+import com.badlogic.gdx.utils.XmlReader.Element;
 import com.badlogic.gdx.utils.XmlWriter;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Files.XmlSerializable;
 import com.brm.GoatEngine.Utils.Timer;
 
 import javax.sql.rowset.spi.XmlReader;
+import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * Used for a characters health
  */
-public class HealthComponent extends EntityComponent implements XmlSerializable {
+public class HealthComponent extends EntityComponent{
 
     public final static String ID = "HEALTH_PROPERTY";
 
@@ -20,10 +23,8 @@ public class HealthComponent extends EntityComponent implements XmlSerializable 
 
     //Regeneration
     protected Timer regenTimer = new Timer(0); //The number of milliseconds to regain health
-    protected float regenRate = 0; //the nbOf Points it regains every time de regenTimer delay is done
+    protected float regenRate = 0; //the nb Of Points it regains every time de regenTimer delay is done
 
-
-    public HealthComponent(){}
 
     public HealthComponent(float amount){
         this.amount = amount;
@@ -34,6 +35,13 @@ public class HealthComponent extends EntityComponent implements XmlSerializable 
         this.minAmount = max;
         this.setAmount(amount);
     }
+
+
+
+    public HealthComponent(Element element){
+        super(element);
+    }
+
 
 
     /**
@@ -111,18 +119,30 @@ public class HealthComponent extends EntityComponent implements XmlSerializable 
         this.regenRate = regenRate;
     }
 
+
+
+
     /**
-     * Writes the data to xml via an XmlReader
+     * Desiralizes a component
      *
-     * @param xml
+     * @param componentData the data as an XML element
      */
     @Override
-    public void serialize(XmlWriter xml) {
-
+    public void deserialize(Element componentData) {
+        for(Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+            if(name.equals("maxAmount")){
+                this.setMaxAmount(Float.parseFloat(value));
+            }else if(name.equals("minAmount")){
+                this.setMinAmount(Float.parseFloat(value));
+            }else if(name.equals("amount")){
+                this.setAmount(Float.parseFloat(value));
+            }
+        }
     }
 
-    @Override
-    public void deserialize(XmlReader reader) {
 
-    }
+
+
 }

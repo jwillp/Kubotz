@@ -1,9 +1,17 @@
 package com.brm.Kubotz.GameScreens;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.brm.GoatEngine.ECS.common.HealthComponent;
+import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
+import com.brm.Kubotz.DynamoFactory;
+import com.strongjoshua.console.Console;
+
+import java.awt.*;
 
 
 public class SplashScreen extends GameScreen {
@@ -13,6 +21,12 @@ public class SplashScreen extends GameScreen {
 
     @Override
     public void init(GameScreenManager engine) {
+
+        Entity e = DynamoFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager());
+        int components = getEntityManager().getComponentsForEntity(e.getID()).size();
+        GoatEngine.console.log("NUMBER OF COMPONENTS: " + components);
+
+        GoatEngine.console.log("HAS COMPONENT HEALTH: " + e.hasComponent(HealthComponent.ID));
 
     }
 
@@ -38,7 +52,8 @@ public class SplashScreen extends GameScreen {
 
     @Override
     public void draw(GameScreenManager engine, float deltaTime) {
-            Logger.log(" SPLASH SCREEN DRAW CALL");
+
+           // Logger.log(" SPLASH SCREEN DRAW CALL");
     }
 
 

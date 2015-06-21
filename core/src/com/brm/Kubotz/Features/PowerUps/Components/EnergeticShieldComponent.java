@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.PowerUps.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -33,6 +34,16 @@ public class EnergeticShieldComponent extends EntityComponent {
      */
     public boolean isDead(){
         return !(this.health > 0);
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }
 

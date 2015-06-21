@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Common.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -13,6 +14,16 @@ public class StunnedComponent extends EntityComponent {
 
     public StunnedComponent(){
         duration.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 

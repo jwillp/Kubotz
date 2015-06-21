@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.common;
 
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -22,6 +23,16 @@ public class JumpComponent extends EntityComponent {
     public JumpComponent(){
         this.setNbJumpsMax(1);
         cooldown.start();
+
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
 
     }
 

@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.LaserSword.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
@@ -30,6 +31,16 @@ public class LaserSwordComponent extends EntityComponent {
     public LaserSwordComponent(){
         this.cooldown.start();
         this.durationTimer.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 

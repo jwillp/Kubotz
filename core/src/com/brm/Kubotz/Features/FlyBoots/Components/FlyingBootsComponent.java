@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.FlyBoots.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
@@ -18,6 +19,16 @@ public class FlyingBootsComponent extends EntityComponent {
     public FlyingBootsComponent(){
         effectDuration.start();
         cooldown.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
     public Timer getEffectDuration() {

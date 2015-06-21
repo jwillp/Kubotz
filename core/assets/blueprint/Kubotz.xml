@@ -1,0 +1,8 @@
+<Entity>
+	<component name="com.brm.GoatEngine.ECS.common.HealthComponent">
+		<param name="maxAmount">100</param>
+		<param name="minAmount">0</param>
+		<param name="Amount">100</param>
+	</component>
+	
+</Entity>

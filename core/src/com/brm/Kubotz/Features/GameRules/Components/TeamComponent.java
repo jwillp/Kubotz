@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.GameRules.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -23,6 +24,16 @@ public class TeamComponent extends EntityComponent {
 
     public void setTeamName(String teamName) {
         this.teamName = teamName;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }
 

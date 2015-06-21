@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.Input;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 import java.util.ArrayList;
@@ -13,6 +14,16 @@ import java.util.Collection;
 public class VirtualGamePad extends EntityComponent {
 
     public final static String ID = "VIRTUAL_GAME_PAD";
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
+    }
 
     public enum InputSource{ USER_INPUT, AI_INPUT }
 

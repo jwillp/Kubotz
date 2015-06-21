@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.DashBoots.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Config;
@@ -17,6 +18,16 @@ public class DashBootsComponent extends EntityComponent {
 
     public DashBootsComponent(){
         cooldown.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 

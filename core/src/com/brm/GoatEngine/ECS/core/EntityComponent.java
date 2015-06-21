@@ -1,17 +1,30 @@
 package com.brm.GoatEngine.ECS.core;
 
 
-public abstract class EntityComponent {
+import com.badlogic.gdx.utils.XmlReader.Element;
+import com.brm.GoatEngine.Files.XmlSerializable;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+
+public abstract class EntityComponent implements XmlSerializable{
 
 
-    private boolean isEnabled = true; //By default a component is enabled
+    private boolean enabled = true; //By default a component is enabled
 
+
+    public EntityComponent(Element element){
+        this.deserialize(element);
+    }
+
+    public EntityComponent(boolean enabled){
+        this.setEnabled(enabled);
+    }
 
     public EntityComponent(){}
 
-    public EntityComponent(boolean isEnabled){
-        this.setEnabled(isEnabled);
-    }
+
+
 
     /**
      * Called when the component is attached to an entity
@@ -31,11 +44,11 @@ public abstract class EntityComponent {
      * @return
      */
     public boolean isEnabled() {
-        return isEnabled;
+        return enabled;
     }
 
-    public void setEnabled(boolean isActivated) {
-        this.isEnabled = isActivated;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     /**
@@ -43,7 +56,7 @@ public abstract class EntityComponent {
      * @return
      */
     public boolean isDisabled(){
-        return !isEnabled;
+        return !enabled;
     }
 
 
@@ -51,6 +64,37 @@ public abstract class EntityComponent {
 
 
 
+    /**
+     * Desiralizes a component
+     * @param componentData the data as an XML element
+     */
+    public abstract void deserialize(Element componentData);
+
+
+
+
+
+    /**
+     * Writes the data to xml via an XmlReader
+     *
+     * @param xml
+     */
+    @Override
+    public void serialize(com.badlogic.gdx.utils.XmlWriter xml){
+        try {
+            xml.element("component", this.getClass().getCanonicalName());
+            Class<?> clazz = this.getClass();
+            for(Field f : clazz.getDeclaredFields()){
+                xml.element("param").attribute("name", f.getName())
+                        .text(f.get(this));
+            }
+            xml.pop();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
 }

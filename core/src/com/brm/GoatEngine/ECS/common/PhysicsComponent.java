@@ -3,6 +3,7 @@ package com.brm.GoatEngine.ECS.common;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 
@@ -58,6 +59,16 @@ public class PhysicsComponent extends EntityComponent {
     public void onDetach(Entity entity) {
         super.onDetach(entity);
         this.getBody().getWorld().destroyBody(this.body);
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
     /**

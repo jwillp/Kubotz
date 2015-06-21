@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.MeleeAttacks.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
@@ -40,6 +41,16 @@ public class MeleeComponent extends EntityComponent {
 
     @Override
     public void onDetach(Entity entity) {
+
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
 
     }
 

@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Common.Components.Graphics;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -24,5 +25,13 @@ public class AnimationComponent extends EntityComponent {
     }
 
 
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
 
+    }
 }

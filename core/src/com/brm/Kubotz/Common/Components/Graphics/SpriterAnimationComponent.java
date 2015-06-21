@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Common.Components.Graphics;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brashmonkey.spriter.Mainline;
 import com.brashmonkey.spriter.Player;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
@@ -93,5 +94,15 @@ public class SpriterAnimationComponent extends EntityComponent {
 
     public void setScale(float scale) {
         this.scale = scale;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }

@@ -1,6 +1,7 @@
 package com.brm.Kubotz.Features.FlyBoots.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -34,6 +35,24 @@ public class FlyComponent extends EntityComponent {
 
     public Vector2 getMaxSpeed() {
         return MAX_SPEED;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */ //TODO COMPLETE
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+        for(XmlReader.Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+            if(name.equals("damage")){
+                //this.setDamage(Float.parseFloat(value));
+            }else if(name.equals("knockBack")){
+                //this.getKnockBack().set(Float.parseFloat(value),0);
+            }
+        }
     }
 }
 

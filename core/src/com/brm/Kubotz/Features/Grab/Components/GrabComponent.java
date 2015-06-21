@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.Grab.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -16,6 +17,16 @@ public class GrabComponent extends EntityComponent {
     public GrabComponent(){
         durationTimer.start();
         cooldown.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
     public Timer getDurationTimer() {

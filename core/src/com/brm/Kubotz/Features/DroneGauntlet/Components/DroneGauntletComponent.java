@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.DroneGauntlet.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.Timer;
 
@@ -22,6 +23,16 @@ public class DroneGauntletComponent extends EntityComponent {
 
     public DroneGauntletComponent(){
         cooldown.start();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 

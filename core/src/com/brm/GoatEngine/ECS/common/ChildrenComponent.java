@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ECS.common;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 
@@ -57,5 +58,15 @@ public class ChildrenComponent extends EntityComponent {
      */
     public Collection<Entity> getChildren() {
         return children.values();
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }

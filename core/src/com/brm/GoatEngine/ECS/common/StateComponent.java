@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ECS.common;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -11,6 +12,16 @@ public class StateComponent extends EntityComponent {
 
 
     public static String ID = "STATE_COMPONENT";
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
+    }
 
     /**
      * An interface to be extended by Enums or classes to make Entity States

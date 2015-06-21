@@ -1,7 +1,11 @@
 package com.brm.Kubotz.Common.Components;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
+import com.badlogic.gdx.utils.XmlWriter;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
+
+import java.io.IOException;
 
 /**
  * Used to make an entity deal damage when it comes in contact with something
@@ -40,4 +44,24 @@ public class DamageComponent extends EntityComponent {
     public void setKnockBack(Vector2 knockBack) {
         this.knockBack = knockBack;
     }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+        for(XmlReader.Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+            if(name.equals("damage")){
+                this.setDamage(Float.parseFloat(value));
+            }else if(name.equals("knockBack")){
+                this.getKnockBack().set(Float.parseFloat(value),0);
+            }
+        }
+    }
+
+
 }

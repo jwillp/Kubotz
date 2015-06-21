@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.GameRules.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -57,5 +58,15 @@ public class PlayerScoreComponent extends EntityComponent {
 
     public void setPlayerId(int playerId) {
         this.playerId = playerId;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }

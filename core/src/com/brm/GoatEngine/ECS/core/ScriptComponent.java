@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ECS.core;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 
@@ -41,4 +42,13 @@ public class ScriptComponent extends EntityComponent {
     }
 
 
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
+    }
 }

@@ -3,6 +3,7 @@ package com.brm.Kubotz.Common.Components.Graphics;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.Utils.GParticleEffect;
 
@@ -58,5 +59,15 @@ public class ParticleEffectComponent extends EntityComponent{
 
     public void setAlpha(float alpha) {
         this.alpha = alpha;
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 }

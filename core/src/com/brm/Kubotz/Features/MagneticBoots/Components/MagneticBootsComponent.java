@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.MagneticBoots.Components;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -12,6 +13,16 @@ public class MagneticBootsComponent extends EntityComponent {
 
     public MagneticBootsComponent() {
         this.setEnabled(false);
+    }
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+
     }
 
 
