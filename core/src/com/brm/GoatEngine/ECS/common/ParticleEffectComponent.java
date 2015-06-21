@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Common.Components.Graphics;
+package com.brm.GoatEngine.ECS.common;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
@@ -20,6 +20,15 @@ public class ParticleEffectComponent extends EntityComponent{
     private ArrayList<GParticleEffect> effects = new ArrayList<GParticleEffect>();
 
     private float alpha = 1;
+
+
+    public ParticleEffectComponent(XmlReader.Element element){
+        super(element);
+    }
+
+    public ParticleEffectComponent(){
+
+    }
 
 
     /**

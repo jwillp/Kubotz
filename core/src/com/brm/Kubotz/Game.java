@@ -41,7 +41,7 @@ public class Game extends ApplicationAdapter {
 			);
 		}
 
-		GoatEngine.gameScreenManager.addScreen(new SplashScreen());
+		GoatEngine.gameScreenManager.addScreen(new InGameScreen());
 	}
 
 

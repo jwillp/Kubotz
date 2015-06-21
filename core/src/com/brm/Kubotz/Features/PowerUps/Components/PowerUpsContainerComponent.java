@@ -15,6 +15,16 @@ public class PowerUpsContainerComponent extends EntityComponent {
 
     ArrayList<PowerUp> powerUps = new ArrayList<PowerUp>();
 
+
+    public PowerUpsContainerComponent(XmlReader.Element element){
+        super(element);
+    }
+
+    public PowerUpsContainerComponent(){
+        
+    }
+
+
     /**
      * Adds a powerup to the list and activates its effect
      */

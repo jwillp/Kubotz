@@ -10,6 +10,14 @@ import com.brm.GoatEngine.ECS.core.EntityComponent;
 public class UIHealthComponent extends EntityComponent {
     public static final String ID = "UI_HEALTH_COMPONENT";
 
+
+    public UIHealthComponent(XmlReader.Element element){
+        super(element);
+    }
+
+    public UIHealthComponent(){
+    }
+
     /**
      * Desiralizes a component
      *

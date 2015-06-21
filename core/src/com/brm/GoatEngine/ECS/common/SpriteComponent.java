@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Common.Components.Graphics;
+package com.brm.GoatEngine.ECS.common;
 
 
 import com.badlogic.gdx.graphics.Color;

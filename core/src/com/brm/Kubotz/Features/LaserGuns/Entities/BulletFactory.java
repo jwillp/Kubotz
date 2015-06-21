@@ -15,9 +15,9 @@ import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityFactory;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.Kubotz.Common.Components.DamageComponent;
-import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
+import com.brm.GoatEngine.ECS.common.SpriteComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
-import com.brm.Kubotz.Common.Components.Graphics.ParticleEffectComponent;
+import com.brm.GoatEngine.ECS.common.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 

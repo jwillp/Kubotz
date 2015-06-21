@@ -17,23 +17,15 @@ public class JumpComponent extends EntityComponent {
 
     private Timer cooldown = new Timer(500); //Cooldown between jumps
 
+    private float speed = 10;   //The jump speed
+
+
+
     /**
      * Defaults the number of jumps to 1
      */
     public JumpComponent(){
-        this.setNbJumpsMax(1);
-        cooldown.start();
-
-    }
-
-    /**
-     * Desiralizes a component
-     *
-     * @param componentData the data as an XML element
-     */
-    @Override
-    public void deserialize(XmlReader.Element componentData) {
-
+        this(1);
     }
 
     /**
@@ -44,6 +36,13 @@ public class JumpComponent extends EntityComponent {
         this.setNbJumpsMax(nbMaxJumps);
         cooldown.start();
     }
+
+    public JumpComponent(XmlReader.Element componentData){
+        super(componentData);
+    }
+
+
+
 
 
     public int getNbJumpsMax() {
@@ -69,4 +68,40 @@ public class JumpComponent extends EntityComponent {
     public void setCooldown(Timer cooldown) {
         this.cooldown = cooldown;
     }
+
+
+
+
+
+
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(XmlReader.Element componentData) {
+        for(XmlReader.Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+            if(name.equals("speed")){
+                this.speed = Float.parseFloat(value);
+                continue;
+            }
+            if(name.equals("nbJumpsMax")){
+                this.nbJumpsMax = Integer.valueOf(value);
+                continue;
+            }
+            if(name.equals("delay")){
+                this.cooldown = new Timer(Integer.valueOf(value));
+            }
+        }
+
+    }
+
+
+
+
+
 }

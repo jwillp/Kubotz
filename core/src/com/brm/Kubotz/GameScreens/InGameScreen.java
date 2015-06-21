@@ -23,6 +23,7 @@ import com.brm.Kubotz.Common.Systems.AISystem;
 import com.brm.Kubotz.Common.Systems.AttackSystems.DamageSystem;
 import com.brm.Kubotz.Common.Systems.LifespanSystem;
 import com.brm.Kubotz.Common.Systems.PhysicsSystem;
+import com.brm.Kubotz.DynamoFactory;
 import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
 import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
@@ -139,21 +140,21 @@ public class InGameScreen extends GameScreen {
             if(objType.equals("PLAYER_SPAWN")){
                 int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
 
-
-                Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
+                Entity player = DynamoFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager());
+                /*Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
-                        .build();
+                        .build();*/
 
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
 
                 if(id == PlayerScoreComponent.PLAYER_1){
                     isPlayerOneSpawned = true;
                     player.addComponent(new SkullHeadComponent(), SkullHeadComponent.ID);
-                    player.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
+                    //player.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
                 }else{
-                    player.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
+                    //player.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
                 }
 
 

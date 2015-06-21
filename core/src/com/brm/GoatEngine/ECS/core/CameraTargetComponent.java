@@ -10,6 +10,13 @@ import com.brm.GoatEngine.ECS.core.EntityComponent;
 public class CameraTargetComponent extends EntityComponent {
     public final static String ID = "CAMERA_TARGET_PROPERTY";
 
+    public CameraTargetComponent(){}
+    public CameraTargetComponent(XmlReader.Element componentData){
+        super(componentData);
+
+    }
+
+
     /**
      * Desiralizes a component
      *
@@ -17,6 +24,6 @@ public class CameraTargetComponent extends EntityComponent {
      */
     @Override
     public void deserialize(XmlReader.Element componentData) {
-
+        //Nothing to do here
     }
 }

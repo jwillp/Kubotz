@@ -1,9 +1,11 @@
-package com.brm.Kubotz.Common.Components.Graphics;
+package com.brm.GoatEngine.ECS.common;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.XmlReader;
+import com.badlogic.gdx.utils.XmlReader.Element;
 import com.brashmonkey.spriter.Mainline;
 import com.brashmonkey.spriter.Player;
+import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 
 /**
@@ -30,7 +32,6 @@ public class SpriterAnimationComponent extends EntityComponent {
         this.offsetY = offsetY;
         this.scale = scale;
 
-
         this.player.addListener(new Player.PlayerListener() {
             @Override
             public void animationFinished(com.brashmonkey.spriter.Animation animation){
@@ -38,7 +39,9 @@ public class SpriterAnimationComponent extends EntityComponent {
             }
 
             @Override
-            public void animationChanged(com.brashmonkey.spriter.Animation oldAnim, com.brashmonkey.spriter.Animation newAnim){}
+            public void animationChanged(com.brashmonkey.spriter.Animation oldAnim, com.brashmonkey.spriter.Animation newAnim){
+                SpriterAnimationComponent.this.isComplete = false;
+            }
 
             @Override
             public void preProcess(Player player) {}
@@ -50,6 +53,15 @@ public class SpriterAnimationComponent extends EntityComponent {
             public void mainlineKeyChanged(Mainline.Key prevKey, Mainline.Key newKey) {}
         });
     }
+
+
+
+
+    public SpriterAnimationComponent(XmlReader.Element element){
+        super(element);
+    }
+
+
 
 
     public Player getPlayer() {
@@ -96,13 +108,56 @@ public class SpriterAnimationComponent extends EntityComponent {
         this.scale = scale;
     }
 
+
+
+
+
+
     /**
-     * Desiralizes a component
+     * Deserialize a component
      *
      * @param componentData the data as an XML element
      */
     @Override
-    public void deserialize(XmlReader.Element componentData) {
+    public void deserialize(Element componentData) {
+        String animFile = null;
+        String animEntityName = null;
+        for(Element param : componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
 
+
+            if(name.equals("animFile")){
+                animFile = value;
+                continue;
+            }
+
+            if(name.equals("animEntityName")){
+                animEntityName = value;
+                continue;
+            }
+
+            if(name.equals("offsetX")){
+                offsetX = Float.parseFloat(value);
+                continue;
+            }
+
+            if(name.equals("offsetY")){
+                offsetY = Float.parseFloat(value);
+                continue;
+            }
+
+            if(name.equals("scale")){
+                scale = Float.parseFloat(value);
+            }
+
+        }
+        Spriter.load(animFile); //TODO edit spriter os it does not load if already loaded
+        this.player = Spriter.newPlayer(animFile, animEntityName);
     }
+
+
+
+
+
 }

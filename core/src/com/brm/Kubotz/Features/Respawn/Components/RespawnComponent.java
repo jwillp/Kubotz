@@ -31,13 +31,25 @@ public class RespawnComponent extends EntityComponent {
         this.delay.start();
     }
 
+    public RespawnComponent(XmlReader.Element element){
+        super(element);
+    }
+
+
     /**
-     * Desiralizes a component
+     * Deserialize a component
      *
      * @param componentData the data as an XML element
      */
     @Override
     public void deserialize(XmlReader.Element componentData) {
+        for(XmlReader.Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+            if(name.equals("delay")){
+                this.delay = new Timer(Integer.parseInt(value));
+            }
+        }
 
     }
 

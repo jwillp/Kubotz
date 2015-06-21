@@ -9,7 +9,7 @@ import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityFactory;
 import com.brm.GoatEngine.ECS.core.EntityManager;
-import com.brm.Kubotz.Common.Components.Graphics.SpriteComponent;
+import com.brm.GoatEngine.ECS.common.SpriteComponent;
 import com.brm.Kubotz.Features.Grab.Components.GrabbableComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUp;

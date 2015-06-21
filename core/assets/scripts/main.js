@@ -59,4 +59,4 @@ console.log(Direction.NORTH);
 });*/
 //GoatEngine.getGameScreenManager().changeScreen(screen);
 
-
+//GoatEngine.gameScreenManager.changeScreen(new com.brm.Kubotz.GameScreens.SplashScreen());

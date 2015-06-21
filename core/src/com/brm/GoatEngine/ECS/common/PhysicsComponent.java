@@ -4,6 +4,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.XmlReader;
+import com.badlogic.gdx.utils.XmlReader.Element;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 
@@ -54,6 +55,14 @@ public class PhysicsComponent extends EntityComponent {
     }
 
 
+    public PhysicsComponent(Element componentData){
+        super(componentData);
+    }
+
+
+
+
+
 
     @Override
     public void onDetach(Entity entity) {
@@ -67,7 +76,7 @@ public class PhysicsComponent extends EntityComponent {
      * @param componentData the data as an XML element
      */
     @Override
-    public void deserialize(XmlReader.Element componentData) {
+    public void deserialize(Element componentData) {
 
     }
 

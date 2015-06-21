@@ -16,11 +16,21 @@ public class ScriptComponent extends EntityComponent {
     public static final String ID = "SCRIPT_COMPONENT";
     private ArrayList<String> scripts = new ArrayList<String>();
 
+
+    public ScriptComponent(XmlReader.Element element){
+        super(element);
+    }
+    public ScriptComponent(){}
+
+
     /**
      * Adds a script to the component
      * @param scriptFilePath
      */
     public void addScript(String scriptFilePath){
+        if(this.scripts == null){
+            this.scripts = new ArrayList<String>();
+        }
         this.scripts.add(scriptFilePath);
     }
 
@@ -49,6 +59,8 @@ public class ScriptComponent extends EntityComponent {
      */
     @Override
     public void deserialize(XmlReader.Element componentData) {
-
+        for(XmlReader.Element script: componentData.getChildrenByName("script")){
+            this.addScript(script.getText());
+        }
     }
 }
