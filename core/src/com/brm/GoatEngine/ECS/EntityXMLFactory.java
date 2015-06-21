@@ -1,10 +1,12 @@
-package com.brm.Kubotz;
+package com.brm.GoatEngine.ECS;
 
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.XmlReader;
 import com.badlogic.gdx.utils.XmlReader.Element;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.EntityManager;
@@ -13,10 +15,16 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class DynamoFactory {
+public class EntityXMLFactory {
 
-
-    public static Entity createEntity(String blueprintFile, EntityManager entityManager) {
+    /**
+     * Creates an Entity according to an XML file
+     * @param blueprintFile
+     * @param entityManager
+     * @param world the box2D world in case with create a PhysicsComponent
+     * @return
+     */
+    public static Entity createEntity(String blueprintFile, EntityManager entityManager, World world) {
         Entity entity = null;
         try {
             XmlReader reader = new XmlReader();
@@ -26,8 +34,15 @@ public class DynamoFactory {
             Array<Element> components = root.getChildrenByName("component");
             for(Element compEl : components){
                 Class<?> clazz = Class.forName(compEl.getAttribute("name"));    //Create a new instance of that object
-                Constructor<?> ctor = clazz.getConstructor(Element.class);
-                Object component = ctor.newInstance(compEl);
+                Object component;
+                //If we have a PhysicsComponent well pass the World
+                if(clazz.getCanonicalName().equals(PhysicsComponent.class.getCanonicalName())){
+                    Constructor<?> ctor = clazz.getConstructor(Element.class, World.class, Entity.class);
+                    component = ctor.newInstance(compEl, world, entity);
+                }else{
+                    Constructor<?> ctor = clazz.getConstructor(Element.class);
+                    component = ctor.newInstance(compEl);
+                }
                 String componentId = (String)clazz.getDeclaredField("ID").get(component);
 
                 //Add the component

@@ -12,7 +12,7 @@ import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.DynamoFactory;
+import com.brm.GoatEngine.ECS.EntityXMLFactory;
 
 
 public class SplashScreen extends GameScreen {
@@ -30,7 +30,7 @@ public class SplashScreen extends GameScreen {
 
 
 
-        Entity e = DynamoFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager());
+        Entity e = EntityXMLFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager(), null);
         int components = getEntityManager().getComponentsForEntity(e.getID()).size();
         GoatEngine.console.log("NUMBER OF COMPONENTS: " + components);
 

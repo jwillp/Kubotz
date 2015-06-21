@@ -20,9 +20,9 @@ public class Colliders{
      * @param height
      * @param head
      * @param torso
-     * @param feet
+     * @param legs
      */
-    public static void createCapsule(Body body, int width, int height, Hitbox head, Hitbox torso, Hitbox feet){
+    public static void createCapsule(Body body, float width, float height, Hitbox head, Hitbox torso, Hitbox legs){
 
         body.setSleepingAllowed(false);
 
@@ -37,7 +37,7 @@ public class Colliders{
         body.createFixture(fixtureDef).setUserData(torso);
         polyShape.dispose();
 
-        // Circle TOP
+        // Circle TOP (HEAD)
         CircleShape circleShapeTop = new CircleShape();
         circleShapeTop.setRadius(width);
         circleShapeTop.setPosition(new Vector2(0, height * 0.5f));
@@ -49,14 +49,14 @@ public class Colliders{
         circleShapeTop.dispose();
 
 
-        // Circle BOTTOM
+        // Circle BOTTOM (LEGS)
         CircleShape circleShapeBottom = new CircleShape();
         circleShapeBottom.setRadius(width);
         circleShapeBottom.setPosition(new Vector2(0, -height * 0.5f));
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeBottom;
         fixtureDef.density = 0.1f;
-        body.createFixture(fixtureDef).setUserData(feet);
+        body.createFixture(fixtureDef).setUserData(legs);
         circleShapeBottom.dispose();
 
 
@@ -76,7 +76,7 @@ public class Colliders{
      * @param world the Box2D world in which to create the body
      * @param bodyType the type of the Body
      */
-    public Body createBody(World world, BodyType bodyType){
+    public static Body createBody(World world, BodyType bodyType){
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = bodyType;
         bodyDef.position.set(0, 0);

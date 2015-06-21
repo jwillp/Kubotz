@@ -17,6 +17,28 @@
 		<param name="direction">LEFT</param>
 		<param name="width">1.0</param>
 		<param name="height">2.0</param>
+		<body type="DynamicBody" colliderType="capsule">
+			<fixture name="head">
+				<hitbox>
+					<type>Damageable</type>
+					<label>head</label>
+				</hitbox>
+			</fixture>
+
+			<fixture name="torso">
+				<hitbox>
+					<type>Damageable</type>
+					<label>torso</label>
+				</hitbox>
+			</fixture>
+
+			<fixture name="legs">
+				<hitbox>
+					<type>Damageable</type>
+					<label>feet</label>
+				</hitbox>
+			</fixture>
+		</body>
 	</component>
 
 	<component name="com.brm.Kubotz.Features.Running.Components.RunningComponent">

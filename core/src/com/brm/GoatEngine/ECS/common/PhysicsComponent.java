@@ -7,6 +7,8 @@ import com.badlogic.gdx.utils.XmlReader;
 import com.badlogic.gdx.utils.XmlReader.Element;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.Physics.Colliders;
+import com.brm.Kubotz.Common.Hitbox.Hitbox;
 
 /**
  * All the physical properties of the entity so it can exist in a physical World
@@ -55,8 +57,8 @@ public class PhysicsComponent extends EntityComponent {
     }
 
 
-    public PhysicsComponent(Element componentData){
-        super(componentData);
+    public PhysicsComponent(Element componentData, World world, Entity entity){
+       this.deserialize(componentData, world, entity);
     }
 
 
@@ -70,15 +72,7 @@ public class PhysicsComponent extends EntityComponent {
         this.getBody().getWorld().destroyBody(this.body);
     }
 
-    /**
-     * Desiralizes a component
-     *
-     * @param componentData the data as an XML element
-     */
-    @Override
-    public void deserialize(Element componentData) {
 
-    }
 
     /**
      * Returns the entity's BoundingBox
@@ -146,6 +140,80 @@ public class PhysicsComponent extends EntityComponent {
     public void setDirection(Direction direction) {
         this.direction = direction;
     }
+
+
+
+
+
+
+    /**
+     * Desiralizes a component
+     *
+     * @param componentData the data as an XML element
+     */
+    @Override
+    public void deserialize(Element componentData) {}
+
+
+
+    public void deserialize(Element componentData, World world, Entity e) {
+
+        //Params
+        for(Element param: componentData.getChildrenByName("param")){
+            String name = param.getAttribute("name");
+            String value = param.getText();
+
+            if(name.equals("direction")){
+                this.direction = Direction.valueOf(value); continue;
+            }
+            if(name.equals("height")){
+                this.height = Float.parseFloat(value); continue;
+            }
+            if(name.equals("width")){
+                this.width = Float.parseFloat(value);
+            }
+
+        }
+
+
+        //Body
+        Element bodyEl = componentData.getChildByName("body");
+        String colliderType = bodyEl.getAttribute("colliderType"); //The type of body collider
+        String bodyType = bodyEl.getAttribute("type");
+        if(colliderType.equals("capsule")){
+            Hitbox head = null, torso = null, legs = null;
+            for(Element fixture: bodyEl.getChildrenByName("fixture")){
+                String fixtureName = fixture.getAttribute("name");
+                Hitbox box;
+                Element hitbox = fixture.getChildByName("hitbox");
+                box = new Hitbox(
+                        Hitbox.Type.valueOf(hitbox.getChildByName("type").getText()),
+                        hitbox.getChildByName("label").getText()
+                );
+                if(fixtureName.equals("head")){
+                    head = box;
+                }else if(fixtureName.equals("torso")){
+                    torso = box;
+                }else{
+                    legs = box;
+                }
+            }
+            this.body = Colliders.createBody(world, BodyDef.BodyType.valueOf(bodyType));
+            Colliders.createCapsule(this.body, width, height, head, torso, legs);
+            this.body.setUserData(e);
+        }
+
+
+
+
+    }
+
+
+
+
+
+
+
 
 
 

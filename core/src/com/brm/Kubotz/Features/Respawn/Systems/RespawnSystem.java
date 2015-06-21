@@ -66,10 +66,14 @@ public class RespawnSystem extends EntitySystem {
         // HIDE BODY //TODO disable Graphics for entity
         phys.getBody().setActive(false);
 
-        entity.disableComponent(SpriterAnimationComponent.ID);
-        entity.disableComponent(VirtualGamePad.ID);
+        if(entity.hasComponentEnabled(SpriterAnimationComponent.ID))
+            entity.disableComponent(SpriterAnimationComponent.ID);
 
-        entity.disableComponent(CameraTargetComponent.ID);
+        if(entity.hasComponentEnabled(VirtualGamePad.ID))
+            entity.disableComponent(VirtualGamePad.ID);
+
+        if(entity.hasComponentEnabled(CameraTargetComponent.ID))
+            entity.disableComponent(CameraTargetComponent.ID);
 
         respawn.setState(RespawnComponent.State.WAITING);
     }
@@ -101,23 +105,19 @@ public class RespawnSystem extends EntitySystem {
         phys.getBody().setActive(true);
 
 
-        entity.enableComponent(SpriterAnimationComponent.ID);
-        entity.enableComponent(CameraTargetComponent.ID);
+        if(entity.hasComponentEnabled(SpriterAnimationComponent.ID))
+            entity.enableComponent(SpriterAnimationComponent.ID);
 
-        entity.enableComponent(VirtualGamePad.ID);
+        if(entity.hasComponentEnabled(CameraTargetComponent.ID))
+            entity.enableComponent(CameraTargetComponent.ID);
 
+        if(entity.hasComponentEnabled(VirtualGamePad.ID))
+            entity.enableComponent(VirtualGamePad.ID);
 
 
         health.setAmount(health.getMaxAmount());
 
         respawn.setState(RespawnComponent.State.SPAWNED);
-
-
-
-
-
-
-
 
 
     }

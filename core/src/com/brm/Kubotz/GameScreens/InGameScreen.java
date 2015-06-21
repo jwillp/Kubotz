@@ -23,9 +23,7 @@ import com.brm.Kubotz.Common.Systems.AISystem;
 import com.brm.Kubotz.Common.Systems.AttackSystems.DamageSystem;
 import com.brm.Kubotz.Common.Systems.LifespanSystem;
 import com.brm.Kubotz.Common.Systems.PhysicsSystem;
-import com.brm.Kubotz.DynamoFactory;
-import com.brm.Kubotz.Features.DashBoots.Components.DashBootsComponent;
-import com.brm.Kubotz.Features.FlyBoots.Components.FlyingBootsComponent;
+import com.brm.GoatEngine.ECS.EntityXMLFactory;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.GameRules.Systems.GameRulesSystem;
 import com.brm.Kubotz.Features.GameRules.Systems.LifeBasedFreeForAll;
@@ -34,7 +32,6 @@ import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.Rooms.Entities.BlockFactory;
-import com.brm.Kubotz.Features.KubotzCharacter.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.Grab.Systems.GrabSystem;
 import com.brm.Kubotz.Features.Respawn.Systems.RespawnSystem;
 import com.brm.Kubotz.Input.InputTranslationSystem;
@@ -140,7 +137,9 @@ public class InGameScreen extends GameScreen {
             if(objType.equals("PLAYER_SPAWN")){
                 int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
 
-                Entity player = DynamoFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager());
+                Entity player = EntityXMLFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager(),
+                        this.systemManager.getSystem(PhysicsSystem.class).getWorld()
+                );
                 /*Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(2.0f)

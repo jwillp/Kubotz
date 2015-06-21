@@ -60,7 +60,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
 
 
 
-
         if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
             this.collisions.add(new CollisionEvent(
                             entityA.getID(),
