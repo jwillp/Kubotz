@@ -1,12 +1,16 @@
 package com.brm.GoatEngine.ECS.common;
 
+import com.badlogic.gdx.utils.XmlWriter;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.Files.XmlSerializable;
 import com.brm.GoatEngine.Utils.Timer;
+
+import javax.sql.rowset.spi.XmlReader;
 
 /**
  * Used for a characters health
  */
-public class HealthComponent extends EntityComponent {
+public class HealthComponent extends EntityComponent implements XmlSerializable {
 
     public final static String ID = "HEALTH_PROPERTY";
 
@@ -105,5 +109,20 @@ public class HealthComponent extends EntityComponent {
 
     public void setRegenRate(float regenRate) {
         this.regenRate = regenRate;
+    }
+
+    /**
+     * Writes the data to xml via an XmlReader
+     *
+     * @param xml
+     */
+    @Override
+    public void serialize(XmlWriter xml) {
+
+    }
+
+    @Override
+    public void deserialize(XmlReader reader) {
+
     }
 }

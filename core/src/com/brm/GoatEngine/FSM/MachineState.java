@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.FSM;
 
+import com.badlogic.gdx.utils.XmlReader;
 import com.badlogic.gdx.utils.XmlWriter;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.util.Iterator;
  */
 public class MachineState{
 
+
     /**
      * Special Flags for states
      */
@@ -19,6 +21,7 @@ public class MachineState{
         None,
         Enter,  // Root Node (only one per machine)
         Exit    // The End of a path (normally we get back to an the Enter Node)
+
 
     }
 
@@ -45,6 +48,22 @@ public class MachineState{
     }
 
 
+    /**
+     * Creates a state from an Xml Element
+     * @param state
+     */
+    public MachineState(XmlReader.Element state) {
+        this(
+                state.getChildByName("ID").getText(),
+                StateFlag.valueOf(state.getChildByName("Flag").getText()),
+                state.getChildByName("Name").getText(),
+                state.getChildByName("Description").getText(),
+                state.getChildByName("Neighbours").getText()
+        );
+    }
+
+
+
 
     public String toString(){
         return name + " " + description;
@@ -65,7 +84,7 @@ public class MachineState{
                 .element("Flag", this.flag.toString())
                 .element("Name", this.name)
                 .element("Description", this.description)
-                .element("Neighbors", neighbours)
+                .element("Neighbours", neighbours)
         .pop();
     }
 

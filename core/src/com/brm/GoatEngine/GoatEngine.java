@@ -53,6 +53,9 @@ public class GoatEngine {
         //Graphics Engine
         graphicsEngine = new GraphicsEngine();
 
+        // Event Manager
+        eventManager = new EventManager();
+
 
         //Init the console
         console = new Konsole();
@@ -70,9 +73,6 @@ public class GoatEngine {
         gameScreenManager = new GameScreenManager();
         gameScreenManager.init();
 
-
-        // Event Manager
-        eventManager = new EventManager();
 
 
         // RUN DEFAULT MAIN SCRIPT
