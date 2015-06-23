@@ -7,6 +7,7 @@ import com.brashmonkey.spriter.Mainline;
 import com.brashmonkey.spriter.Player;
 import com.brashmonkey.spriter.Spriter;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.GoatEngine;
 
 /**
  * An animation component specialy made for Spriter animations
@@ -20,7 +21,7 @@ public class SpriterAnimationComponent extends EntityComponent {
 
     private float offsetX = 0;
     private float offsetY = 0;
-    private float scale = 1;
+    private float scale;
 
     private Color color = Color.WHITE;
 
@@ -148,7 +149,8 @@ public class SpriterAnimationComponent extends EntityComponent {
             }
 
             if(name.equals("scale")){
-                scale = Float.parseFloat(value);
+                this.scale = Float.parseFloat(value);
+                GoatEngine.console.log(String.valueOf(scale));
             }
 
         }

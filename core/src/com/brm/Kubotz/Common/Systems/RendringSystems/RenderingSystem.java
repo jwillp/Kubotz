@@ -98,6 +98,9 @@ public class RenderingSystem extends EntitySystem {
 
     public void renderMap(MapRenderer mapRenderer){
         if(!Config.DEBUG_RENDERING_ENABLED){
+            spriteBatch.begin();
+            spriteBatch.draw(this.background,0,0, 52, 37);
+            spriteBatch.end();
             mapRenderer.setView(getCamera());
             mapRenderer.render();
         }
@@ -119,8 +122,6 @@ public class RenderingSystem extends EntitySystem {
         //shapeRenderer.rect();
 
         spriteBatch.begin();
-        spriteBatch.draw(this.background,0,0, 52, 37);
-
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponent(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
@@ -131,9 +132,6 @@ public class RenderingSystem extends EntitySystem {
                 //TODO Fix this
 
             }else{
-                if(anim.getPlayer().getScale() == 0) {
-                    //anim.getPlayer().setScale(1); //In case the scale was 0
-                }
 
                 //float scale = phys.getHeight()/anim.getPlayer().get
                 float posX = phys.getPosition().x + anim.getOffsetX();

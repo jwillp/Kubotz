@@ -84,7 +84,13 @@
 	<component name="com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent">	
 	</component>
 
+
+	<!-- PARTICLE EFFECT -->
 	<component name="com.brm.GoatEngine.ECS.common.ParticleEffectComponent">	
+	</component>
+
+	<!-- GAME PAD -->
+	<component name="com.brm.GoatEngine.Input.VirtualGamePad">	
 	</component>
 
 

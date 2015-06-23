@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
+import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.ECS.core.EntitySystemManager;
@@ -147,6 +148,10 @@ public class InGameScreen extends GameScreen {
                         .build();*/
 
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
+
+                PhysicsComponent phys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
+                phys.setPosition(rect.getX()/tileSize, rect.getY()/tileSize);
+
 
                 if(id == PlayerScoreComponent.PLAYER_1){
                     isPlayerOneSpawned = true;

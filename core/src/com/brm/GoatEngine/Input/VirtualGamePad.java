@@ -29,9 +29,7 @@ public class VirtualGamePad extends EntityComponent {
 
     private ArrayList<VirtualButton> justReleasedButtons; //A list of the buttons that where just released
     private ArrayList<VirtualButton> pressedButtons; //A list of the pressed buttons of the gamepad
-    public InputSource inputSource; // Who makes the input (AI or User?)
-
-
+    public InputSource inputSource = InputSource.USER_INPUT; // Who makes the input (AI or User?)
 
 
 
@@ -40,6 +38,14 @@ public class VirtualGamePad extends EntityComponent {
         this.pressedButtons = new ArrayList<VirtualButton>();
         this.justReleasedButtons = new ArrayList<VirtualButton>();
     }
+
+    public VirtualGamePad(XmlReader.Element componentData){
+        super(componentData);
+        this.setInputSource(inputSource);
+        this.pressedButtons = new ArrayList<VirtualButton>();
+        this.justReleasedButtons = new ArrayList<VirtualButton>();
+    }
+
 
 
     /**

@@ -28,7 +28,7 @@ function Enum(constantsList){
 
 
 var Direction = Enum(['NORTH', 'SOUTH', 'WEST', 'EAST']);
-console.log(Direction.NORTH);
+
 
 
 
