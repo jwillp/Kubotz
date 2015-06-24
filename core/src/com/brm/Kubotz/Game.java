@@ -13,13 +13,9 @@ public class Game extends ApplicationAdapter {
 	@Override
 	public void create () {
 
-
-
-
 		GoatEngine.init();
 
-		//EXPOSE SCRIPTING API FOR GAME
-		GoatEngine.scriptEngine.addPackageToGlobalScope("com.brm.Kubotz.Input", "InputPackage");
+
 
 
 

@@ -43,20 +43,20 @@ public class ScriptSystem extends EntitySystem {
     private void handleInputForEntity(Entity entity){
         ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        for(String scriptFile: scriptComp.getScripts()){
+        /*for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
                 Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
                 GoatEngine.scriptEngine.callFunction(
                         "onInput", script.getScope(), entity, gamePad.getPressedButtons()
                 );
             }
-        }
+        }*/
     }
 
     @Override
     public void update(float dt) {
 
-        for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
+        /*for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
             ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(String scriptFile: scriptComp.getScripts()){
 
@@ -75,14 +75,14 @@ public class ScriptSystem extends EntitySystem {
                         "onUpdate", script.getScope(), entity, entity.getManager()
                 );
             }
-        }
+        }*/
     }
 
 
     @Override
     public <T extends EntityEvent> void onEvent(T event) {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
-        if(entity.hasComponentEnabled(ScriptComponent.ID)){
+        /*if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(String scriptFile: scripts.getScripts()){
                 Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
@@ -96,7 +96,7 @@ public class ScriptSystem extends EntitySystem {
                    );
                 }
             }
-        }
+        }*/
     }
 
 

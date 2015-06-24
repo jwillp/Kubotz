@@ -23,15 +23,14 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
     public void runScript(String scriptName){
 
         //Automatically add the extension
-        if(!scriptName.endsWith(".js")){
-            scriptName += ".js";
+        if(!scriptName.endsWith(".groovy")){
+            scriptName += ".groovy";
         }
 
         //runScript("scripts/"+scriptName); //Retry in the script folder
 
-        try{ //TODO see if we run this in the Gobal or register it
-            String script = GoatEngine.scriptEngine.loadScript(scriptName);
-            GoatEngine.scriptEngine.runScriptInGlobalScope(script);
+        try{
+            GoatEngine.scriptEngine.runScript(scriptName);
         }catch(ScriptingEngine.ScriptNotFoundException e){
             GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
         }catch (Exception e){
@@ -57,7 +56,7 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
     public void js(String... javascript){
         String source = Arrays.toString(javascript);
         try{
-            Object result = GoatEngine.scriptEngine.runScriptInGlobalScope(source);
+            Object result = GoatEngine.scriptEngine.runScriptSource(source);
             GoatEngine.console.log(">>> " + result.toString(), Console.LogLevel.INFO);
         }catch(Exception e){
             GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);

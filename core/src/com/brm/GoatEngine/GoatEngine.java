@@ -27,22 +27,25 @@ import com.strongjoshua.console.Console;
  */
 public class GoatEngine {
 
-
-
     //Scripting Engine
     public static ScriptingEngine scriptEngine;
 
     //ScreenManager
-    public static GameScreenManager gameScreenManager; //This is where the real "Game" is happening
+    public static GameScreenManager gameScreenManager;
 
+    //Event Manager
     public static EventManager eventManager;
 
+    //Music and Sound Manager
     public static MusicManager musicManager;
 
+    //InputManager
     public static InputManager inputManager;
 
+    //Console
     public static Konsole console;
 
+    //Graphics Engine
     public static GraphicsEngine graphicsEngine;
 
 
@@ -57,7 +60,6 @@ public class GoatEngine {
 
         //Graphics Engine
         graphicsEngine = new GraphicsEngine();
-
 
         // Event Manager
         eventManager = new EventManager();
@@ -83,7 +85,7 @@ public class GoatEngine {
 
         // RUN DEFAULT MAIN SCRIPT
         try{
-            scriptEngine.runScriptInGlobalScope(scriptEngine.loadScript("scripts/main.js"));
+            scriptEngine.runScript("scripts/main.groovy");
         }catch(Exception e){
             console.log(e.getMessage(), Console.LogLevel.ERROR);
         }
