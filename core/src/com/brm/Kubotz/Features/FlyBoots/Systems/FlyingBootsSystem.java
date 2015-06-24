@@ -60,7 +60,7 @@ public class FlyingBootsSystem extends EntitySystem{
         //Remove Fly Component so it does not fly anymore
         entity.removeComponent(FlyComponent.ID);
         // Restore Running Component
-        entity.addComponent(new RunningComponent(), RunningComponent.ID);
+        entity.enableComponent(RunningComponent.ID);
 
         //Reset cooldown timer
         ((FlyingBootsComponent)entity.getComponent(FlyingBootsComponent.ID)).getCooldown().reset();
@@ -78,8 +78,8 @@ public class FlyingBootsSystem extends EntitySystem{
     public void turnFlyingOn(Entity entity){
         //Give the entity a FlyComponent so it can fly
         entity.addComponent(new FlyComponent(), FlyComponent.ID);
-        //Remove the Running Component
-        entity.removeComponent(RunningComponent.ID);
+        //Disable the Running Component
+        entity.disableComponent(RunningComponent.ID);
 
         //Reset the effect duration
         ((FlyingBootsComponent)entity.getComponent(FlyingBootsComponent.ID)).getEffectDuration().reset();

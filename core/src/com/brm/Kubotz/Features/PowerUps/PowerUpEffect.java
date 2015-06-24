@@ -181,13 +181,15 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new GunComponent(GunComponent.Type.LASER_MK_I), GunComponent.ID);
-            entity.disableComponent(MeleeComponent.ID);
+            if(entity.hasComponentEnabled(MeleeComponent.ID))
+                entity.disableComponent(MeleeComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(GunComponent.ID);
-            entity.enableComponent(MeleeComponent.ID);
+            if(entity.hasComponentEnabled(MeleeComponent.ID))
+                entity.enableComponent(MeleeComponent.ID);
         }
     }
 
@@ -216,13 +218,15 @@ public abstract class PowerUpEffect {
         @Override
         public void onStart(Entity entity) {
             entity.addComponent(new LaserSwordComponent(), LaserSwordComponent.ID);
-            entity.disableComponent(MeleeComponent.ID);
+            if(entity.hasComponentEnabled(MeleeComponent.ID))
+                entity.disableComponent(MeleeComponent.ID);
         }
 
         @Override
         public void onFinish(Entity entity) {
             entity.removeComponent(LaserSwordComponent.ID);
-            entity.enableComponent(MeleeComponent.ID);
+            if(entity.hasComponent(MeleeComponent.ID))
+                entity.enableComponent(MeleeComponent.ID);
         }
     }
 

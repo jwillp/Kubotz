@@ -151,9 +151,7 @@ public class InGameScreen extends GameScreen {
                         .withHeight(2.0f)
                         .withCameraTargetComponent()
                         .build();*/
-
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
-                player.addComponent(new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT), VirtualGamePad.ID);
 
 
 

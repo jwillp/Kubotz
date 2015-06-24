@@ -10,9 +10,13 @@ import static com.badlogic.gdx.utils.XmlReader.Element;
 public class RunningComponent extends EntityComponent {
     public static final String ID = "RUNNING_COMPONENT";
 
-    private float speed = 1;    // The speed at which the entity can Run
+    private float speed;     // The speed at which the entity can Run
+    private float maxSpeed;  // The MAX speed of a running entity
 
-    public RunningComponent(){}
+    public RunningComponent(float speed, float maxSpeed){
+        this.speed = speed;
+        this.maxSpeed = maxSpeed;
+    }
     public RunningComponent(Element componentData){
         super(componentData);
     }
@@ -31,8 +35,18 @@ public class RunningComponent extends EntityComponent {
             String value = param.getText();
             if(name.equals("speed")){
                 this.speed = Float.parseFloat(value);
+            }else if(name.equals("maxSpeed")){
+                this.maxSpeed = Float.parseFloat(value);
             }
         }
 
+    }
+
+    public float getSpeed() {
+        return speed;
+    }
+
+    public float getMaxSpeed() {
+        return maxSpeed;
     }
 }

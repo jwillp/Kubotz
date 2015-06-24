@@ -1,3 +1,4 @@
+<?xml version=“1.0” encoding=“utf-8”?>
 <Entity>
 	<!-- HEALTH COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.HealthComponent">
@@ -45,12 +46,13 @@
 
 	<!-- RUNNING COMPONENT -->
 	<component name="com.brm.Kubotz.Features.Running.Components.RunningComponent">
-		<param name="speed">10</param>
+		<param name="speed">0.5</param>
+		<param name="maxSpeed">18</param>
 	</component>
 
 	<!-- JUMP COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.JumpComponent">
-		<param name="speed">10</param>
+		<param name="speed">20</param>
 		<param name="nbJumpsMax">3</param>
 		<param name="delay">500</param>
 	</component>
@@ -102,6 +104,4 @@
 	<!-- GAME PAD -->
 	<component name="com.brm.GoatEngine.Input.VirtualGamePad">	
 	</component>
-
-
 </Entity>

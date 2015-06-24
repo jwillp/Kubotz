@@ -1,5 +1,6 @@
 package com.brm.Kubotz.Features.Running.Systems;
 
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.common.JumpComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
@@ -121,9 +122,11 @@ public class RunningSystem extends EntitySystem {
      */
     private void moveLeft(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
 
         Vector2 vel = phys.getVelocity();
-        float resultingVelocity = vel.x - phys.getAcceleration().x;
+        float resultingVelocity = vel.x - run.getSpeed();
+
 
         if (Math.abs(resultingVelocity) > phys.getMaxSpeed().x) {
             resultingVelocity = -phys.getMaxSpeed().x;
@@ -137,11 +140,15 @@ public class RunningSystem extends EntitySystem {
      */
     private void moveRight(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
+
         Vector2 vel = phys.getVelocity();
-        float resultingVelocity = vel.x + phys.getAcceleration().x;
+        float resultingVelocity = vel.x + run.getSpeed();
+
         if (resultingVelocity > phys.getMaxSpeed().x) {
             resultingVelocity = phys.getMaxSpeed().x;
         }
+
         MovementSystem.moveInX(entity, resultingVelocity);
     }
 
@@ -156,7 +163,7 @@ public class RunningSystem extends EntitySystem {
 
             if (jp.getNbJujmps() < jp.getNbJumpsMax()) {
                 if (jp.getCooldown().isDone()) {
-                    float resultingVelocity = phys.getAcceleration().y * phys.getBody().getGravityScale();
+                    float resultingVelocity = jp.getSpeed() * phys.getBody().getGravityScale();
                     MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
                     phys.setGrounded(false);
                     jp.setNbJujmps(jp.getNbJujmps() + 1);
@@ -171,13 +178,14 @@ public class RunningSystem extends EntitySystem {
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
     private void moveDown(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
+
         Vector2 vel = phys.getVelocity().cpy();
 
-
-        if (Math.abs(vel.y) > phys.getMaxSpeed().y) {
-            vel.y = -phys.getMaxSpeed().y;
+        if (Math.abs(vel.y) > run.getMaxSpeed()) {
+            vel.y = -run.getMaxSpeed();
         }
-        float resultingVelocity = vel.y - phys.getAcceleration().y * 0.2f * phys.getBody().getGravityScale();
+        float resultingVelocity = vel.y - run.getSpeed() * 2 * phys.getBody().getGravityScale();
         resultingVelocity = Math.min(resultingVelocity, phys.getVelocity().y);
         // it's half a jump
         MovementSystem.moveInY(entity, resultingVelocity);
@@ -191,11 +199,12 @@ public class RunningSystem extends EntitySystem {
      */
     private void decelerate(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
         if (phys.isGrounded()) {
             Vector2 vel = phys.getVelocity();
             // DECELERATION (the character needs to slow down!)
             float finalVel = (vel.x > 0) ?
-                    Math.max(vel.x - phys.getAcceleration().x, 0) : Math.min(vel.x + phys.getAcceleration().x, 0);
+                    Math.max(vel.x - run.getSpeed(), 0) : Math.min(vel.x + run.getSpeed(), 0);
             MovementSystem.moveInX(entity, finalVel);
         }
     }

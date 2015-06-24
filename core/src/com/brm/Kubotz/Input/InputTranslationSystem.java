@@ -116,10 +116,13 @@ public class InputTranslationSystem extends EntitySystem {
      */
     @Override
     public void handleInput(){
-        //find player
+        //find controllables
         for(Entity e: getEntityManager().getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
             VirtualGamePad gamePad = (VirtualGamePad)e.getComponent(VirtualGamePad.ID);
             gamePad.releaseAll(); //Release for everyone, prevents button bashing :)
+
+
+
 
             if (gamePad.isEnabled()) {
                 //Translation of the USER INPUT

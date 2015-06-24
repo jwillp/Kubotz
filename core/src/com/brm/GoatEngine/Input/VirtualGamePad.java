@@ -127,7 +127,7 @@ public class VirtualGamePad extends EntityComponent {
         return inputSource;
     }
 
-    public void setInputSource(InputSource inputSource) {
+    private void setInputSource(InputSource inputSource) {
         this.inputSource = inputSource;
     }
 

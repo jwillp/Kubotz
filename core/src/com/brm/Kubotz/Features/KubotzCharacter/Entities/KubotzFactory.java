@@ -108,7 +108,7 @@ public class KubotzFactory extends EntityFactory {
         character.addComponent(new VirtualGamePad(this.inputSource), VirtualGamePad.ID);
 
         // JUMP
-        character.addComponent(new RunningComponent(), RunningComponent.ID);
+        character.addComponent(new RunningComponent(0.2f,18), RunningComponent.ID);
         character.addComponent(new JumpComponent(3), JumpComponent.ID);
 
         //CAM

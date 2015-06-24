@@ -11,13 +11,13 @@ import com.brm.GoatEngine.Utils.Timer;
 public class JumpComponent extends EntityComponent {
     public static final String ID = "JUMP_PROPERTY";
 
-    private int nbJumpsMax = 1; //The Max number of consecutive jumps
+    private int nbJumpsMax; //The Max number of consecutive jumps
     private int nbJujmps;   //The number of consecutive jumps executed so far
 
 
-    private Timer cooldown = new Timer(500); //Cooldown between jumps
+    private Timer cooldown; //Cooldown between jumps
 
-    private float speed = 10;   //The jump speed
+    private float speed;   //The jump speed
 
 
 
@@ -34,7 +34,10 @@ public class JumpComponent extends EntityComponent {
      */
     public JumpComponent(int nbMaxJumps){
         this.setNbJumpsMax(nbMaxJumps);
+        cooldown = new Timer(500);
         cooldown.start();
+        speed = 10;
+        nbJumpsMax = 1;
     }
 
     public JumpComponent(XmlReader.Element componentData){
@@ -101,7 +104,7 @@ public class JumpComponent extends EntityComponent {
     }
 
 
-
-
-
+    public float getSpeed() {
+        return speed;
+    }
 }
