@@ -124,7 +124,7 @@ public class DroneFactory extends EntityFactory {
         drone.addComponent(physics, PhysicsComponent.ID);
 
         //HEALTH
-        drone.addComponent(new HealthComponent(30), HealthComponent.ID);
+        drone.addComponent(new HealthComponent(30,0,100), HealthComponent.ID);
 
         // AI
         AIComponent aiComponent = new AIComponent();

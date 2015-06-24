@@ -123,7 +123,7 @@
   <object id="119" type="STATIC_PLATFORM" x="1920" y="1920" width="320" height="64"/>
   <object id="120" type="STATIC_PLATFORM" x="384" y="512" width="448" height="64"/>
   <object id="121" type="STATIC_PLATFORM" x="2496" y="512" width="448" height="64"/>
-  <object id="125" type="PLAYER_SPAWN" x="576" y="384" width="64" height="64"/>
-  <object id="126" type="PLAYER_SPAWN" x="2688" y="384" width="64" height="64"/>
+  <object id="125" type="PLAYER_SPAWN" x="448" y="1984" width="64" height="64"/>
+  <object id="126" type="PLAYER_SPAWN" x="768" y="1984" width="64" height="64"/>
  </objectgroup>
 </map>

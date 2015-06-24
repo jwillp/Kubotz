@@ -50,7 +50,7 @@ public class EntityXMLFactory {
             }
             return  entity;
 
-        } catch (IOException e) {
+        } catch (IOException e) {   //TODO stop program or display stackStrace in Console
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();

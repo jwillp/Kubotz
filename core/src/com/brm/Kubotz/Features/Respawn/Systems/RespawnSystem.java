@@ -105,13 +105,13 @@ public class RespawnSystem extends EntitySystem {
         phys.getBody().setActive(true);
 
 
-        if(entity.hasComponentEnabled(SpriterAnimationComponent.ID))
+        if(entity.hasComponent(SpriterAnimationComponent.ID))
             entity.enableComponent(SpriterAnimationComponent.ID);
 
-        if(entity.hasComponentEnabled(CameraTargetComponent.ID))
+        if(entity.hasComponent(CameraTargetComponent.ID))
             entity.enableComponent(CameraTargetComponent.ID);
 
-        if(entity.hasComponentEnabled(VirtualGamePad.ID))
+        if(entity.hasComponent(VirtualGamePad.ID))
             entity.enableComponent(VirtualGamePad.ID);
 
 

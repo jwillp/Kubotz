@@ -10,6 +10,7 @@ import com.brm.GoatEngine.ECS.core.EntitySystem;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.GameControllerManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 
@@ -24,7 +25,7 @@ import java.util.HashMap;
  * By different CharacterController Systems that will Map these virtual input events
  * to Game Events that will be read by other systems to apply Game Logic
  *
- * // TODO Clean up? the handle Input is waaaaaayyyy tooo long!
+ *
  */
 public class InputTranslationSystem extends EntitySystem {
 
@@ -123,6 +124,7 @@ public class InputTranslationSystem extends EntitySystem {
             if (gamePad.isEnabled()) {
                 //Translation of the USER INPUT
                 if (gamePad.inputSource == VirtualGamePad.InputSource.USER_INPUT) {
+
                     PlayerScoreComponent playerInfo = (PlayerScoreComponent) e.getComponent(PlayerScoreComponent.ID);
 
                     if(playerInfo.getPlayerId() == 1 && Config.PLAYER_1_USE_GAMEPAD || playerInfo.getPlayerId() == 2 && Config.PLAYER_2_USE_GAMEPAD){

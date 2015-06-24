@@ -23,12 +23,14 @@ public class RespawnComponent extends EntityComponent {
         WAITING, // When the entity is waiting to be respawned
     }
 
-    private Timer delay = new Timer(Config.RESPAWN_DELAY); //Delay before respawning when dead
-    private State state = State.SPAWNED;
+    private Timer delay; //Delay before respawning when dead
+    private State state;
 
 
     public RespawnComponent(){
+        delay = new Timer(Config.RESPAWN_DELAY);
         this.delay.start();
+        state = State.SPAWNED;
     }
 
     public RespawnComponent(XmlReader.Element element){
@@ -48,6 +50,8 @@ public class RespawnComponent extends EntityComponent {
             String value = param.getText();
             if(name.equals("delay")){
                 this.delay = new Timer(Integer.parseInt(value));
+                this.state = State.SPAWNED;
+                this.delay.start();
             }
         }
 

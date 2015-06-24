@@ -17,6 +17,7 @@ import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.ECS.core.EntitySystemManager;
 import com.brm.GoatEngine.ECS.core.ScriptSystem;
+import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Utils.Logger;
@@ -29,6 +30,7 @@ import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
 import com.brm.Kubotz.Features.GameRules.Systems.GameRulesSystem;
 import com.brm.Kubotz.Features.GameRules.Systems.LifeBasedFreeForAll;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent;
+import com.brm.Kubotz.Features.KubotzCharacter.Entities.KubotzFactory;
 import com.brm.Kubotz.Features.PowerUps.Systems.PowerUpsSystem;
 import com.brm.Kubotz.Features.Respawn.Components.SpawnPointComponent;
 import com.brm.Kubotz.Constants;
@@ -141,6 +143,9 @@ public class InGameScreen extends GameScreen {
                 Entity player = EntityXMLFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager(),
                         this.systemManager.getSystem(PhysicsSystem.class).getWorld()
                 );
+                PhysicsComponent phys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
+                phys.setPosition(rect.getX()/tileSize, rect.getY()/tileSize);
+
                 /*Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
                         .withHeight(2.0f)
@@ -148,9 +153,9 @@ public class InGameScreen extends GameScreen {
                         .build();*/
 
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
+                player.addComponent(new VirtualGamePad(VirtualGamePad.InputSource.USER_INPUT), VirtualGamePad.ID);
 
-                PhysicsComponent phys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
-                phys.setPosition(rect.getX()/tileSize, rect.getY()/tileSize);
+
 
 
                 if(id == PlayerScoreComponent.PLAYER_1){

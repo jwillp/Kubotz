@@ -19,13 +19,17 @@ public class SpriterAnimationComponent extends EntityComponent {
 
     private float alpha = 1; //alpha level
 
-    private float offsetX = 0;
-    private float offsetY = 0;
+    private float offsetX;
+    private float offsetY;
     private float scale;
 
     private Color color = Color.WHITE;
 
     private boolean isComplete = false;
+
+    public SpriterAnimationComponent(Player player) {
+        this(player,0,0,1);
+    }
 
     public SpriterAnimationComponent(Player player, float offsetX, float offsetY, float scale){
         this.player = player;
@@ -59,7 +63,7 @@ public class SpriterAnimationComponent extends EntityComponent {
 
 
     public SpriterAnimationComponent(XmlReader.Element element){
-        super(element);
+       this.deserialize(element);
     }
 
 

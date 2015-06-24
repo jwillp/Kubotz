@@ -1,10 +1,12 @@
 <Entity>
+	<!-- HEALTH COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.HealthComponent">
 		<param name="maxAmount">100</param>
 		<param name="minAmount">0</param>
 		<param name="amount">100</param>
 	</component>
 
+	<!-- MANA COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.ManaComponent">
 		<param name="maxAmount">100</param>
 		<param name="minAmount">0</param>
@@ -12,11 +14,11 @@
 	</component>
 
 
-
+	<!-- BODY COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.PhysicsComponent">
 		<param name="direction">LEFT</param>
-		<param name="width">1.0</param>
-		<param name="height">2.0</param>
+		<param name="width">0.5</param>
+		<param name="height">1</param>
 		<body type="DynamicBody" colliderType="capsule">
 			<fixture name="head">
 				<hitbox>
@@ -41,38 +43,45 @@
 		</body>
 	</component>
 
+	<!-- RUNNING COMPONENT -->
 	<component name="com.brm.Kubotz.Features.Running.Components.RunningComponent">
 		<param name="speed">10</param>
 	</component>
 
+	<!-- JUMP COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.JumpComponent">
 		<param name="speed">10</param>
 		<param name="nbJumpsMax">3</param>
 		<param name="delay">500</param>
 	</component>
 
+	<!-- CAMERA TARGET COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.core.CameraTargetComponent">
 	</component>
 
+	<!-- RESPAWN COMPONENT -->
 	<component name="com.brm.Kubotz.Features.Respawn.Components.RespawnComponent">
 		<param name="delay">3500</param>
 	</component>
 
+	<!-- GRAb COMPONNET -->
 	<component name="com.brm.Kubotz.Features.Grab.Components.GrabComponent">
 		<param name="duration">200</param>
 		<param name="cooldown">100</param>
 	</component>
 
+	<!-- POWER UPS CONTAINER -->
 	<component name="com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent">
 	</component>
 
+	<!-- SCRIPT COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.core.ScriptComponent">
 		<script>scripts/KubotzCharacterController.js</script>
 		<script>scripts/KubotzAudioScript.js</script>
 		<script>scripts/KubotzAnimationScript.js</script>
 	</component>
 
-
+	<!-- SPRITER ANIMATION -->
 	<component name="com.brm.GoatEngine.ECS.common.SpriterAnimationComponent">
 		<param name="animFile">animations/Kubotz/kubotz.scml</param>
 		<param name="animEntityName">Kubotz</param>	
@@ -81,6 +90,7 @@
 		<param name="scale">0.005</param>
 	</component>
 
+	<!-- UI HEALTH -->
 	<component name="com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent">	
 	</component>
 

@@ -1,7 +1,9 @@
 package com.brm.GoatEngine.Input;
 
 import com.badlogic.gdx.utils.XmlReader;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
+import com.brm.GoatEngine.Utils.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,7 +31,7 @@ public class VirtualGamePad extends EntityComponent {
 
     private ArrayList<VirtualButton> justReleasedButtons; //A list of the buttons that where just released
     private ArrayList<VirtualButton> pressedButtons; //A list of the pressed buttons of the gamepad
-    public InputSource inputSource = InputSource.USER_INPUT; // Who makes the input (AI or User?)
+    public InputSource inputSource; // Who makes the input (AI or User?)
 
 
 
@@ -41,7 +43,7 @@ public class VirtualGamePad extends EntityComponent {
 
     public VirtualGamePad(XmlReader.Element componentData){
         super(componentData);
-        this.setInputSource(inputSource);
+        this.setInputSource(InputSource.USER_INPUT);
         this.pressedButtons = new ArrayList<VirtualButton>();
         this.justReleasedButtons = new ArrayList<VirtualButton>();
     }
@@ -134,10 +136,8 @@ public class VirtualGamePad extends EntityComponent {
     }
 
 
+    @Override
+    public void onDetach(Entity entity) {
 
-
-
-
-
-
+    }
 }

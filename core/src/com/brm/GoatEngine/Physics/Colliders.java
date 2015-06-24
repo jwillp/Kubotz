@@ -67,6 +67,7 @@ public class Colliders{
         fixtureDef.shape = footSensor;
         body.createFixture(fixtureDef).setUserData(new Hitbox(Hitbox.Type.Intangible,Constants.HITBOX_LABEL_FEET));
 
+        body.setFixedRotation(true);
 
     }
 

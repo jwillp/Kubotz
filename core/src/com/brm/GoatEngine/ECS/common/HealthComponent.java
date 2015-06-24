@@ -17,9 +17,9 @@ public class HealthComponent extends EntityComponent{
 
     public final static String ID = "HEALTH_PROPERTY";
 
-    protected float amount = 0;
-    protected float maxAmount = 100; //the maximum amount
-    protected float minAmount = 0;  // the minimum amount
+    protected float amount;
+    protected float maxAmount; //the maximum amount
+    protected float minAmount;  // the minimum amount
 
     //Regeneration
     protected Timer regenTimer = new Timer(0); //The number of milliseconds to regain health
@@ -28,6 +28,8 @@ public class HealthComponent extends EntityComponent{
 
     public HealthComponent(float amount){
         this.amount = amount;
+        this.minAmount = 0;
+        this.maxAmount = 100;
     }
 
     public HealthComponent(float amount, float min, float max){
