@@ -29,42 +29,24 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
 
         //runScript("scripts/"+scriptName); //Retry in the script folder
 
-        try{
+        /*try{
             GoatEngine.scriptEngine.runScript(scriptName);
         }catch(ScriptingEngine.ScriptNotFoundException e){
             GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
         }catch (Exception e){
             GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
-        }
+        }*/
 
     }
 
     public void reloadScript(String scriptFileName){
-        try{
+        /*try{
             GoatEngine.scriptEngine.reloadScript(scriptFileName);
         }catch(Exception e){
             console.log(e.getMessage(), Console.LogLevel.ERROR);
-        }
+        }*/
 
     }
-
-
-    /**
-     * Runs a Javascript code sample
-     * @param javascript
-     */
-    public void js(String... javascript){
-        String source = Arrays.toString(javascript);
-        try{
-            Object result = GoatEngine.scriptEngine.runScriptSource(source);
-            GoatEngine.console.log(">>> " + result.toString(), Console.LogLevel.INFO);
-        }catch(Exception e){
-            GoatEngine.console.log(e.getMessage(), Console.LogLevel.ERROR);
-        }
-    }
-
-
-
 
 
 

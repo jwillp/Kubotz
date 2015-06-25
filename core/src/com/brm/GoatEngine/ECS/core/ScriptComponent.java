@@ -3,6 +3,7 @@ package com.brm.GoatEngine.ECS.core;
 import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
+import com.brm.GoatEngine.Utils.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,13 +15,15 @@ import java.util.HashMap;
 public class ScriptComponent extends EntityComponent {
 
     public static final String ID = "SCRIPT_COMPONENT";
-    private ArrayList<String> scripts = new ArrayList<String>();
+    private ArrayList<String> scripts;
 
 
     public ScriptComponent(XmlReader.Element element){
         super(element);
     }
-    public ScriptComponent(){}
+    public ScriptComponent(){
+        scripts = new ArrayList<String>();
+    }
 
 
     /**

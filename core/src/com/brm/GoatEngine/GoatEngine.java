@@ -11,7 +11,9 @@ import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
 import com.brm.GoatEngine.Konsole.Konsole;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
+import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Systems.RendringSystems.RenderingSystem;
 import com.brm.Kubotz.Constants;
 import com.strongjoshua.console.Console;
@@ -23,7 +25,7 @@ import com.strongjoshua.console.Console;
  *     - loop
  *     - shutdown
  *
- *     SINGLETON CLASS
+ * And a static access to the most important modules
  */
 public class GoatEngine {
 
@@ -84,11 +86,11 @@ public class GoatEngine {
 
 
         // RUN DEFAULT MAIN SCRIPT
-        try{
-            scriptEngine.runScript("scripts/main.groovy");
+        /*try{
+            scriptEngine.("scripts/main.groovy");
         }catch(Exception e){
             console.log(e.getMessage(), Console.LogLevel.ERROR);
-        }
+        }*/
 
     }
 
@@ -115,7 +117,6 @@ public class GoatEngine {
         //Draw Console
         console.refresh();
         console.draw();
-
     }
 
 

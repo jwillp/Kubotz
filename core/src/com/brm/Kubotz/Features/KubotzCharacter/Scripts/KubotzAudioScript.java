@@ -6,7 +6,7 @@ import com.badlogic.gdx.utils.GdxRuntimeException;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.ECS.common.EntityScript;
+import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.Kubotz.Common.Events.DamageTakenEvent;
 import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent;
 import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent;

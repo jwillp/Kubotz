@@ -1,27 +1,30 @@
 package com.brm.GoatEngine.ScriptingEngine;
 
-import com.badlogic.gdx.Gdx;
-import com.brm.GoatEngine.EventManager.GameEvent;
-import com.brm.GoatEngine.EventManager.GameEventListener;
+import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.GoatEngine;
+import com.brm.GoatEngine.Utils.Logger;
 import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
+import groovy.util.GroovyScriptEngine;
+import groovy.util.ResourceException;
+import groovy.util.ScriptException;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Script engine used to communicate between the GameEngine and scripts
  */
-public class ScriptingEngine implements GameEventListener{
+public class ScriptingEngine{
 
+    public final static String SCRIPT_DIRECTORY = "scripts";
 
-    private GroovyShell shell;
+    private GroovyScriptEngine engine;
+    private Binding globalScope;
+
 
     //A Hash containing a the source for every script run in by the engine
     //Where the key is the path of the script
@@ -39,29 +42,33 @@ public class ScriptingEngine implements GameEventListener{
      * And exposing the basic Game Engine API
      */
     public void init(){
-        GoatEngine.eventManager.addListener(this);
 
-        // Init the Shell
+        // Init the script engine interpreter
         CompilerConfiguration config = new CompilerConfiguration();
-        config.setScriptBaseClass("com.brm.GoatEngine.ScriptEngine.GameScript");
+        config.setScriptBaseClass("com.brm.GoatEngine.ScriptingEngine.EntityScript");
 
-        shell = new GroovyShell(this.getClass().getClassLoader(), new Binding(), config);
-        shell = new GroovyShell(this.getClass().getClassLoader(), new Binding());
+        try {
+            engine = new GroovyScriptEngine(SCRIPT_DIRECTORY, this.getClass().getClassLoader());
+            engine.setConfig(config);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
+        globalScope = new Binding();
 
 
         //EXPOSE GOAT ENGINE API
         //Pass the engine to the current globalScope that way we have access to the whole engine (and game)
         addObject("GoatEngine", new GoatEngine()); //Dont mind the new we'll only access static methods
 
-        //Put some helpers (Console for console.log, instead of doing GoatEngine.getConsole())
-        addObject("console", GoatEngine.console);
-
-        addObject("Gdx", new Gdx());
+        //Put some helpers
+        addObject("console", GoatEngine.console); //Console for console.log, instead of doing GoatEngine.getConsole()
+        addObject("EventManager", GoatEngine.eventManager);
 
 
 
     }
+
 
 
     /**
@@ -72,76 +79,79 @@ public class ScriptingEngine implements GameEventListener{
      * @param <T>
      */
     public <T> void addObject(String objectName, T object){
-        shell.setVariable(objectName, object);
+        this.globalScope.setVariable(objectName, object);
     }
 
 
-
     /**
-     * Runs a script from source
-     * @param scriptName a script content as a String
-     */
-    public Object runScript(String scriptName){
-
-        if(!this.scripts.containsKey(scriptName)){
-            String source = this.loadScript(scriptName);
-            this.scripts.put(scriptName, source);
-        }
-
-        groovy.lang.Script s = shell.parse(this.scripts.get(scriptName));
-        return s.run();
-    }
-
-
-
-    
-    /**
-     * Loads a the script as a string from it's source file
-     * @param scriptFile a script file path
-     * @return the script's source code as a string
-     */
-    public String loadScript(String scriptFile){
-        byte[] encoded = null;
-        try {
-            encoded  = Files.readAllBytes(Paths.get(scriptFile));
-        } catch(NoSuchFileException e){
-            throw new ScriptNotFoundException(scriptFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        assert encoded != null;
-        return new String(encoded, StandardCharsets.UTF_8);
-    }
-
-
-
-    /**
-     * Reloads a script in memory
-     * @param scriptFile
+     * Runs a script according to its name
+     * @param scriptName
      * @return
      */
-    public void reloadScript(String scriptFile){
-        String newSource = this.loadScript(scriptFile);
-        this.scripts.put(scriptFile, newSource);
-        //TODO Trigger event Script Reloaded?
-    }
-
-
-
-    @Override
-    public void onEvent(GameEvent e) {
-        if(e.isOfType(ReloadScriptEvent.class)){
-            ReloadScriptEvent event = (ReloadScriptEvent) e;
-            this.reloadScript(event.getScriptName());
+    public Object runScript(String scriptName){
+        Object result = null;
+        try {
+            result = this.engine.run(scriptName, globalScope);
+        } catch (ResourceException e) {
+            e.printStackTrace();
+            throw new ScriptNotFoundException(scriptName);
+        } catch (ScriptException e) {
+            e.printStackTrace();
         }
+        return result;
     }
 
-    public void dispose() {
-    }
-
+    /**
+     * Runs a script using it's source code as a string
+     * @param source
+     * @return
+     */
     public Object runScriptSource(String source) {
-        return this.shell.evaluate(source);
+        try {
+            return this.engine.run(source, this.globalScope);
+        } catch (ResourceException e) {
+            e.printStackTrace();
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
+
+
+    /**
+     * Runs an Entity Script
+     * @param scriptName
+     * @return
+     */
+    public EntityScript runEntityScript(String scriptName, Entity entityObject){
+        EntityScript script = null;
+        Binding binding = this.copyBinding(globalScope);
+        binding.setVariable("entity", entityObject);
+        Logger.log(scriptName);
+
+        try {
+            script = (EntityScript) engine.run(scriptName, binding);
+        } catch (ResourceException e) {
+            e.printStackTrace();
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+
+        return script;
+    }
+
+
+
+    private Binding copyBinding(Binding binding){
+        return new Binding(binding.getVariables());
+    }
+
+
+
+
+
+
+    public void dispose() { }
 
 
     /**

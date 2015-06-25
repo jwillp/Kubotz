@@ -1,10 +1,11 @@
-package com.brm.GoatEngine.ECS.common;
+package com.brm.GoatEngine.ScriptingEngine;
 
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
+import groovy.lang.Script;
 
 import java.util.ArrayList;
 
@@ -12,7 +13,7 @@ import java.util.ArrayList;
  * A Scrip to control entities and have unique behaviours.
  * This is the base class every Script derives from
  */
-public abstract class EntityScript{
+public abstract class EntityScript extends Script{
 
     private boolean isInitialized = false;
 
@@ -68,6 +69,13 @@ public abstract class EntityScript{
     public void setInitialized(boolean isInitialized) {
         this.isInitialized = isInitialized;
     }
+
+
+    public Object run(){
+        return null;
+    }
+
+
 
 
 }

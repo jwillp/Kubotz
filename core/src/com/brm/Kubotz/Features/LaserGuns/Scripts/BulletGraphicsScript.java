@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
-import com.brm.GoatEngine.ECS.common.EntityScript;
+import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.GoatEngine.ECS.common.ParticleEffectComponent;
 import com.brm.GoatEngine.ECS.common.SpriteComponent;
 import com.brm.Kubotz.Constants;

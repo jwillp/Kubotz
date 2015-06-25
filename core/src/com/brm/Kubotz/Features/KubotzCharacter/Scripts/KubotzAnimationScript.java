@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
-import com.brm.GoatEngine.ECS.common.EntityScript;
+import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.GoatEngine.ECS.common.ParticleEffectComponent;

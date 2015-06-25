@@ -54,11 +54,13 @@ public class PhysicsComponent extends EntityComponent {
         bodyDef.position.set(position.x, position.y);
 
         this.body = world.createBody(bodyDef);
+        isGrounded = false;
     }
 
 
     public PhysicsComponent(Element componentData, World world, Entity entity){
-       this.deserialize(componentData, world, entity);
+        this.deserialize(componentData, world, entity);
+        isGrounded = false;
     }
 
 
