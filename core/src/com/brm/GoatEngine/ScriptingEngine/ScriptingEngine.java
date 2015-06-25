@@ -45,7 +45,7 @@ public class ScriptingEngine{
 
         // Init the script engine interpreter
         CompilerConfiguration config = new CompilerConfiguration();
-        config.setScriptBaseClass("com.brm.GoatEngine.ScriptingEngine.EntityScript");
+        config.setScriptBaseClass(EntityScript.class.getCanonicalName());
 
         try {
             engine = new GroovyScriptEngine(SCRIPT_DIRECTORY, this.getClass().getClassLoader());
@@ -53,7 +53,6 @@ public class ScriptingEngine{
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         globalScope = new Binding();
 
 
@@ -66,7 +65,7 @@ public class ScriptingEngine{
         addObject("EventManager", GoatEngine.eventManager);
 
 
-
+        Logger.log("Scripting Engine initialised");
     }
 
 
@@ -127,8 +126,6 @@ public class ScriptingEngine{
         EntityScript script = null;
         Binding binding = this.copyBinding(globalScope);
         binding.setVariable("entity", entityObject);
-        Logger.log(scriptName);
-
         try {
             script = (EntityScript) engine.run(scriptName, binding);
         } catch (ResourceException e) {
@@ -136,12 +133,15 @@ public class ScriptingEngine{
         } catch (ScriptException e) {
             e.printStackTrace();
         }
-
         return script;
     }
 
 
-
+    /**
+     * Returns a copy of the binding
+     * @param binding
+     * @return
+     */
     private Binding copyBinding(Binding binding){
         return new Binding(binding.getVariables());
     }

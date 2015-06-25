@@ -72,10 +72,6 @@ public abstract class EntityScript extends Script{
 
 
     public Object run(){
-        return null;
+        return this;
     }
-
-
-
-
 }

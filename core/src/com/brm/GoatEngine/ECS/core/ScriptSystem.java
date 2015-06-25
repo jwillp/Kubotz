@@ -44,12 +44,12 @@ public class ScriptSystem extends EntitySystem {
     private void handleInputForEntity(Entity entity){
         ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
         VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
-        /*for(String scriptFile: scriptComp.getScripts()){
+        for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
                 script.onInput(entity, gamePad.getPressedButtons());
             }
-        }*/
+        }
     }
 
     @Override

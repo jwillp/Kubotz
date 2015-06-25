@@ -79,8 +79,8 @@
 	<!-- SCRIPT COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.core.ScriptComponent">
 		<script>KubotzCharacterController.groovy</script>
-		<script>KubotzAudioScript.groovy</script>
-		<script>KubotzAnimationScript.groovy</script>
+<!-- 		<script>KubotzAudioScript.groovy</script>
+		<script>KubotzAnimationScript.groovy</script> -->
 	</component>
 
 	<!-- SPRITER ANIMATION -->

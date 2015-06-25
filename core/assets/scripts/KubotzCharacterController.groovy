@@ -32,7 +32,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param pressedButtons the buttons that were pressed
      */
     public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){
-
+        console.log(pressedButtons.toString());
     }
 
 
@@ -55,7 +55,4 @@ class KubotzCharacterControllerScript extends EntityScript{
     public <T extends EntityEvent> void onEvent(T event, Entity entity){
 		console.log("0000")
     }
-
-
 }
-new KubotzCharacterControllerScript();

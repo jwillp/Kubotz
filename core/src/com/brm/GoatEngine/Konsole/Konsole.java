@@ -39,9 +39,8 @@ public class Konsole extends Console {
      * @param msg
      * @param levelString
      */
-    public void log(String msg, String levelString){
-        this.log(msg, LogLevel.valueOf(levelString));
-
+    public <T> void log(T msg, String levelString){
+        this.log(msg.toString(), LogLevel.valueOf(levelString));
     }
 
 }
