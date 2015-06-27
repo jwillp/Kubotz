@@ -57,23 +57,17 @@ public class ScriptSystem extends EntitySystem {
 
         for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
             ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
-            /*for(String scriptFile: scriptComp.getScripts()){
+            for(String scriptFile: scriptComp.getScripts()){
 
-               //See if the script was registered with the engine
-                if(!GoatEngine.scriptEngine.isScriptLoaded(scriptFile)){
-                    Script script = GoatEngine.scriptEngine.registerScript(scriptFile);
-                    GoatEngine.scriptEngine.runScript(script);
-                    //GoatEngine.get().getScriptEngine().runScript("onInit()", script.getScope());
-                    GoatEngine.scriptEngine.callFunction(
-                            "onInit", script.getScope(), entity, entity.getManager()
-                    );
-                }
                 // ON UPDATE
-                Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
-                GoatEngine.scriptEngine.callFunction(
-                        "onUpdate", script.getScope(), entity, entity.getManager()
-                );
-            }*/
+
+                EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
+                if(!script.isInitialized()){
+                    script.onInit(entity, getEntityManager());
+                    script.setInitialized(true);
+                }
+                script.onUpdate(entity, getEntityManager());
+            }
         }
     }
 
@@ -81,21 +75,17 @@ public class ScriptSystem extends EntitySystem {
     @Override
     public <T extends EntityEvent> void onEvent(T event) {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
-        /*if(entity.hasComponentEnabled(ScriptComponent.ID)){
+        if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
             for(String scriptFile: scripts.getScripts()){
-                Script script =  GoatEngine.scriptEngine.getScript(scriptFile);
+                EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
                 if(event.getClass() == CollisionEvent.class){
-                    GoatEngine.scriptEngine.callFunction(
-                            "onCollision", script.getScope(), event, entity
-                    );
+                   script.onCollision((CollisionEvent) event, entity);
                 }else{
-                    GoatEngine.scriptEngine.callFunction(
-                           "onEvent", script.getScope(), event, entity
-                   );
+                    script.onEvent(event, entity);
                 }
             }
-        }*/
+        }
     }
 
 

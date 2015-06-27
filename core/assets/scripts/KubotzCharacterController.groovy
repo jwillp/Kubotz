@@ -14,7 +14,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * Called when a script is added to an entity
      */
     public void onInit(Entity entity, EntityManager entityManager){
-
+       console.log(this.toString(), "SUCCESS");
     }
 
 
@@ -23,7 +23,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param entity the entity to update with the script
      */
     public void onUpdate(Entity entity, EntityManager entityManager){
-
+        //console.log("Yep", "SUCCESS");
     }
 
     /**
@@ -33,6 +33,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      */
     public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){
         console.log(pressedButtons.toString());
+
     }
 
 

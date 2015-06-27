@@ -1,5 +1,6 @@
 package com.brm.GoatEngine.ScriptingEngine;
 
+import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Utils.Logger;
@@ -8,11 +9,10 @@ import groovy.util.GroovyScriptEngine;
 import groovy.util.ResourceException;
 import groovy.util.ScriptException;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.codehaus.groovy.control.MultipleCompilationErrorsException;
+import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -28,7 +28,61 @@ public class ScriptingEngine{
 
     //A Hash containing a the source for every script run in by the engine
     //Where the key is the path of the script
-    private HashMap<String, String> scripts = new HashMap<String, String>();
+    private HashMap<String, EntityScriptInfo> entityScripts = new HashMap<String, EntityScriptInfo>();
+
+
+
+    private class EntityScriptInfo{
+
+        private long lastModified = 0;
+        private final HashMap<String, EntityScript> instances = new HashMap<String, EntityScript>();
+
+
+        private EntityScriptInfo(long lastModified) {
+            this.lastModified = lastModified;
+        }
+
+        /**
+         * get the script instance for a certain entity Id
+         * @param id
+         * @return
+         */
+        public EntityScript getInstance(String id){
+            return this.instances.get(id);
+        }
+
+        /**
+         * Adds a new instance
+         * @param entityId
+         * @param instance
+         */
+        public void addInstance(String entityId, EntityScript instance){
+            this.instances.put(entityId, instance);
+        }
+
+        /**
+         * Gets the last time the script was modified
+         * @return
+         */
+        public long getLastModified() {
+            return lastModified;
+        }
+
+        /**
+         * Sets the last time the script was modified
+         * @param lastModified
+         */
+        public void setLastModified(long lastModified) {
+            this.lastModified = lastModified;
+        }
+
+        public HashMap<String,EntityScript> getInstances() {
+            return instances;
+        }
+    }
+
+
+
 
     /**
      * Default ctor
@@ -123,18 +177,84 @@ public class ScriptingEngine{
      * @return
      */
     public EntityScript runEntityScript(String scriptName, Entity entityObject){
-        EntityScript script = null;
-        Binding binding = this.copyBinding(globalScope);
-        binding.setVariable("entity", entityObject);
-        try {
-            script = (EntityScript) engine.run(scriptName, binding);
-        } catch (ResourceException e) {
-            e.printStackTrace();
-        } catch (ScriptException e) {
-            e.printStackTrace();
+
+        //If the script is not in memory, we'll "load" it
+        if(!this.entityScripts.containsKey(scriptName)){
+            this.entityScripts.put(scriptName, new EntityScriptInfo(this.getLastModified(scriptName)));
         }
-        return script;
+
+        //Does the current entity has an instance of that script?
+        if(this.entityScripts.get(scriptName).getInstance(entityObject.getID()) == null){
+            Binding binding = this.copyBinding(globalScope);
+            binding.setVariable("entity", entityObject.getID());
+            try {
+                this.entityScripts.get(scriptName).addInstance(entityObject.getID(),(EntityScript)engine.run(scriptName, binding));
+            } catch (ResourceException e) {
+                e.printStackTrace();
+            } catch (ScriptException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        //Does it need to be refreshed?
+        if(this.isSourceNewer(scriptName)){
+            Logger.log("NEW");
+            this.entityScripts.get(scriptName).setLastModified(this.getLastModified(scriptName));
+            this.refreshEntityScript(scriptName);
+        }
+
+
+        return this.entityScripts.get(scriptName).getInstance(entityObject.getID());
     }
+
+
+    /**
+     * Reloads an entity script for all concerned entities
+     */
+    public void refreshEntityScript(String scriptName) {
+        EntityScriptInfo info = this.entityScripts.get(scriptName);
+
+        for(Map.Entry<String, EntityScript> entry: info.getInstances().entrySet()){
+            Binding binding = this.copyBinding(globalScope);
+            binding.setVariable("entity", entry.getKey());
+            try {
+                entry.setValue((EntityScript) engine.run(scriptName, binding));
+            } catch (ResourceException e) {
+                e.printStackTrace();
+            } catch (ScriptException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    /**
+     * Returns whether a Script file was changed on disk but no in memory
+     * @param scriptName the name of the script to test
+     * @return
+     */
+    private boolean isSourceNewer(String scriptName){
+        long fileTime = getLastModified(scriptName);
+        long memoryTime = this.entityScripts.get(scriptName).getLastModified();
+        Logger.log(fileTime);
+        Logger.log(memoryTime);
+        Logger.log("=========");
+        return fileTime != memoryTime;
+    }
+
+
+    /**
+     * Returns when a script was last modified
+     * on disk (not in memory)
+     * @return
+     * @param scriptName
+     */
+    private long getLastModified(String scriptName){
+        return Gdx.files.internal(SCRIPT_DIRECTORY+"/"+scriptName).lastModified();
+
+    }
+
 
 
     /**
@@ -145,9 +265,6 @@ public class ScriptingEngine{
     private Binding copyBinding(Binding binding){
         return new Binding(binding.getVariables());
     }
-
-
-
 
 
 
