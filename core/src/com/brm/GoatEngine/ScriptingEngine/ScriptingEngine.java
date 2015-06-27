@@ -186,7 +186,7 @@ public class ScriptingEngine{
         //Does the current entity has an instance of that script?
         if(this.entityScripts.get(scriptName).getInstance(entityObject.getID()) == null){
             Binding binding = this.copyBinding(globalScope);
-            binding.setVariable("entity", entityObject.getID());
+            binding.setVariable("myEntityId", entityObject.getID());
             try {
                 this.entityScripts.get(scriptName).addInstance(entityObject.getID(),(EntityScript)engine.run(scriptName, binding));
             } catch (ResourceException e) {
@@ -199,7 +199,6 @@ public class ScriptingEngine{
 
         //Does it need to be refreshed?
         if(this.isSourceNewer(scriptName)){
-            Logger.log("NEW");
             this.entityScripts.get(scriptName).setLastModified(this.getLastModified(scriptName));
             this.refreshEntityScript(scriptName);
         }
@@ -237,9 +236,6 @@ public class ScriptingEngine{
     private boolean isSourceNewer(String scriptName){
         long fileTime = getLastModified(scriptName);
         long memoryTime = this.entityScripts.get(scriptName).getLastModified();
-        Logger.log(fileTime);
-        Logger.log(memoryTime);
-        Logger.log("=========");
         return fileTime != memoryTime;
     }
 

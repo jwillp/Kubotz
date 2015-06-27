@@ -14,7 +14,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * Called when a script is added to an entity
      */
     public void onInit(Entity entity, EntityManager entityManager){
-       console.log(this.toString(), "SUCCESS");
+       //console.log(myEntityId, "SUCCESS");
     }
 
 
