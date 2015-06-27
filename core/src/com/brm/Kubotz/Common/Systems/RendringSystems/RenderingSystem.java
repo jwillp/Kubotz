@@ -3,6 +3,7 @@ package com.brm.Kubotz.Common.Systems.RendringSystems;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
@@ -206,6 +207,8 @@ public class RenderingSystem extends EntitySystem {
      */
     public void renderPlayerLabels() {
 
+        BitmapFont font = new BitmapFont();
+
         spriteBatch.begin();
 
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(PlayerScoreComponent.ID)){
@@ -226,7 +229,6 @@ public class RenderingSystem extends EntitySystem {
                     label = player2Label;
 
                 }
-
                 float size = 1.5f;
                 size *= this.cameraSystem.getMainCamera().zoom*1.8f;
                 if(size<1){size = 1;}
@@ -237,7 +239,19 @@ public class RenderingSystem extends EntitySystem {
 
 
                 spriteBatch.draw(label, labelPos.x, labelPos.y, size, size);
+
+
+                //DEBUG INFO
+                font.getData().setScale(0.02f);
+                font.draw(spriteBatch, "IS GROUNDED: " + phys.isGrounded(), labelPos.x, labelPos.y);
+
+
             }
+
+
+
+
+
 
         }
 

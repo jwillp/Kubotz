@@ -1,4 +1,4 @@
-package com.brm.GoatEngine.ECS.core;
+package com.brm.GoatEngine.ScriptingEngine;
 
 import com.badlogic.gdx.utils.XmlReader;
 import com.brm.GoatEngine.ECS.core.EntityComponent;

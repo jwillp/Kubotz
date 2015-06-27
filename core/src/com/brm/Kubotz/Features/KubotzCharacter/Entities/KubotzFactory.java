@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.core.*;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ECS.common.ParticleEffectComponent;
 import com.brm.GoatEngine.ECS.common.SpriterAnimationComponent;
+import com.brm.GoatEngine.ScriptingEngine.ScriptComponent;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.Grab.Components.GrabComponent;

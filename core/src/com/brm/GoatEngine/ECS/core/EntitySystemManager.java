@@ -98,17 +98,9 @@ public class EntitySystemManager implements GameEventListener{
 
     @Override
     public void onEvent(GameEvent e) {
-        if(e.isOfType(EntityEvent.class)){
-            for(EntitySystem system: this.systems.values()){
-                system.onEntityEvent((EntityEvent) e);
-            }
-        }else{
-            for(EntitySystem system: this.systems.values()){
-                system.onGlobalEvent(e);
-            }
+        for(EntitySystem system: this.systems.values()){
+            system.onEntityEvent((EntityEvent) e);
         }
-
-
     }
 
 

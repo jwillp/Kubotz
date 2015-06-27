@@ -34,6 +34,7 @@ public class Colliders{
         fixtureDef = new FixtureDef();
         fixtureDef.shape = polyShape;
         fixtureDef.density = 0;
+        fixtureDef.isSensor = torso.type == Hitbox.Type.Intangible;
         body.createFixture(fixtureDef).setUserData(torso);
         polyShape.dispose();
 
@@ -56,6 +57,7 @@ public class Colliders{
         fixtureDef = new FixtureDef();
         fixtureDef.shape = circleShapeBottom;
         fixtureDef.density = 0.1f;
+        fixtureDef.isSensor = legs.type == Hitbox.Type.Intangible;
         body.createFixture(fixtureDef).setUserData(legs);
         circleShapeBottom.dispose();
 

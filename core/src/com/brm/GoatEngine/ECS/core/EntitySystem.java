@@ -70,13 +70,7 @@ public abstract class EntitySystem {
      * Called when the system receives an Entity Event
      * @param event
      * @param <T>
-     */
-    public <T extends EntityEvent>  void onEntityEvent(T event){} //TODO ABSTRACTIFY
+     */ //TODO ABSTRACTING
+    public <T extends EntityEvent>  void onEntityEvent(T event){}
 
-    /**
-     * Called when the system reveives a global event (might not be entity Event)
-     * @param event
-     * @param <T>
-     */
-    public <T extends GameEvent> void onGlobalEvent(T event){}
 }

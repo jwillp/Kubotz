@@ -1,19 +1,19 @@
 package com.brm.Kubotz.Features.Running.Systems;
 
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.brm.GoatEngine.ECS.common.JumpComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
-import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.ECS.core.EntitySystem;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.Kubotz.Features.Running.Components.RunningComponent;
-import com.brm.Kubotz.Constants;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 import com.brm.Kubotz.Common.Hitbox.Hitbox;
-import com.brm.Kubotz.Input.GameButton;
 import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
+import com.brm.Kubotz.Constants;
+import com.brm.Kubotz.Features.Running.Components.RunningComponent;
+import com.brm.Kubotz.Input.GameButton;
 
 /**
  * On Ground Movement System: Running + Jumping
@@ -87,6 +87,7 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public <T extends EntityEvent> void onEntityEvent(T event) {
+        Logger.debug("OK");
         if(event.getClass() == CollisionEvent.class){
            this.onCollision((CollisionEvent)event);
         }

@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.core;
 
 import com.brm.GoatEngine.ECS.common.TagsComponent;
+import com.brm.GoatEngine.ScriptingEngine.ScriptComponent;
 
 
 import java.util.*;
