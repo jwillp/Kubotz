@@ -62,7 +62,7 @@ public class InGameScreen extends GameScreen {
     @Override
     public void init(GameScreenManager engine) {
         super.init(engine);
-        Logger.log("In Game State initialisation");
+        Logger.info("In Game State initialisation");
 
         // Systems Init
         entityManager = ecsManager.getEntityManager();
@@ -192,7 +192,7 @@ public class InGameScreen extends GameScreen {
 
 
 
-        Logger.log("In Game State initialised");
+        Logger.info("In Game State initialised");
     }
 
 

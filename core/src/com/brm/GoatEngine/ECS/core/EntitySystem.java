@@ -2,6 +2,7 @@ package com.brm.GoatEngine.ECS.core;
 
 
 import com.brm.GoatEngine.EventManager.EntityEvent;
+import com.brm.GoatEngine.EventManager.GameEvent;
 
 public abstract class EntitySystem {
 
@@ -66,12 +67,16 @@ public abstract class EntitySystem {
 
 
     /**
-     * Called when the system receives an event from other Systems
+     * Called when the system receives an Entity Event
      * @param event
      * @param <T>
      */
-    public <T extends EntityEvent>  void onEvent(T event){} //TODO ABSTRACTIFY
+    public <T extends EntityEvent>  void onEntityEvent(T event){} //TODO ABSTRACTIFY
 
-
-
+    /**
+     * Called when the system reveives a global event (might not be entity Event)
+     * @param event
+     * @param <T>
+     */
+    public <T extends GameEvent> void onGlobalEvent(T event){}
 }

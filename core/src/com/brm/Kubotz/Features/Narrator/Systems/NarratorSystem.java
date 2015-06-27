@@ -34,7 +34,7 @@ public class NarratorSystem extends EntitySystem {
     }
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         if(event.isOfType(CountdownEndEvent.class)){
             onCountdown((CountdownEndEvent) event);
         }
@@ -120,7 +120,7 @@ public class NarratorSystem extends EntitySystem {
             Sound sound = Gdx.audio.newSound(Gdx.files.internal(soundPath));
             sound.play();
         }catch (GdxRuntimeException e){
-            Logger.log(soundPath);
+            Logger.warn("Sound not found: " + soundPath);
         }
     }
 

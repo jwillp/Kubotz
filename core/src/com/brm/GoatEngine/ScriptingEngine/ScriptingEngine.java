@@ -119,7 +119,7 @@ public class ScriptingEngine{
         addObject("EventManager", GoatEngine.eventManager);
 
 
-        Logger.log("Scripting Engine initialised");
+        Logger.info("Scripting Engine initialised");
     }
 
 

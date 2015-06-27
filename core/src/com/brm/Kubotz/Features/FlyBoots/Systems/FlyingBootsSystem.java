@@ -68,7 +68,7 @@ public class FlyingBootsSystem extends EntitySystem{
         //Gravity reaffects entity
         ((PhysicsComponent)entity.getComponent(PhysicsComponent.ID)).getBody().setGravityScale(1);
 
-        Logger.log("FLY MODE OFF");
+        Logger.debug("FLY MODE OFF");
     }
 
     /**
@@ -84,6 +84,6 @@ public class FlyingBootsSystem extends EntitySystem{
         //Reset the effect duration
         ((FlyingBootsComponent)entity.getComponent(FlyingBootsComponent.ID)).getEffectDuration().reset();
 
-        Logger.log("FLY MODE ON");
+        Logger.debug("FLY MODE ON");
     }
 }

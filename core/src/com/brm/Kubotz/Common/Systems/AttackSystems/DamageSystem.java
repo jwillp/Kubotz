@@ -47,7 +47,7 @@ public class DamageSystem extends EntitySystem{
 
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         if(event.getClass() == TakeDamageEvent.class){
             onTakeDamage((TakeDamageEvent) event);
         }else if(event.getClass() == CollisionEvent.class){

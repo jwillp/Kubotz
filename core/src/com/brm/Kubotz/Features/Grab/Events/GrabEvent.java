@@ -13,7 +13,7 @@ public class GrabEvent extends EntityEvent {
      */
     public GrabEvent(String grabberId){
         super(grabberId);
-        Logger.log("GRAB");
+        Logger.debug("GRAB");
 
     }
 

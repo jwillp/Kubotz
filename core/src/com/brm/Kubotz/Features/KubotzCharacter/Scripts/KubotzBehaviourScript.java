@@ -100,7 +100,7 @@ public class KubotzBehaviourScript extends EntityScript{
                                         )
                         )
         );
-        Logger.log("Kubotz BTree Created");
+        Logger.info("Kubotz BTree Created");
         return root;
     }
 

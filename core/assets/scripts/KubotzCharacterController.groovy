@@ -1,3 +1,4 @@
+import com.brm.GoatEngine.EventManager.GameEvent
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
@@ -13,6 +14,7 @@ class KubotzCharacterControllerScript extends EntityScript{
     /**
      * Called when a script is added to an entity
      */
+    @Override
     public void onInit(Entity entity, EntityManager entityManager){
        //console.log(myEntityId, "SUCCESS");
     }
@@ -22,6 +24,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * Called every frame
      * @param entity the entity to update with the script
      */
+    @Override
     public void onUpdate(Entity entity, EntityManager entityManager){
         //console.log("Yep", "SUCCESS");
     }
@@ -31,8 +34,8 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param entity the entity this script is attached to
      * @param pressedButtons the buttons that were pressed
      */
+    @Override
     public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){
-        console.log(pressedButtons.toString());
 
     }
 
@@ -43,6 +46,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param contact
      * @param entity
      */
+    @Override
     public void onCollision(CollisionEvent contact, Entity entity){
 
     }
@@ -53,7 +57,15 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param entity
      * @param <T>
      */
+    @Override
     public <T extends EntityEvent> void onEvent(T event, Entity entity){
 		console.log("0000")
     }
+
+
+    @Override
+    public <T extends GameEvent> void onGlobalEvent(T event){
+
+    }
+
 }

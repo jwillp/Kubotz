@@ -18,8 +18,8 @@
 	<!-- BODY COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.PhysicsComponent">
 		<param name="direction">LEFT</param>
-		<param name="width">0.5</param>
-		<param name="height">1</param>
+		<param name="width">0.6</param>
+		<param name="height">1.2</param>
 		<body type="DynamicBody" colliderType="capsule">
 			<fixture name="head">
 				<hitbox>
@@ -87,8 +87,8 @@
 	<component name="com.brm.GoatEngine.ECS.common.SpriterAnimationComponent">
 		<param name="animFile">animations/Kubotz/kubotz.scml</param>
 		<param name="animEntityName">Kubotz</param>	
-		<param name="offsetX">-0.25</param>
-		<param name="offsetY">-1.5</param>
+		<param name="offsetX">0.0</param>
+		<param name="offsetY">-1.0</param>
 		<param name="scale">0.005</param>
 	</component>
 

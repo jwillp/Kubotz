@@ -28,18 +28,18 @@ public class GameScreenManager {
 
         this.isRunning = true;
         //Load Ressources from manager
-        Logger.log("Game Engine Init::Loading Resources");
+        Logger.info("Game Engine Init::Loading Resources");
 
 
         //Graphical Interface initSystems
-        Logger.log("Game Engine Init::GUI Initialisation");
+        Logger.info("Game Engine Init::GUI Initialisation");
     }
 
     /**
      * Does necessary clean ups of the engine
      */
     public void cleanUp() {
-        Logger.log("Game Engine Cleaning Up");
+        Logger.info("Game Engine Cleaning Up");
     }
 
 
@@ -47,7 +47,7 @@ public class GameScreenManager {
      * Exits the engine in a clean way
      */
     public  void exit(){
-        Logger.log("Game Engine Exiting");
+        Logger.info("Game Engine Exiting");
         this.isRunning = false;
 
     }
@@ -73,13 +73,13 @@ public class GameScreenManager {
      * @param screen
      */
     public void addScreen(GameScreen screen){
-        Logger.log("Game Engine adding Screen ...");
+        Logger.info("Game Engine adding Screen ...");
         if(!this.screens.isEmpty())
             this.screens.peek().pause();
 
         this.screens.push(screen);
         this.screens.peek().init(this);
-        Logger.log("Game Engine Screen Added");
+        Logger.info("Game Engine Screen Added");
     }
 
 

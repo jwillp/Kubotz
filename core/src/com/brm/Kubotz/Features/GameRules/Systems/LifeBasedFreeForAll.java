@@ -56,7 +56,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
 
         if(getEntityManager().getComponents(PlayerScoreComponent.ID).size() == 1){
-            Logger.log("WE HAVE A WIIIIIINNNNER! GAME!");
+            Logger.debug("WE HAVE A WIIIIIINNNNER! GAME!");
             String winner = getEntityManager().getEntitiesWithComponent(PlayerScoreComponent.ID).get(0).getID();
             fireEvent(new GameWinEvent(winner));
         }
@@ -81,7 +81,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
 
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         if(event.getClass() == DamageTakenEvent.class){
             onDamageTaken((DamageTakenEvent)event);
         }
@@ -121,7 +121,7 @@ public class LifeBasedFreeForAll extends EntitySystem {
         playerScores = (PlayerScoreComponent) getEntityManager().getComponent(PlayerScoreComponent.ID, e.getEntityId());
 
         playerScores.addDeath(1);
-        Logger.log("DEAD!" + String.valueOf(playerScores.getNbLives()));
+        Logger.debug("DEAD!" + String.valueOf(playerScores.getNbLives()));
 
 
         if(playerScores.getNbLives() == 0){

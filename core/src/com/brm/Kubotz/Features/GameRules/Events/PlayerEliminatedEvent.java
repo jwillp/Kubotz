@@ -14,7 +14,7 @@ public class PlayerEliminatedEvent extends EntityEvent {
      */
     public PlayerEliminatedEvent(String entityId) {
         super(entityId);
-        Logger.log("Player Elliminated");
+        Logger.debug("Player Elliminated");
     }
 
 

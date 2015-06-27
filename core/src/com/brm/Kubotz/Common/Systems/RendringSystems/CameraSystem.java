@@ -58,10 +58,10 @@ public class CameraSystem extends EntitySystem {
         }
 
         //ZOOM IN/OUT according to the distance between the two entities
-        //updateZoom(leftMost, rightMost);
+        updateZoom(leftMost, rightMost);
 
         // Find the center point between between the two entities
-        //updatePosition(leftMost, rightMost);
+        updatePosition(leftMost, rightMost);
 
         //Make sure the camera does not display anything outside the world
         //updateBoundaries();
@@ -194,7 +194,7 @@ public class CameraSystem extends EntitySystem {
 
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         if(event.getClass() == DamageTakenEvent.class){
             mainCamera.setShaking(true);
             mainCamera.getShakeDuration().reset();

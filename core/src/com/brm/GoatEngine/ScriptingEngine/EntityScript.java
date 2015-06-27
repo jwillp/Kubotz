@@ -3,6 +3,7 @@ package com.brm.GoatEngine.ScriptingEngine;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
+import com.brm.GoatEngine.EventManager.GameEvent;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 import groovy.lang.Script;
@@ -46,14 +47,19 @@ public abstract class EntityScript extends Script{
     public void onCollision(CollisionEvent contact, Entity entity){}
 
     /**
-     * When an event occurs
+     * When an entity event concerning the current entity occurs
      * @param event
      * @param entity
      * @param <T>
      */
     public <T extends EntityEvent> void onEvent(T event, Entity entity){}
 
-
+    /**
+     * when a global Event (concerning any entity) occurs
+     * @param event
+     * @param <T>
+     */
+    public <T extends GameEvent> void onGlobalEvent(T event){}
 
 
     /**

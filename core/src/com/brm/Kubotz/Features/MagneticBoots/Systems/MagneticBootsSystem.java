@@ -71,8 +71,8 @@ public class MagneticBootsSystem extends EntitySystem{
 
         phys.getBody().setGravityScale(phys.getBody().getGravityScale() * -1); //Invert gravity
         mag.setStartingAngle(phys.getBody().getAngle()*MathUtils.radDeg);
-        Logger.log("START ANGLE" + mag.getStartingAngle());
-        Logger.log("Entity" + entity.getID() + " ==> MAGNO MODE " + mag.isEnabled());
+        Logger.debug("START ANGLE" + mag.getStartingAngle());
+        Logger.debug("Entity" + entity.getID() + " ==> MAGNO MODE " + mag.isEnabled());
         //mag.getRotationTimer().reset();
 
 

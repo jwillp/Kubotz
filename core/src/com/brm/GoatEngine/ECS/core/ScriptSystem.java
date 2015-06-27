@@ -1,6 +1,7 @@
 package com.brm.GoatEngine.ECS.core;
 
 import com.brm.GoatEngine.EventManager.EntityEvent;
+import com.brm.GoatEngine.EventManager.GameEvent;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.ScriptingEngine.EntityScript;
@@ -73,7 +74,7 @@ public class ScriptSystem extends EntitySystem {
 
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
@@ -88,11 +89,22 @@ public class ScriptSystem extends EntitySystem {
         }
     }
 
+    /**
+     * Called when the system reveives a global event (might not be entity Event)
+     *
+     * @param event
+     */
+    @Override
+    public <T extends GameEvent> void onGlobalEvent(T event) {
 
-
-
-
-
+        for(Entity entity: getEntityManager().getEntitiesWithComponent(ScriptComponent.ID)){
+            ScriptComponent scriptComp = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
+            for(String scriptFile: scriptComp.getScripts()){
+                EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
+                script.onGlobalEvent(event);
+            }
+        }
+    }
 
 
 }

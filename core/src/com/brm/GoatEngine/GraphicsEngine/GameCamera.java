@@ -16,7 +16,7 @@ public class GameCamera extends OrthographicCamera {
     private float zoomSpeed = -1; //The zoom speed (-1 one values means the system will decide by itself)
 
     //Zoom properties
-    private float minimumZoom = 0.3f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
+    private float minimumZoom = 0.6f; //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
     private float maximumZoom = 1.7f; //The maximum value the camera can Zoom In/Out
 
     private boolean isXAxisLocked = false;

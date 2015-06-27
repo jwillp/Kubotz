@@ -103,7 +103,7 @@ public class GunsSystem extends EntitySystem {
 
 
     @Override
-    public <T extends EntityEvent> void onEvent(T event) {
+    public <T extends EntityEvent> void onEntityEvent(T event) {
         if(event.getClass() == CollisionEvent.class){
             this.onCollision((CollisionEvent) event);
         }
