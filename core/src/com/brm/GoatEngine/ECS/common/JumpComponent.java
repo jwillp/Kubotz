@@ -38,6 +38,7 @@ public class JumpComponent extends EntityComponent {
         cooldown.start();
         speed = 10;
         nbJumpsMax = 1;
+        nbJujmps = 0;
     }
 
     public JumpComponent(XmlReader.Element componentData){
@@ -100,6 +101,7 @@ public class JumpComponent extends EntityComponent {
                 this.cooldown = new Timer(Integer.valueOf(value));
             }
         }
+        nbJujmps = 0;
 
     }
 

@@ -1,4 +1,4 @@
-<?xml version=“1.0” encoding=“utf-8”?>
+<?xml version="1.0" encoding="utf-8"?>
 <Entity>
 	<!-- HEALTH COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.HealthComponent">
@@ -66,7 +66,7 @@
 		<param name="delay">3500</param>
 	</component>
 
-	<!-- GRAb COMPONNET -->
+	<!-- GRAB COMPONNET -->
 	<component name="com.brm.Kubotz.Features.Grab.Components.GrabComponent">
 		<param name="duration">200</param>
 		<param name="cooldown">100</param>
@@ -79,11 +79,11 @@
 	<!-- SCRIPT COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.core.ScriptComponent">
 		<script>KubotzCharacterController.groovy</script>
-<!-- 		<script>KubotzAudioScript.groovy</script>
-		<script>KubotzAnimationScript.groovy</script> -->
-	</component>
+		<script>KubotzAnimationScript.groovy</script>
+<!-- 	<script>KubotzAudioScript.groovy</script>  -->
+        </component>
 
-	<!-- SPRITER ANIMATION -->
+        <!-- SPRITER ANIMATION -->
 	<component name="com.brm.GoatEngine.ECS.common.SpriterAnimationComponent">
 		<param name="animFile">animations/Kubotz/kubotz.scml</param>
 		<param name="animEntityName">Kubotz</param>	
