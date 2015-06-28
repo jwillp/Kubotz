@@ -83,6 +83,14 @@
 <!-- 	<script>KubotzAudioScript.groovy</script>  -->
         </component>
 
+
+    <!-- MELEE COMPONENT -->
+    <component name="com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent">
+    	
+    </component>
+
+
+
         <!-- SPRITER ANIMATION -->
 	<component name="com.brm.GoatEngine.ECS.common.SpriterAnimationComponent">
 		<param name="animFile">animations/Kubotz/kubotz.scml</param>

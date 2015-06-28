@@ -119,3 +119,12 @@ Possible solutions: minX
 [16:29:15] [INFO] In Game State initialisation
 [16:29:18] [INFO] In Game State initialised
 [16:29:18] [INFO] Game Engine Screen Added
+[17:22:47] [INFO] Scripting Engine initialised
+[17:22:47] [INFO] Game Engine Init::Loading Resources
+[17:22:47] [INFO] Game Engine Init::GUI Initialisation
+[17:22:47] [INFO] Game Engine adding Screen ...
+[17:22:47] [INFO] In Game State initialisation
+[17:22:51] [INFO] In Game State initialised
+[17:22:51] [INFO] Game Engine Screen Added
+[17:23:38] [WARNING] Sound not found: audio/narrator_niceShot.mp3
+[17:23:43] [INFO] Game Engine Cleaning Up

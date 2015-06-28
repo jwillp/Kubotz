@@ -32,11 +32,15 @@ public class MeleeComponent extends EntityComponent {
      * @param phys : The physics component of the entity
      */
     public MeleeComponent(PhysicsComponent phys){
-       this.phys = phys;
         this.durationTimer.start();
         this.cooldown.start();
     }
 
+    public MeleeComponent(XmlReader.Element componentData){
+        super(componentData);
+        this.durationTimer.start();
+        this.cooldown.start();
+    }
 
 
     @Override
@@ -50,9 +54,7 @@ public class MeleeComponent extends EntityComponent {
      * @param componentData the data as an XML element
      */
     @Override
-    public void deserialize(XmlReader.Element componentData) {
-
-    }
+    public void deserialize(XmlReader.Element componentData){}
 
     public int getDamage() {
         return damage;
