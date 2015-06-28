@@ -121,10 +121,6 @@ public class RenderingSystem extends EntitySystem {
 
 
 
-
-
-
-
     /**
      * Renders spriter animations
      */
@@ -240,10 +236,11 @@ public class RenderingSystem extends EntitySystem {
 
                 spriteBatch.draw(label, labelPos.x, labelPos.y, size, size);
 
-
-                //DEBUG INFO
-                font.getData().setScale(0.02f);
-                font.draw(spriteBatch, "IS GROUNDED: " + phys.isGrounded(), labelPos.x, labelPos.y);
+                if(Config.DEBUG_RENDERING_ENABLED){
+                    //DEBUG INFO
+                    font.getData().setScale(0.02f);
+                    font.draw(spriteBatch, "IS GROUNDED: " + phys.isGrounded(), labelPos.x, labelPos.y);
+                }
             }
         }
     }

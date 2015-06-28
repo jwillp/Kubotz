@@ -103,3 +103,19 @@ Possible solutions: minX
 [16:22:07] [WARNING] Sound not found: audio/narrator_niceShot.mp3
 [16:22:32] [WARNING] Sound not found: audio/narrator_niceShot.mp3
 [16:22:37] [INFO] Game Engine Cleaning Up
+[16:26:48] [INFO] Scripting Engine initialised
+[16:26:48] [INFO] Game Engine Init::Loading Resources
+[16:26:48] [INFO] Game Engine Init::GUI Initialisation
+[16:26:48] [INFO] Game Engine adding Screen ...
+[16:26:48] [INFO] In Game State initialisation
+[16:26:51] [INFO] In Game State initialised
+[16:26:51] [INFO] Game Engine Screen Added
+[16:27:43] [WARNING] Sound not found: audio/narrator_niceShot.mp3
+[16:28:08] [INFO] Game Engine Cleaning Up
+[16:29:15] [INFO] Scripting Engine initialised
+[16:29:15] [INFO] Game Engine Init::Loading Resources
+[16:29:15] [INFO] Game Engine Init::GUI Initialisation
+[16:29:15] [INFO] Game Engine adding Screen ...
+[16:29:15] [INFO] In Game State initialisation
+[16:29:18] [INFO] In Game State initialised
+[16:29:18] [INFO] Game Engine Screen Added
