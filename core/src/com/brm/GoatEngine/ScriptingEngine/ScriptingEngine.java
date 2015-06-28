@@ -221,7 +221,7 @@ public class ScriptingEngine{
     }
 
 
-    private void logError(String scriptName, String message){
+    public void logError(String scriptName, String message){
         if(!errorScripts.contains(scriptName)){
             Logger.error(message);
             errorScripts.add(scriptName);

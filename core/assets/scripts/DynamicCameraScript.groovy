@@ -11,6 +11,7 @@ import com.brm.GoatEngine.EventManager.GameEvent
 import com.brm.GoatEngine.EventManager.GameEventListener
 import com.brm.GoatEngine.GoatEngine
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
+import com.brm.GoatEngine.Utils.Logger
 import com.brm.GoatEngine.Utils.Math.Vectors
 import com.brm.GoatEngine.Utils.Timer
 import com.brm.Kubotz.Common.Events.DamageTakenEvent
@@ -21,7 +22,7 @@ import com.brm.Kubotz.Common.Events.DamageTakenEvent
  */
 public class DynamicCamera extends EntityScript implements GameEventListener{
 
-    private OrthographicCamera mainCamera;
+    private OrthographicCamera camera;
 
     //For Smooth camera movement(delayed camera movement, (the higher the most direct and quick))
     private Vector2 speed = new Vector2(8.0f, 5.0f);
@@ -31,8 +32,8 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
 
     //Zoom properties
     //The minimum value the camera can Zoom In/Out ==> 1 = default Viewport width value (no Zoom)
-    private float minimumZoom = 0.6f;
-    private float maximumZoom = 1.7f; //The maximum value the camera can Zoom In/Out
+    private float minimumZoom = 0.2f; //The closer we can get
+    private float maximumZoom = 1.0f; //The maximum value the camera can Zoom Out
 
 
     private boolean isXAxisLocked = false;  //if the camera is locked on the X Axis
@@ -52,8 +53,13 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
     private final Vector2 offset = new Vector2(); //Current offset from real position
     private boolean shakeDirection = false; // false = bottom_left,  true = top_right
 
-    def maxX = 45;
+    def maxX = 50;
+    def minX = 0;
+
     def maxY = 40;
+    def minY = 0;
+
+
 
 
     /**
@@ -61,10 +67,9 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
      */
     @Override
     public void onInit(Entity entity, EntityManager entityManager){
-        GoatEngine.eventManager.removeListener(this); //can happen in the case of a relaoded script
         GoatEngine.eventManager.addListener(this);
 
-        mainCamera = ((CameraComponent)entity.getComponent(CameraComponent.ID)).getCamera();
+        camera = ((CameraComponent)entity.getComponent(CameraComponent.ID)).getCamera();
 
     }
 
@@ -92,20 +97,19 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
             rightMost.y = Math.max(rightMost.y, phys.getPosition().y);
         }
 
-        //ZOOM IN/OUT according to the distance between the two entities
-        updateZoom(leftMost, rightMost);
+
 
         // Find the center point between between the two entities
         updatePosition(leftMost, rightMost);
 
-        //Make sure the camera does not display anything outside the world
-        updateBoundaries();
+        //ZOOM IN/OUT according to the distance between the two entities
+        updateZoom(leftMost, rightMost);
 
         // Update camera Shake effect
-        updateCameraShake(0); //TODO onUpdate should have delta time
+        updateCameraShake(GoatEngine.graphicsEngine.deltaTime);
 
         //Update the camera
-        mainCamera.update();
+        camera.update();
     }
 
 
@@ -124,18 +128,20 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
         float centerX = (leftMost.x + rightMost.x)*0.5f;
         float centerY = (leftMost.y + rightMost.y)*0.5f;
 
+        def visibleX, visibleY
+        (visibleX, visibleY) = getVisibility()
 
         //All is good let's lerp for smooth cam movements
         float lerpProgress = this.speed.x * Gdx.graphics.getDeltaTime();
         if(!this.isXAxisLocked){
-            mainCamera.position.x = MathUtils.lerp(mainCamera.position.x, centerX, lerpProgress);
+            //Clamp centerX
+            //centerX = MathUtils.clamp(centerX, minX + visibleX/2 as float, maxX - visibleX/2 as float)
+            camera.position.x = MathUtils.lerp(camera.position.x, centerX, lerpProgress);
         }
         if(!this.isYAxisLocked){
-            mainCamera.position.y = MathUtils.lerp(mainCamera.position.y, centerY, lerpProgress);
+            //centerY = MathUtils.clamp(centerY, minY + visibleY/2 as float, maxY - visibleY/2 as float)
+            camera.position.y = MathUtils.lerp(camera.position.y, centerY, lerpProgress);
         }
-
-
-
     }
 
 
@@ -150,46 +156,33 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
     private void updateZoom(Vector2 leftMost, Vector2 rightMost){
 
         //Pythagorean distance
-        float zoomFactor = (float)(Vectors.euclideanDistance(leftMost, rightMost)/10.0f); //TODO 10? what was I thinking?
+        float zoomFactor = (float)(Vectors.manhattanDistance(leftMost, rightMost)/10.0f); //TODO 10? what was I thinking?
         zoomFactor = MathUtils.clamp(zoomFactor, minimumZoom, maximumZoom);
 
         //if the camera has no particular zoom speed, we'll define one based on camera speed
-        float zoomSpeed = this.zoomSpeed == -1 ? this.speed.len() : this.zoomSpeed;
+        float zoomSpeed = this.zoomSpeed == -1 ? this.speed.len() : this.zoomSpeed/2;
+
+        //limit the zoom factor so we dont see too much
+        //float visX, visY
+        //(visX, visY) = getVisibility()
+        //def zoomMax =  maxX/visX as float
+        //zoomFactor = MathUtils.clamp(zoomFactor, minimumZoom, zoomMax);
 
         //LERP for smooth zoom
-        mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, zoomFactor, zoomSpeed * Gdx.graphics.getDeltaTime() as float);
+        camera.zoom = MathUtils.lerp(camera.zoom, zoomFactor, zoomSpeed * Gdx.graphics.deltaTime as float);
     }
 
 
-    /**
-     * Make sure the Viewport of the camera is always within the boundaries
-        * So moves it and zoom in/out in order for it work
-        */
-    private void updateBoundaries(){
-        // Now We need to readjust the position of the camera (so it doest show the outside of the world)
-        float visibleX = mainCamera.viewportWidth *  mainCamera.zoom; //The number of tiles visible in X at the moment
-        float visibleY = mainCamera.viewportHeight *  mainCamera.zoom;//The number of tiles visible in Y at the moment
-        float posY = mainCamera.position.y;
-        float posX = mainCamera.position.x;
 
-
-        // Make it stay within bounds regardless of the zoom
-        mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, 0, maxX);
-        //mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, 0, maxY);
-
-        // If we see too much try to reduce it
-
-        if(visibleX > maxX)
-            mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, maxX/mainCamera.viewportWidth as float,
-                    this.zoomSpeed *GoatEngine.graphicsEngine.deltaTime as float
-            )
-        if(visibleY > maxY)
-            mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, maxY/mainCamera.viewportHeight as float,
-                    this.zoomSpeed *GoatEngine.graphicsEngine.deltaTime as float
-            )
-
+    /***
+     * Returns the current visibility in world unit of the camera
+     * @return
+     */
+    def getVisibility(){
+        float visibleX = camera.viewportWidth *  camera.zoom; //The number of tiles visible in X at the moment
+        float visibleY = camera.viewportHeight *  camera.zoom;//The number of tiles visible in Y at the moment
+        return [visibleX, visibleY]
     }
-
 
 
 
@@ -222,13 +215,13 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
 
             }
 
-            mainCamera.position.x = virtualPosition.x + offset.x;
-            mainCamera.position.y = virtualPosition.y + offset.y;
+            camera.position.x = virtualPosition.x + offset.x;
+            camera.position.y = virtualPosition.y + offset.y;
 
         }else{
 
-            virtualPosition.x = mainCamera.position.x;
-            virtualPosition.y = mainCamera.position.y;
+            virtualPosition.x = camera.position.x;
+            virtualPosition.y = camera.position.y;
         }
 
     }

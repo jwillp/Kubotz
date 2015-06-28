@@ -1,4 +1,4 @@
-package com.brm.Kubotz.Common.Hitbox;
+package com.brm.GoatEngine.Hitbox;
 
 /**
  * Represents a hitbox. A hitbox is the main structure to represent

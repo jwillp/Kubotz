@@ -1,22 +1,105 @@
-[00:45:14] [INFO] Scripting Engine initialised
-[00:45:14] [INFO] Game Engine Init::Loading Resources
-[00:45:14] [INFO] Game Engine Init::GUI Initialisation
-[00:45:14] [INFO] Game Engine adding Screen ...
-[00:45:14] [INFO] In Game State initialisation
-[00:45:17] [INFO] In Game State initialised
-[00:45:17] [INFO] Game Engine Screen Added
-[00:45:21] [ERROR] startup failed:
-file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/DynamicCameraScript.groovy: 186: expecting ')', found 'if' @ line 186, column 9.
-           if(visibleY > maxY)
-           ^
+[13:33:48] [INFO] Scripting Engine initialised
+[13:33:48] [INFO] Game Engine Init::Loading Resources
+[13:33:48] [INFO] Game Engine Init::GUI Initialisation
+[13:33:49] [INFO] Game Engine adding Screen ...
+[13:33:49] [INFO] In Game State initialisation
+[13:33:52] [INFO] In Game State initialised
+[13:33:52] [INFO] Game Engine Screen Added
+[13:33:55] [ERROR] Cannot cast object '[0.0, 0.0]' with class 'java.util.ArrayList' to class 'float'
+[13:34:52] [ERROR] Cannot cast object '[80.0, 48.0]' with class 'java.util.ArrayList' to class 'float'
+[13:35:50] [ERROR] startup failed:
+file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/DynamicCameraScript.groovy: 167: unexpected token: * @ line 167, column 43.
+   zoomMax =  maxX/visX as float *-1
+                                 ^
 
 1 error
 
-[00:46:00] [ERROR] startup failed:
-file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/DynamicCameraScript.groovy: 185: unexpected token: / @ line 185, column 12.
-              / )
-              ^
+[13:35:50] [ERROR] startup failed:
+file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/DynamicCameraScript.groovy: 167: unexpected token: * @ line 167, column 43.
+   zoomMax =  maxX/visX as float *-1
+                                 ^
 
 1 error
 
-[00:46:22] [INFO] Game Engine Cleaning Up
+[13:36:12] [ERROR] No such property: visXd for class: DynamicCamera
+Possible solutions: minX
+[13:40:31] [INFO] Scripting Engine initialised
+[13:40:31] [INFO] Game Engine Init::Loading Resources
+[13:40:31] [INFO] Game Engine Init::GUI Initialisation
+[13:40:31] [INFO] Game Engine adding Screen ...
+[13:40:31] [INFO] In Game State initialisation
+[13:40:34] [INFO] In Game State initialised
+[13:40:34] [INFO] Game Engine Screen Added
+[13:40:49] [INFO] Game Engine Cleaning Up
+[13:41:11] [INFO] Scripting Engine initialised
+[13:41:11] [INFO] Game Engine Init::Loading Resources
+[13:41:11] [INFO] Game Engine Init::GUI Initialisation
+[13:41:11] [INFO] Game Engine adding Screen ...
+[13:41:11] [INFO] In Game State initialisation
+[13:41:15] [INFO] In Game State initialised
+[13:41:15] [INFO] Game Engine Screen Added
+[13:44:35] [INFO] Game Engine Cleaning Up
+[14:36:41] [INFO] Scripting Engine initialised
+[14:36:41] [INFO] Game Engine Init::Loading Resources
+[14:36:41] [INFO] Game Engine Init::GUI Initialisation
+[14:36:41] [INFO] Game Engine adding Screen ...
+[14:36:41] [INFO] In Game State initialisation
+[14:36:45] [INFO] In Game State initialised
+[14:36:45] [INFO] Game Engine Screen Added
+[14:38:37] [INFO] Game Engine Cleaning Up
+[16:01:46] [INFO] Scripting Engine initialised
+[16:01:46] [INFO] Game Engine Init::Loading Resources
+[16:01:46] [INFO] Game Engine Init::GUI Initialisation
+[16:01:47] [INFO] Game Engine adding Screen ...
+[16:01:47] [INFO] In Game State initialisation
+[16:01:50] [INFO] In Game State initialised
+[16:01:50] [INFO] Game Engine Screen Added
+[16:02:17] [INFO] Game Engine Cleaning Up
+[16:03:21] [INFO] Scripting Engine initialised
+[16:03:21] [INFO] Game Engine Init::Loading Resources
+[16:03:21] [INFO] Game Engine Init::GUI Initialisation
+[16:03:21] [INFO] Game Engine adding Screen ...
+[16:03:21] [INFO] In Game State initialisation
+[16:03:23] [INFO] In Game State initialised
+[16:03:23] [INFO] Game Engine Screen Added
+[16:04:11] [INFO] Scripting Engine initialised
+[16:04:11] [INFO] Game Engine Init::Loading Resources
+[16:04:11] [INFO] Game Engine Init::GUI Initialisation
+[16:04:12] [INFO] Game Engine adding Screen ...
+[16:04:12] [INFO] In Game State initialisation
+[16:04:15] [INFO] In Game State initialised
+[16:04:15] [INFO] Game Engine Screen Added
+[16:11:00] [INFO] Game Engine Cleaning Up
+[16:14:25] [INFO] Scripting Engine initialised
+[16:14:25] [INFO] Game Engine Init::Loading Resources
+[16:14:25] [INFO] Game Engine Init::GUI Initialisation
+[16:14:26] [INFO] Game Engine adding Screen ...
+[16:14:26] [INFO] In Game State initialisation
+[16:14:30] [INFO] In Game State initialised
+[16:14:30] [INFO] Game Engine Screen Added
+[16:15:31] [INFO] Scripting Engine initialised
+[16:15:31] [INFO] Game Engine Init::Loading Resources
+[16:15:31] [INFO] Game Engine Init::GUI Initialisation
+[16:15:31] [INFO] Game Engine adding Screen ...
+[16:15:31] [INFO] In Game State initialisation
+[16:15:33] [INFO] In Game State initialised
+[16:15:33] [INFO] Game Engine Screen Added
+[16:18:26] [INFO] Game Engine Cleaning Up
+[16:18:35] [INFO] Scripting Engine initialised
+[16:18:35] [INFO] Game Engine Init::Loading Resources
+[16:18:35] [INFO] Game Engine Init::GUI Initialisation
+[16:18:35] [INFO] Game Engine adding Screen ...
+[16:18:35] [INFO] In Game State initialisation
+[16:18:39] [INFO] In Game State initialised
+[16:18:39] [INFO] Game Engine Screen Added
+[16:20:18] [INFO] Game Engine Cleaning Up
+[16:21:36] [INFO] Scripting Engine initialised
+[16:21:36] [INFO] Game Engine Init::Loading Resources
+[16:21:36] [INFO] Game Engine Init::GUI Initialisation
+[16:21:36] [INFO] Game Engine adding Screen ...
+[16:21:36] [INFO] In Game State initialisation
+[16:21:39] [INFO] In Game State initialised
+[16:21:39] [INFO] Game Engine Screen Added
+[16:22:07] [WARNING] Sound not found: audio/narrator_niceShot.mp3
+[16:22:32] [WARNING] Sound not found: audio/narrator_niceShot.mp3
+[16:22:37] [INFO] Game Engine Cleaning Up

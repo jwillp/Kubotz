@@ -40,7 +40,12 @@ public class ScriptSystem extends EntitySystem {
         for(String scriptFile: scriptComp.getScripts()){
             if(!gamePad.getPressedButtons().isEmpty()){
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
-                script.onInput(entity, gamePad.getPressedButtons());
+                if(script == null){ continue; }
+                try{
+                    script.onInput(entity, gamePad.getPressedButtons());
+                }catch(Exception e){
+                    GoatEngine.scriptEngine.logError(scriptFile, e.getMessage());
+                }
             }
         }
     }
@@ -55,9 +60,7 @@ public class ScriptSystem extends EntitySystem {
                 // ON UPDATE
 
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
-                if(script == null){
-                    continue;
-                }
+                if(script == null){ continue; }
                 if(!script.isInitialized()){
                     script.onInit(entity, getEntityManager());
                     script.setInitialized(true);
@@ -65,7 +68,7 @@ public class ScriptSystem extends EntitySystem {
                 try{
                     script.onUpdate(entity, getEntityManager());
                 }catch(Exception e){
-                    Logger.error("a script fucked");
+                    GoatEngine.scriptEngine.logError(scriptFile, e.getMessage());
                 }
             }
         }
@@ -80,10 +83,20 @@ public class ScriptSystem extends EntitySystem {
 
             for(String scriptFile: scripts.getScripts()){
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
+                if(script == null){continue;}
                 if(event.getClass() == CollisionEvent.class){
-                   script.onCollision((CollisionEvent) event, entity);
+                    try{
+                        script.onCollision((CollisionEvent) event, entity);
+                    }catch (Exception e){
+                        GoatEngine.scriptEngine.logError(scriptFile, e.getMessage());
+                    }
+
                 }else{
-                    script.onEvent(event, entity);
+                    try{
+                        script.onEvent(event, entity);
+                    }catch (Exception e){
+                        GoatEngine.scriptEngine.logError(scriptFile, e.getMessage());
+                    }
                 }
             }
         }

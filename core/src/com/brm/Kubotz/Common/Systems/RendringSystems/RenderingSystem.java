@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.maps.MapRenderer;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
@@ -51,6 +52,7 @@ public class RenderingSystem extends EntitySystem {
     private Texture player1Label = new Texture(Gdx.files.internal("hud/player1_label.png"));
     private Texture player2Label = new Texture(Gdx.files.internal("hud/player2_label.png"));
     private Texture cpuLabel = new Texture(Gdx.files.internal("hud/cpu_label.png"));
+    private OrthogonalTiledMapRenderer mapRenderer;
 
 
     public RenderingSystem() {
@@ -76,53 +78,57 @@ public class RenderingSystem extends EntitySystem {
         this.cameraSystem.update(dt);
 
 
+        if(Config.TEXTURE_RENDERING_ENABLED) {
+            spriteBatch.setProjectionMatrix(this.getCamera().combined);
 
-        if(Config.DEBUG_RENDERING_ENABLED) {
-            this.renderDebug(getSystemManager().getSystem(PhysicsSystem.class).getWorld());
-            //this.renderPathfinding();
+            renderMap();
+            spriteBatch.begin();
+            renderSpriterAnim(dt);
+            renderSprites(dt);
+            renderParticleEffects(dt);
+            renderPlayerLabels(dt);
+
+            renderHud(dt);
+
+            spriteBatch.end();
         }
 
-        if(Config.TEXTURE_RENDERING_ENABLED){
-            renderTextures(dt);
-        }
-
+        this.renderDebug(getSystemManager().getSystem(PhysicsSystem.class).getWorld());
+        //this.renderPathfinding();
 
 
     }
 
 
-
-
+    /**
+     * Renders the hud
+     * @param dt
+     */
     public void renderHud(float dt){
         this.hudSystem.update(dt);
     }
 
-    public void renderMap(MapRenderer mapRenderer){
-        if(!Config.DEBUG_RENDERING_ENABLED){
+    /**
+     * Renders the map
+     */
+    public void renderMap(){
             spriteBatch.begin();
             spriteBatch.draw(this.background,0,0, 52, 37);
             spriteBatch.end();
             mapRenderer.setView(getCamera());
             mapRenderer.render();
-        }
-
     }
+
+
 
 
 
 
 
     /**
-     * Renders the texture of all the entities
+     * Renders spriter animations
      */
-    private void renderTextures(float deltaTime){
-
-        spriteBatch.setProjectionMatrix(this.getCamera().combined);
-
-        //BACKGROUND
-        //shapeRenderer.rect();
-
-        spriteBatch.begin();
+    public void renderSpriterAnim(float deltaTime){
         //UPDATE SPRITER
         for(Entity entity: getEntityManager().getEntitiesWithComponent(SpriterAnimationComponent.ID)){
             SpriterAnimationComponent anim = (SpriterAnimationComponent)entity.getComponent(SpriterAnimationComponent.ID);
@@ -144,7 +150,12 @@ public class RenderingSystem extends EntitySystem {
             }
         }
         Spriter.draw();
+    }
 
+    /**
+     * Renders sprites
+     */
+    public void renderSprites(float deltaTime){
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(SpriteComponent.ID)){
             SpriteComponent sprite = (SpriteComponent) entity.getComponent(SpriteComponent.ID);
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
@@ -160,17 +171,15 @@ public class RenderingSystem extends EntitySystem {
 
             );
         }
+    }
 
-
-
-        spriteBatch.end();
-
-
-
+    /**
+     * Renders the particle effects
+     * @param deltaTime
+     */
+    public void renderParticleEffects(float deltaTime){
         //Particle Effects
         if(Config.PARTICLES_ENABLED){
-            spriteBatch.begin();
-            spriteBatch.setProjectionMatrix(this.getCamera().combined);
             for(EntityComponent comp: getEntityManager().getComponents(ParticleEffectComponent.ID)){
 
                 ParticleEffectComponent pef = (ParticleEffectComponent) comp;
@@ -190,26 +199,17 @@ public class RenderingSystem extends EntitySystem {
                     }
                 }
             }
-            spriteBatch.end();
         }
-
     }
-
-
-
-
-
 
 
     /**
      * Renders images on top of players labeling their player ID
      * wheter P1 , P2 or CPU
      */
-    public void renderPlayerLabels() {
+    public void renderPlayerLabels(float deltaTime) {
 
         BitmapFont font = new BitmapFont();
-
-        spriteBatch.begin();
 
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(PlayerScoreComponent.ID)){
             PlayerScoreComponent info = (PlayerScoreComponent) entity.getComponent(PlayerScoreComponent.ID);
@@ -246,35 +246,7 @@ public class RenderingSystem extends EntitySystem {
                 font.draw(spriteBatch, "IS GROUNDED: " + phys.isGrounded(), labelPos.x, labelPos.y);
             }
         }
-        spriteBatch.end();
-
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -283,19 +255,19 @@ public class RenderingSystem extends EntitySystem {
      * @param world
      */
     private void renderDebug(World world){
+        if(Config.DEBUG_RENDERING_ENABLED) {
+            this.spriteBatch.begin();
+            debugRenderer.render(world, cameraSystem.getMainCamera().combined);
+            this.spriteBatch.end();
 
-        this.spriteBatch.begin();
-        debugRenderer.render(world, cameraSystem.getMainCamera().combined);
-        this.spriteBatch.end();
+            /** CAMERA DEBUG */
+            CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
+            cdr.render();
 
-        /** CAMERA DEBUG */
-        CameraDebugRenderer cdr = new CameraDebugRenderer(cameraSystem.getMainCamera(), shapeRenderer);
-        cdr.render();
+            /** FPS **/
 
-        /** FPS **/
-
-       // BitmapFont font = new BitmapFont();
-        //spriteBatch.begin();
+            // BitmapFont font = new BitmapFont();
+            //spriteBatch.begin();
         /*font.draw(spriteBatch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 0, Gdx.graphics.getHeight());
 
         font.draw(spriteBatch, "IS GROUNDED: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).isGrounded(), 0, Gdx.graphics.getHeight() - 30);
@@ -308,8 +280,8 @@ public class RenderingSystem extends EntitySystem {
         font.draw(spriteBatch, "NB JUMPS MAX: " + ((JumpComponent) this.player.getComponent(JumpComponent.ID)).getNbJumpsMax(), 0, Gdx.graphics.getHeight() - 100);
         font.draw(spriteBatch, "CONTACTS: " + ((PhysicsComponent) this.player.getComponent(PhysicsComponent.ID)).getContacts().size(), 0, Gdx.graphics.getHeight() - 120);*/
 
-        //spriteBatch.end();
-
+            //spriteBatch.end();
+        }
 
     }
 
@@ -403,5 +375,9 @@ public class RenderingSystem extends EntitySystem {
 
     public void setShapeRenderer(ShapeRenderer shapeRenderer) {
         this.shapeRenderer = shapeRenderer;
+    }
+
+    public void setMapRenderer(OrthogonalTiledMapRenderer mapRenderer) {
+        this.mapRenderer = mapRenderer;
     }
 }

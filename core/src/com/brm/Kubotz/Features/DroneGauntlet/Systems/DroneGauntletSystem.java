@@ -14,7 +14,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 
 import com.brm.Kubotz.Features.DroneGauntlet.Components.DroneGauntletComponent;
 import com.brm.Kubotz.Features.DroneGauntlet.Entities.DroneFactory;
-import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.GoatEngine.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**

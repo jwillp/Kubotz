@@ -128,6 +128,7 @@ public class InGameScreen extends GameScreen {
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
         mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1/tileSize);
+        systemManager.getSystem(RenderingSystem.class).setMapRenderer(mapRenderer);
 
         MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
 
@@ -251,12 +252,6 @@ public class InGameScreen extends GameScreen {
 
         // DRAW WORLD
         systemManager.getSystem(RenderingSystem.class).update(deltaTime);
-        systemManager.getSystem(RenderingSystem.class).renderMap(mapRenderer);
-        systemManager.getSystem(RenderingSystem.class).renderHud(deltaTime);
-
-        // Labels
-        systemManager.getSystem(RenderingSystem.class).renderPlayerLabels();
-
 
 
     }

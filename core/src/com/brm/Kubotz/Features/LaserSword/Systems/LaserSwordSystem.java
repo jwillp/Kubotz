@@ -11,7 +11,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.GoatEngine.Hitbox.Hitbox;
 import com.brm.Kubotz.Features.LaserSword.Events.FinishSwordSwingEvent;
 import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent;
 import com.brm.Kubotz.Input.GameButton;

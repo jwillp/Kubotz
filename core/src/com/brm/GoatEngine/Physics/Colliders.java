@@ -3,7 +3,7 @@ package com.brm.GoatEngine.Physics;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
-import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.GoatEngine.Hitbox.Hitbox;
 import com.brm.Kubotz.Constants;
 
 /**

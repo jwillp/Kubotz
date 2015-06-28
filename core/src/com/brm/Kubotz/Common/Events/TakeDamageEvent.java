@@ -1,7 +1,7 @@
 package com.brm.Kubotz.Common.Events;
 
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.Kubotz.Common.Hitbox.Hitbox;
+import com.brm.GoatEngine.Hitbox.Hitbox;
 
 /**
  * Triggered when an entity MIGHT be taking Damage
