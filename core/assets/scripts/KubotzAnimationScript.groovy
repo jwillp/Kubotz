@@ -165,8 +165,8 @@ public class KubotzAnimationScript extends EntityScript {
         if(currentState.equals(KubotzAnimationScript.RUNNING)){
             int currentTime = anim.getPlayer().getTime();
             if(GameMath.isMoreOrLess(currentTime, 300, 10) || GameMath.isMoreOrLess(currentTime, 800, 10)){
-                Sound sound = Gdx.audio.newSound(Gdx.files.internal("audio/step.mp3"));
-                sound.play();
+                //Sound sound = Gdx.audio.newSound(Gdx.files.internal("audio/step.mp3"));
+                //sound.play();
             }
         }
 

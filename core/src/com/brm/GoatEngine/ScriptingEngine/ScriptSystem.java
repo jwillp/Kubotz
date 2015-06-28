@@ -6,19 +6,14 @@ import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.EventManager.GameEvent;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.VirtualGamePad;
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 
 /**
- * Responsible for updating game scripts
+ * Responsible for updating game scripts for entities
  */
 public class ScriptSystem extends EntitySystem {
-
-
-    // The game Scripts follow a strict API
-    // they must absolutely implements these methods
-    public final static String METHOD_ON_INIT = "onInit()";
-
 
 
     public ScriptSystem(){}
@@ -60,11 +55,18 @@ public class ScriptSystem extends EntitySystem {
                 // ON UPDATE
 
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
+                if(script == null){
+                    continue;
+                }
                 if(!script.isInitialized()){
                     script.onInit(entity, getEntityManager());
                     script.setInitialized(true);
                 }
-                script.onUpdate(entity, getEntityManager());
+                try{
+                    script.onUpdate(entity, getEntityManager());
+                }catch(Exception e){
+                    Logger.error("a script fucked");
+                }
             }
         }
     }
@@ -75,6 +77,7 @@ public class ScriptSystem extends EntitySystem {
         Entity entity = getEntityManager().getEntity(event.getEntityId());
         if(entity.hasComponentEnabled(ScriptComponent.ID)){
             ScriptComponent scripts = (ScriptComponent) entity.getComponent(ScriptComponent.ID);
+
             for(String scriptFile: scripts.getScripts()){
                 EntityScript script =  GoatEngine.scriptEngine.runEntityScript(scriptFile, entity);
                 if(event.getClass() == CollisionEvent.class){

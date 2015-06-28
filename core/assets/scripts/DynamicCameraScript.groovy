@@ -175,10 +175,18 @@ public class DynamicCamera extends EntityScript implements GameEventListener{
 
         // Make it stay within bounds regardless of the zoom
         mainCamera.position.x = MathUtils.clamp(mainCamera.position.x, 0, maxX);
-        mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, 0, maxY);
+        //mainCamera.position.y = MathUtils.clamp(mainCamera.position.y, 0, maxY);
 
-        // If we see too much
+        // If we see too much try to reduce it
 
+        if(visibleX > maxX)
+            mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, maxX/mainCamera.viewportWidth as float,
+                    this.zoomSpeed *GoatEngine.graphicsEngine.deltaTime as float
+            )
+        if(visibleY > maxY)
+            mainCamera.zoom = MathUtils.lerp(mainCamera.zoom, maxY/mainCamera.viewportHeight as float,
+                    this.zoomSpeed *GoatEngine.graphicsEngine.deltaTime as float
+            )
 
     }
 

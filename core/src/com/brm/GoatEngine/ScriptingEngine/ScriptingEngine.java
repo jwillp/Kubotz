@@ -9,9 +9,12 @@ import groovy.util.GroovyScriptEngine;
 import groovy.util.ResourceException;
 import groovy.util.ScriptException;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.codehaus.groovy.control.MultipleCompilationErrorsException;
 import sun.rmi.runtime.Log;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +33,8 @@ public class ScriptingEngine{
     //Where the key is the path of the script
     private HashMap<String, EntityScriptInfo> entityScripts = new HashMap<String, EntityScriptInfo>();
 
+    // A list of scripts that ran with errors
+    private ArrayList<String> errorScripts = new ArrayList<String>();
 
 
     private class EntityScriptInfo{
@@ -187,15 +192,9 @@ public class ScriptingEngine{
         if(this.entityScripts.get(scriptName).getInstance(entityObject.getID()) == null){
             Binding binding = this.copyBinding(globalScope);
             binding.setVariable("myEntityId", entityObject.getID());
-            try {
-                this.entityScripts.get(scriptName).addInstance(entityObject.getID(),(EntityScript)engine.run(scriptName, binding));
-            } catch (ResourceException e) {
-                e.printStackTrace();
-            } catch (ScriptException e) {
-                e.printStackTrace();
-            }
-        }
+            this.entityScripts.get(scriptName).addInstance(entityObject.getID(), groovyRunEntityScript(scriptName,binding));
 
+        }
 
         //Does it need to be refreshed?
         if(this.isSourceNewer(scriptName)){
@@ -208,23 +207,40 @@ public class ScriptingEngine{
     }
 
 
+    private EntityScript groovyRunEntityScript(String scriptName, Binding binding){
+        try {
+            return (EntityScript)engine.run(scriptName, binding);
+        } catch (ResourceException e) {
+            logError(scriptName, e.getMessage());
+        } catch (ScriptException e) {
+            logError(scriptName, e.getMessage());
+        } catch (MultipleCompilationErrorsException e){
+            logError(scriptName, e.getMessage());
+        }
+        return null;
+    }
+
+
+    private void logError(String scriptName, String message){
+        if(!errorScripts.contains(scriptName)){
+            Logger.error(message);
+            errorScripts.add(scriptName);
+        }
+    }
+
+
+
     /**
      * Reloads an entity script for all concerned entities
      */
     public void refreshEntityScript(String scriptName) {
         EntityScriptInfo info = this.entityScripts.get(scriptName);
-
         for(Map.Entry<String, EntityScript> entry: info.getInstances().entrySet()){
             Binding binding = this.copyBinding(globalScope);
             binding.setVariable("entity", entry.getKey());
-            try {
-                entry.setValue((EntityScript) engine.run(scriptName, binding));
-            } catch (ResourceException e) {
-                e.printStackTrace();
-            } catch (ScriptException e) {
-                e.printStackTrace();
-            }
+            entry.setValue(groovyRunEntityScript(scriptName, binding));
         }
+        errorScripts.remove(scriptName);
     }
 
 
