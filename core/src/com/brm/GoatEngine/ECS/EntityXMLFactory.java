@@ -18,7 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 public class EntityXMLFactory {
 
     /**
-     * Creates an Entity according to an XML file
+     * Creates an Entity according to an XML file that is registered with the entityManager
      * @param blueprintFile
      * @param entityManager
      * @param world the box2D world in case with create a PhysicsComponent

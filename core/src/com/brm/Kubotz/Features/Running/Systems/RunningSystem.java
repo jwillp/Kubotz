@@ -87,7 +87,6 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public <T extends EntityEvent> void onEntityEvent(T event) {
-        Logger.debug("OK");
         if(event.getClass() == CollisionEvent.class){
            this.onCollision((CollisionEvent)event);
         }

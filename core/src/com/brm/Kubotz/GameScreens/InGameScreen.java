@@ -66,7 +66,14 @@ public class InGameScreen extends GameScreen {
         entityManager = ecsManager.getEntityManager();
         systemManager = ecsManager.getSystemManager();
 
+
         systemManager.addSystem(PhysicsSystem.class, new PhysicsSystem());
+
+        //Camera
+        EntityXMLFactory.createEntity("blueprint/Camera.xml", this.getEntityManager(),
+                this.systemManager.getSystem(PhysicsSystem.class).getWorld());
+
+
         systemManager.addSystem(RenderingSystem.class, new RenderingSystem());
         systemManager.addSystem(InputTranslationSystem.class, new InputTranslationSystem());
         systemManager.addSystem(MovementSystem.class, new MovementSystem());
@@ -105,6 +112,7 @@ public class InGameScreen extends GameScreen {
 
 
 
+
         // Init Animation Manager
         Spriter.setDrawerDependencies(
                 systemManager.getSystem(RenderingSystem.class).getSpriteBatch(),
@@ -119,15 +127,11 @@ public class InGameScreen extends GameScreen {
         tiledMap = new TmxMapLoader().load(Constants.MAIN_MAP_FILE);
         float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
 
-
         mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1/tileSize);
-
 
         MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
 
-
         for(int i=0; i<mapObjects.getCount(); i++){
-
 
             RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
             Rectangle rect = obj.getRectangle();
@@ -152,8 +156,6 @@ public class InGameScreen extends GameScreen {
                 player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
 
 
-
-
                 if(id == PlayerScoreComponent.PLAYER_1){
                     isPlayerOneSpawned = true;
                     player.addComponent(new SkullHeadComponent(), SkullHeadComponent.ID);
@@ -161,10 +163,6 @@ public class InGameScreen extends GameScreen {
                 }else{
                     //player.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
                 }
-
-
-
-
 
 
                 Entity entity = new Entity();
@@ -187,7 +185,6 @@ public class InGameScreen extends GameScreen {
                         .build();
             }
         }
-
 
 
         Logger.info("In Game State initialised");

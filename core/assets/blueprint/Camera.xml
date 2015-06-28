@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Entity>
+	<component name="com.brm.GoatEngine.ECS.common.CameraComponent"></component>
+	<component name="com.brm.GoatEngine.ScriptingEngine.ScriptComponent">
+		<script>DynamicCameraScript.groovy</script>
+    </component>
+
+</Entity>

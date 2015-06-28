@@ -1,21 +1,13 @@
 package com.brm.GoatEngine;
 
 import com.badlogic.gdx.Gdx;
-import com.brashmonkey.spriter.Spriter;
-import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
-import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
 import com.brm.GoatEngine.EventManager.EventManager;
 import com.brm.GoatEngine.GraphicsEngine.GraphicsEngine;
 import com.brm.GoatEngine.Input.InputManager;
 import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
 import com.brm.GoatEngine.Konsole.Konsole;
-import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
-import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
-import com.brm.GoatEngine.Utils.Logger;
-import com.brm.Kubotz.Common.Systems.RendringSystems.RenderingSystem;
-import com.brm.Kubotz.Constants;
 import com.strongjoshua.console.Console;
 
 /**
@@ -39,7 +31,7 @@ public class GoatEngine {
     public static EventManager eventManager;
 
     //Music and Sound Manager
-    public static MusicManager musicManager;
+    public static AudioMixer audioMixer;
 
     //InputManager
     public static InputManager inputManager;
@@ -72,7 +64,7 @@ public class GoatEngine {
         console.setCommandExecutor(new ConsoleCommandeExecutor());
         console.log("Console inited", Console.LogLevel.SUCCESS);
 
-        musicManager = new MusicManager();
+        audioMixer = new AudioMixer();
         inputManager = new InputManager();
 
         //Script Engine Init

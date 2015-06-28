@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="127">
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="129">
  <tileset firstgid="1" name="Ground" tilewidth="512" tileheight="128">
   <tile id="0">
    <image width="512" height="128" source="bottom_fade.png"/>
@@ -123,7 +123,12 @@
   <object id="119" type="STATIC_PLATFORM" x="1920" y="1920" width="320" height="64"/>
   <object id="120" type="STATIC_PLATFORM" x="384" y="512" width="448" height="64"/>
   <object id="121" type="STATIC_PLATFORM" x="2496" y="512" width="448" height="64"/>
-  <object id="125" type="PLAYER_SPAWN" x="448" y="1984" width="64" height="64"/>
-  <object id="126" type="PLAYER_SPAWN" x="768" y="1984" width="64" height="64"/>
+  <object id="125" type="PLAYER_SPAWN" x="1088" y="1792" width="64" height="64"/>
+  <object id="126" type="PLAYER_SPAWN" x="2048" y="1792" width="64" height="64"/>
+  <object id="127" name="camera" type="CAMERA" x="1600" y="1344" width="64" height="64">
+   <properties>
+    <property name="blueprint" value="DynamicCamera.xml"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

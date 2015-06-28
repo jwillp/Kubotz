@@ -244,18 +244,8 @@ public class RenderingSystem extends EntitySystem {
                 //DEBUG INFO
                 font.getData().setScale(0.02f);
                 font.draw(spriteBatch, "IS GROUNDED: " + phys.isGrounded(), labelPos.x, labelPos.y);
-
-
             }
-
-
-
-
-
-
         }
-
-
         spriteBatch.end();
 
     }

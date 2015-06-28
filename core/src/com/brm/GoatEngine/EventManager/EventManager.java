@@ -29,7 +29,7 @@ public class EventManager{
      * @param listener
      */
     public void removeListener(GameEventListener listener){
-        this.removeListener(listener);
+        this.listeners.remove(listener);
     }
 
 

@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.brm.GoatEngine.MusicManager;
+import com.brm.GoatEngine.AudioMixer;
 import com.brm.GoatEngine.ScreenManager.GameScreen;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
@@ -72,7 +72,7 @@ public class TitleScreen extends GameScreen{
      */
     public void initMusic(){
         Music music;
-        music = MusicManager.loadMusic("audio/dashboard.ogg", Gdx.audio.newMusic(Gdx.files.internal("audio/dashboard.ogg")));
+        music = AudioMixer.loadMusic("audio/dashboard.ogg");
         music.setLooping(true);
         music.play();
 

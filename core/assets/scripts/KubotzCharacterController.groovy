@@ -59,7 +59,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      */
     @Override
     public <T extends EntityEvent> void onEvent(T event, Entity entity){
-		console.log("0000")
+
     }
 
 
