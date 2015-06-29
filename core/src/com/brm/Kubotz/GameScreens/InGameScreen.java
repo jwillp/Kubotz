@@ -111,8 +111,6 @@ public class InGameScreen extends GameScreen {
         systemManager.initSystems();
 
 
-
-
         // Init Animation Manager
         Spriter.setDrawerDependencies(
                 systemManager.getSystem(RenderingSystem.class).getSpriteBatch(),
@@ -122,70 +120,16 @@ public class InGameScreen extends GameScreen {
         Spriter.load(Gdx.files.internal(Constants.KUBOTZ_ANIM_FILE).read(), Constants.KUBOTZ_ANIM_FILE);
 
 
-        // MAP
-        //LOAD MAP
-        tiledMap = new TmxMapLoader().load(Constants.MAIN_MAP_FILE);
-        float tileSize = tiledMap.getProperties().get("tilewidth", Integer.class);
-
-        mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, 1/tileSize);
-        systemManager.getSystem(RenderingSystem.class).setMapRenderer(mapRenderer);
-
-        MapObjects mapObjects = tiledMap.getLayers().get("objects").getObjects();
-
-        for(int i=0; i<mapObjects.getCount(); i++){
-
-            RectangleMapObject obj = (RectangleMapObject) mapObjects.get(i);
-            Rectangle rect = obj.getRectangle();
-            String objType = (String) obj.getProperties().get("type");
-            Vector2 position = new Vector2(rect.getX()/tileSize, rect.getY()/tileSize);
+        
 
 
-            if(objType.equals("PLAYER_SPAWN")){
-                int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
-
-                Entity player = EntityXMLFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager(),
-                        this.systemManager.getSystem(PhysicsSystem.class).getWorld()
-                );
-                PhysicsComponent phys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
-                phys.setPosition(rect.getX()/tileSize, rect.getY()/tileSize);
-
-                /*Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
-                        new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withHeight(2.0f)
-                        .withCameraTargetComponent()
-                        .build();*/
-                player.addComponent(new PlayerScoreComponent(id), PlayerScoreComponent.ID);
 
 
-                if(id == PlayerScoreComponent.PLAYER_1){
-                    isPlayerOneSpawned = true;
-                    player.addComponent(new SkullHeadComponent(), SkullHeadComponent.ID);
-                    //player.addComponent(new DashBootsComponent(), DashBootsComponent.ID);
-                }else{
-                    //player.addComponent(new FlyingBootsComponent(), FlyingBootsComponent.ID);
-                }
 
 
-                Entity entity = new Entity();
-                entityManager.registerEntity(entity);
-                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
-                        SpawnPointComponent.Type.Player), SpawnPointComponent.ID);
-
-            }else if(objType.equals("BONUS_SPAWN")){
-                Entity entity = new Entity();
-                entityManager.registerEntity(entity);
-                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
-                        SpawnPointComponent.Type.PowerUp), SpawnPointComponent.ID);
 
 
-            }else{
-                new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
-                        new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
-                        .withTag(Constants.ENTITY_TAG_PLATFORM)
-                        .build();
-            }
-        }
+
 
 
         Logger.info("In Game State initialised");
@@ -201,19 +145,10 @@ public class InGameScreen extends GameScreen {
 
     @Override
     public void handleInput(GameScreenManager engine){
-
         systemManager.getSystem(InputTranslationSystem.class).handleInput();
-
         //Since Scripts Can produce Input during their update phase
         systemManager.getSystem(ScriptSystem.class).handleInput();
         systemManager.getSystem(ScriptSystem.class).update(0);
-
-        systemManager.getSystem(MovementSystem.class).handleInput();
-        systemManager.getSystem(GrabSystem.class).handleInput();
-        systemManager.getSystem(SkillsSystem.class).handleInput();
-        systemManager.getSystem(AttackSystem.class).handleInput();
-
-
     }
 
     @Override
@@ -221,27 +156,12 @@ public class InGameScreen extends GameScreen {
 
         systemManager.getSystem(AISystem.class).update(deltaTime);
 
-        systemManager.getSystem(MovementSystem.class).update(deltaTime);
-
-        systemManager.getSystem(SkillsSystem.class).update(deltaTime);
-
-        systemManager.getSystem(AttackSystem.class).update(deltaTime);
-
-        systemManager.getSystem(GrabSystem.class).update(deltaTime);
-        systemManager.getSystem(DamageSystem.class).update(deltaTime);
-        systemManager.getSystem(LifespanSystem.class).update(deltaTime);
-        systemManager.getSystem(PowerUpsSystem.class).update(deltaTime);
-
         systemManager.getSystem(ScriptSystem.class).update(deltaTime);
 
         systemManager.getSystem(PhysicsSystem.class).update(deltaTime);
         systemManager.getSystem(AnimationSystem.class).update(deltaTime);
 
 
-        systemManager.getSystem(RespawnSystem.class).update(deltaTime);
-
-
-        systemManager.getSystem(GameRulesSystem.class).update(deltaTime);
 
 
     }

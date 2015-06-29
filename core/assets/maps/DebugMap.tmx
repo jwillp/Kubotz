@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="129">
+<map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="135">
  <tileset firstgid="1" name="Ground" tilewidth="512" tileheight="128">
   <tile id="0">
    <image width="512" height="128" source="bottom_fade.png"/>
@@ -128,6 +128,11 @@
   <object id="127" name="camera" type="CAMERA" x="1600" y="1344" width="64" height="64">
    <properties>
     <property name="blueprint" value="DynamicCamera.xml"/>
+   </properties>
+  </object>
+  <object id="134" type="ENTITY" x="0" y="64" width="128" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/Test.xml"/>
    </properties>
   </object>
  </objectgroup>
