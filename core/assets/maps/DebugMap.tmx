@@ -96,12 +96,32 @@
    H4sIAAAAAAAAC+1Zi27CMAzM2MaKYINN2gZb//87wZotLMtO0/XFRZwUuU2q1tdwF6e0KaXWNMJv8uH1R9d2jQ0Zb53o8UBBKZ8njsdLO3HUrbQvZcZz99DPzh0/Z/jUADs3W+7/XCyjfpA8Pzgia4fQxWfH/V8z5zUWrI7QIO89mh80/VhE2hE+b9z2Kh5my+4PryoPnQtB8nznGOkHFZG/ofhBqX5QEdU7KH7Qtf6M6dmRjqVN5SseHzT9RP6GuKZ6EC+QWv1nwVz64Juj3p/QXNXgbRq1/M4I5HUl86P9SrxqCo+yvvif59Q0P3f93Da0fhru2wy8p2jA1gRaf2Nob83xJV1zFz61oM/+lN77HHs67XG5Z5V+30GrrwWWC+r+NKpHBWj1NcGrrVHXIPG0MfSjvbmvT5TqPoLO0/smj6yf3H8MaPqJ+CCvqzk+K466ntCxCc6j/ui89Dp7LvXYo+EQ8UGD522WI+Gh4z5Lj0dzcgYM5MwL4B4AAA==
   </data>
  </layer>
- <objectgroup name="objects" visible="0">
-  <object id="49" type="WALL" x="384" y="64" width="2560" height="128"/>
-  <object id="50" type="WALL" x="2944" y="192" width="128" height="832"/>
-  <object id="51" type="WALL" x="256" y="192" width="128" height="832"/>
-  <object id="53" type="WALL" x="256" y="1600" width="128" height="704"/>
-  <object id="55" type="WALL" x="2944" y="1600" width="128" height="704"/>
+ <objectgroup name="objects">
+  <object id="49" type="ENTITY" x="384" y="64" width="2560" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="50" type="ENTITY" x="2944" y="192" width="128" height="832">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="51" type="ENTITY" x="256" y="192" width="128" height="832">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="53" type="ENTITY" x="256" y="1600" width="128" height="704">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="55" type="ENTITY" x="2944" y="1600" width="128" height="704">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
   <object id="59" type="ENTITY" x="640" y="1600" width="256" height="64">
    <properties>
     <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
@@ -136,13 +156,41 @@
   <object id="77" type="BONUS_SPAWN" x="2432" y="1024" width="64" height="64"/>
   <object id="78" type="BONUS_SPAWN" x="768" y="1408" width="64" height="64"/>
   <object id="79" type="BONUS_SPAWN" x="2432" y="1408" width="64" height="64"/>
-  <object id="82" type="WALL" x="64" y="1024" width="320" height="128"/>
-  <object id="86" type="WALL" x="2944" y="1024" width="320" height="128"/>
-  <object id="87" type="WALL" x="2944" y="1472" width="320" height="128"/>
-  <object id="88" type="WALL" x="64" y="1472" width="320" height="128"/>
-  <object id="91" type="WARP_ZONE" x="64" y="1152" width="64" height="320"/>
-  <object id="92" type="WARP_ZONE" x="3200" y="1152" width="64" height="320"/>
-  <object id="117" type="WALL" x="384" y="2176" width="2560" height="192"/>
+  <object id="82" type="ENTITY" x="64" y="1024" width="320" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="86" type="ENTITY" x="2944" y="1024" width="320" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="87" type="ENTITY" x="2944" y="1472" width="320" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="88" type="ENTITY" x="64" y="1472" width="320" height="128">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="91" type="ENTITY" x="64" y="1152" width="64" height="320">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="92" type="ENTITY" x="3200" y="1152" width="64" height="320">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
+  <object id="117" type="ENTITY" x="384" y="2176" width="2560" height="192">
+   <properties>
+    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+   </properties>
+  </object>
   <object id="118" type="ENTITY" x="960" y="1920" width="320" height="64">
    <properties>
     <property name="blueprint" value="blueprint/StaticPlatform.xml"/>

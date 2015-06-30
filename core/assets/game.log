@@ -406,3 +406,19 @@ Possible solutions: minX
 [20:56:18] [INFO] In Game State initialisation
 [20:56:21] [INFO] In Game State initialised
 [20:56:21] [INFO] Game Engine Screen Added
+[20:57:23] [INFO] Game Engine Cleaning Up
+[20:57:31] [INFO] Scripting Engine initialised
+[20:57:31] [INFO] Game Engine Init::Loading Resources
+[20:57:31] [INFO] Game Engine Init::GUI Initialisation
+[20:57:31] [INFO] Game Engine adding Screen ...
+[20:57:31] [INFO] In Game State initialisation
+[20:57:34] [INFO] In Game State initialised
+[20:57:34] [INFO] Game Engine Screen Added
+[20:57:52] [INFO] Game Engine Cleaning Up
+[20:59:03] [INFO] Scripting Engine initialised
+[20:59:03] [INFO] Game Engine Init::Loading Resources
+[20:59:03] [INFO] Game Engine Init::GUI Initialisation
+[20:59:03] [INFO] Game Engine adding Screen ...
+[20:59:03] [INFO] In Game State initialisation
+[20:59:09] [INFO] In Game State initialised
+[20:59:09] [INFO] Game Engine Screen Added

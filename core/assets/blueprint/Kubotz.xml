@@ -18,8 +18,8 @@
 	<!-- BODY COMPONENT -->
 	<component name="com.brm.GoatEngine.ECS.common.PhysicsComponent">
 		<param name="direction">LEFT</param>
-		<param name="width">0.6</param>
-		<param name="height">1.2</param>
+		<param name="width">1</param>
+		<param name="height">2.25</param>
 		<body type="DynamicBody" colliderType="capsule">
 			<fixture name="head">
 				<hitbox>
