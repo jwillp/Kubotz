@@ -128,3 +128,281 @@ Possible solutions: minX
 [17:22:51] [INFO] Game Engine Screen Added
 [17:23:38] [WARNING] Sound not found: audio/narrator_niceShot.mp3
 [17:23:43] [INFO] Game Engine Cleaning Up
+[20:40:08] [INFO] Scripting Engine initialised
+[20:40:09] [INFO] Game Engine Init::Loading Resources
+[20:40:09] [INFO] Game Engine Init::GUI Initialisation
+[20:40:09] [INFO] Game Engine adding Screen ...
+[20:40:09] [INFO] In Game State initialisation
+[20:40:27] [INFO] Scripting Engine initialised
+[20:40:27] [INFO] Game Engine Init::Loading Resources
+[20:40:27] [INFO] Game Engine Init::GUI Initialisation
+[20:40:27] [INFO] Game Engine adding Screen ...
+[20:40:27] [INFO] In Game State initialisation
+[20:40:30] [INFO] In Game State initialised
+[20:40:30] [INFO] Game Engine Screen Added
+[20:40:54] [INFO] Game Engine Cleaning Up
+[20:41:41] [INFO] Scripting Engine initialised
+[20:41:41] [INFO] Game Engine Init::Loading Resources
+[20:41:41] [INFO] Game Engine Init::GUI Initialisation
+[20:41:41] [INFO] Game Engine adding Screen ...
+[20:41:41] [INFO] In Game State initialisation
+[20:41:44] [INFO] In Game State initialised
+[20:41:44] [INFO] Game Engine Screen Added
+[20:43:03] [INFO] Scripting Engine initialised
+[20:43:03] [INFO] Game Engine Init::Loading Resources
+[20:43:03] [INFO] Game Engine Init::GUI Initialisation
+[20:43:03] [INFO] Game Engine adding Screen ...
+[20:43:03] [INFO] In Game State initialisation
+[20:43:05] [INFO] In Game State initialised
+[20:43:05] [INFO] Game Engine Screen Added
+[20:43:42] [INFO] Scripting Engine initialised
+[20:43:42] [INFO] Game Engine Init::Loading Resources
+[20:43:42] [INFO] Game Engine Init::GUI Initialisation
+[20:43:42] [INFO] Game Engine adding Screen ...
+[20:43:42] [INFO] In Game State initialisation
+[20:44:25] [INFO] Scripting Engine initialised
+[20:44:25] [INFO] Game Engine Init::Loading Resources
+[20:44:25] [INFO] Game Engine Init::GUI Initialisation
+[20:44:25] [INFO] Game Engine adding Screen ...
+[20:44:25] [INFO] In Game State initialisation
+[23:12:55] [INFO] Scripting Engine initialised
+[23:12:55] [INFO] Game Engine Init::Loading Resources
+[23:12:55] [INFO] Game Engine Init::GUI Initialisation
+[23:12:55] [INFO] Game Engine adding Screen ...
+[23:12:55] [INFO] In Game State initialisation
+[23:13:47] [INFO] Scripting Engine initialised
+[23:13:47] [INFO] Game Engine Init::Loading Resources
+[23:13:47] [INFO] Game Engine Init::GUI Initialisation
+[23:13:47] [INFO] Game Engine adding Screen ...
+[23:13:47] [INFO] In Game State initialisation
+[10:59:35] [INFO] Scripting Engine initialised
+[10:59:35] [INFO] Game Engine Init::Loading Resources
+[10:59:35] [INFO] Game Engine Init::GUI Initialisation
+[10:59:35] [INFO] Game Engine adding Screen ...
+[10:59:35] [INFO] In Game State initialisation
+[10:59:39] [INFO] In Game State initialised
+[10:59:39] [INFO] Game Engine Screen Added
+[11:00:05] [INFO] Scripting Engine initialised
+[11:00:05] [INFO] Game Engine Init::Loading Resources
+[11:00:05] [INFO] Game Engine Init::GUI Initialisation
+[11:00:05] [INFO] Game Engine adding Screen ...
+[11:00:06] [INFO] In Game State initialisation
+[11:00:08] [INFO] In Game State initialised
+[11:00:08] [INFO] Game Engine Screen Added
+[11:00:16] [INFO] Game Engine Cleaning Up
+[11:01:09] [INFO] Scripting Engine initialised
+[11:01:09] [INFO] Game Engine Init::Loading Resources
+[11:01:10] [INFO] Game Engine Init::GUI Initialisation
+[11:01:10] [INFO] Game Engine adding Screen ...
+[11:01:10] [INFO] In Game State initialisation
+[11:01:13] [INFO] In Game State initialised
+[11:01:13] [INFO] Game Engine Screen Added
+[11:01:48] [INFO] Game Engine Cleaning Up
+[11:04:52] [INFO] Scripting Engine initialised
+[11:04:52] [INFO] Game Engine Init::Loading Resources
+[11:04:52] [INFO] Game Engine Init::GUI Initialisation
+[11:04:52] [INFO] Game Engine adding Screen ...
+[11:04:52] [INFO] In Game State initialisation
+[11:04:54] [INFO] In Game State initialised
+[11:04:54] [INFO] Game Engine Screen Added
+[11:11:35] [INFO] Scripting Engine initialised
+[11:11:35] [INFO] Game Engine Init::Loading Resources
+[11:11:35] [INFO] Game Engine Init::GUI Initialisation
+[11:11:36] [INFO] Game Engine adding Screen ...
+[11:11:36] [INFO] In Game State initialisation
+[11:11:40] [INFO] In Game State initialised
+[11:11:40] [INFO] Game Engine Screen Added
+[11:12:09] [INFO] Scripting Engine initialised
+[11:12:09] [INFO] Game Engine Init::Loading Resources
+[11:12:09] [INFO] Game Engine Init::GUI Initialisation
+[11:12:09] [INFO] Game Engine adding Screen ...
+[11:12:09] [INFO] In Game State initialisation
+[11:12:13] [INFO] In Game State initialised
+[11:12:13] [INFO] Game Engine Screen Added
+[11:12:32] [INFO] Game Engine Cleaning Up
+[12:36:21] [INFO] Scripting Engine initialised
+[12:36:21] [INFO] Game Engine Init::Loading Resources
+[12:36:21] [INFO] Game Engine Init::GUI Initialisation
+[12:36:21] [INFO] Game Engine adding Screen ...
+[12:36:21] [INFO] In Game State initialisation
+[12:36:25] [INFO] In Game State initialised
+[12:36:25] [INFO] Game Engine Screen Added
+[12:37:31] [INFO] Scripting Engine initialised
+[12:37:31] [INFO] Game Engine Init::Loading Resources
+[12:37:31] [INFO] Game Engine Init::GUI Initialisation
+[12:37:31] [INFO] Game Engine adding Screen ...
+[12:37:31] [INFO] In Game State initialisation
+[12:37:34] [INFO] In Game State initialised
+[12:37:34] [INFO] Game Engine Screen Added
+[12:37:51] [INFO] Game Engine Cleaning Up
+[17:14:13] [INFO] Scripting Engine initialised
+[17:14:13] [INFO] Game Engine Init::Loading Resources
+[17:14:13] [INFO] Game Engine Init::GUI Initialisation
+[17:14:14] [INFO] Game Engine adding Screen ...
+[17:14:14] [INFO] In Game State initialisation
+[17:14:19] [INFO] In Game State initialised
+[17:14:19] [INFO] Game Engine Screen Added
+[17:14:38] [INFO] Game Engine Cleaning Up
+[19:27:28] [INFO] Scripting Engine initialised
+[19:27:28] [INFO] Game Engine Init::Loading Resources
+[19:27:28] [INFO] Game Engine Init::GUI Initialisation
+[19:27:28] [INFO] Game Engine adding Screen ...
+[19:27:28] [INFO] In Game State initialisation
+[19:27:33] [INFO] In Game State initialised
+[19:27:33] [INFO] Game Engine Screen Added
+[19:28:08] [INFO] Game Engine Cleaning Up
+[19:28:47] [INFO] Scripting Engine initialised
+[19:28:47] [INFO] Game Engine Init::Loading Resources
+[19:28:47] [INFO] Game Engine Init::GUI Initialisation
+[19:28:47] [INFO] Game Engine adding Screen ...
+[19:28:47] [INFO] In Game State initialisation
+[19:28:50] [INFO] In Game State initialised
+[19:28:50] [INFO] Game Engine Screen Added
+[19:32:38] [INFO] Game Engine Cleaning Up
+[19:45:23] [INFO] Scripting Engine initialised
+[19:45:23] [INFO] Game Engine Init::Loading Resources
+[19:45:23] [INFO] Game Engine Init::GUI Initialisation
+[19:45:23] [INFO] Game Engine adding Screen ...
+[19:45:23] [INFO] In Game State initialisation
+[19:45:27] [INFO] In Game State initialised
+[19:45:27] [INFO] Game Engine Screen Added
+[19:45:49] [INFO] Scripting Engine initialised
+[19:45:49] [INFO] Game Engine Init::Loading Resources
+[19:45:49] [INFO] Game Engine Init::GUI Initialisation
+[19:45:49] [INFO] Game Engine adding Screen ...
+[19:45:49] [INFO] In Game State initialisation
+[19:45:53] [INFO] In Game State initialised
+[19:45:53] [INFO] Game Engine Screen Added
+[19:47:19] [INFO] Scripting Engine initialised
+[19:47:19] [INFO] Game Engine Init::Loading Resources
+[19:47:19] [INFO] Game Engine Init::GUI Initialisation
+[19:47:19] [INFO] Game Engine adding Screen ...
+[19:47:19] [INFO] In Game State initialisation
+[19:47:21] [INFO] In Game State initialised
+[19:47:21] [INFO] Game Engine Screen Added
+[19:47:53] [INFO] Scripting Engine initialised
+[19:47:53] [INFO] Game Engine Init::Loading Resources
+[19:47:53] [INFO] Game Engine Init::GUI Initialisation
+[19:47:53] [INFO] Game Engine adding Screen ...
+[19:47:53] [INFO] In Game State initialisation
+[19:47:56] [INFO] In Game State initialised
+[19:47:56] [INFO] Game Engine Screen Added
+[19:48:04] [INFO] Game Engine Cleaning Up
+[19:48:46] [INFO] Scripting Engine initialised
+[19:48:46] [INFO] Game Engine Init::Loading Resources
+[19:48:46] [INFO] Game Engine Init::GUI Initialisation
+[19:48:46] [INFO] Game Engine adding Screen ...
+[19:48:46] [INFO] In Game State initialisation
+[19:48:49] [INFO] In Game State initialised
+[19:48:49] [INFO] Game Engine Screen Added
+[19:49:01] [INFO] Game Engine Cleaning Up
+[19:54:47] [INFO] Scripting Engine initialised
+[19:54:47] [INFO] Game Engine Init::Loading Resources
+[19:54:47] [INFO] Game Engine Init::GUI Initialisation
+[19:54:47] [INFO] Game Engine adding Screen ...
+[19:54:47] [INFO] In Game State initialisation
+[19:54:49] [INFO] In Game State initialised
+[19:54:49] [INFO] Game Engine Screen Added
+[19:55:05] [INFO] Game Engine Cleaning Up
+[20:21:12] [INFO] Scripting Engine initialised
+[20:21:12] [INFO] Game Engine Init::Loading Resources
+[20:21:12] [INFO] Game Engine Init::GUI Initialisation
+[20:21:12] [INFO] Game Engine adding Screen ...
+[20:21:12] [INFO] In Game State initialisation
+[20:21:14] [INFO] In Game State initialised
+[20:21:14] [INFO] Game Engine Screen Added
+[20:21:38] [INFO] Game Engine Cleaning Up
+[20:23:09] [INFO] Scripting Engine initialised
+[20:23:09] [INFO] Game Engine Init::Loading Resources
+[20:23:09] [INFO] Game Engine Init::GUI Initialisation
+[20:23:09] [INFO] Game Engine adding Screen ...
+[20:23:09] [INFO] In Game State initialisation
+[20:23:11] [INFO] In Game State initialised
+[20:23:11] [INFO] Game Engine Screen Added
+[20:24:05] [INFO] Game Engine Cleaning Up
+[20:34:03] [INFO] Scripting Engine initialised
+[20:34:03] [INFO] Game Engine Init::Loading Resources
+[20:34:03] [INFO] Game Engine Init::GUI Initialisation
+[20:34:03] [INFO] Game Engine adding Screen ...
+[20:34:03] [INFO] In Game State initialisation
+[20:34:08] [INFO] In Game State initialised
+[20:34:08] [INFO] Game Engine Screen Added
+[20:34:38] [INFO] Scripting Engine initialised
+[20:34:38] [INFO] Game Engine Init::Loading Resources
+[20:34:38] [INFO] Game Engine Init::GUI Initialisation
+[20:34:38] [INFO] Game Engine adding Screen ...
+[20:34:38] [INFO] In Game State initialisation
+[20:34:41] [INFO] In Game State initialised
+[20:34:41] [INFO] Game Engine Screen Added
+[20:36:30] [INFO] Game Engine Cleaning Up
+[20:36:42] [INFO] Scripting Engine initialised
+[20:36:42] [INFO] Game Engine Init::Loading Resources
+[20:36:42] [INFO] Game Engine Init::GUI Initialisation
+[20:36:42] [INFO] Game Engine adding Screen ...
+[20:36:42] [INFO] In Game State initialisation
+[20:36:45] [INFO] In Game State initialised
+[20:36:45] [INFO] Game Engine Screen Added
+[20:37:29] [INFO] Game Engine Cleaning Up
+[20:37:57] [INFO] Scripting Engine initialised
+[20:37:57] [INFO] Game Engine Init::Loading Resources
+[20:37:57] [INFO] Game Engine Init::GUI Initialisation
+[20:37:57] [INFO] Game Engine adding Screen ...
+[20:37:57] [INFO] In Game State initialisation
+[20:38:01] [INFO] In Game State initialised
+[20:38:01] [INFO] Game Engine Screen Added
+[20:38:46] [INFO] Scripting Engine initialised
+[20:38:46] [INFO] Game Engine Init::Loading Resources
+[20:38:46] [INFO] Game Engine Init::GUI Initialisation
+[20:38:46] [INFO] Game Engine adding Screen ...
+[20:38:46] [INFO] In Game State initialisation
+[20:43:33] [INFO] Scripting Engine initialised
+[20:43:33] [INFO] Game Engine Init::Loading Resources
+[20:43:33] [INFO] Game Engine Init::GUI Initialisation
+[20:43:33] [INFO] Game Engine adding Screen ...
+[20:43:33] [INFO] In Game State initialisation
+[20:46:48] [INFO] Scripting Engine initialised
+[20:46:48] [INFO] Game Engine Init::Loading Resources
+[20:46:48] [INFO] Game Engine Init::GUI Initialisation
+[20:46:48] [INFO] Game Engine adding Screen ...
+[20:46:48] [INFO] In Game State initialisation
+[20:46:51] [INFO] In Game State initialised
+[20:46:51] [INFO] Game Engine Screen Added
+[20:46:58] [INFO] Game Engine Cleaning Up
+[20:47:47] [INFO] Scripting Engine initialised
+[20:47:47] [INFO] Game Engine Init::Loading Resources
+[20:47:47] [INFO] Game Engine Init::GUI Initialisation
+[20:47:47] [INFO] Game Engine adding Screen ...
+[20:47:47] [INFO] In Game State initialisation
+[20:47:50] [INFO] In Game State initialised
+[20:47:50] [INFO] Game Engine Screen Added
+[20:48:01] [INFO] Game Engine Cleaning Up
+[20:48:31] [INFO] Scripting Engine initialised
+[20:48:31] [INFO] Game Engine Init::Loading Resources
+[20:48:31] [INFO] Game Engine Init::GUI Initialisation
+[20:48:31] [INFO] Game Engine adding Screen ...
+[20:48:31] [INFO] In Game State initialisation
+[20:48:34] [INFO] In Game State initialised
+[20:48:34] [INFO] Game Engine Screen Added
+[20:48:51] [INFO] Game Engine Cleaning Up
+[20:49:49] [INFO] Scripting Engine initialised
+[20:49:49] [INFO] Game Engine Init::Loading Resources
+[20:49:49] [INFO] Game Engine Init::GUI Initialisation
+[20:49:49] [INFO] Game Engine adding Screen ...
+[20:49:49] [INFO] In Game State initialisation
+[20:49:52] [INFO] In Game State initialised
+[20:49:52] [INFO] Game Engine Screen Added
+[20:52:40] [INFO] Game Engine Cleaning Up
+[20:52:56] [INFO] Scripting Engine initialised
+[20:52:56] [INFO] Game Engine Init::Loading Resources
+[20:52:56] [INFO] Game Engine Init::GUI Initialisation
+[20:52:56] [INFO] Game Engine adding Screen ...
+[20:52:56] [INFO] In Game State initialisation
+[20:53:00] [INFO] In Game State initialised
+[20:53:00] [INFO] Game Engine Screen Added
+[20:56:18] [INFO] Scripting Engine initialised
+[20:56:18] [INFO] Game Engine Init::Loading Resources
+[20:56:18] [INFO] Game Engine Init::GUI Initialisation
+[20:56:18] [INFO] Game Engine adding Screen ...
+[20:56:18] [INFO] In Game State initialisation
+[20:56:21] [INFO] In Game State initialised
+[20:56:21] [INFO] Game Engine Screen Added

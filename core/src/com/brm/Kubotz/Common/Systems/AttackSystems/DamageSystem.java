@@ -11,7 +11,7 @@ import com.brm.Kubotz.Common.Components.StunnedComponent;
 import com.brm.Kubotz.Common.Events.*;
 import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 
 /**
  * Used to deal damage and process Health Bonuses

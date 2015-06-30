@@ -19,7 +19,7 @@ import com.brm.GoatEngine.ECS.common.SpriteComponent;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.GoatEngine.ECS.common.ParticleEffectComponent;
 import com.brm.Kubotz.Constants;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 
 /**
  * Used to generate bullets

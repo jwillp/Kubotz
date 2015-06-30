@@ -12,7 +12,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Timer;
 import com.brm.Kubotz.Common.Components.LifespanComponent;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;

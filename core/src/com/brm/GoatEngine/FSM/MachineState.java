@@ -21,8 +21,6 @@ public class MachineState{
         None,
         Enter,  // Root Node (only one per machine)
         Exit    // The End of a path (normally we get back to an the Enter Node)
-
-
     }
 
     String id;                          // A Unique ID for that node

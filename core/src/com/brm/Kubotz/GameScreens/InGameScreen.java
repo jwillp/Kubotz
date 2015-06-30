@@ -12,6 +12,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.brashmonkey.spriter.Spriter;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterDrawer;
 import com.brashmonkey.spriter.gdxIntegration.LibGdxSpriterLoader;
+import com.brm.GoatEngine.ECS.EditorEntityProperty;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
@@ -138,16 +139,19 @@ public class InGameScreen extends GameScreen {
             Rectangle rect = obj.getRectangle();
             String objType = (String) obj.getProperties().get("type");
             Vector2 position = new Vector2(rect.getX()/tileSize, rect.getY()/tileSize);
+            float width = rect.getWidth()/tileSize, height = rect.getHeight()/tileSize;
 
+            if(objType == null)
+                continue;
 
             if(objType.equals("PLAYER_SPAWN")){
                 int id = (isPlayerOneSpawned) ? PlayerScoreComponent.PLAYER_2 : PlayerScoreComponent.PLAYER_1;
-
+                EntityXMLFactory.editorProperty = new EditorEntityProperty(position, width, height);
                 Entity player = EntityXMLFactory.createEntity("blueprint/Kubotz.xml", this.getEntityManager(),
                         this.systemManager.getSystem(PhysicsSystem.class).getWorld()
                 );
                 PhysicsComponent phys = (PhysicsComponent) player.getComponent(PhysicsComponent.ID);
-                phys.setPosition(rect.getX()/tileSize, rect.getY()/tileSize);
+                phys.setPosition(position.x, position.y);
 
                 /*Entity player = new KubotzFactory(entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
@@ -171,19 +175,25 @@ public class InGameScreen extends GameScreen {
                 entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
                         SpawnPointComponent.Type.Player), SpawnPointComponent.ID);
 
-            }else if(objType.equals("BONUS_SPAWN")){
-                Entity entity = new Entity();
-                entityManager.registerEntity(entity);
-                entity.addComponent(new SpawnPointComponent(new Vector2(rect.getX()/tileSize, rect.getY()/tileSize),
-                        SpawnPointComponent.Type.PowerUp), SpawnPointComponent.ID);
+            }else if(objType.equals("ENTITY")){
+                EntityXMLFactory.editorProperty = new EditorEntityProperty(position, width, height);
+                String blueprint = obj.getProperties().get("blueprint").toString();
+                Entity e = EntityXMLFactory.createEntity(blueprint, this.getEntityManager(),
+                        this.systemManager.getSystem(PhysicsSystem.class).getWorld()
+                );
+                if(e.hasComponent(PhysicsComponent.ID)){
+                    PhysicsComponent phys = (PhysicsComponent) e.getComponent(PhysicsComponent.ID);
+                    //phys.setPosition(position.x, position.y);
+
+                }
 
 
             }else{
-                new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
+                /*new BlockFactory(this.entityManager, systemManager.getSystem(PhysicsSystem.class).getWorld(),
                         new Vector2(rect.getX()/tileSize, rect.getY()/tileSize))
-                        .withSize(rect.getWidth()/tileSize, rect.getHeight()/tileSize)
+                        .withSize(rect.getWidth() / tileSize, rect.getHeight() / tileSize)
                         .withTag(Constants.ENTITY_TAG_PLATFORM)
-                        .build();
+                        .build();*/
             }
         }
 

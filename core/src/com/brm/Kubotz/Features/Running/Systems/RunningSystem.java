@@ -8,7 +8,7 @@ import com.brm.GoatEngine.ECS.core.EntitySystem;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Features.Running.Components.RunningComponent;

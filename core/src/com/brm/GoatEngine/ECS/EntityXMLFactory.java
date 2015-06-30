@@ -17,6 +17,10 @@ import java.lang.reflect.InvocationTargetException;
 
 public class EntityXMLFactory {
 
+
+    public static EditorEntityProperty editorProperty; //Current editorProperty
+
+
     /**
      * Creates an Entity according to an XML file that is registered with the entityManager
      * @param blueprintFile
@@ -24,7 +28,10 @@ public class EntityXMLFactory {
      * @param world the box2D world in case with create a PhysicsComponent
      * @return
      */
-    public static Entity createEntity(String blueprintFile, EntityManager entityManager, World world) {
+    public static Entity createEntity(String blueprintFile, EntityManager entityManager, World world){
+
+
+
         Entity entity = null;
         try {
             XmlReader reader = new XmlReader();
@@ -48,9 +55,13 @@ public class EntityXMLFactory {
                 //Add the component
                 entity.addComponent((EntityComponent)component, componentId);
             }
+
+            //Creation done we can destroy editorProperty
+            editorProperty = null;
+
             return  entity;
 
-        } catch (IOException e) {   //TODO stop program or display stackStrace in Console
+        } catch (IOException e) {   //TODO stop program or display stack trace in Console
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -69,7 +80,15 @@ public class EntityXMLFactory {
     }
 
 
-
+    /**
+     * Tries to find the value of a editorProperty
+     * @param blueprintFile
+     * @param propertyName
+     * @return
+     */
+    public static String findProperty(String blueprintFile, String propertyName){
+        return null;
+    }
 
 
 

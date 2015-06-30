@@ -15,7 +15,7 @@ import com.brm.Kubotz.Features.Grab.Events.GrabEvent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpComponent;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 import com.brm.Kubotz.Input.GameButton;
 
 /**

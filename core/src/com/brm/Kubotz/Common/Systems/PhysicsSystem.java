@@ -59,7 +59,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
         Entity entityB = (Entity) fixtureB.getBody().getUserData();
 
 
-
         if(fixtureA.getUserData() != null && fixtureA.getBody().getUserData() != null) {
             this.collisions.add(new CollisionEvent(
                             entityA.getID(),
@@ -78,9 +77,6 @@ public class PhysicsSystem extends EntitySystem implements ContactListener {
                             CollisionEvent.Describer.BEGIN)
             );
         }
-
-
-
 
     }
 

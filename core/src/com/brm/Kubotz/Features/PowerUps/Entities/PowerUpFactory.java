@@ -16,7 +16,7 @@ import com.brm.Kubotz.Features.PowerUps.PowerUp;
 import com.brm.Kubotz.Features.PowerUps.Components.PowerUpComponent;
 import com.brm.Kubotz.Features.PowerUps.PowerUpEffect;
 import com.brm.Kubotz.Constants;
-import com.brm.GoatEngine.Hitbox.Hitbox;
+import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 
 /**
  * Used to Create PowerUps
