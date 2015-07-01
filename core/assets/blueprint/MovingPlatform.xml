@@ -4,7 +4,7 @@
 		<param name="direction">LEFT</param>
 		<param name="width">EDITOR_VALUE</param>
 		<param name="height">EDITOR_VALUE</param>
-		<body type="DynamicBody" colliderType="rectangle">
+		<body type="KinematicBody" colliderType="box">
 			<fixture>
 				<hitbox>
 					<type>Inert</type>
@@ -14,6 +14,6 @@
 		</body>
 	</component>
 	<component name="com.brm.GoatEngine.ScriptingEngine.ScriptComponent">
-		<script>MovingPlatform.script</script>
+		<script>MovingPlatform.groovy</script>
     </component>
 </Entity>

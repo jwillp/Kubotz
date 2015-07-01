@@ -1,29 +1,30 @@
 import com.badlogic.gdx.math.Vector2
 import com.brm.GoatEngine.ECS.common.PhysicsComponent
 import com.brm.GoatEngine.EventManager.GameEvent
+import com.brm.GoatEngine.GoatEngine
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.Input.VirtualButton;
+import com.brm.GoatEngine.Input.VirtualButton
+import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Common.Events.CollisionEvent;
 
 
 class MovingPlatform extends EntityScript{
 
-    Vector2 initialPos;
-    boolean isGoingRight = true;
-    PhysicsComponent phys;
 
-    def speed = 10;
+    PhysicsComponent phys;
+    float numberOfTicks = 0;
+    def speed = 20;
+    def distance = 5
 
     /**
      * Called when a script is added to an entity
      */
     @Override
     public void onInit(Entity entity, EntityManager entityManager){
-        //phys = entity.getComponent(PhysicsComponent.ID) as PhysicsComponent;
-        //initialPos = phys.position.cpy();
+        phys = entity.getComponent(PhysicsComponent.ID) as PhysicsComponent;
     }
 
 
@@ -33,20 +34,10 @@ class MovingPlatform extends EntityScript{
      */
     @Override
     public void onUpdate(Entity entity, EntityManager entityManager){
-
-        /*if(isGoingRight){
-            phys.velocity.x += speed;
-            console.log(phys.velocity.x, 'INFO');
-        }else{
-            phys.velocity.x -= speed;
-        }
-
-
-
-        if( Math.abs(initialPos.x - phys.position.x) > 4){
-            isGoingRight = !isGoingRight;
-        }*/
-
+        /*numberOfTicks++
+        float vx = Math.sin(numberOfTicks * 0.5f * Math.PI) * speed;
+        phys.setPosision(vx, 0.0f);
+        Logger.log(vx);*/
 
     }
 

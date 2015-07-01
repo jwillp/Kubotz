@@ -13,7 +13,4 @@
 			</fixture>
 		</body>
 	</component>
-	<component name="com.brm.GoatEngine.ScriptingEngine.ScriptComponent">
-		<script>MovingPlatform.groovy</script>
-    </component>
 </Entity>

@@ -149,7 +149,7 @@
   </object>
   <object id="64" type="ENTITY" x="1344" y="832" width="640" height="64">
    <properties>
-    <property name="blueprint" value="blueprint/StaticPlatform.xml"/>
+    <property name="blueprint" value="blueprint/MovingPlatform.xml"/>
    </properties>
   </object>
   <object id="76" type="BONUS_SPAWN" x="768" y="1024" width="64" height="64"/>
