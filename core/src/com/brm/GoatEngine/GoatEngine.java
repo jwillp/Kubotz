@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.brm.GoatEngine.EventManager.EventManager;
 import com.brm.GoatEngine.GraphicsEngine.GraphicsEngine;
 import com.brm.GoatEngine.Input.InputManager;
-import com.brm.GoatEngine.Konsole.ConsoleCommandeExecutor;
+import com.brm.GoatEngine.Konsole.ConsoleCommandExecutor;
 import com.brm.GoatEngine.Konsole.Konsole;
 import com.brm.GoatEngine.ScreenManager.GameScreenManager;
 import com.brm.GoatEngine.ScriptingEngine.ScriptingEngine;
@@ -61,7 +61,7 @@ public class GoatEngine {
 
         //Init the console
         console = new Konsole();
-        console.setCommandExecutor(new ConsoleCommandeExecutor());
+        console.setCommandExecutor(new ConsoleCommandExecutor());
         console.log("Console inited", Console.LogLevel.SUCCESS);
 
         audioMixer = new AudioMixer();

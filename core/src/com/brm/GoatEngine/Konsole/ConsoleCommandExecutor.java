@@ -11,7 +11,7 @@ import java.util.Arrays;
 /**
  * Script Command Executor specific to the GoatEngine
  */
-public class ConsoleCommandeExecutor extends CommandExecutor {
+public class ConsoleCommandExecutor extends CommandExecutor {
 
 
 
@@ -71,14 +71,5 @@ public class ConsoleCommandeExecutor extends CommandExecutor {
         }
 
     }
-
-
-
-
-
-
-
-
-
 
 }

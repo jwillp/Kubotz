@@ -2,6 +2,7 @@ package com.brm.GoatEngine.Konsole;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
+import com.strongjoshua.console.CommandExecutor;
 import com.strongjoshua.console.Console;
 
 import java.util.ArrayList;
@@ -18,10 +19,11 @@ public class Konsole extends Console {
     }
 
 
+    public void setCommandExecutor(CommandExecutor c){
+        this.exec = c;
+    }
 
 
-    // a list of custom commands (to be specified by javascript
-    public ArrayList<String> commands = new ArrayList<String>();
 
 
     /**

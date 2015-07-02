@@ -39,3 +39,11 @@ file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/KubotzCharacterController.
 [13:32:53] [INFO] Game Engine Screen Added
 [13:33:34] [WARNING] Sound not found: audio/narrator_great.mp3
 [13:33:43] [INFO] Game Engine Cleaning Up
+[13:51:58] [INFO] Scripting Engine initialised
+[13:51:58] [INFO] Game Engine Init::Loading Resources
+[13:51:58] [INFO] Game Engine Init::GUI Initialisation
+[13:51:58] [INFO] Game Engine adding Screen ...
+[13:51:58] [INFO] In Game State initialisation
+[13:52:00] [INFO] In Game State initialised
+[13:52:00] [INFO] Game Engine Screen Added
+[13:53:30] [INFO] Game Engine Cleaning Up
