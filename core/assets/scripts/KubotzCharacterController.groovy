@@ -5,6 +5,7 @@ import com.brm.GoatEngine.ECS.core.EntityManager
 
 
 import com.brm.GoatEngine.Input.VirtualButton
+import com.brm.Kubotz.Features.MeleeAttacks.PunchActionEvent
 import com.brm.Kubotz.Input.GameButton
 
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
@@ -52,24 +53,32 @@ class KubotzCharacterControllerScript extends EntityScript{
     public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){
 
         if(pressedButtons.contains(GameButton.DPAD_UP) || pressedButtons.contains(GameButton.BUTTON_Y)){
-            GoatEngine.eventManager.fireEvent(new JumpActionEvent(entityId));
+            fireEvent(new JumpActionEvent(entityId))
         }
 
         if(pressedButtons.contains(GameButton.DPAD_LEFT)){
-            GoatEngine.eventManager.fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.LEFT))
+            fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.LEFT))
         }
         if(pressedButtons.contains(GameButton.DPAD_RIGHT)){
-            GoatEngine.eventManager.fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.RIGHT))
+            fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.RIGHT))
         }
         if(pressedButtons.contains(GameButton.DPAD_DOWN)){
-            GoatEngine.eventManager.fireEvent(new FallActionEvent(entityId))
+            fireEvent(new FallActionEvent(entityId))
         }
 
         if(pressedButtons.contains(GameButton.BUTTON_B)){
-            GoatEngine.eventManager.fireEvent(new GrabActionEvent(entityId));
+            fireEvent(new GrabActionEvent(entityId))
         }
 
+        if(pressedButtons.contains(GameButton.BUTTON_A)){
+            fireEvent(new PunchActionEvent(entityId))
+        }
 
+    }
+
+
+    private fireEvent(GameEvent e){
+        GoatEngine.eventManager.fireEvent(e);
     }
 
 

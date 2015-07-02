@@ -12,6 +12,8 @@ import com.brm.Kubotz.Common.Systems.MovementSystems.MovementSystem;
 import com.brm.Kubotz.Constants;
 import com.brm.Kubotz.Input.GameButton;
 
+import static com.brm.GoatEngine.ECS.common.PhysicsComponent.*;
+
 /**
  * On Ground Movement System: Running + Jumping
  */
@@ -37,10 +39,10 @@ public class RunningSystem extends EntitySystem {
         if(event.isOfType(RunActionEvent.class)){
             RunActionEvent runEvent = (RunActionEvent) event;
             Entity e = getEntityManager().getEntity(event.getEntityId());
-            if(runEvent.getDirection() == PhysicsComponent.Direction.LEFT){
-                moveLeft(e);
-            }else if(runEvent.getDirection() == PhysicsComponent.Direction.RIGHT){
-                moveRight(e);
+            switch (runEvent.getDirection()){
+                case LEFT: moveLeft(e); break;
+
+                case RIGHT: moveRight(e); break;
             }
             return;
         }
@@ -99,7 +101,7 @@ public class RunningSystem extends EntitySystem {
             if(hitbox != null) {
                 if (hitbox.label.equals(Constants.HITBOX_LABEL_FEET)) {
                     if (entityA.hasComponentEnabled(RunningComponent.ID)) {
-                        PhysicsComponent phys = (PhysicsComponent) entityA.getComponent(PhysicsComponent.ID);
+                        PhysicsComponent phys = (PhysicsComponent) entityA.getComponent(ID);
                         phys.setGrounded(contact.getDescriber() == CollisionEvent.Describer.BEGIN);
                     }
                 }
@@ -115,7 +117,7 @@ public class RunningSystem extends EntitySystem {
      * Makes the entity move left (whether it is during flying or walking or dashing)
      */
     private void moveLeft(Entity entity) {
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(ID);
         RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
 
         Vector2 vel = phys.getVelocity();
@@ -133,7 +135,7 @@ public class RunningSystem extends EntitySystem {
      * Makes the entity move right (whether it is during flying or walking or dashing)
      */
     private void moveRight(Entity entity) {
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(ID);
         RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
 
         Vector2 vel = phys.getVelocity();
@@ -151,7 +153,7 @@ public class RunningSystem extends EntitySystem {
      * Makes the entity fall faster when not on ground
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
     private void fall(Entity entity) {
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(ID);
         RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
 
         Vector2 vel = phys.getVelocity().cpy();
@@ -172,7 +174,7 @@ public class RunningSystem extends EntitySystem {
      * @param entity the entity to stop
      */
     private void decelerate(Entity entity) {
-        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+        PhysicsComponent phys = (PhysicsComponent) entity.getComponent(ID);
         RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
         if (phys.isGrounded()) {
             Vector2 vel = phys.getVelocity();

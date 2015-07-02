@@ -7,6 +7,7 @@ import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntitySystem;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
+import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Config;
 import com.brm.Kubotz.Constants;
@@ -26,29 +27,26 @@ public class MeleeSystem extends EntitySystem{
 
 
     @Override
-    public void handleInput() {
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(MeleeComponent.ID)) {
-            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
-                handleInputForEntity(entity);
-            }
+    public <T extends EntityEvent> void onEntityEvent(T event) {
+        if(event.isOfType(PunchActionEvent.class)){
+            onPunchAction((PunchActionEvent) event);
         }
     }
 
 
-    private void handleInputForEntity(Entity entity){
-        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+
+    private void onPunchAction(PunchActionEvent actionEvent){
+        Entity entity = getEntityManager().getEntity(actionEvent.getEntityId());
+
         MeleeComponent meleeComponent = (MeleeComponent)entity.getComponent(MeleeComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
-        //Triggers the punch
-        if(gamePad.isButtonPressed(GameButton.BUTTON_A)){
-            if(meleeComponent.getCooldown().isDone() && !meleeComponent.isAttacking()){
-                meleeComponent.getDurationTimer().reset();
-                createAttackBox(phys);
-                meleeComponent.setAttacking(true);
-                // TODO FIRE EVENT FOR PUNCHING
-                fireEvent(new PunchEvent(entity.getID()));
-            }
+        if(meleeComponent.getCooldown().isDone() && !meleeComponent.isAttacking()){
+            meleeComponent.getDurationTimer().reset();
+            createAttackBox(phys);
+            meleeComponent.setAttacking(true);
+            // TODO FIRE EVENT FOR PUNCHING
+            //fireEvent(new PunchEvent(entity.getID()));
         }
     }
 
@@ -79,7 +77,7 @@ public class MeleeSystem extends EntitySystem{
      */
     private void createAttackBox(PhysicsComponent phys){
         CircleShape shape = new CircleShape();
-        shape.setRadius(phys.getWidth() * 0.5f);
+        shape.setRadius(phys.getWidth()*0.5f);
 
         Vector2 position = null;
         switch (phys.getDirection()) {
@@ -87,7 +85,7 @@ public class MeleeSystem extends EntitySystem{
                 position = new Vector2(phys.getWidth() + phys.getWidth()/2, 0);
                 break;
             case LEFT:
-                position = new Vector2(-phys.getWidth()-phys.getWidth()/2, 0);
+                position = new Vector2(-phys.getWidth() - phys.getWidth()/2, 0);
                 break;
         }
         shape.setPosition(position);
