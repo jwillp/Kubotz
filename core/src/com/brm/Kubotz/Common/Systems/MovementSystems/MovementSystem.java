@@ -8,6 +8,7 @@ import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.DashBoots.DashSystem;
 import com.brm.Kubotz.Features.FlyBoots.FlySystem;
+import com.brm.Kubotz.Features.Jump.JumpSystem;
 import com.brm.Kubotz.Features.Running.RunningSystem;
 import com.brm.Kubotz.Input.GameButton;
 
@@ -25,6 +26,7 @@ public class MovementSystem extends EntitySystem {
     @Override
     public void init() {
         getSystemManager().addSystem(RunningSystem.class, new RunningSystem());
+        getSystemManager().addSystem(JumpSystem.class, new JumpSystem());
         getSystemManager().addSystem(FlySystem.class, new FlySystem());
         getSystemManager().addSystem(DashSystem.class, new DashSystem());
     }
@@ -33,6 +35,7 @@ public class MovementSystem extends EntitySystem {
 
     public void handleInput(){
         getSystemManager().getSystem(FlySystem.class).handleInput();
+
         getSystemManager().getSystem(DashSystem.class).handleInput();
         getSystemManager().getSystem(RunningSystem.class).handleInput();
 
@@ -54,6 +57,7 @@ public class MovementSystem extends EntitySystem {
     @Override
     public void update(float dt){
         getSystemManager().getSystem(FlySystem.class).update(dt);
+        getSystemManager().getSystem(JumpSystem.class).update(dt);
         getSystemManager().getSystem(DashSystem.class).update(dt);
         getSystemManager().getSystem(RunningSystem.class).update(dt);
     }

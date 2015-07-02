@@ -1,22 +1,28 @@
 import com.brm.GoatEngine.EventManager.GameEvent
+import com.brm.GoatEngine.GoatEngine
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntityManager;
 import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualButton;
-import com.brm.Kubotz.Common.Events.CollisionEvent;
+import com.brm.Kubotz.Common.Events.CollisionEvent
+import com.brm.Kubotz.Features.Jump.JumpActionEvent
+import com.brm.Kubotz.Input.GameButton;
 
-
+/**
+ * Script used to control a character using player input
+ */
 class KubotzCharacterControllerScript extends EntityScript{
 
 
+    String entityId;
 
     /**
      * Called when a script is added to an entity
      */
     @Override
     public void onInit(Entity entity, EntityManager entityManager){
-       //console.log(myEntityId, "SUCCESS");
+       entityId = entity.getID();
     }
 
 
@@ -37,6 +43,17 @@ class KubotzCharacterControllerScript extends EntityScript{
     @Override
     public void onInput(Entity entity, ArrayList<VirtualButton> pressedButtons){
 
+        if(pressedButtons.contains(GameButton.DPAD_UP) || pressedButtons.contains(GameButton.BUTTON_Y)){
+            GoatEngine.eventManager.fireEvent(new JumpActionEvent(entityId));
+        }
+
+
+
+
+
+
+
+
     }
 
 
@@ -47,9 +64,7 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param entity
      */
     @Override
-    public void onCollision(CollisionEvent contact, Entity entity){
-
-    }
+    public void onCollision(CollisionEvent contact, Entity entity){}
 
     /**
      * When an event occurs
@@ -58,14 +73,10 @@ class KubotzCharacterControllerScript extends EntityScript{
      * @param <T>
      */
     @Override
-    public <T extends EntityEvent> void onEvent(T event, Entity entity){
-
-    }
+    public <T extends EntityEvent> void onEvent(T event, Entity entity){}
 
 
     @Override
-    public <T extends GameEvent> void onGlobalEvent(T event){
-
-    }
+    public <T extends GameEvent> void onGlobalEvent(T event){}
 
 }

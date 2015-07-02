@@ -27651,3 +27651,49 @@ Possible solutions: setPosition(float, float), getPosition()
 [18:23:57] [ERROR] No signature of method: com.brm.GoatEngine.ECS.common.PhysicsComponent.setPosision() is applicable for argument types: (java.lang.Float, java.lang.Float) values: [20.0, 0.0]
 Possible solutions: setPosition(float, float), getPosition()
 [18:24:06] [INFO] Game Engine Cleaning Up
+[11:59:40] [INFO] Scripting Engine initialised
+[11:59:40] [INFO] Game Engine Init::Loading Resources
+[11:59:40] [INFO] Game Engine Init::GUI Initialisation
+[11:59:40] [INFO] Game Engine adding Screen ...
+[11:59:40] [INFO] In Game State initialisation
+[11:59:42] [INFO] In Game State initialised
+[11:59:42] [INFO] Game Engine Screen Added
+[12:01:38] [INFO] Scripting Engine initialised
+[12:01:38] [INFO] Game Engine Init::Loading Resources
+[12:01:38] [INFO] Game Engine Init::GUI Initialisation
+[12:01:38] [INFO] Game Engine adding Screen ...
+[12:01:38] [INFO] In Game State initialisation
+[12:01:40] [INFO] In Game State initialised
+[12:01:40] [INFO] Game Engine Screen Added
+[12:01:59] [INFO] Game Engine Cleaning Up
+[12:02:17] [INFO] Scripting Engine initialised
+[12:02:17] [INFO] Game Engine Init::Loading Resources
+[12:02:17] [INFO] Game Engine Init::GUI Initialisation
+[12:02:17] [INFO] Game Engine adding Screen ...
+[12:02:17] [INFO] In Game State initialisation
+[12:02:20] [INFO] In Game State initialised
+[12:02:20] [INFO] Game Engine Screen Added
+[12:02:49] [INFO] Game Engine Cleaning Up
+[12:05:10] [INFO] Scripting Engine initialised
+[12:05:10] [INFO] Game Engine Init::Loading Resources
+[12:05:10] [INFO] Game Engine Init::GUI Initialisation
+[12:05:10] [INFO] Game Engine adding Screen ...
+[12:05:10] [INFO] In Game State initialisation
+[12:05:13] [INFO] In Game State initialised
+[12:05:13] [INFO] Game Engine Screen Added
+[12:05:33] [INFO] Game Engine Cleaning Up
+[12:51:19] [INFO] Scripting Engine initialised
+[12:51:19] [INFO] Game Engine Init::Loading Resources
+[12:51:19] [INFO] Game Engine Init::GUI Initialisation
+[12:51:19] [INFO] Game Engine adding Screen ...
+[12:51:19] [INFO] In Game State initialisation
+[12:51:22] [INFO] In Game State initialised
+[12:51:22] [INFO] Game Engine Screen Added
+[12:52:14] [INFO] Scripting Engine initialised
+[12:52:14] [INFO] Game Engine Init::Loading Resources
+[12:52:14] [INFO] Game Engine Init::GUI Initialisation
+[12:52:14] [INFO] Game Engine adding Screen ...
+[12:52:14] [INFO] In Game State initialisation
+[12:52:16] [INFO] In Game State initialised
+[12:52:16] [INFO] Game Engine Screen Added
+[12:52:43] [ERROR] Cannot open URL: file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/KubotzCharacterController.groovy

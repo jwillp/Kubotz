@@ -44,9 +44,7 @@ public class RunningSystem extends EntitySystem {
         if (!gamePad.isAnyButtonPressed()) {
             decelerate(entity);
         } else {
-            if (gamePad.isButtonPressed(GameButton.DPAD_UP)) {
-                jump(entity);
-            } else if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
+             if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
                 moveDown(entity);
 
             } else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
@@ -150,26 +148,6 @@ public class RunningSystem extends EntitySystem {
         MovementSystem.moveInX(entity, resultingVelocity);
     }
 
-
-    /**
-     * Makes the entity jump
-     */
-    private void jump(Entity entity) {
-        if (entity.hasComponent(JumpComponent.ID)) {
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-
-            if (jp.getNbJujmps() < jp.getNbJumpsMax()) {
-                if (jp.getCooldown().isDone()) {
-                    float resultingVelocity = jp.getSpeed() * phys.getBody().getGravityScale();
-                    MovementSystem.moveInY(entity, resultingVelocity * phys.getBody().getGravityScale());
-                    phys.setGrounded(false);
-                    jp.setNbJujmps(jp.getNbJujmps() + 1);
-                    jp.getCooldown().reset();
-                }
-            }
-        }
-    }
 
     /**
      * Makes the entity fall faster when not on ground
