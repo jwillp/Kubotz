@@ -7,7 +7,7 @@ import com.brm.GoatEngine.ScriptingEngine.EntityScript;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.KubotzActionComponent;
-import com.brm.Kubotz.Features.Running.Components.RunningComponent;
+import com.brm.Kubotz.Features.Running.RunningComponent;
 import com.brm.Kubotz.Input.GameButton;
 
 import java.util.ArrayList;

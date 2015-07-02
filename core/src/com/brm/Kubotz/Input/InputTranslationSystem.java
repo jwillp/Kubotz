@@ -10,9 +10,8 @@ import com.brm.GoatEngine.ECS.core.EntitySystem;
 import com.brm.GoatEngine.GoatEngine;
 import com.brm.GoatEngine.Input.GameControllerManager;
 import com.brm.GoatEngine.Input.VirtualGamePad;
-import com.brm.GoatEngine.Utils.Logger;
 import com.brm.Kubotz.Config;
-import com.brm.Kubotz.Features.GameRules.Components.PlayerScoreComponent;
+import com.brm.Kubotz.Features.GameRules.PlayerScoreComponent;
 
 import java.util.HashMap;
 

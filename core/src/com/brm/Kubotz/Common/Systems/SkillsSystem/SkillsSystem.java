@@ -1,10 +1,10 @@
 package com.brm.Kubotz.Common.Systems.SkillsSystem;
 
 import com.brm.GoatEngine.ECS.core.EntitySystem;
-import com.brm.Kubotz.Features.DashBoots.Systems.DashBootsSystem;
-import com.brm.Kubotz.Features.DroneGauntlet.Systems.DroneGauntletSystem;
-import com.brm.Kubotz.Features.FlyBoots.Systems.FlyingBootsSystem;
-import com.brm.Kubotz.Features.MagneticBoots.Systems.MagneticBootsSystem;
+import com.brm.Kubotz.Features.DashBoots.DashBootsSystem;
+import com.brm.Kubotz.Features.DroneGauntlet.DroneGauntletSystem;
+import com.brm.Kubotz.Features.FlyBoots.FlyingBootsSystem;
+import com.brm.Kubotz.Features.MagneticBoots.MagneticBootsSystem;
 
 /**
  * Used to process Skills... most active skills

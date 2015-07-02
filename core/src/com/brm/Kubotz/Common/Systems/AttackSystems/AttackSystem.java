@@ -1,9 +1,9 @@
 package com.brm.Kubotz.Common.Systems.AttackSystems;
 
 import com.brm.GoatEngine.ECS.core.EntitySystem;
-import com.brm.Kubotz.Features.LaserGuns.Systems.GunsSystem;
-import com.brm.Kubotz.Features.LaserSword.Systems.LaserSwordSystem;
-import com.brm.Kubotz.Features.MeleeAttacks.Systems.MeleeSystem;
+import com.brm.Kubotz.Features.LaserGuns.GunsSystem;
+import com.brm.Kubotz.Features.LaserSword.LaserSwordSystem;
+import com.brm.Kubotz.Features.MeleeAttacks.MeleeSystem;
 
 /**
  * Global systems for sub systems of attacks

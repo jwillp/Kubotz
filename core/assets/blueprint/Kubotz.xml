@@ -45,7 +45,7 @@
 	</component>
 
 	<!-- RUNNING COMPONENT -->
-	<component name="com.brm.Kubotz.Features.Running.Components.RunningComponent">
+	<component name="com.brm.Kubotz.Features.Running.RunningComponent">
 		<param name="speed">0.5</param>
 		<param name="maxSpeed">18</param>
 	</component>
@@ -62,18 +62,18 @@
 	</component>
 
 	<!-- RESPAWN COMPONENT -->
-	<component name="com.brm.Kubotz.Features.Respawn.Components.RespawnComponent">
+	<component name="com.brm.Kubotz.Features.Respawn.RespawnComponent">
 		<param name="delay">3500</param>
 	</component>
 
 	<!-- GRAB COMPONNET -->
-	<component name="com.brm.Kubotz.Features.Grab.Components.GrabComponent">
+	<component name="com.brm.Kubotz.Features.Grab.GrabComponent">
 		<param name="duration">200</param>
 		<param name="cooldown">100</param>
 	</component>
 
 	<!-- POWER UPS CONTAINER -->
-	<component name="com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent">
+	<component name="com.brm.Kubotz.Features.PowerUps.PowerUpsContainerComponent">
 	</component>
 
 	<!-- SCRIPT COMPONENT -->
@@ -85,7 +85,7 @@
 
 
     <!-- MELEE COMPONENT -->
-    <component name="com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent">
+    <component name="com.brm.Kubotz.Features.MeleeAttacks.MeleeComponent">
     	
     </component>
 
@@ -101,7 +101,7 @@
 	</component>
 
 	<!-- UI HEALTH -->
-	<component name="com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent">	
+	<component name="com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent">
 	</component>
 
 

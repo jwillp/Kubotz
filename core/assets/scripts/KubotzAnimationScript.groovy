@@ -13,19 +13,19 @@ import com.brm.GoatEngine.Utils.Math.GameMath
 import com.brm.Kubotz.Common.Events.DamageTakenEvent
 import com.brm.Kubotz.Common.Events.StunnedFinishedEvent
 import com.brm.Kubotz.Constants
-import com.brm.Kubotz.Features.DashBoots.Events.DashPhaseChangeEvent
-import com.brm.Kubotz.Features.GameRules.Events.PlayerDeadEvent
+import com.brm.Kubotz.Features.DashBoots.DashPhaseChangeEvent
+import com.brm.Kubotz.Features.GameRules.PlayerDeadEvent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.TerminatorHeadComponent
-import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent
-import com.brm.Kubotz.Features.LaserGuns.Events.FinishGunShotEvent
-import com.brm.Kubotz.Features.LaserGuns.Events.GunShotEvent
-import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent
-import com.brm.Kubotz.Features.LaserSword.Events.FinishSwordSwingEvent
-import com.brm.Kubotz.Features.LaserSword.Events.SwordSwingEvent
-import com.brm.Kubotz.Features.MeleeAttacks.Events.FinishPunchEvent
-import com.brm.Kubotz.Features.MeleeAttacks.Events.PunchEvent
+import com.brm.Kubotz.Features.LaserGuns.GunComponent
+import com.brm.Kubotz.Features.LaserGuns.FinishGunShotEvent
+import com.brm.Kubotz.Features.LaserGuns.GunShotEvent
+import com.brm.Kubotz.Features.LaserSword.LaserSwordComponent
+import com.brm.Kubotz.Features.LaserSword.FinishSwordSwingEvent
+import com.brm.Kubotz.Features.LaserSword.SwordSwingEvent
+import com.brm.Kubotz.Features.MeleeAttacks.FinishPunchEvent
+import com.brm.Kubotz.Features.MeleeAttacks.PunchEvent
 import com.brm.Kubotz.Input.GameButton
 /**
  * Updates a kubotz Sprite according to animation and movement

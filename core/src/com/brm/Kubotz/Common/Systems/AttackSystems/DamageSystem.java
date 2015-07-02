@@ -9,7 +9,7 @@ import com.brm.GoatEngine.Input.VirtualGamePad;
 import com.brm.GoatEngine.Utils.Math.GameMath;
 import com.brm.Kubotz.Common.Components.StunnedComponent;
 import com.brm.Kubotz.Common.Events.*;
-import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
+import com.brm.Kubotz.Features.PowerUps.EnergeticShieldComponent;
 import com.brm.Kubotz.Constants;
 import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 

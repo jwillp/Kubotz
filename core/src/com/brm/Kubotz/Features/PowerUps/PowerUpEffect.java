@@ -6,12 +6,9 @@ import com.brm.GoatEngine.ECS.common.JumpComponent;
 import com.brm.GoatEngine.ECS.common.ManaComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
-import com.brm.Kubotz.Features.LaserGuns.Components.GunComponent;
-import com.brm.Kubotz.Features.LaserSword.Components.LaserSwordComponent;
-import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
-import com.brm.Kubotz.Features.PowerUps.Components.EnergeticShieldComponent;
-import com.brm.Kubotz.Features.PowerUps.Components.InvincibilityComponent;
-import com.brm.Kubotz.Features.PowerUps.Components.InvisibilityComponent;
+import com.brm.Kubotz.Features.LaserGuns.GunComponent;
+import com.brm.Kubotz.Features.LaserSword.LaserSwordComponent;
+import com.brm.Kubotz.Features.MeleeAttacks.MeleeComponent;
 
 /**
  * The effect of a PowerUp. It is an action to perform

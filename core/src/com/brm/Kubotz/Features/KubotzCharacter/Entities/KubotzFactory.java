@@ -11,12 +11,12 @@ import com.brm.GoatEngine.ECS.common.SpriterAnimationComponent;
 import com.brm.GoatEngine.ScriptingEngine.ScriptComponent;
 import com.brm.GoatEngine.Physics.Hitbox.Hitbox;
 import com.brm.Kubotz.Constants;
-import com.brm.Kubotz.Features.Grab.Components.GrabComponent;
+import com.brm.Kubotz.Features.Grab.GrabComponent;
 import com.brm.Kubotz.Features.KubotzCharacter.Components.UIHealthComponent;
-import com.brm.Kubotz.Features.MeleeAttacks.Components.MeleeComponent;
-import com.brm.Kubotz.Features.PowerUps.Components.PowerUpsContainerComponent;
-import com.brm.Kubotz.Features.Respawn.Components.RespawnComponent;
-import com.brm.Kubotz.Features.Running.Components.RunningComponent;
+import com.brm.Kubotz.Features.MeleeAttacks.MeleeComponent;
+import com.brm.Kubotz.Features.PowerUps.PowerUpsContainerComponent;
+import com.brm.Kubotz.Features.Respawn.RespawnComponent;
+import com.brm.Kubotz.Features.Running.RunningComponent;
 
 
 /**
