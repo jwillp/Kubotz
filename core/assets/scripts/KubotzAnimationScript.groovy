@@ -1,5 +1,4 @@
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.math.Vector2
 import com.brm.GoatEngine.ECS.common.ParticleEffectComponent
 import com.brm.GoatEngine.ECS.common.PhysicsComponent
@@ -7,6 +6,7 @@ import com.brm.GoatEngine.ECS.common.SpriterAnimationComponent
 import com.brm.GoatEngine.ECS.core.Entity
 import com.brm.GoatEngine.ECS.core.EntityManager
 import com.brm.GoatEngine.EventManager.EntityEvent
+import com.brm.GoatEngine.GoatEngine
 import com.brm.GoatEngine.Input.VirtualGamePad
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
 import com.brm.GoatEngine.Utils.Math.GameMath
@@ -18,11 +18,11 @@ import com.brm.Kubotz.Features.GameRules.PlayerDeadEvent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.BigBuffHeadComponent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.SkullHeadComponent
 import com.brm.Kubotz.Features.KubotzCharacter.Components.TerminatorHeadComponent
-import com.brm.Kubotz.Features.LaserGuns.GunComponent
 import com.brm.Kubotz.Features.LaserGuns.FinishGunShotEvent
+import com.brm.Kubotz.Features.LaserGuns.GunComponent
 import com.brm.Kubotz.Features.LaserGuns.GunShotEvent
-import com.brm.Kubotz.Features.LaserSword.LaserSwordComponent
 import com.brm.Kubotz.Features.LaserSword.FinishSwordSwingEvent
+import com.brm.Kubotz.Features.LaserSword.LaserSwordComponent
 import com.brm.Kubotz.Features.LaserSword.SwordSwingEvent
 import com.brm.Kubotz.Features.MeleeAttacks.FinishPunchEvent
 import com.brm.Kubotz.Features.MeleeAttacks.PunchEvent
@@ -64,10 +64,10 @@ public class KubotzAnimationScript extends EntityScript {
 
 
 
-    public static final String DEFAULT = KubotzAnimationScript.IDLE;
+    public static final String DEFAULT = IDLE;
 
     //Default state
-    private String currentState = KubotzAnimationScript.DEFAULT;
+    private String currentState = DEFAULT;
 
 
     @Override
@@ -80,7 +80,7 @@ public class KubotzAnimationScript extends EntityScript {
             return;
         }
         if(event.getClass() == FinishGunShotEvent.class){
-            currentState = KubotzAnimationScript.DEFAULT;
+            currentState = DEFAULT;
             return;
         }
 
@@ -90,7 +90,7 @@ public class KubotzAnimationScript extends EntityScript {
             return;
         }
         if(event.getClass() == FinishSwordSwingEvent.class){
-            currentState = KubotzAnimationScript.DEFAULT;
+            currentState = DEFAULT;
             return;
         }
 
@@ -100,7 +100,7 @@ public class KubotzAnimationScript extends EntityScript {
             return;
         }
         if(event.getClass() == FinishPunchEvent.class){
-            currentState = KubotzAnimationScript.DEFAULT;
+            currentState = DEFAULT;
             return;
         }
 
@@ -110,7 +110,7 @@ public class KubotzAnimationScript extends EntityScript {
             return;
         }
         if(event.getClass() == StunnedFinishedEvent.class){
-            currentState = KubotzAnimationScript.DEFAULT;
+            currentState = DEFAULT;
         }
 
 
@@ -151,22 +151,21 @@ public class KubotzAnimationScript extends EntityScript {
 
         this.handleCharacterMaps(entity, anim);
         anim.setAnimation(currentState);
-        if(!currentState.equals(KubotzAnimationScript.JUMPING)) {
+        if(!currentState.equals(JUMPING)) {
             handleFlip(phys, anim);
         }
 
 
-        if(currentState.equals(KubotzAnimationScript.HURT)){
+        if(currentState.equals(HURT)){
             //createSwordTrail(entity);
             createHurtParticles(entity, phys);
         }
 
 
-        if(currentState.equals(KubotzAnimationScript.RUNNING)){
+        if(currentState.equals(RUNNING)){
             int currentTime = anim.getPlayer().getTime();
             if(GameMath.isMoreOrLess(currentTime, 300, 10) || GameMath.isMoreOrLess(currentTime, 800, 10)){
-                //Sound sound = Gdx.audio.newSound(Gdx.files.internal("audio/step.mp3"));
-                //sound.play();
+                GoatEngine.audioMixer.playSound("step.mp3");
             }
         }
 

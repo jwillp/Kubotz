@@ -51,6 +51,7 @@ public class AudioMixer {
     /**
      * Loads a sound in memory
      * A sound is loaded into RAM instead of being streamed from the file
+     * If file is not find, it tries to find using the base directory
      * @param soundFilePath
      * @return
      */
