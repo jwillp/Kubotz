@@ -27,29 +27,32 @@ public class GrabSystem extends EntitySystem{
     @Override
     public void init(){}
 
-    public void handleInput(){
-        for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(GrabComponent.ID)) {
-            if(entity.hasComponentEnabled(VirtualGamePad.ID)) {
-                handleInputForEntity(entity);
-            }
+
+    @Override
+    public <T extends EntityEvent> void onEntityEvent(T event) {
+        if(event.getClass() == CollisionEvent.class){
+            this.onCollision((CollisionEvent) event);
         }
+
+
+        if(event.isOfType(GrabActionEvent.class)){
+            onGrabAction((GrabActionEvent) event);
+        }
+
     }
 
-    private void handleInputForEntity(Entity entity){
-        VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);
+
+
+    public void onGrabAction(GrabActionEvent grabAction){
+        Entity entity = getEntityManager().getEntity(grabAction.getEntityId());
+
         GrabComponent grabComp = (GrabComponent)entity.getComponent(GrabComponent.ID);
         PhysicsComponent phys = (PhysicsComponent)entity.getComponent(PhysicsComponent.ID);
 
-        //Triggers the punch
-        if(gamePad.isButtonPressed(GameButton.BUTTON_B)){
-            if (grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone() && !grabComp.isGrabbing()) {
-                gamePad.releaseButton(GameButton.BUTTON_B);
-                grabComp.getDurationTimer().reset();
-                createGrabBox(phys);
-                grabComp.setGrabbing(true);
-                // TODO FIRE EVENT FOR GRAB_ATTEMPT
-                fireEvent(new GrabEvent(entity.getID()));
-            }
+        if (grabComp.getCooldown().isDone() && grabComp.getDurationTimer().isDone() && !grabComp.isGrabbing()) {
+            grabComp.getDurationTimer().reset();
+            createGrabBox(phys);
+            grabComp.setGrabbing(true);
         }
     }
 
@@ -96,13 +99,6 @@ public class GrabSystem extends EntitySystem{
 
         //Grab Ennemy
         // TODO Grab ennemy
-    }
-
-    @Override
-    public <T extends EntityEvent> void onEntityEvent(T event) {
-        if(event.getClass() == CollisionEvent.class){
-            this.onCollision((CollisionEvent) event);
-        }
     }
 
 

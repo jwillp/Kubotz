@@ -1,16 +1,21 @@
-import com.brm.GoatEngine.ECS.common.PhysicsComponent
-import com.brm.GoatEngine.EventManager.GameEvent
 import com.brm.GoatEngine.GoatEngine
+import com.brm.GoatEngine.ECS.common.PhysicsComponent
+import com.brm.GoatEngine.ECS.core.Entity
+import com.brm.GoatEngine.ECS.core.EntityManager
+
+
+import com.brm.GoatEngine.Input.VirtualButton
+import com.brm.Kubotz.Input.GameButton
+
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
-import com.brm.GoatEngine.ECS.core.Entity;
-import com.brm.GoatEngine.ECS.core.EntityManager;
-import com.brm.GoatEngine.EventManager.EntityEvent;
-import com.brm.GoatEngine.Input.VirtualButton;
+
+import com.brm.GoatEngine.EventManager.EntityEvent
+import com.brm.GoatEngine.EventManager.GameEvent
 import com.brm.Kubotz.Common.Events.CollisionEvent
+import com.brm.Kubotz.Features.Grab.GrabActionEvent
 import com.brm.Kubotz.Features.Jump.JumpActionEvent
 import com.brm.Kubotz.Features.Running.FallActionEvent
 import com.brm.Kubotz.Features.Running.RunActionEvent
-import com.brm.Kubotz.Input.GameButton;
 
 /**
  * Script used to control a character using player input
@@ -60,7 +65,9 @@ class KubotzCharacterControllerScript extends EntityScript{
             GoatEngine.eventManager.fireEvent(new FallActionEvent(entityId))
         }
 
-
+        if(pressedButtons.contains(GameButton.BUTTON_B)){
+            GoatEngine.eventManager.fireEvent(new GrabActionEvent(entityId));
+        }
 
 
     }

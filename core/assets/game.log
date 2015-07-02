@@ -13,3 +13,18 @@ file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/KubotzCharacterController.
 1 error
 
 [13:11:41] [ERROR] Cannot open URL: file:/G:/Dev/KubotzProject/Kubotz/core/assets/scripts/KubotzCharacterController.groovy
+[13:17:26] [INFO] Game Engine Cleaning Up
+[13:17:46] [INFO] Scripting Engine initialised
+[13:17:46] [INFO] Game Engine Init::Loading Resources
+[13:17:46] [INFO] Game Engine Init::GUI Initialisation
+[13:17:46] [INFO] Game Engine adding Screen ...
+[13:17:46] [INFO] In Game State initialisation
+[13:17:50] [INFO] In Game State initialised
+[13:17:50] [INFO] Game Engine Screen Added
+[13:20:49] [INFO] Scripting Engine initialised
+[13:20:49] [INFO] Game Engine Init::Loading Resources
+[13:20:49] [INFO] Game Engine Init::GUI Initialisation
+[13:20:50] [INFO] Game Engine adding Screen ...
+[13:20:50] [INFO] In Game State initialisation
+[13:20:54] [INFO] In Game State initialised
+[13:20:54] [INFO] Game Engine Screen Added
