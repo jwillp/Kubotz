@@ -35,12 +35,10 @@ public class MovementSystem extends EntitySystem {
 
     public void handleInput(){
         getSystemManager().getSystem(FlySystem.class).handleInput();
-
         getSystemManager().getSystem(DashSystem.class).handleInput();
-        getSystemManager().getSystem(RunningSystem.class).handleInput();
 
 
-        // Set direction
+        // Set direction //TODO let the different systems decide for themselves
         for(Entity entity: getEntityManager().getEntitiesWithComponentEnabled(VirtualGamePad.ID)){
             PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
             VirtualGamePad gamePad = (VirtualGamePad) entity.getComponent(VirtualGamePad.ID);

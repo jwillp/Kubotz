@@ -30,6 +30,14 @@ public class JumpSystem extends EntitySystem{
     @Override
     public void update(float dt) {
 
+        //RESET JUMPS IF the character is Grounded
+        for (Entity entity : getEntityManager().getEntitiesWithComponent(JumpComponent.ID)) {
+            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
+            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
+            if (phys.isGrounded()) {
+                jp.setNbJujmps(0);
+            }
+        }
     }
 
 

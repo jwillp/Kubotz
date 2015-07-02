@@ -1,3 +1,4 @@
+import com.brm.GoatEngine.ECS.common.PhysicsComponent
 import com.brm.GoatEngine.EventManager.GameEvent
 import com.brm.GoatEngine.GoatEngine
 import com.brm.GoatEngine.ScriptingEngine.EntityScript
@@ -7,6 +8,8 @@ import com.brm.GoatEngine.EventManager.EntityEvent;
 import com.brm.GoatEngine.Input.VirtualButton;
 import com.brm.Kubotz.Common.Events.CollisionEvent
 import com.brm.Kubotz.Features.Jump.JumpActionEvent
+import com.brm.Kubotz.Features.Running.FallActionEvent
+import com.brm.Kubotz.Features.Running.RunActionEvent
 import com.brm.Kubotz.Input.GameButton;
 
 /**
@@ -47,9 +50,15 @@ class KubotzCharacterControllerScript extends EntityScript{
             GoatEngine.eventManager.fireEvent(new JumpActionEvent(entityId));
         }
 
-
-
-
+        if(pressedButtons.contains(GameButton.DPAD_LEFT)){
+            GoatEngine.eventManager.fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.LEFT))
+        }
+        if(pressedButtons.contains(GameButton.DPAD_RIGHT)){
+            GoatEngine.eventManager.fireEvent(new RunActionEvent(entityId, PhysicsComponent.Direction.RIGHT))
+        }
+        if(pressedButtons.contains(GameButton.DPAD_DOWN)){
+            GoatEngine.eventManager.fireEvent(new FallActionEvent(entityId))
+        }
 
 
 

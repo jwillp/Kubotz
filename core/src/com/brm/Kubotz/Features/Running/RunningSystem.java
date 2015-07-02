@@ -1,7 +1,6 @@
 package com.brm.Kubotz.Features.Running;
 
 import com.badlogic.gdx.math.Vector2;
-import com.brm.GoatEngine.ECS.common.JumpComponent;
 import com.brm.GoatEngine.ECS.common.PhysicsComponent;
 import com.brm.GoatEngine.ECS.core.Entity;
 import com.brm.GoatEngine.ECS.core.EntitySystem;
@@ -26,14 +25,35 @@ public class RunningSystem extends EntitySystem {
     }
 
 
+
     @Override
-    public void handleInput() {
-        for (Entity entity : getEntityManager().getEntitiesWithComponentEnabled(RunningComponent.ID)) {
-            if (entity.hasComponent(VirtualGamePad.ID)) {
-                handleInputForEntity(entity);
+    public <T extends EntityEvent> void onEntityEvent(T event) {
+        if(event.getClass() == CollisionEvent.class){
+            this.onCollision((CollisionEvent)event);
+            return;
+        }
+
+
+        if(event.isOfType(RunActionEvent.class)){
+            RunActionEvent runEvent = (RunActionEvent) event;
+            Entity e = getEntityManager().getEntity(event.getEntityId());
+            if(runEvent.getDirection() == PhysicsComponent.Direction.LEFT){
+                moveLeft(e);
+            }else if(runEvent.getDirection() == PhysicsComponent.Direction.RIGHT){
+                moveRight(e);
             }
+            return;
+        }
+
+        if(event.isOfType(FallActionEvent.class)){
+            Entity e = getEntityManager().getEntity(event.getEntityId());
+            this.fall(e);
         }
     }
+
+
+
+
 
 
     /**
@@ -45,7 +65,7 @@ public class RunningSystem extends EntitySystem {
             decelerate(entity);
         } else {
              if (gamePad.isButtonPressed(GameButton.DPAD_DOWN)) {
-                moveDown(entity);
+                fall(entity);
 
             } else if (gamePad.isButtonPressed(GameButton.DPAD_RIGHT)) {
                 moveRight(entity);
@@ -61,32 +81,11 @@ public class RunningSystem extends EntitySystem {
 
     @Override
     public void update(float dt) {
-        updateJumps();
-    }
-
-    /**
-     * If an entity is Grounded resets the number of jumps to 0
-     */
-    private void updateJumps() {
-
-        //RESET JUMPS
-        for (Entity entity : getEntityManager().getEntitiesWithComponent(JumpComponent.ID)) {
-            PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
-            JumpComponent jp = (JumpComponent) entity.getComponent(JumpComponent.ID);
-            if (phys.isGrounded()) {
-                jp.setNbJujmps(0);
-            }
-        }
 
     }
 
 
-    @Override
-    public <T extends EntityEvent> void onEntityEvent(T event) {
-        if(event.getClass() == CollisionEvent.class){
-           this.onCollision((CollisionEvent)event);
-        }
-    }
+
 
 
     /**
@@ -106,7 +105,6 @@ public class RunningSystem extends EntitySystem {
                 }
             }
         }
-
     }
 
 
@@ -152,7 +150,7 @@ public class RunningSystem extends EntitySystem {
     /**
      * Makes the entity fall faster when not on ground
      */ // TODO Tweak to make it better ==> at higher speed it slows you down instead of making you faster
-    private void moveDown(Entity entity) {
+    private void fall(Entity entity) {
         PhysicsComponent phys = (PhysicsComponent) entity.getComponent(PhysicsComponent.ID);
         RunningComponent run = (RunningComponent) entity.getComponent(RunningComponent.ID);
 
