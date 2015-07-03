@@ -16,8 +16,23 @@ public class AnimState{
     }
 
 
-    public void addTransition(Transition t){
+    public AnimState addTransition(Transition t){
         this.transitions.add(t);
+        return this;
+    }
+
+    public AnimState addTransition(AnimState nextState, Condition condition){
+        this.transitions.add(new Transition(this, nextState, condition));
+        return this;
+    }
+
+
+    public ArrayList<Transition> getTransitions() {
+        return transitions;
+    }
+
+    public String getAnimation() {
+        return animation;
     }
 
 

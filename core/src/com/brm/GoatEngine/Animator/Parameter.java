@@ -1,22 +1,21 @@
 package com.brm.GoatEngine.Animator;
 
 /**
- * A parameter for changing states
+ * A parameter for Conditions
  */
 public class Parameter{
 
-    Class type;
-    Object value;
+    Comparable value;
 
-    public Parameter(Class type){
-        this.type = type;
+    public Parameter(){
+
     }
 
-    public void setValue(Object value){
+    public void setValue(Comparable value){
         this.value = value;
     }
 
-    public Object getValue(){
+    public Comparable getValue(){
         return this.value;
     }
 
