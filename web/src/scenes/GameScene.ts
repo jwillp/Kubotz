@@ -10,12 +10,14 @@ import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { PhysicsWorld } from '../physics/Physics';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 export class GameScene extends Phaser.Scene implements ArenaHooks {
   fighters: Kubotz[] = [];
   private map!: TmxMap;
-  private solids!: Phaser.Physics.Arcade.StaticGroup;
+  private physicsWorld!: PhysicsWorld;
+  private solids: Phaser.Geom.Rectangle[] = [];
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
@@ -46,6 +48,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
+    this.solids = [];
     this.winner = undefined;
     this.paused = false;
     this.clock = 0;
@@ -55,10 +58,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   create(setup: MatchSetup): void {
     this.map = this.registry.get('map');
     const spriter: SpriterData = this.registry.get('spriter');
-    this.physics.world.gravity.y = Config.GRAVITY * UNIT;
+    this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
-    const mapH = this.map.height * this.map.tileHeight;
-    this.physics.world.setBounds(-20 * UNIT, -40 * UNIT, mapW + 40 * UNIT, mapH + 60 * UNIT);
 
     this.scene.launch('Backdrop');
     this.scene.sendToBack('Backdrop');
@@ -83,10 +84,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         humans[slot]++;
       }
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
-      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this);
+      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this, this.physicsWorld);
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
-      this.physics.add.collider(k.body.gameObject, this.solids);
       this.fighters.push(k);
     });
 
@@ -138,7 +138,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     stamp.destroy();
 
-    this.solids = this.physics.add.staticGroup();
     for (const o of m.objects) {
       switch (o.type) {
         case 'PLAYER_SPAWN':
@@ -151,8 +150,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.warpZones.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
           break;
         default: { // WALL, STATIC_PLATFORM: BlockFactory
-          const zone = this.add.zone(o.x + o.width / 2, o.y + o.height / 2, o.width, o.height);
-          this.solids.add(zone);
+          this.physicsWorld.addBlock(o.x, o.y, o.width, o.height);
+          this.solids.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
         }
       }
     }
@@ -180,8 +179,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }).setDepth(15);
   }
 
-  private fx(name: ParticleName, x: number, y: number): void {
-    this.particles.play(this.effects[name], x, y);
+  private fx(name: ParticleName, x: number, y: number, tint?: number): void {
+    this.particles.play(this.effects[name], x, y, tint);
   }
 
   // -------------------------------------------------------------- ArenaHooks
@@ -191,6 +190,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   playSfx(key: string, volume = 0.5): void {
     if (key === 'guard-break') { this.cameras.main.shake(160, 0.006); key = 'punch'; }
+    if (key === 'dodge') key = 'step';
     this.sound.play(key, { volume });
   }
 
@@ -203,7 +203,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const y = shooter.y - UNIT * 0.15;
     const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock);
     this.playSfx('shot', 0.3);
-    this.physics.add.overlap(b.sprite, this.solids, () => this.popBullet(b));
     this.bullets.push(b);
   }
 
@@ -233,8 +232,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (!k.isAlive() && !k.eliminated && this.winner === undefined && now >= k.respawnAt) this.respawn(k);
       k.update(now, dt, fighting);
     }
+    this.physicsWorld.step(dt);
     this.resolveMelee();
-    this.updateBullets(now);
+    this.updateBullets(now, dt);
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
     this.checkDeaths(now);
@@ -255,7 +255,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private damageablesFor(attacker: Kubotz): Damageable[] {
-    return this.fighters.filter((f) => f !== attacker && f.isAlive());
+    return this.fighters.filter((f) => f !== attacker && f.isAlive() && !f.intangible);
   }
 
   /** MeleeSystem / LaserSwordSystem hitboxes + DamageSystem (with clashes). */
@@ -289,21 +289,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private popBullet(b: Bullet): void {
     if (b.dead) return;
-    this.fx('hitStars', b.sprite.x, b.sprite.y);
+    this.fx('hitStars', b.x, b.y);
     b.destroy();
   }
 
-  private updateBullets(now: number): void {
+  private updateBullets(now: number, dt: number): void {
     const smoke = now >= this.nextSmokeAt; // BulletGraphicsScript: a trail of laser smoke
     if (smoke) this.nextSmokeAt = now + 60;
     for (const b of this.bullets) {
       if (b.dead) continue;
-      if (smoke) this.fx('laserSmoke', b.sprite.x, b.sprite.y);
+      b.update(dt);
+      if (smoke) this.fx('laserSmoke', b.x, b.y, b.shooter.look.color);
       if (now >= b.expiresAt) { b.destroy(); continue; }
       const box = b.hitbox();
+      if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
       for (const target of this.damageablesFor(b.shooter)) {
         if (!Phaser.Geom.Intersects.RectangleToRectangle(box, target.hurtbox())) continue;
-        this.hit(target, b.shooter, b.damage, b.pushX, b.sprite.x, b.sprite.y);
+        this.hit(target, b.shooter, b.damage, b.pushX, b.x, b.y);
         this.popBullet(b);
         break;
       }
@@ -325,8 +327,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
     if (this.orbs.length >= Config.MAX_NB_BONUS || this.bonusSpawns.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(this.bonusSpawns);
-    const orb = new PowerUpOrb(this, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
-    this.physics.add.collider(orb.sprite, this.solids);
+    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
     this.pickupFx.explode(12, orb.x, orb.y);
     this.orbs.push(orb);
   }
@@ -345,10 +346,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         k.health = 0;
         continue;
       }
-      this.warp(k.x, k.y, k.body.velocity.x, (x, y) => k.teleport(x, y));
+      this.warp(k.x, k.y, k.body.vx, (x, y) => k.teleport(x, y));
     }
     for (const b of this.bullets) {
-      if (!b.dead) this.warp(b.sprite.x, b.sprite.y, b.sprite.body.velocity.x, (x, y) => b.teleport(x, y));
+      if (!b.dead) this.warp(b.x, b.y, b.vx, (x, y) => b.teleport(x, y));
     }
   }
 
@@ -444,7 +445,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   togglePause(): void {
     if (this.winner !== undefined) return;
     this.paused = !this.paused;
-    if (this.paused) { this.physics.pause(); this.tweens.pauseAll(); } else { this.physics.resume(); this.tweens.resumeAll(); }
+    if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
     this.events.emit('pause', this.paused);
   }
 

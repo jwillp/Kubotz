@@ -136,7 +136,7 @@ class RunningEmitter {
   private readonly delay: number;
   readonly particles: Particle[] = [];
 
-  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number) {
+  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number) {
     [this.emissionLow, this.emissionDiff] = def.emission.pair();
     [this.lifeLow, this.lifeDiff] = def.life.pair();
     this.duration = def.duration.newLow();
@@ -228,6 +228,7 @@ class RunningEmitter {
   }
 
   private color(pc: number): number {
+    if (this.tint !== undefined) return this.tint;
     const { colors, colorTimeline: t } = this.def;
     let i = t.findIndex((x) => x > pc);
     let c: number[];
@@ -250,8 +251,9 @@ export class ParticleFx {
   constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15) {}
 
   /** Starts the effect at a world position in pixels (y down). */
-  play(def: EffectDef, x: number, y: number): void {
-    for (const e of def.emitters) this.running.push(new RunningEmitter(e, this, x / UNIT, -y / UNIT));
+  /** @param tint replaces the effect's own colours (e.g. a laser in the shooter's colour). */
+  play(def: EffectDef, x: number, y: number, tint?: number): void {
+    for (const e of def.emitters) this.running.push(new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint));
   }
 
   update(dtMs: number): void {

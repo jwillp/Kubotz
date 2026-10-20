@@ -45,9 +45,12 @@ export class CpuController implements Controller {
     const me = this.agent;
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
-    const enemies = this.world.enemiesOf(me).filter((e) => e.isAlive());
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
+    const alive = this.world.enemiesOf(me).filter((e) => e.isAlive());
+    // Hitting an invincible robot does nothing: fight the others, keep away from it.
+    const enemies = alive.filter((e) => !e.invincible);
+    const untouchable = alive.filter((e) => e.invincible && manhattan(me, e) < 6);
 
     let enemy: Kubotz | null = null;
     for (const e of enemies) if (!enemy || manhattan(me, e) < manhattan(me, enemy)) enemy = e;
@@ -55,9 +58,10 @@ export class CpuController implements Controller {
     let dest: { x: number; y: number } | null = null;
     let wantsAttack = false;
 
-    if (enemy && me.health <= 25 && manhattan(me, enemy) < 7) {
-      if (!this.fleeTarget || manhattan(this.fleeTarget, enemy) < 20) {
-        this.fleeTarget = { x: enemy.x < 26 * UNIT ? 46 * UNIT : 6 * UNIT, y: me.y };
+    const danger = untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
+    if (danger) {
+      if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) {
+        this.fleeTarget = { x: danger.x < 26 * UNIT ? 46 * UNIT : 6 * UNIT, y: me.y };
       }
       dest = this.fleeTarget;
     } else {
@@ -110,7 +114,7 @@ export class CpuController implements Controller {
     this.lastX = me.x;
     const stuck = this.stuckSince && now - this.stuckSince > 250;
 
-    if (dy < -1.2 * UNIT || stuck || (me.body.blocked.left || me.body.blocked.right)) pad.up = true;
+    if (dy < -1.2 * UNIT || stuck || me.body.wall !== 0) pad.up = true;
     else if (dy > 2 * UNIT && close) pad.down = true;
     return pad;
   }

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
+import { ItemBody, PhysicsWorld } from '../physics/Physics';
 
 /** PowerUpEffect.java subclasses. */
 export type PowerUpType =
@@ -88,35 +89,34 @@ export function randomPowerUp(): PowerUpType {
   return Phaser.Utils.Array.GetRandom(RANDOM_TABLE);
 }
 
-/** The bouncing pick-up (PowerUpFactory): lifetime 20 s, grabbable. */
+/** The bouncing pick-up (PowerUpFactory): a Box2D circle, lifetime 20 s, grabbable. */
 export class PowerUpOrb {
-  readonly sprite: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+  readonly sprite: Phaser.GameObjects.Image;
+  readonly body: ItemBody;
   readonly expiresAt: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, readonly type: PowerUpType, now: number) {
+  constructor(scene: Phaser.Scene, physics: PhysicsWorld, x: number, y: number, readonly type: PowerUpType, now: number) {
     const def = POWER_UPS[type];
-    const r = Config.POWERUP_RADIUS * UNIT;
-    this.sprite = scene.physics.add.image(x, y, def.image).setDepth(8);
+    this.body = new ItemBody(physics, x, y, Config.POWERUP_RADIUS * UNIT);
+    this.sprite = scene.add.image(x, y, def.image).setDepth(8);
     if (type === 'invincibility') this.sprite.setTint(0xffd84d);
     if (type === 'energy') this.sprite.setTint(0xfff27a);
     this.sprite.setDisplaySize(UNIT * 1.1, UNIT * 1.1);
-    // Physics circle of POWERUP_RADIUS, centred in the image.
-    const scale = this.sprite.scaleX;
-    this.sprite.body.setCircle(r / scale, this.sprite.width / 2 - r / scale, this.sprite.height / 2 - r / scale);
-    this.sprite.setBounce(0.5).setDragX(60);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
   }
 
-  get x(): number { return this.sprite.x; }
-  get y(): number { return this.sprite.y; }
+  get x(): number { return this.body.x; }
+  get y(): number { return this.body.y; }
 
   update(now: number): void {
     const left = this.expiresAt - now;
+    this.sprite.setPosition(this.x, this.y - UNIT * 0.2); // the art sits on the 0.3-unit physics circle
     this.sprite.setAlpha(left < 3000 && Math.floor(now / 120) % 2 === 0 ? 0.35 : 1); // blink before vanishing
     this.sprite.setAngle(Math.sin(now / 300) * 8);
   }
 
   destroy(): void {
     this.sprite.destroy();
+    this.body.destroy();
   }
 }

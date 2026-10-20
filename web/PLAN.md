@@ -130,7 +130,7 @@ Engine differences:
 The owner asked for SSB-style depth: Box2D feel, 3D characters, lighting.
 Done in four steps, each one playable and republished.
 
-**A. Gameplay fixes** (current engine)
+**A. Gameplay fixes** (current engine) — done
 - CPUs avoid invincible robots (hitting them does nothing) instead of chasing them.
 - A 4th CPU colour (orange), so four CPUs never share a colour.
 - Guard in mid-air = air dodge (SSB): a short burst in the held direction with
@@ -140,15 +140,17 @@ Done in four steps, each one playable and republished.
 - Laser bullets and their smoke take the shooter's colour.
 
 **B. Box2D physics** — [planck.js](https://github.com/piqnt/planck.js) 1.5, a JS
-port of Box2D, replaces Phaser Arcade:
+port of Box2D, replaces Phaser Arcade — done:
 - Same world as `PhysicsSystem`: gravity −40, fixed 60 Hz step (6/2 iterations).
 - Same Kubotz body as `KubotzFactory.buildBody`: fixed-rotation dynamic body
   made of a box + head circle + legs circle (a capsule) and a foot sensor; robots
   collide with each other and slide off heads and ledges like the original.
 - Movement keeps `MovementSystem` (set the velocity, accelerate towards max speed);
   knockback becomes a linear impulse (`DamageSystem`).
-- Power-ups: dynamic circles, density 0.8, restitution 0.5; bullets: bullets with
-  gravity scale 0.
+- Power-ups: dynamic circles, density 0.8, restitution 0.5 (they only hit the arena).
+  Bullets fly in straight lines, so they are moved directly and tested against the blocks.
+- The original body was 2 x 4 units (`withHeight(2)` gives half-extents 1 x 2); the
+  same capsule is scaled to the 1 x 2 robot that the art and map of this port use.
 
 **C. 3D (2.5D) rendering** — [three.js](https://threejs.org) r186:
 - Gameplay stays on the 2D plane (an SSB-style platformer); only the view is 3D.

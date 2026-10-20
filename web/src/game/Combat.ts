@@ -2,11 +2,20 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 
-/** Laser bullet (BulletFactory): 1 x 0.25 units, no gravity, dies on contact. */
+/**
+ * Laser bullet (BulletFactory): no gravity, dies on contact with walls or robots.
+ * It moves in a straight line, so it is integrated here rather than by Box2D.
+ */
 export class Bullet {
-  readonly sprite: Phaser.Types.Physics.Arcade.ImageWithDynamicBody;
+  readonly sprite: Phaser.GameObjects.Image;
   readonly expiresAt: number;
   dead = false;
+  x: number;
+  y: number;
+  vx: number; // px/s
+  vy: number;
+  static readonly W = 0.9 * UNIT;
+  static readonly H = 0.22 * UNIT;
 
   constructor(
     scene: Phaser.Scene,
@@ -16,29 +25,33 @@ export class Bullet {
     readonly damage: number,
     now: number,
   ) {
+    this.x = x; this.y = y;
+    this.vx = vx * UNIT; this.vy = vy * UNIT;
     // entities/bullet.png (BulletFactory) points left.
-    this.sprite = scene.physics.add.image(x, y, 'bullet').setDepth(12);
+    // Recoloured per player in BootScene: the laser takes the shooter's colour.
+    const key = `bullet:${shooter.look.color.toString(16).padStart(6, '0')}`;
+    this.sprite = scene.add.image(x, y, scene.textures.exists(key) ? key : 'bullet').setDepth(12);
     this.sprite.setDisplaySize(1.1 * UNIT, 0.6 * UNIT);
-    this.sprite.body.setSize(this.sprite.width * 0.8, this.sprite.height * 0.35);
-    this.sprite.body.setAllowGravity(false);
-    this.sprite.setVelocity(vx * UNIT, vy * UNIT);
     this.sprite.setFlipX(vx > 0);
     this.sprite.setBlendMode(Phaser.BlendModes.ADD);
     this.expiresAt = now + Config.BULLET_LIFESPAN;
   }
 
-  get pushX(): number { return Math.sign(this.sprite.body.velocity.x) * Config.PUNCH_KNOCKBACK * 0.5; }
+  get pushX(): number { return Math.sign(this.vx) * Config.PUNCH_KNOCKBACK * 0.5; }
+
+  update(dt: number): void {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.sprite.setPosition(this.x, this.y);
+  }
 
   hitbox(): Phaser.Geom.Rectangle {
-    const b = this.sprite.body;
-    return new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height);
+    return new Phaser.Geom.Rectangle(this.x - Bullet.W / 2, this.y - Bullet.H / 2, Bullet.W, Bullet.H);
   }
 
   /** Carries the bullet to the other side of a warp zone, keeping its speed. */
   teleport(x: number, y: number): void {
-    const v = this.sprite.body.velocity.clone();
-    this.sprite.body.reset(x, y);
-    this.sprite.setVelocity(v.x, v.y);
+    this.x = x; this.y = y;
   }
 
   destroy(): void {

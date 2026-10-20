@@ -76,6 +76,7 @@ export class BootScene extends Phaser.Scene {
     for (const color of [P1_COLOR, P2_COLOR, ...CPU_COLORS]) {
       for (const file of HEAD_FILES) this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
       this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
+      this.recolor('bullet', `bullet:${hex(color)}`, color, false);
     }
     const g = this.make.graphics({}, false);
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);

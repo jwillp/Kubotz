@@ -26,7 +26,9 @@ export const Config = {
   PUNCH_DAMAGE: 3,
   PUNCH_DURATION: 500,
   PUNCH_COOLDOWN: 80,
-  PUNCH_KNOCKBACK: 6, // original passed 0; a small push makes hits readable
+  PUNCH_KNOCKBACK: 9, // original passed 0; the owner wants hits to push
+  // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (damage taken / max health), SSB-like.
+  KNOCKBACK_GROWTH: 2,
 
   // Grab (GrabComponent)
   GRAB_DURATION: 200,
@@ -39,8 +41,8 @@ export const Config = {
   LASER_SWORD_COOLDOWN: 100,
 
   // Laser guns
-  LASER_GUN_MK_I: { damage: 5, speed: 30, cooldown: 500 },
-  LASER_GUN_MK_II: { damage: 9, speed: 40, cooldown: 600 },
+  LASER_GUN_MK_I: { damage: 5, speed: 30, cooldown: 500, recoil: 7 },
+  LASER_GUN_MK_II: { damage: 9, speed: 40, cooldown: 600, recoil: 11 },
   BULLET_LIFESPAN: 5000,
 
   // Guard bubble (held, like Super Smash Bros.' shield): drains while held and
@@ -51,6 +53,9 @@ export const Config = {
   GUARD_MIN_RAISE: 5,
   GUARD_BREAK_STUN: 2500,
   GUARD_BREAK_REFILL: 20,
+  // Guard in mid-air: air dodge (SSB), once per jump.
+  AIR_DODGE_SPEED: 16,
+  AIR_DODGE_DURATION: 350, // intangible: attacks and bullets pass through
 
   // Match start: narrator counts 3, 2, 1, Fight! while inputs are off.
   COUNTDOWN: 3000,
