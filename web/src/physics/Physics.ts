@@ -16,32 +16,41 @@ const CAT_STATIC = 0x1;
 const CAT_KUBOTZ = 0x2;
 const CAT_ITEM = 0x4;
 
-type FixtureTag = 'foot' | 'kubotz' | 'static' | 'item';
+type FixtureTag = 'foot' | 'kubotz' | 'static' | 'item' | 'debris';
+/** A soft platform (STATIC_PLATFORM): one-way, and robots can drop through it. */
+interface PlatformTag { platform: true; top: number; }
+const isPlatform = (f: Fixture): boolean => (f.getUserData() as PlatformTag | null)?.platform === true;
 
 export class PhysicsWorld {
   readonly world = new World({ gravity: Vec2(0, Config.GRAVITY), allowSleep: false });
   private acc = 0;
 
   constructor() {
-    // Foot sensors count what the robot stands on (PhysicsComponent.isGrounded).
-    const footDelta = (c: Contact, d: number) => {
-      for (const [mine, other] of [[c.getFixtureA(), c.getFixtureB()], [c.getFixtureB(), c.getFixtureA()]] as [Fixture, Fixture][]) {
-        if (mine.getUserData() !== 'foot' || other.isSensor()) continue;
-        if (other.getBody() === mine.getBody()) continue;
-        const kb = mine.getBody().getUserData() as KubotzBody;
-        kb.footContacts += d;
-      }
-    };
-    this.world.on('begin-contact', (c) => footDelta(c, 1));
-    this.world.on('end-contact', (c) => footDelta(c, -1));
+    // Soft platforms (SSB-style): pass through them from below or the side, and
+    // drop through them by holding down; land on them from above.
+    this.world.on('pre-solve', (c: Contact) => {
+      const a = c.getFixtureA();
+      const b = c.getFixtureB();
+      const plat = isPlatform(a) ? a : isPlatform(b) ? b : null;
+      if (!plat) return;
+      const other = (plat === a ? b : a).getBody();
+      const top = (plat.getUserData() as PlatformTag).top;
+      const mover = other.getUserData() as { bottomUnits?: () => number; dropping?: boolean } | null;
+      const bottom = mover?.bottomUnits?.() ?? other.getPosition().y;
+      // Falling fast, the feet can already be a little into the platform when
+      // the contact starts: what counts is where they were a step before.
+      const vy = other.getLinearVelocity().y;
+      if (mover?.dropping || vy < -0.1 || bottom - Math.max(vy, 0) * STEP * 1.5 > top + 0.08) c.setEnabled(false);
+    });
   }
 
-  /** A static block (BlockFactory: WALL / STATIC_PLATFORM), pixel rectangle. */
-  addBlock(x: number, y: number, w: number, h: number): void {
+  /** A static block (BlockFactory: WALL, or a soft STATIC_PLATFORM), pixel rectangle. */
+  addBlock(x: number, y: number, w: number, h: number, soft = false): void {
     const b = this.world.createBody({ type: 'static', position: Vec2((x + w / 2) / UNIT, (y + h / 2) / UNIT) });
     b.createFixture({
       shape: new Box(w / 2 / UNIT, h / 2 / UNIT), friction: 0.2,
-      filterCategoryBits: CAT_STATIC, userData: 'static' as FixtureTag,
+      filterCategoryBits: CAT_STATIC,
+      userData: soft ? ({ platform: true, top: y / UNIT } as PlatformTag) : ('static' as FixtureTag),
     });
   }
 
@@ -82,7 +91,8 @@ abstract class PxBody {
  * robot the art and map of this port use.
  */
 export class KubotzBody extends PxBody {
-  footContacts = 0;
+  /** Set while dropping through a soft platform. */
+  dropping = false;
   readonly width = Config.KUBOTZ_WIDTH * UNIT;
   readonly height = Config.KUBOTZ_HEIGHT * UNIT;
 
@@ -105,7 +115,30 @@ export class KubotzBody extends PxBody {
     this.body.createFixture({ shape: new Box(0.05, 0.05, Vec2(0, hh)), isSensor: true, userData: 'foot' as FixtureTag, ...filter });
   }
 
-  get grounded(): boolean { return this.footContacts > 0 && this.body.getLinearVelocity().y >= -0.5; }
+  bottomUnits(): number { return this.body.getPosition().y + Config.KUBOTZ_HEIGHT / 2; }
+
+  /** What the robot stands on: a touching, enabled contact pushing it up. */
+  private ground(): Fixture | null {
+    if (this.body.getLinearVelocity().y < -0.5) return null; // going up
+    for (let e = this.body.getContactList(); e; e = e.next ?? null) {
+      const c = e.contact;
+      if (!c.isTouching() || !c.isEnabled()) continue;
+      const fa = c.getFixtureA();
+      const fb = c.getFixtureB();
+      if (fa.isSensor() || fb.isSensor()) continue;
+      const m = c.getWorldManifold(null);
+      if (!m) continue;
+      // The normal points from A to B; make it point from the ground to this body.
+      const mine = fa.getBody() === this.body;
+      const ny = mine ? -m.normal.y : m.normal.y;
+      if (ny < -0.5) return mine ? fb : fa; // y down: the push is upwards
+    }
+    return null;
+  }
+
+  get grounded(): boolean { return this.ground() !== null; }
+  /** Standing on a soft platform (so holding down drops through it). */
+  get onPlatform(): boolean { const g = this.ground(); return !!g && isPlatform(g); }
   get top(): number { return this.y - this.height / 2; }
   get bottom(): number { return this.y + this.height / 2; }
   get left(): number { return this.x - this.width / 2; }

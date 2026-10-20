@@ -109,6 +109,7 @@ export class Kubotz implements Damageable {
   guarding = false;
   stunnedUntil = 0;
   dodgeUntil = 0;
+  private dropUntil = 0;
   private dodgeReady = true;
   private guardHeld = false;
   private nextStepAt = 0;
@@ -266,11 +267,14 @@ export class Kubotz implements Damageable {
         if (grounded) this.hooks.dust(this.x, b.bottom);
       }
     } else if (pad.down) {
+      // Holding down on a soft platform drops through it (SSB-style).
+      if (grounded && this.body.onPlatform) this.dropUntil = now + 300;
       // fast fall: (RunningSystem.moveDown) never slows the fall down
       const step = Config.JUMP_VELOCITY * Config.FAST_FALL_FACTOR * 60 * dt;
       vy = Math.max(vy, Math.min(vy, Config.MAX_SPEED) + step);
     }
 
+    b.dropping = now < this.dropUntil;
     b.setVelocity(vx * UNIT, vy * UNIT);
     if (grounded && !this.wasGrounded) {
       this.hooks.dust(this.x, b.bottom);

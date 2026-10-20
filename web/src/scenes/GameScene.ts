@@ -11,6 +11,7 @@ import type { MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PhysicsWorld } from '../physics/Physics';
+import { Nav, NavBlock } from '../game/Nav';
 import type { World3D } from '../three/World3D';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
@@ -20,6 +21,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private physicsWorld!: PhysicsWorld;
   private world3d!: World3D;
   private solids: Phaser.Geom.Rectangle[] = [];
+  private blocks: NavBlock[] = [];
+  private nav!: Nav;
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
@@ -51,6 +54,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.bonusSpawns = [];
     this.warpZones = [];
     this.solids = [];
+    this.blocks = [];
     this.winner = undefined;
     this.paused = false;
     this.clock = 0;
@@ -84,6 +88,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           enemiesOf: (k) => this.fighters.filter((f) => f !== k && !f.eliminated),
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
           now: () => this.clock,
+          nav: this.nav,
         });
       } else {
         color = slot === 'P1' ? P1_COLOR : P2_COLOR;
@@ -150,11 +155,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.warpZones.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
           break;
         default: { // WALL, STATIC_PLATFORM: BlockFactory
-          this.physicsWorld.addBlock(o.x, o.y, o.width, o.height);
+          this.physicsWorld.addBlock(o.x, o.y, o.width, o.height, o.type === 'STATIC_PLATFORM');
           this.solids.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
+          this.blocks.push({ x: o.x, y: o.y, width: o.width, height: o.height, soft: o.type === 'STATIC_PLATFORM' });
         }
       }
     }
+    this.nav = new Nav(this.blocks);
     // The map has a single PLAYER_SPAWN (the second robot was hard-coded at (8, 7)):
     // add mirrored and central spawns so up to four robots start apart.
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
@@ -412,20 +419,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // ------------------------------------------------------------------ camera
-  private centerOfFighters(): Phaser.Math.Vector2 {
+  /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
+  private focusPoints(): { x: number; y: number }[] {
     const alive = this.fighters.filter((f) => f.isAlive());
-    if (alive.length === 0) return this.camTarget.clone();
-    const xs = alive.map((f) => f.x);
-    const ys = alive.map((f) => f.y);
+    return alive.length === 0 ? [] : [...alive, ...this.orbs];
+  }
+
+  private centerOfFighters(): Phaser.Math.Vector2 {
+    const pts = this.focusPoints();
+    if (pts.length === 0) return this.camTarget.clone();
+    const xs = pts.map((f) => f.x);
+    const ys = pts.map((f) => f.y);
     return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
-  /** CameraSystem: lerp to the centre of all robots, zoom to fit them. */
+  /** CameraSystem: lerp to the centre of all robots and power-ups, zoom to fit them. */
   private updateCamera(dt: number): void {
-    const alive = this.fighters.filter((f) => f.isAlive());
-    if (alive.length > 0) {
-      const xs = alive.map((f) => f.x);
-      const ys = alive.map((f) => f.y);
+    const pts = this.focusPoints();
+    if (pts.length > 0) {
+      const xs = pts.map((f) => f.x);
+      const ys = pts.map((f) => f.y);
       const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
       const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
       const aspect = this.scale.width / this.scale.height;
