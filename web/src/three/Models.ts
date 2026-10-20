@@ -17,10 +17,13 @@ let models: Models | null = null;
 
 export async function loadModels(base = 'models/'): Promise<Models> {
   const loader = new GLTFLoader();
+  // Hosts that do not serve .glb files get the same models as glTF JSON
+  // (buffers embedded), named <file>.glb.json.
+  const load = (file: string) => loader.loadAsync(`${base}${file}`).catch(() => loader.loadAsync(`${base}${file}.json`));
   const [robot, tiles, ...pickups] = await Promise.all([
-    loader.loadAsync(`${base}robot.glb`),
-    loader.loadAsync(`${base}tiles.glb`),
-    ...PICKUP_IMAGES.map((n) => loader.loadAsync(`${base}pickups/${n}.glb`)),
+    load('robot.glb'),
+    load('tiles.glb'),
+    ...PICKUP_IMAGES.map((n) => load(`pickups/${n}.glb`)),
   ]);
   const tileMeshes = new Map<string, THREE.Mesh>();
   tiles.scene.updateMatrixWorld(true);
