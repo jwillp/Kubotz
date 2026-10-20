@@ -1,0 +1,27 @@
+import Phaser from 'phaser';
+import { BootScene } from './scenes/BootScene';
+import { TitleScene } from './scenes/TitleScene';
+import { BackdropScene } from './scenes/BackdropScene';
+import { GameScene } from './scenes/GameScene';
+import { HudScene } from './scenes/HudScene';
+
+// 1280x768 (5:3), the resolution of the original HUD mock-up and close to its 80x48 viewport.
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: 1280,
+  height: 768,
+  backgroundColor: '#1a1a1a',
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  physics: { default: 'arcade', arcade: { debug: false, fps: 120 } },
+  input: { gamepad: true },
+  render: { antialias: true },
+  scene: [BootScene, TitleScene, BackdropScene, GameScene, HudScene],
+});
+
+// Handy for debugging from the browser console.
+(window as unknown as { kubotz: Phaser.Game }).kubotz = game;
+
+if (import.meta.env.DEV) {
+  void import('./spriter/Spriter').then((m) => { (window as unknown as Record<string, unknown>).SpriterPlayer = m.SpriterPlayer; });
+}
