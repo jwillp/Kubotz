@@ -4,9 +4,9 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
-import { Kubotz, Damageable, ArenaHooks } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
-import { Bullet, Drone } from '../game/Combat';
+import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
@@ -19,7 +19,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private warpZones: Phaser.Geom.Rectangle[] = [];
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
-  private drones: Drone[] = [];
   private nextBonusAt = 0;
   private dustFx!: Phaser.GameObjects.Particles.ParticleEmitter;
   private hitFx!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -28,9 +27,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
   winner: Kubotz | null | undefined; // undefined while the match runs
-  startedAt = -1;
-  private warmup = 1;
+  /** Match clock in ms: only advances while the game is not paused. */
+  clock = 0;
+  /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
+  startedAt: number = Config.COUNTDOWN;
+  private countdownStep = -1;
   paused = false;
+  private music?: Phaser.Sound.BaseSound;
 
   constructor() { super('Game'); }
 
@@ -38,12 +41,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.fighters = [];
     this.orbs = [];
     this.bullets = [];
-    this.drones = [];
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
     this.winner = undefined;
     this.paused = false;
+    this.clock = 0;
+    this.countdownStep = -1;
   }
 
   create(setup: MatchSetup): void {
@@ -60,20 +64,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.createEffects();
 
     const humans = { P1: 0, P2: 0 };
+    let cpus = 0;
     setup.slots.forEach((slot, i) => {
       let controller: Controller;
+      let color: number;
       if (slot === 'CPU') {
+        color = CPU_COLORS[cpus++ % CPU_COLORS.length];
         controller = new CpuController({
           enemiesOf: (k) => this.fighters.filter((f) => f !== k && !f.eliminated),
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
-          now: () => this.time.now,
+          now: () => this.clock,
         });
       } else {
+        color = slot === 'P1' ? P1_COLOR : P2_COLOR;
         controller = new HumanController(this, slot === 'P1' ? PLAYER_1_KEYS : PLAYER_2_KEYS, slot, humans.P1 + humans.P2);
         humans[slot]++;
       }
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
-      const k = new Kubotz(this, i, controller, spriter, spawn.x, spawn.y, this);
+      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this);
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.physics.add.collider(k.body.gameObject, this.solids);
@@ -85,8 +93,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.camTarget.copy(c);
     cam.centerOn(c.x, c.y);
     this.applyZoom();
-    this.warmup = 1;
-    this.startedAt = -1; // set on the first update, once the scene clock is running
+    this.nextBonusAt = Config.COUNTDOWN + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
+
+    this.sound.stopByKey('music-title');
+    this.music = this.sound.add('music-game', { loop: true, volume: 0.45 });
+    this.music.play();
 
     this.scene.launch('Hud');
     this.scene.bringToTop('Hud');
@@ -99,6 +110,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (button.index === 9) this.togglePause(); // Start
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.music?.destroy();
       this.scene.stop('Hud');
       this.scene.stop('Backdrop');
     });
@@ -107,8 +119,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ---------------------------------------------------------------------- map
   private buildMap(): void {
     const m = this.map;
-    // The original rendered Box2D debug shapes and kept these Tiled layers hidden;
-    // the port draws them so the arena actually looks like its art. Everything
+    // The original kept these Tiled layers hidden behind its debug shapes; the
+    // port draws them so the arena looks like its art (blocks stay invisible). Everything
     // static is baked into one render texture: one quad instead of ~350 sprites.
     const mapW = m.width * m.tileWidth;
     const art = this.add.renderTexture(0, 0, mapW, m.height * m.tileHeight).setOrigin(0, 0).setDepth(2);
@@ -125,7 +137,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     stamp.destroy();
 
     this.solids = this.physics.add.staticGroup();
-    const solidArt = this.make.graphics({}, false);
     for (const o of m.objects) {
       switch (o.type) {
         case 'PLAYER_SPAWN':
@@ -140,12 +151,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         default: { // WALL, STATIC_PLATFORM: BlockFactory
           const zone = this.add.zone(o.x + o.width / 2, o.y + o.height / 2, o.width, o.height);
           this.solids.add(zone);
-          this.drawBlock(solidArt, o);
         }
       }
     }
-    art.draw(solidArt);
-    solidArt.destroy();
     // The map has a single PLAYER_SPAWN (the second robot was hard-coded at (8, 7)):
     // add mirrored and central spawns so up to four robots start apart.
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
@@ -158,13 +166,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height - (Config.KUBOTZ_HEIGHT * UNIT) / 2);
-  }
-
-  /** Neon-edged blocks, in the style of the map tiles. */
-  private drawBlock(g: Phaser.GameObjects.Graphics, o: MapObject): void {
-    g.fillStyle(0x0d2a45, 0.55).fillRect(o.x, o.y, o.width, o.height);
-    g.lineStyle(3, 0x29abe2, 0.9).strokeRect(o.x + 1.5, o.y + 1.5, o.width - 3, o.height - 3);
-    g.lineStyle(6, 0x9fe3ff, 0.9).lineBetween(o.x, o.y + 3, o.x + o.width, o.y + 3);
   }
 
   private createEffects(): void {
@@ -186,6 +187,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // -------------------------------------------------------------- ArenaHooks
+  now(): number {
+    return this.clock;
+  }
+
+  playSfx(key: string, volume = 0.5): void {
+    if (key === 'guard-break') { this.cameras.main.shake(160, 0.006); key = 'punch'; }
+    this.sound.play(key, { volume });
+  }
+
   dust(x: number, y: number): void {
     this.dustFx.explode(8, x, y);
   }
@@ -193,32 +203,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   fireBullet(shooter: Kubotz, damage: number, speed: number): void {
     const x = shooter.x + shooter.facing * UNIT * 1.1;
     const y = shooter.y - UNIT * 0.15;
-    const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.time.now);
+    const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock);
+    this.playSfx('shot', 0.3);
     this.physics.add.overlap(b.sprite, this.solids, () => this.popBullet(b));
     this.bullets.push(b);
-  }
-
-  private droneShoot = (d: Drone, target: Kubotz): void => {
-    const s = Config.DRONE_SHOT;
-    const dir = new Phaser.Math.Vector2(target.x - d.sprite.x, target.y - d.sprite.y).normalize();
-    const b = new Bullet(this, d.owner, d.sprite.x, d.sprite.y, dir.x * s.speed, dir.y * s.speed, s.damage, this.time.now, true);
-    this.physics.add.overlap(b.sprite, this.solids, () => this.popBullet(b));
-    this.bullets.push(b);
-  };
-
-  spawnDrone(master: Kubotz): void {
-    // At most two drones per robot: the oldest one is recalled.
-    const mine = this.drones.filter((d) => d.owner === master && d.isAlive());
-    if (mine.length >= 2) mine[0].health = 0;
-    const d = new Drone(this, master, this.time.now);
-    this.drones.push(d);
-    this.pickupFx.explode(10, d.sprite.x, d.sprite.y);
   }
 
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void {
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
-      kubotz.givePowerUp(orb.type, this.time.now);
+      kubotz.givePowerUp(orb.type, this.clock);
       this.pickupFx.explode(18, orb.x, orb.y);
       this.floatText(kubotz.x, kubotz.body.top - 40, POWER_UPS[orb.type].label, POWER_UPS[orb.type].color);
       orb.destroy();
@@ -229,24 +223,20 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ update
   update(_time: number, deltaMs: number): void {
     if (this.paused) return;
-    // One clock for everything: the scene clock (cooldowns are stamped with it too).
-    const now = this.time.now;
-    // The scene clock reports a stale time on the very first frame: wait one frame.
-    if (this.warmup-- > 0) return;
-    if (this.startedAt < 0) {
-      this.startedAt = now;
-      this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
-    }
     const dtMs = Math.min(deltaMs, 50);
     const dt = dtMs / 1000;
+    // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
+    // it stops while the game is paused.
+    const now = this.clock += dtMs;
+    this.updateCountdown(now);
+    const fighting = now >= this.startedAt;
 
     for (const k of this.fighters) {
       if (!k.isAlive() && !k.eliminated && this.winner === undefined && now >= k.respawnAt) this.respawn(k);
-      k.update(now, dt);
+      k.update(now, dt, fighting);
     }
     this.resolveMelee();
     this.updateBullets(now);
-    this.updateDrones(now);
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
     this.checkDeaths(now);
@@ -255,10 +245,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateCamera(dt);
   }
 
+  /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
+  private updateCountdown(now: number): void {
+    const step = Math.min(3, Math.floor(now / 1000));
+    if (step === this.countdownStep) return;
+    this.countdownStep = step;
+    const word = ['3', '2', '1', 'fight'][step];
+    this.sound.play(`narrator-${word}`, { volume: 0.8 });
+    this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
+  }
+
   private damageablesFor(attacker: Kubotz): Damageable[] {
-    const targets: Damageable[] = this.fighters.filter((f) => f !== attacker && f.isAlive());
-    for (const d of this.drones) if (d.owner !== attacker && d.isAlive()) targets.push(d);
-    return targets;
+    return this.fighters.filter((f) => f !== attacker && f.isAlive());
   }
 
   /** MeleeSystem / LaserSwordSystem hitboxes + DamageSystem (with clashes). */
@@ -285,6 +283,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private hit(target: Damageable, attacker: Kubotz, damage: number, pushX: number, x: number, y: number): void {
     target.takeDamage(damage, attacker, pushX);
+    this.playSfx('punch', target instanceof Kubotz && target.guarding ? 0.2 : 0.45);
     this.hitFx.explode(Math.min(4 + damage, 14), x, y);
     if (damage >= 5) this.cameras.main.shake(90, 0.004);
   }
@@ -310,19 +309,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.bullets = this.bullets.filter((b) => !b.dead);
   }
 
-  private updateDrones(now: number): void {
-    for (const d of this.drones) {
-      if (d.isAlive() && now < d.expiresAt && d.owner.isAlive()) {
-        const enemies = this.fighters.filter((f) => f !== d.owner && f.isAlive());
-        d.update(now, enemies, this.droneShoot);
-      } else {
-        this.boomFx.explode(10, d.sprite.x, d.sprite.y);
-        d.destroy();
-      }
-    }
-    this.drones = this.drones.filter((d) => d.sprite.active);
-  }
-
   private updateOrbs(now: number): void {
     for (const o of this.orbs) {
       if (now >= o.expiresAt || o.y > this.map.height * UNIT + 10 * UNIT) o.destroy();
@@ -343,8 +329,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.orbs.push(orb);
   }
 
-  /** WARP_ZONE objects (unused in the original) wrap robots across the arena; falling out kills. */
-  private checkBoundsAndWarps(now: number): void {
+  /**
+   * WARP_ZONE objects (unused in the original) wrap robots and laser bullets
+   * across the arena, so a shot fired into a portal comes back from the other
+   * side. Falling out of the arena kills.
+   */
+  private checkBoundsAndWarps(_now: number): void {
     const mapW = this.map.width * UNIT;
     const mapH = this.map.height * UNIT;
     for (const k of this.fighters) {
@@ -353,19 +343,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         k.health = 0;
         continue;
       }
-      if (this.warpZones.length === 2) {
-        const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
-        const vx = k.body.velocity.x;
-        if (vx < 0 && a.contains(k.x, k.y)) {
-          k.teleport(b.x - UNIT, k.y);
-          this.pickupFx.explode(10, b.x, k.y);
-        } else if (vx > 0 && b.contains(k.x, k.y)) {
-          k.teleport(a.right + UNIT, k.y);
-          this.pickupFx.explode(10, a.right, k.y);
-        }
-      }
+      this.warp(k.x, k.y, k.body.velocity.x, (x, y) => k.teleport(x, y));
     }
-    void now;
+    for (const b of this.bullets) {
+      if (!b.dead) this.warp(b.sprite.x, b.sprite.y, b.sprite.body.velocity.x, (x, y) => b.teleport(x, y));
+    }
+  }
+
+  private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
+    if (this.warpZones.length !== 2) return;
+    const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
+    // "Past the zone's inner edge" rather than "inside it", so fast bullets
+    // cannot skip over a 1-unit-wide portal between two frames.
+    const inLane = (z: Phaser.Geom.Rectangle) => y >= z.top && y <= z.bottom;
+    if (vx < 0 && x < a.right && inLane(a)) {
+      teleport(b.x - UNIT, y);
+      this.pickupFx.explode(10, b.x, y);
+    } else if (vx > 0 && x > b.x && inLane(b)) {
+      teleport(a.right + UNIT, y);
+      this.pickupFx.explode(10, a.right, y);
+    }
   }
 
   /** RespawnSystem + LifeBasedFreeForAll. */
@@ -445,7 +442,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   togglePause(): void {
     if (this.winner !== undefined) return;
     this.paused = !this.paused;
-    if (this.paused) { this.physics.pause(); this.time.paused = true; } else { this.physics.resume(); this.time.paused = false; }
+    if (this.paused) { this.physics.pause(); this.tweens.pauseAll(); } else { this.physics.resume(); this.tweens.resumeAll(); }
     this.events.emit('pause', this.paused);
   }
 

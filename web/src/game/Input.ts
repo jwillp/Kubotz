@@ -2,18 +2,18 @@ import Phaser from 'phaser';
 
 /**
  * Virtual game pad, like GoatEngine's VirtualGamePad: directions are held
- * buttons, actions are "just pressed" for one frame (prevents button bashing).
+ * buttons (and so is guard), the other actions are "just pressed" for one frame (prevents button bashing).
  *   attack = BUTTON_A (punch / shoot / slash)
  *   grab   = BUTTON_B (pick up power-ups)
- *   skill  = BUTTON_X (active skill: drone gauntlet)
+ *   guard  = shield bubble, held (like Super Smash Bros.)
  */
 export interface PadState {
   up: boolean; down: boolean; left: boolean; right: boolean;
-  attack: boolean; grab: boolean; skill: boolean;
+  attack: boolean; grab: boolean; guard: boolean;
 }
 
 export const emptyPad = (): PadState => ({
-  up: false, down: false, left: false, right: false, attack: false, grab: false, skill: false,
+  up: false, down: false, left: false, right: false, attack: false, grab: false, guard: false,
 });
 
 export interface Controller {
@@ -23,30 +23,30 @@ export interface Controller {
 
 export interface KeyBinding {
   up: string[]; down: string[]; left: string[]; right: string[];
-  attack: string[]; grab: string[]; skill: string[];
+  attack: string[]; grab: string[]; guard: string[];
 }
 
 export const PLAYER_1_KEYS: KeyBinding = {
   up: ['W'], down: ['S'], left: ['A'], right: ['D'],
-  attack: ['O', 'J'], grab: ['I', 'K'], skill: ['SHIFT', 'L'],
+  attack: ['O', 'J'], grab: ['I', 'K'], guard: ['SHIFT', 'L'],
 };
 
 export const PLAYER_2_KEYS: KeyBinding = {
   up: ['UP'], down: ['DOWN'], left: ['LEFT'], right: ['RIGHT'],
-  attack: ['NUMPAD_ONE', 'COMMA'], grab: ['NUMPAD_TWO', 'PERIOD'], skill: ['NUMPAD_THREE', 'FORWARD_SLASH'],
+  attack: ['NUMPAD_ONE', 'COMMA'], grab: ['NUMPAD_TWO', 'PERIOD'], guard: ['NUMPAD_THREE', 'NUMPAD_ZERO', 'FORWARD_SLASH'],
 };
 
 /** Keyboard player, optionally merged with a connected gamepad. */
 export class HumanController implements Controller {
   private keys: Record<keyof KeyBinding, Phaser.Input.Keyboard.Key[]>;
-  private prevPad = { attack: false, grab: false, skill: false };
+  private prevPad = { attack: false, grab: false };
 
   constructor(private scene: Phaser.Scene, binding: KeyBinding, readonly label: 'P1' | 'P2', private padIndex: number) {
     const kb = scene.input.keyboard!;
     const make = (names: string[]) => names.map((n) => kb.addKey(n, true));
     this.keys = {
       up: make(binding.up), down: make(binding.down), left: make(binding.left), right: make(binding.right),
-      attack: make(binding.attack), grab: make(binding.grab), skill: make(binding.skill),
+      attack: make(binding.attack), grab: make(binding.grab), guard: make(binding.guard),
     };
   }
 
@@ -56,7 +56,7 @@ export class HumanController implements Controller {
     const s: PadState = {
       up: held(this.keys.up), down: held(this.keys.down),
       left: held(this.keys.left), right: held(this.keys.right),
-      attack: just(this.keys.attack), grab: just(this.keys.grab), skill: just(this.keys.skill),
+      attack: just(this.keys.attack), grab: just(this.keys.grab), guard: held(this.keys.guard),
     };
 
     const pad = this.scene.input.gamepad?.getPad(this.padIndex);
@@ -67,10 +67,10 @@ export class HumanController implements Controller {
       s.right ||= pad.right || ax > 0.4;
       s.up ||= pad.up || ay < -0.6 || pad.A;
       s.down ||= pad.down || ay > 0.6;
-      const now = { attack: pad.X, grab: pad.B, skill: pad.Y || pad.R1 > 0 };
+      const now = { attack: pad.X, grab: pad.B };
       s.attack ||= now.attack && !this.prevPad.attack;
       s.grab ||= now.grab && !this.prevPad.grab;
-      s.skill ||= now.skill && !this.prevPad.skill;
+      s.guard ||= pad.Y || pad.L1 > 0 || pad.R1 > 0;
       this.prevPad = now;
     }
     // up XOR down, prevalence of up; left XOR right, prevalence of left (InputTranslationSystem)

@@ -44,10 +44,10 @@ Each step ends in a playable build and a commit.
 5. **Power-ups** — spawn every 5–10 s at bonus spawns (max 5, lifetime 20 s,
    effect 30 s), grab button picks up nearby ones. Effects: health, energy,
    extra jump, Laser Gun Mk I/II (bullets), Laser Sword, invincibility, shield.
-6. **Skills** — Drone Gauntlet (the active skill the original Kubotz had:
-   spawns a drone that follows its master and chases threats). Dash, Fly and
-   Magnetic boots were commented out of `KubotzFactory`, so they are not
-   ported yet.
+6. **Guard** — the owner asked for a Super Smash Bros.-style shield instead of
+   a skill: hold the guard button to raise a bubble that soaks hits, drains
+   while held and refills when released; breaking it stuns the robot.
+   (Drones were removed: they were not part of the released game.)
 7. **HUD & game flow** — title screen, player badges/labels, lives, match end
    (life-based free-for-all), pause.
 8. **CPU opponent** — port of `KubotzBehaviourScript` so one player can play
@@ -64,7 +64,7 @@ Each step ends in a playable build and a commit.
 | Move / jump     | W A S D  | Arrow keys    |
 | Attack (A)      | O / J    | Numpad 1 / ,  |
 | Grab (B)        | I / K    | Numpad 2 / .  |
-| Skill (X)       | Left Shift / L | Numpad 3 / /  |
+| Guard (hold)    | Left Shift / L | Numpad 0 / Numpad 3 / /  |
 | Pause           | Esc      | Esc           |
 
 The original mapped both players to the same keys (P2 was never finished),
@@ -77,7 +77,7 @@ so player 2 gets its own keys here. Gamepads are a later improvement.
 - [x] 3. Spriter animations
 - [x] 4. Combat
 - [x] 5. Power-ups
-- [x] 6. Skills (drone gauntlet; boots not ported)
+- [x] 6. Guard bubble (replaces the skill button)
 - [x] 7. HUD & game flow
 - [x] 8. CPU opponent
 - [~] 9. Graphics pass (tile art, backdrop, particles, shake, blink done; more to come)
@@ -97,8 +97,17 @@ Bugs fixed or unfinished features completed:
 - The map has one player spawn; mirrored and central spawns were added for 4 players.
 - `WARP_ZONE` objects were never used; they now wrap robots across the arena, and
   falling out of the arena costs a life.
-- Drones only followed their master; they now chase and zap enemies in sight, last
-  15 s, and a robot can have two at a time.
+- Drones were dropped (owner feedback: not part of the released game).
+- New, at the owner's request: a held guard bubble (Super Smash Bros.-style),
+  helmets painted in each player's colour (P1 red, P2 blue, CPUs green, yellow,
+  purple), and laser bullets that go through the warp portals and come back from
+  the other side.
+- Music, narrator countdown and sounds come from the v0.1-alpha release
+  (`audio/` was never committed); they are converted to mp3 in `core/assets/audio`.
+- Power-ups use `entities/bonus_*.png` like the release; energy had no art (it
+  fell back to bonus_jump, tinted here), shield and invincibility use bonus_shield.
+- Timers (power-ups, cooldowns, respawns, match time) run on a match clock that
+  stops while the game is paused.
 - Laser Gun Mk II existed but was not in the random table; it now has a small chance.
 - The CPU used a grid pathfinder; it now steers directly (chase, flee at low health,
   pick up power-ups) — same behaviour tree, simpler navigation.
@@ -109,4 +118,4 @@ Engine differences:
 - The camera frames all robots between 24 and 58 units wide (the original could
   zoom out to 136 units, far wider than the map).
 - The original drew Box2D debug shapes over a hidden map; the port draws the map's
-  tile layers and the background art.
+  tile layers and the background art, and the collision blocks stay invisible.

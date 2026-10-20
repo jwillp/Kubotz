@@ -36,10 +36,10 @@ Pick a mode on the title screen (mouse, arrows + Enter, or keys 1-5).
 | Fast fall                    | S                 | ↓                        |
 | Attack (punch / shoot / slash)| O (or J)         | Numpad 1 (or ,)          |
 | Grab power-up                | I (or K)          | Numpad 2 (or .)          |
-| Skill: drone gauntlet        | Left Shift (or L) | Numpad 3 (or /)          |
+| Guard bubble (hold)          | Left Shift (or L) | Numpad 0 or 3 (or /)    |
 | Pause                        | Esc / P           | Esc / P                  |
 
-Gamepads: stick/D-pad to move, A jump, X attack, B grab, Y or R1 skill,
+Gamepads: stick/D-pad to move, A jump, X attack, B grab, Y, L1 or R1 guard,
 Start pause. The first pad drives P1, the second P2.
 
 Each robot has 5 lives. Power-ups drop at the four bonus spots every 5–10
@@ -56,7 +56,7 @@ web/
   src/map/TmxMap.ts        TMX reader (base64 + gzip layers, object layer)
   src/game/Kubotz.ts       the robot: movement, attacks, power-ups, respawn
   src/game/PowerUps.ts     power-up effects and pick-up orbs
-  src/game/Combat.ts       laser bullets and drones
+  src/game/Combat.ts       laser bullets (they also go through the portals)
   src/game/Ai.ts           CPU player (after KubotzBehaviourScript)
   src/game/Input.ts        keyboard / gamepad virtual pad
   src/scenes/*.ts          boot, title, backdrop, arena, HUD

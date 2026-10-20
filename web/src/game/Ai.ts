@@ -36,7 +36,7 @@ export class CpuController implements Controller {
       this.state = this.think(now);
     } else {
       // actions are one-frame presses
-      this.state.attack = this.state.grab = this.state.skill = false;
+      this.state.attack = this.state.grab = false;
     }
     return { ...this.state };
   }
@@ -91,7 +91,11 @@ export class CpuController implements Controller {
         pad.attack = true;
         if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
       }
-      if (now >= me.droneReadyAt && manhattan(me, enemy) < Config.DRONE_SIGHT) pad.skill = true;
+      // Raise the guard against a swing that is about to land, now and then.
+      if (enemy.currentAttack() && manhattan(me, enemy) < 2.5 && me.guard > Config.GUARD_MAX * 0.3 && Math.random() < 0.4) {
+        pad.guard = true;
+        return pad;
+      }
       if (ranged && Math.abs(dx) < 6 * UNIT && Math.abs(dy) < 0.8 * UNIT) return pad; // hold position and shoot
     }
 

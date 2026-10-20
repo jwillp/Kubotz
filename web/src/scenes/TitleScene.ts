@@ -42,8 +42,14 @@ export class TitleScene extends Phaser.Scene {
     });
     this.select(0);
 
+    // Title music (dashboard.ogg); browsers start it after the first click or key.
+    if (!this.sound.get('music-title')?.isPlaying) {
+      this.sound.removeByKey('music-title');
+      this.sound.add('music-title', { loop: true, volume: 0.5 }).play();
+    }
+
     this.add.text(width / 2, height - 90,
-      'P1: WASD move/jump · O attack · I grab · Shift skill      P2: Arrows · , attack · . grab · / skill\n'
+      'P1: WASD move/jump · O attack · I grab · Shift guard      P2: Arrows · , attack · . grab · / guard\n'
       + 'Gamepads work too. Grab power-ups, knock rivals out, last robot standing wins.', {
         fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
       }).setOrigin(0.5);

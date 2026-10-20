@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
+import { CPU_COLORS, HEAD_FILES, P1_COLOR, P2_COLOR, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/DebugMap.tmx';
@@ -26,6 +27,15 @@ export class BootScene extends Phaser.Scene {
     this.load.image('p-dust', 'particles/particle001.png');
     this.load.image('p-hexa', 'particles/hexa.png');
     this.load.image('p-flame', 'particles/flameche.png');
+    for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) this.load.image(`bonus_${b}`, `entities/bonus_${b}.png`);
+    this.load.image('bullet', 'entities/bullet.png');
+    // Original music and sounds (release v0.1-alpha), converted to mp3.
+    this.load.audio('music-title', 'audio/dashboard.mp3');
+    this.load.audio('music-game', 'audio/TechnoTheme.mp3');
+    this.load.audio('shot', 'audio/layzer.mp3');
+    this.load.audio('punch', 'audio/HeavyPunch2.mp3');
+    this.load.audio('step', 'audio/step.mp3');
+    for (const n of ['1', '2', '3', 'fight']) this.load.audio(`narrator-${n}`, `audio/narrator_${n}.mp3`);
   }
 
   async create(): Promise<void> {
@@ -43,32 +53,39 @@ export class BootScene extends Phaser.Scene {
     this.load.start();
   }
 
-  /** Small procedural textures for things the original drew as Box2D debug shapes. */
+  /** Player-coloured helmets and CPU labels, and a small spark texture. */
   private makeTextures(): void {
+    for (const color of [P1_COLOR, P2_COLOR, ...CPU_COLORS]) {
+      for (const file of HEAD_FILES) this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
+      this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
+    }
     const g = this.make.graphics({}, false);
-    // power-up orb
-    g.clear();
-    g.fillStyle(0xffffff, 0.25).fillCircle(32, 32, 32);
-    g.fillStyle(0xffffff, 1).fillCircle(32, 32, 24);
-    g.lineStyle(4, 0xffffff, 0.9).strokeCircle(32, 32, 29);
-    g.generateTexture('orb', 64, 64);
-    // laser bolt
-    g.clear();
-    g.fillStyle(0xffffff, 0.35).fillRoundedRect(0, 0, 64, 16, 8);
-    g.fillStyle(0xffffff, 1).fillRoundedRect(6, 5, 52, 6, 3);
-    g.generateTexture('laser', 64, 16);
-    // drone
-    g.clear();
-    g.fillStyle(0x223344, 1).fillCircle(32, 32, 26);
-    g.lineStyle(5, 0xffffff, 1).strokeCircle(32, 32, 26);
-    g.fillStyle(0xffffff, 1).fillCircle(32, 32, 9);
-    g.fillStyle(0xffffff, 0.8).fillRect(4, 28, 10, 8).fillRect(50, 28, 10, 8);
-    g.generateTexture('drone', 64, 64);
-    // spark
-    g.clear();
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
     g.generateTexture('spark', 16, 16);
     g.destroy();
+  }
+
+  /** Copies a texture painted in the hue of `color` (coloured and grey parts; blacks stay). */
+  private recolor(src: string, dst: string, color: number, paintGreys = true): void {
+    const img = this.textures.get(src).getSourceImage() as HTMLImageElement;
+    const canvas = this.textures.createCanvas(dst, img.width, img.height)!;
+    const ctx = canvas.getContext();
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, img.width, img.height);
+    const target = Phaser.Display.Color.IntegerToColor(color);
+    const p = data.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] === 0) continue;
+      const c = Phaser.Display.Color.RGBToHSV(p[i], p[i + 1], p[i + 2]);
+      let { s, v } = c;
+      if (s >= 0.35) s = Math.max(s, 0.8); // coloured parts take the new hue
+      else if (paintGreys && v > 0.3) { s = 0.7; v = Math.min(1, v * 1.15); } // grey shells get painted too
+      else continue; // black outlines and shadows stay
+      const rgb = Phaser.Display.Color.HSVToRGB(target.h, s, v) as Phaser.Types.Display.ColorObject;
+      p[i] = rgb.r; p[i + 1] = rgb.g; p[i + 2] = rgb.b;
+    }
+    ctx.putImageData(data, 0, 0);
+    canvas.refresh();
   }
 
   private drawLoadingBar(): void {

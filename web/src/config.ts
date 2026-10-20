@@ -43,12 +43,17 @@ export const Config = {
   LASER_GUN_MK_II: { damage: 9, speed: 40, cooldown: 600 },
   BULLET_LIFESPAN: 5000,
 
-  // Drone gauntlet
-  DRONE_COOLDOWN: 5000,
-  DRONE_HEALTH: 30,
-  DRONE_LIFESPAN: 15000,
-  DRONE_SIGHT: 8,
-  DRONE_SHOT: { damage: 2, speed: 20, cooldown: 1200 },
+  // Guard bubble (held, like Super Smash Bros.' shield): drains while held and
+  // when hit, refills when released; breaking it stuns the robot.
+  GUARD_MAX: 50,
+  GUARD_DRAIN: 10, // per second while held
+  GUARD_REGEN: 8, // per second while released
+  GUARD_MIN_RAISE: 5,
+  GUARD_BREAK_STUN: 2500,
+  GUARD_BREAK_REFILL: 20,
+
+  // Match start: narrator counts 3, 2, 1, Fight! while inputs are off.
+  COUNTDOWN: 3000,
 
   // Respawn
   RESPAWN_DELAY: 2000,

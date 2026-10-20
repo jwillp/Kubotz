@@ -6,7 +6,7 @@ import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
-/** Something an attack can hit: a Kubotz or a drone. */
+/** Something an attack can hit. */
 export interface Damageable {
   readonly owner: Kubotz; // who it belongs to (itself for a Kubotz); no friendly fire
   hurtbox(): Phaser.Geom.Rectangle;
@@ -28,26 +28,32 @@ const ANIM = {
   SWORD: 'Sword_slash1', HIT: 'Hit', DYING: 'Dying',
 } as const;
 
-export interface KubotzLook { head: string | null; tint: number; color: number; }
+export interface KubotzLook { head: string | null; color: number; }
 
-export const LOOKS: KubotzLook[] = [
-  { head: null, tint: 0xffffff, color: 0xed1c24 }, // hud/player1_label.png red
-  { head: 'head_terminator', tint: 0xffffff, color: 0x29abe2 }, // hud/player2_label.png blue
-  { head: 'head_bigbuff', tint: 0xffffff, color: 0x8cc63f }, // hud/cpu_label.png green
-  { head: 'head_skull', tint: 0xffffff, color: 0xffd166 },
-];
+/** Helmet shapes, one per robot in order (character maps of kubotz.scml). */
+export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull'];
+/** The helmet files a recoloured copy is made of (see BootScene.recolor). */
+export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
+
+/** Player colours: P1 red and P2 blue like their HUD labels; CPUs green, then yellow and purple. */
+export const P1_COLOR = 0xed1c24;
+export const P2_COLOR = 0x29abe2;
+export const CPU_COLORS = [0x8cc63f, 0xffd166, 0xb36bff];
+
+export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
 /** Callbacks into the arena, so the actor stays free of scene plumbing. */
 export interface ArenaHooks {
   fireBullet(shooter: Kubotz, damage: number, speed: number): void;
-  spawnDrone(master: Kubotz): void;
+  now(): number; // the match clock: stops while paused
+  playSfx(key: string, volume?: number): void;
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void;
   dust(x: number, y: number): void;
 }
 
 /**
  * The playable robot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
- * DroneGauntlet/PowerUps/Respawn components and systems, folded into one class).
+ * PowerUps/Respawn components and systems, folded into one class).
  */
 export class Kubotz implements Damageable {
   readonly owner = this;
@@ -55,6 +61,8 @@ export class Kubotz implements Damageable {
   readonly view: Phaser.GameObjects.Container;
   private readonly anim: SpriterPlayer;
   private readonly healthBar: Phaser.GameObjects.Graphics;
+  private readonly tag: Phaser.GameObjects.Image;
+  readonly look: KubotzLook;
 
   facing: 1 | -1 = -1; // PhysicsComponent default direction is LEFT
   health: number = Config.KUBOTZ_HEALTH;
@@ -75,7 +83,10 @@ export class Kubotz implements Damageable {
   private attackReadyAt = 0;
   private grabEndsAt = 0;
   private grabReadyAt = 0;
-  droneReadyAt = 0;
+  guard: number = Config.GUARD_MAX;
+  guarding = false;
+  stunnedUntil = 0;
+  private nextStepAt = 0;
   private shootingUntil = 0;
   private hitUntil = 0;
   private wasGrounded = false;
@@ -88,6 +99,7 @@ export class Kubotz implements Damageable {
     private scene: Phaser.Scene,
     readonly index: number,
     readonly controller: Controller,
+    color: number,
     spriter: SpriterData,
     x: number,
     y: number,
@@ -104,12 +116,16 @@ export class Kubotz implements Damageable {
     const scale = Config.SPRITER_SCALE * UNIT;
     this.anim.setScale(scale);
     this.view = scene.add.container(x, y, [this.anim]).setDepth(10);
-    const look = this.look;
-    if (look.head) this.anim.setCharacterMaps([look.head]);
+    this.look = { head: HEADS[index % HEADS.length], color };
+    if (this.look.head) this.anim.setCharacterMaps([this.look.head]);
+    // Every helmet shape is drawn in the player's colour.
+    for (const file of HEAD_FILES) this.anim.textureOverrides.set(file, `head:${hex(color)}:${file}`);
     this.healthBar = scene.add.graphics().setDepth(20);
+    // The P1 / P2 / CPU arrow label floats above the robot.
+    const label = controller.label === 'CPU' ? `label-CPU:${hex(color)}` : `label-${controller.label}`;
+    this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
   }
 
-  get look(): KubotzLook { return LOOKS[this.index % LOOKS.length]; }
   get name(): string { return this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label; }
   get x(): number { return this.body.center.x; }
   get y(): number { return this.body.center.y; }
@@ -130,12 +146,41 @@ export class Kubotz implements Damageable {
     return this.attack;
   }
 
-  update(now: number, dt: number): void {
+  /** @param controls false during the countdown and while stunned. */
+  update(now: number, dt: number, controls = true): void {
     if (this.dead) { this.healthBar.clear(); return; }
-    const pad = this.pad = this.controller.read();
-    this.move(pad, now, dt);
-    this.handleActions(pad, now);
+    const read = this.controller.read();
+    const pad = this.pad = controls && now >= this.stunnedUntil ? read : emptyPad();
+    this.updateGuard(pad, dt);
+    if (this.guarding) {
+      // Guarding roots the robot: no running, jumping or attacking.
+      this.move(emptyPad(), now, dt);
+    } else {
+      this.move(pad, now, dt);
+      this.handleActions(pad, now);
+    }
     this.updatePowerUps(now);
+  }
+
+  /** Super Smash Bros.-style shield: hold to raise a bubble that soaks hits. */
+  private updateGuard(pad: PadState, dt: number): void {
+    if (pad.guard && this.grounded && (this.guarding || this.guard >= Config.GUARD_MIN_RAISE)) {
+      if (!this.guarding) this.attack = null;
+      this.guarding = true;
+      this.guard = Math.max(0, this.guard - Config.GUARD_DRAIN * dt);
+      if (this.guard <= 0) this.breakGuard();
+    } else {
+      this.guarding = false;
+      this.guard = Math.min(Config.GUARD_MAX, this.guard + Config.GUARD_REGEN * dt);
+    }
+  }
+
+  private breakGuard(): void {
+    this.guarding = false;
+    this.guard = Config.GUARD_BREAK_REFILL;
+    this.stunnedUntil = this.hooks.now() + Config.GUARD_BREAK_STUN;
+    this.body.velocity.y = -12 * UNIT; // pops up, like a shield break
+    this.hooks.playSfx('guard-break');
   }
 
   // ---------------------------------------------------------------- movement
@@ -173,6 +218,10 @@ export class Kubotz implements Damageable {
 
     b.setVelocity(vx * UNIT, vy * UNIT);
     if (grounded && !this.wasGrounded) this.hooks.dust(this.x, b.bottom);
+    if (grounded && Math.abs(vx) > 4 && now >= this.nextStepAt) {
+      this.nextStepAt = now + 260;
+      this.hooks.playSfx('step', 0.25);
+    }
     this.wasGrounded = grounded;
   }
 
@@ -215,11 +264,6 @@ export class Kubotz implements Damageable {
     if (now < this.grabEndsAt) {
       this.hooks.tryGrab(this, new Phaser.Geom.Circle(this.x, this.y, Config.GRAB_RADIUS * UNIT));
     }
-
-    if (pad.skill && now >= this.droneReadyAt) {
-      this.droneReadyAt = now + Config.DRONE_COOLDOWN;
-      this.hooks.spawnDrone(this);
-    }
   }
 
   // --------------------------------------------------------------- power ups
@@ -247,8 +291,14 @@ export class Kubotz implements Damageable {
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, pushX: number): void {
     if (this.dead || this.invincible) return;
-    const now = this.scene.time.now;
+    const now = this.hooks.now();
     this.lastAttacker = { by: attacker, at: now };
+    if (this.guarding) {
+      this.guard -= amount;
+      this.body.velocity.x += (pushX / 3) * UNIT;
+      if (this.guard <= 0) this.breakGuard();
+      return;
+    }
     if (this.shield > 0) {
       this.shield -= amount;
       this.body.velocity.x += (pushX / 2) * UNIT;
@@ -271,6 +321,8 @@ export class Kubotz implements Damageable {
     for (const p of [...this.powerUps]) this.removePowerUp(p);
     this.weapon = 'none';
     this.shield = 0;
+    this.guarding = false;
+    this.tag.setVisible(false);
     this.body.setVelocity(0, 0);
     this.body.enable = false;
     this.view.setVisible(false);
@@ -283,7 +335,10 @@ export class Kubotz implements Damageable {
     this.energy = Config.KUBOTZ_ENERGY;
     this.maxJumps = Config.NB_JUMPS;
     this.lastAttacker = null;
+    this.guard = Config.GUARD_MAX;
+    this.stunnedUntil = 0;
     this.body.enable = true;
+    this.tag.setVisible(true);
     this.body.reset(x, y);
     this.view.setVisible(true);
     this.anim.play(ANIM.IDLE, true);
@@ -310,6 +365,8 @@ export class Kubotz implements Damageable {
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
     this.anim.setCharacterMaps(maps);
 
+    const stunned = now < this.stunnedUntil;
+    this.anim.setAngle(stunned ? Math.sin(now / 60) * 6 : 0); // dizzy wobble after a guard break
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
     this.anim.setAlpha(blink ? 0.45 : 1);
     this.drawOverlay(now);
@@ -322,7 +379,8 @@ export class Kubotz implements Damageable {
     const vx = this.body.velocity.x;
     const busy = (current === ANIM.PUNCHING || current === ANIM.AIR_KICKING || current === ANIM.SWORD) && this.attack;
     if (busy) return;
-    if (now < this.hitUntil) { a.play(ANIM.HIT); return; }
+    if (now < this.hitUntil || now < this.stunnedUntil) { a.play(ANIM.HIT); return; }
+    if (this.guarding) { a.play(ANIM.IDLE); return; }
     if (now < this.shootingUntil && this.weapon !== 'none') { a.play(ANIM.SHOOTING); return; }
     if (!this.grounded) a.play(vy < 0 ? ANIM.JUMPING : ANIM.FALLING);
     else if (Math.abs(vx) > 4) a.play(ANIM.RUNNING);
@@ -336,7 +394,14 @@ export class Kubotz implements Damageable {
     const y = this.body.top - UNIT * 0.75;
     g.fillStyle(0x000000, 0.55).fillRect(x - 2, y - 2, w + 4, 10);
     g.fillStyle(this.health > 30 ? 0x7df466 : 0xff5252, 1).fillRect(x, y, (w * this.health) / Config.KUBOTZ_HEALTH, 6);
-    g.fillStyle(this.look.color, 1).fillTriangle(this.x - 7, y - 14, this.x + 7, y - 14, this.x, y - 5);
+    // Constant on-screen size whatever the camera zoom.
+    const zoom = this.scene.cameras.main.zoom;
+    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom);
+    if (this.guarding) {
+      const r = UNIT * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX));
+      g.fillStyle(this.look.color, 0.35).fillCircle(this.x, this.y, r);
+      g.lineStyle(3, 0xffffff, 0.7).strokeCircle(this.x, this.y, r);
+    }
     if (this.shield > 0) {
       const pulse = 0.25 + 0.1 * Math.sin(now / 120);
       g.lineStyle(3, 0x66ccff, 0.8).fillStyle(0x66ccff, pulse)
@@ -348,6 +413,7 @@ export class Kubotz implements Damageable {
   destroy(): void {
     this.view.destroy();
     this.healthBar.destroy();
+    this.tag.destroy();
     this.body.gameObject.destroy();
   }
 }

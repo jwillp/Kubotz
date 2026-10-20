@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
-import type { Kubotz } from '../game/Kubotz';
+import { hex, type Kubotz } from '../game/Kubotz';
 import type { GameScene } from './GameScene';
 
 interface Panel {
@@ -54,7 +54,9 @@ export class HudScene extends Phaser.Scene {
 
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
+    this.game_.events.on('countdown', this.onCountdown, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
       this.game_.events.off('pause', this.onPause, this);
     });
@@ -63,7 +65,7 @@ export class HudScene extends Phaser.Scene {
   private makePanel(k: Kubotz, x: number, y: number): Panel {
     const c = this.add.container(x, y);
     const badge = this.add.image(0, 0, 'hud-badge').setOrigin(0, 0).setScale(0.5);
-    const label = this.add.image(40, 30, `label-${k.controller.label}`).setScale(0.42);
+    const label = this.add.image(40, 30, k.controller.label === 'CPU' ? `label-CPU:${hex(k.look.color)}` : `label-${k.controller.label}`).setScale(0.42);
     const name = this.add.text(92, 2, k.name, {
       fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 4,
     });
@@ -80,34 +82,44 @@ export class HudScene extends Phaser.Scene {
   update(): void {
     const g = this.game_;
     if (!g?.fighters) return;
-    const time = g.time.now;
-    const elapsed = g.startedAt < 0 ? 0 : Math.floor((time - g.startedAt) / 1000);
+    const time = g.clock; // the match clock stands still while paused
+    const elapsed = Math.max(0, Math.floor((time - g.startedAt) / 1000));
     if (g.winner === undefined && !g.paused) {
       this.timer.setText(`${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`);
     }
 
     for (const [k, p] of this.panels) {
       const b = p.bars.clear();
-      // health bar (top) and skill charge bar (bottom) over the hud-multi-bars art
+      // health bar (top) and guard bar (bottom) over the hud-multi-bars art
       const w = 190;
       b.fillStyle(k.health > 30 ? 0x7df466 : 0xff5252, 0.95).fillRect(92, 32, (w * k.health) / Config.KUBOTZ_HEALTH, 15);
       if (k.shield > 0) b.fillStyle(0x66ccff, 0.9).fillRect(92, 32, (w * k.shield) / 100, 5);
-      const charge = Phaser.Math.Clamp(1 - (k.droneReadyAt - time) / Config.DRONE_COOLDOWN, 0, 1);
-      b.fillStyle(charge >= 1 ? 0xffe066 : 0x8a7a3a, 0.95).fillRect(92, 60, w * charge, 13);
+      const guard = Phaser.Math.Clamp(k.guard / Config.GUARD_MAX, 0, 1);
+      const stunned = time < k.stunnedUntil;
+      b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffe066 : 0xbfa640, 0.95).fillRect(92, 60, w * guard, 13);
       p.kills.setText(String(k.kills));
       p.lives.setText(String(Math.max(0, k.lives)));
       const effects = k.powerUps.map((pu) => `${POWER_UPS[pu.type].label} ${Math.ceil((pu.endsAt - time) / 1000)}s`);
       let status = effects.join(' · ');
       if (k.eliminated) status = 'ELIMINATED';
+      else if (time < k.stunnedUntil) status = 'GUARD BROKEN';
       else if (!k.isAlive()) status = `respawning ${Math.max(0, Math.ceil((k.respawnAt - time) / 1000))}…`;
       p.status.setText(status);
       p.container.setAlpha(k.eliminated ? 0.4 : 1);
     }
   }
 
+  private onCountdown(word: string): void {
+    const t = this.add.text(this.scale.width / 2, this.scale.height / 2 - 40, word, {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '120px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 12,
+    }).setOrigin(0.5).setDepth(20).setScale(1.6).setAlpha(0);
+    this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
+    this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
+  }
+
   private onMatchOver(winner: Kubotz | null): void {
     this.bannerText.setText(winner ? `${winner.name} WINS!` : 'DRAW');
-    if (winner) this.bannerText.setStroke('#' + winner.look.color.toString(16).padStart(6, '0'), 8);
+    if (winner) this.bannerText.setStroke('#' + hex(winner.look.color), 8);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
     this.banner.setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });

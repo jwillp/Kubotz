@@ -170,6 +170,8 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
   private sprites = new Map<number, Phaser.GameObjects.Image>();
   private charMaps: CharacterMap[] = [];
   speed = 1;
+  /** Per-instance texture swaps (file name -> texture key), e.g. recoloured helmets. */
+  textureOverrides = new Map<string, string>();
   /** Set when a non-looping animation reached its end. */
   finished = false;
 
@@ -264,7 +266,7 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
       if (!info) continue;
 
       let img = this.sprites.get(ref.timeline);
-      const textureKey = this.textureKeyPrefix + info.name;
+      const textureKey = this.textureOverrides.get(info.name) ?? this.textureKeyPrefix + info.name;
       if (!img) {
         img = this.scene.add.image(0, 0, textureKey);
         this.sprites.set(ref.timeline, img);
