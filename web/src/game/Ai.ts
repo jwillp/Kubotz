@@ -1,7 +1,7 @@
 import { Config, UNIT } from '../config';
 import { Controller, PadState, emptyPad } from './Input';
 import type { Kubotz } from './Kubotz';
-import type { Link, Nav } from './Nav';
+import type { Link, Nav, Surface } from './Nav';
 
 export interface AiWorld {
   enemiesOf(k: Kubotz): Kubotz[];
@@ -25,6 +25,7 @@ export class CpuController implements Controller {
   private state: PadState = emptyPad();
   private nextThink = 0;
   private fleeTarget: { x: number; y: number } | null = null;
+  private home: Surface | null = null; // the last surface stood on
   private stuckSince = 0;
   private lastX = 0;
   private orbChaseSince = 0;
@@ -50,6 +51,7 @@ export class CpuController implements Controller {
     const me = this.agent;
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
+    if (this.recover(pad)) return pad;
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
     const alive = this.world.enemiesOf(me).filter((e) => e.isAlive());
@@ -65,10 +67,8 @@ export class CpuController implements Controller {
 
     const danger = untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
     if (danger) {
-      if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) {
-        this.fleeTarget = { x: danger.x < 26 * UNIT ? 46 * UNIT : 6 * UNIT, y: me.y };
-      }
-      dest = { ...this.fleeTarget, bottom: me.body.bottom };
+      if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) this.fleeTarget = this.refuge(danger);
+      dest = { ...this.fleeTarget, bottom: this.fleeTarget.y };
     } else {
       this.fleeTarget = null;
       const orbs = now < this.ignoreOrbsUntil ? [] : this.world.powerUpPositions();
@@ -117,6 +117,13 @@ export class CpuController implements Controller {
       default: break;
     }
 
+    // Never run off the edge after a robot flying over the void.
+    const mine = me.body.grounded ? this.world.nav.surfaceAt(me.x, me.body.bottom, UNIT) : null;
+    if (mine && !this.world.nav.surfaceAt(dest.x, dest.bottom)) {
+      const safeX = Math.min(mine.x2 - UNIT, Math.max(mine.x1 + UNIT, dest.x));
+      if (Math.abs(safeX - me.x) > 0.5 * UNIT) pad[safeX < me.x ? 'left' : 'right'] = true;
+      return pad;
+    }
     if (!close) pad[dx < 0 ? 'left' : 'right'] = true;
 
     // Stuck against a wall: jump.
@@ -215,5 +222,44 @@ export class CpuController implements Controller {
       if (l.kind === 'jump' && !over && me.body.vy > 0) pad.up = true;
     }
     return 'moving';
+  }
+
+  /** The surface farthest from a threat that can be reached from here. */
+  private refuge(danger: { x: number; y: number }): { x: number; y: number } {
+    const me = this.agent;
+    const nav = this.world.nav;
+    const from = nav.surfaceAt(me.x, me.body.bottom, UNIT) ?? this.home;
+    const centre = (s: Surface) => ({ x: (s.x1 + s.x2) / 2, y: s.y });
+    const far = [...nav.surfaces].sort((a, b) => {
+      const d = (s: Surface) => Math.hypot(centre(s).x - danger.x, centre(s).y - danger.y);
+      return d(b) - d(a);
+    });
+    const best = far.find((s) => !from || nav.path(from, s, me.x) !== null);
+    return best ? centre(best) : { x: me.x, y: me.y };
+  }
+
+  /**
+   * Knocked out over the void: steer back towards the nearest surface and
+   * jump when falling below it.
+   */
+  private recover(pad: PadState): boolean {
+    const me = this.agent;
+    const nav = this.world.nav;
+    if (me.body.grounded) {
+      this.home = nav.surfaceAt(me.x, me.body.bottom, UNIT) ?? this.home;
+      return false;
+    }
+    if (this.link || nav.surfaceAt(me.x, me.body.bottom)) return false; // on its way, or above ground
+    let best: Surface | null = null;
+    let bestX = 0;
+    for (const s of nav.surfaces) {
+      const x = Math.min(s.x2 - UNIT, Math.max(s.x1 + UNIT, me.x));
+      const d = Math.abs(x - me.x) + Math.max(0, me.body.bottom - s.y) * 0.5;
+      if (!best || d < Math.abs(bestX - me.x) + Math.max(0, me.body.bottom - best.y) * 0.5) { best = s; bestX = x; }
+    }
+    if (!best) return false;
+    pad[bestX < me.x ? 'left' : 'right'] = true;
+    if (me.body.vy > 0 && me.body.bottom > best.y - UNIT) pad.up = true;
+    return true;
   }
 }

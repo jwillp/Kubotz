@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { explosionBuffer } from '../game/Debris';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
@@ -66,6 +67,7 @@ export class BootScene extends Phaser.Scene {
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.makeTextures();
+      if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) this.cache.audio.add('boom', explosionBuffer(this.sound.context));
       this.scene.start('Title');
     });
     this.load.start();

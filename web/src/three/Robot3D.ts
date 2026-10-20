@@ -139,6 +139,39 @@ export class Robot3D {
     return null;
   }
 
+  /**
+   * Copies of the visible parts as they are posed now, for the K.O. explosion:
+   * each mesh is centred in its holder, which carries the part's world
+   * position (units), rotation and scale. Materials are copies, free to fade.
+   */
+  pieces(): { holder: THREE.Group; radius: number }[] {
+    this.group.updateMatrixWorld(true);
+    const copies = new Map<THREE.Material, THREE.MeshStandardMaterial>();
+    const out: { holder: THREE.Group; radius: number }[] = [];
+    for (const p of this.parts.values()) {
+      if (!p.holder.visible || !this.group.visible) continue;
+      const geo = p.mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const box = geo.boundingBox!;
+      if (box.isEmpty()) continue;
+      const centre = box.getCenter(new THREE.Vector3());
+      const holder = new THREE.Group();
+      p.mesh.matrixWorld.decompose(holder.position, holder.quaternion, holder.scale);
+      holder.position.copy(centre.clone().applyMatrix4(p.mesh.matrixWorld));
+      const src = p.mesh.material as THREE.MeshStandardMaterial;
+      let mat = copies.get(src);
+      if (!mat) { mat = src.clone(); mat.opacity = 1; mat.depthWrite = true; copies.set(src, mat); }
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(centre).negate();
+      mesh.castShadow = true;
+      holder.add(mesh);
+      const size = box.getSize(new THREE.Vector3());
+      const radius = 0.32 * Math.max(Math.abs(size.x * holder.scale.x), Math.abs(size.y * holder.scale.y));
+      out.push({ holder, radius: Math.min(0.45, Math.max(0.12, radius)) });
+    }
+    return out;
+  }
+
   set visible(v: boolean) { this.group.visible = v; }
 
   dispose(): void {

@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
+import { ARENA_INFO } from '../map/Arenas';
 
 export type Slot = 'P1' | 'P2' | 'CPU';
-export interface MatchSetup { slots: Slot[]; }
+export interface MatchSetup { slots: Slot[]; arena?: number; }
 
 const MODES: { label: string; slots: Slot[] }[] = [
   { label: '1 Player vs CPU', slots: ['P1', 'CPU'] },
@@ -14,6 +15,9 @@ const MODES: { label: string; slots: Slot[] }[] = [
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
   private items: Phaser.GameObjects.Text[] = [];
+  private arena = 0;
+  private arenaText!: Phaser.GameObjects.Text;
+  private arenaBlurb!: Phaser.GameObjects.Text;
 
   constructor() { super('Title'); }
 
@@ -42,14 +46,29 @@ export class TitleScene extends Phaser.Scene {
     });
     this.select(0);
 
+    // Arena picker: the original cube, or one of the arenas built from its tiles.
+    this.arena = (this.registry.get('arena') as number | undefined) ?? 0;
+    const arrow = (x: number, label: string, delta: number) => this.add.text(x, 600, label, {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '30px', color: '#29abe2',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickArena(delta));
+    this.arenaText = this.add.text(width / 2, 600, '', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '26px', color: '#ffffff',
+    }).setOrigin(0.5);
+    this.arenaBlurb = this.add.text(width / 2, 634, '', {
+      fontFamily: 'Arial, sans-serif', fontSize: '16px', color: '#9fe3ff',
+    }).setOrigin(0.5);
+    arrow(width / 2 - 250, '◀', -1);
+    arrow(width / 2 + 250, '▶', 1);
+    this.pickArena(0);
+
     // Title music (dashboard.ogg); browsers start it after the first click or key.
     if (!this.sound.get('music-title')?.isPlaying) {
       this.sound.removeByKey('music-title');
       this.sound.add('music-title', { loop: true, volume: 0.5 }).play();
     }
 
-    this.add.text(width / 2, height - 90,
-      'P1: WASD move/jump · O attack · I grab · Shift guard      P2: Arrows · , attack · . grab · / guard\n'
+    this.add.text(width / 2, height - 70,
+      'P1: WASD move/jump (S: drop down) · O attack · I grab · Shift guard      P2: Arrows · , attack · . grab · / guard\n'
       + 'Gamepads work too. Grab power-ups, knock rivals out, last robot standing wins.', {
         fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
       }).setOrigin(0.5);
@@ -59,6 +78,10 @@ export class TitleScene extends Phaser.Scene {
     kb.on('keydown-W', () => this.select((this.selected + MODES.length - 1) % MODES.length));
     kb.on('keydown-DOWN', () => this.select((this.selected + 1) % MODES.length));
     kb.on('keydown-S', () => this.select((this.selected + 1) % MODES.length));
+    kb.on('keydown-LEFT', () => this.pickArena(-1));
+    kb.on('keydown-A', () => this.pickArena(-1));
+    kb.on('keydown-RIGHT', () => this.pickArena(1));
+    kb.on('keydown-D', () => this.pickArena(1));
     kb.on('keydown-ENTER', () => this.start(this.selected));
     kb.on('keydown-SPACE', () => this.start(this.selected));
     kb.on('keydown', (e: KeyboardEvent) => {
@@ -72,8 +95,15 @@ export class TitleScene extends Phaser.Scene {
     this.items.forEach((t, j) => t.setColor(j === i ? '#29abe2' : '#ffffff').setScale(j === i ? 1.1 : 1));
   }
 
+  private pickArena(delta: number): void {
+    this.arena = (this.arena + delta + ARENA_INFO.length) % ARENA_INFO.length;
+    this.registry.set('arena', this.arena);
+    this.arenaText.setText(`Arena: ${ARENA_INFO[this.arena].name}`);
+    this.arenaBlurb.setText(`${ARENA_INFO[this.arena].blurb}  ·  ◀ ▶ to change`);
+  }
+
   private start(i: number): void {
-    const setup: MatchSetup = { slots: MODES[i].slots };
+    const setup: MatchSetup = { slots: MODES[i].slots, arena: this.arena };
     this.scene.start('Game', setup);
   }
 }

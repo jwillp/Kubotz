@@ -12,6 +12,8 @@ import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
+import { DebrisField } from '../game/Debris';
+import { ARENAS, buildArenaMap } from '../map/Arenas';
 import type { World3D } from '../three/World3D';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
@@ -23,6 +25,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
   private nav!: Nav;
+  private debris!: DebrisField;
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
@@ -62,7 +65,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   create(setup: MatchSetup): void {
-    this.map = this.registry.get('map');
+    const original: TmxMap = this.registry.get('map');
+    const arena = ARENAS[setup.arena ?? 0];
+    this.map = arena ? buildArenaMap(arena, original) : original;
     const spriter: SpriterData = this.registry.get('spriter');
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
@@ -75,6 +80,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.textures.get('bg').getSourceImage() as HTMLImageElement,
     );
     this.world3d.visible = true;
+    this.debris = new DebrisField(this.physicsWorld, this.world3d);
     this.createEffects();
 
     const humans = { P1: 0, P2: 0 };
@@ -131,6 +137,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.music?.destroy();
       this.scene.stop('Hud');
       this.world3d.visible = false;
+      this.debris.destroy();
       for (const k of this.fighters) k.destroy();
     });
   }
@@ -162,8 +169,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     this.nav = new Nav(this.blocks);
-    // The map has a single PLAYER_SPAWN (the second robot was hard-coded at (8, 7)):
-    // add mirrored and central spawns so up to four robots start apart.
+    // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
+    // at (8, 7)): add mirrored and central spawns so up to four robots start apart.
+    if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
     this.playerSpawns.push(
       new Phaser.Math.Vector2(mapW - first.x, first.y),
@@ -240,6 +248,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     this.physicsWorld.step(dt);
     this.resolveMelee();
+    this.debris.update(now, this.fighters, (victim, x, y) => {
+      this.playSfx('punch', 0.3);
+      this.fx('hitStars', x, y);
+    });
     this.updateBullets(now, dt);
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
@@ -256,6 +268,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const lights = [
       ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 6 })),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: POWER_UPS[o.type].color, intensity: 2.5 })),
+      ...this.debris.lights(this.clock),
     ];
     this.world3d.setLights(lights);
     this.world3d.render(this.cameras.main, this.game.canvas, dtMs);
@@ -395,6 +408,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.cameras.main.shake(220, 0.01);
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) killer.kills++;
+      this.debris.explode(k, now);
+      if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
       this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
     }

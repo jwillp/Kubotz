@@ -170,3 +170,30 @@ port of Box2D, replaces Phaser Arcade — done:
 **D. Lighting** — done (add `?lowfx` to the URL to turn bloom and shadows off) — scene lights (key, rim, per-player light), emissive lasers with
 point lights, shadows on the arena, and a post-processing pass (bloom, vignette,
 subtle colour grading) for mood.
+
+## Phase 3 — owner feedback round 3 (2026-10-20)
+
+- **Camera:** power-ups on offer count like robots when framing and zooming, so
+  every player sees a new bonus.
+- **One-way platforms:** `STATIC_PLATFORM` blocks are soft (SSB style): robots
+  jump through them from below and land on them from above; holding down while
+  standing on one drops through it. Walls stay solid.
+- **CPU pathfinding** (`game/Nav.ts`): like the original's A*, but on the surfaces
+  robots can stand on, linked by the moves between them (jump up, through a soft
+  platform from below or beside a solid block; drop through; run off an edge;
+  jump across a gap). The CPU plays the first move of the path: walks to the
+  take-off window, then jumps (again, until above the target), drops or falls.
+  It takes off beside a robot standing right above (robots bump into each other),
+  never runs off an edge after a robot flying over the void, flees to the
+  reachable surface farthest away, and steers back when knocked over the void.
+- **K.O. explosion** (`game/Debris.ts`): the robot blows apart; every body part
+  becomes a tumbling 3D piece on a Box2D circle that bounces around the arena,
+  hurts the robots it hits (2 damage + knockback, once per piece and robot,
+  only while flying fast) and fades after about 3 s. Flash of light and a
+  synthesised explosion sound (the original had none).
+- **Arenas** (`map/Arenas.ts`): the original cube plus three arenas built from
+  its tiles, picked on the title screen (◀ ▶): *The Foundry* (pillars and a
+  centre block), *Sky Deck* (open stage, falling off is a K.O.) and *The Pit*
+  (a hole in the floor). Each is a list of blocks; the tile art is laid on them
+  the way the original map does (ground/ceiling strips, side pieces, platform
+  end caps, outer fades).

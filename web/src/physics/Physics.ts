@@ -177,3 +177,18 @@ export class ItemBody extends PxBody {
     this.body.setLinearDamping(0.5);
   }
 }
+
+/** A piece of an exploded robot: a tumbling circle that bounces on the arena. */
+export class DebrisBody extends PxBody {
+  constructor(physics: PhysicsWorld, x: number, y: number, radius: number) {
+    super(physics.world.createBody({ type: 'dynamic', position: Vec2(x / UNIT, y / UNIT), bullet: true }));
+    this.body.createFixture({
+      shape: new Circle(radius / UNIT), density: 1, restitution: 0.45, friction: 0.6,
+      filterCategoryBits: CAT_ITEM, filterMaskBits: CAT_STATIC, userData: 'debris' as FixtureTag,
+    });
+    this.body.setAngularDamping(0.4);
+  }
+
+  get angle(): number { return this.body.getAngle(); }
+  set spin(w: number) { this.body.setAngularVelocity(w); }
+}
