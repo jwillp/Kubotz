@@ -73,6 +73,13 @@ export class TitleScene extends Phaser.Scene {
         fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
       }).setOrigin(0.5);
 
+    const modelsError = this.registry.get('modelsError') as string | undefined;
+    if (modelsError) {
+      this.add.text(width / 2, height - 22, `3D models failed to load (${modelsError}): showing the sprite-built robots`, {
+        fontFamily: 'Arial, sans-serif', fontSize: '14px', color: '#ff9a7a',
+      }).setOrigin(0.5);
+    }
+
     const kb = this.input.keyboard!;
     kb.on('keydown-UP', () => this.select((this.selected + MODES.length - 1) % MODES.length));
     kb.on('keydown-W', () => this.select((this.selected + MODES.length - 1) % MODES.length));

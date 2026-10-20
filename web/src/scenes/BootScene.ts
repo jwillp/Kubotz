@@ -60,7 +60,10 @@ export class BootScene extends Phaser.Scene {
     const map: TmxMap = await parseTmx(this.cache.text.get('tmx'));
     // The Blender models (robot, bonus chips, tiles); without them the game
     // builds its 3D from the sprites as before.
-    await loadModels().catch((e) => console.warn('3D models not loaded, using the sprite-built ones', e));
+    await loadModels().catch((e) => {
+      console.error('3D models not loaded, using the sprite-built ones', e);
+      this.registry.set('modelsError', String(e?.message ?? e));
+    });
     this.registry.set('spriter', spriter);
     this.registry.set('map', map);
     const effects: Record<string, EffectDef> = {};
