@@ -57,7 +57,7 @@ export class World3D {
   private arena = new THREE.Group();
   private lights: THREE.PointLight[] = [];
   private time = 0;
-  private readonly lowFx: boolean;
+  private lowFx: boolean;
 
   constructor(parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -75,7 +75,7 @@ export class World3D {
     c.style.pointerEvents = 'none';
     parent.style.position ||= 'relative';
     parent.prepend(c);
-    // Low-effects mode (no bloom or shadows) for slow machines: add ?lowfx to the URL.
+    // Low-effects mode (no bloom or shadows) for slow machines: ?lowfx in the URL or the F key.
     this.lowFx = new URLSearchParams(location.search).has('lowfx');
     this.renderer.shadowMap.enabled = !this.lowFx;
 
@@ -121,6 +121,14 @@ export class World3D {
       this.lights.push(l);
       this.scene.add(l);
     }
+  }
+
+  /** Bloom and shadows on/off (F key in game). */
+  toggleEffects(): boolean {
+    this.lowFx = !this.lowFx;
+    this.renderer.shadowMap.enabled = !this.lowFx;
+    this.scene.traverse((o) => { if ((o as THREE.Mesh).material) ((o as THREE.Mesh).material as THREE.Material).needsUpdate = true; });
+    return !this.lowFx;
   }
 
   set visible(v: boolean) { this.renderer.domElement.style.display = v ? 'block' : 'none'; }

@@ -114,6 +114,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const kb = this.input.keyboard!;
     kb.on('keydown-ESC', () => this.togglePause());
     kb.on('keydown-P', () => this.togglePause());
+    kb.on('keydown-F', () => {
+      const on = this.world3d.toggleEffects();
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
+    });
     kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 9) this.togglePause(); // Start
