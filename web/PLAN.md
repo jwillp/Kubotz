@@ -124,3 +124,45 @@ Engine differences:
   zoom out to 136 units, far wider than the map).
 - The original drew Box2D debug shapes over a hidden map; the port draws the map's
   tile layers and the background art, and the collision blocks stay invisible.
+
+## Phase 2 — owner feedback round 2 (2026-10-20)
+
+The owner asked for SSB-style depth: Box2D feel, 3D characters, lighting.
+Done in four steps, each one playable and republished.
+
+**A. Gameplay fixes** (current engine)
+- CPUs avoid invincible robots (hitting them does nothing) instead of chasing them.
+- A 4th CPU colour (orange), so four CPUs never share a colour.
+- Guard in mid-air = air dodge (SSB): a short burst in the held direction with
+  intangibility frames (hits and bullets pass through), once per jump.
+- Knockback grows as health drops (SSB-like: `base × (1 + 2 × damage taken %)`),
+  and firing a laser gun pushes the shooter back (recoil).
+- Laser bullets and their smoke take the shooter's colour.
+
+**B. Box2D physics** — [planck.js](https://github.com/piqnt/planck.js) 1.5, a JS
+port of Box2D, replaces Phaser Arcade:
+- Same world as `PhysicsSystem`: gravity −40, fixed 60 Hz step (6/2 iterations).
+- Same Kubotz body as `KubotzFactory.buildBody`: fixed-rotation dynamic body
+  made of a box + head circle + legs circle (a capsule) and a foot sensor; robots
+  collide with each other and slide off heads and ledges like the original.
+- Movement keeps `MovementSystem` (set the velocity, accelerate towards max speed);
+  knockback becomes a linear impulse (`DamageSystem`).
+- Power-ups: dynamic circles, density 0.8, restitution 0.5; bullets: bullets with
+  gravity scale 0.
+
+**C. 3D (2.5D) rendering** — [three.js](https://threejs.org) r186:
+- Gameplay stays on the 2D plane (an SSB-style platformer); only the view is 3D.
+- A three.js canvas draws the world behind Phaser's (now transparent) canvas;
+  Phaser keeps the title screen, HUD, input and sound.
+- Kubotz robots are modelled in code (no external modelling tool here): black
+  armoured body, the four helmet shapes in player colour, glowing visor, a
+  skeleton matching the Spriter bones, and keyframed animations ported from the
+  `.scml` timings with extra secondary motion (idle breathing, run lean, landing
+  squash, sword arcs, hit flinch, guard pose, air-dodge spin, death).
+- The sword hitbox follows the blade bone of the sword animation.
+- Arena blocks are extruded in 3D and textured with the original tile art; the
+  background image becomes a distant backdrop; the camera keeps framing all robots.
+
+**D. Lighting** — scene lights (key, rim, per-player light), emissive lasers with
+point lights, shadows on the arena, and a post-processing pass (bloom, vignette,
+subtle colour grading) for mood.
