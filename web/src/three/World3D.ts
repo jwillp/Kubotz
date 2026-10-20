@@ -195,7 +195,13 @@ export class World3D {
       this.arena.add(mesh);
     };
     for (const [model, list] of placed) {
-      const tiles = new THREE.InstancedMesh(model.geometry, model.material, list.length);
+      // The platform tiles' lights are toned down a little (they glowed brighter than the walls once bloomed).
+      let material = model.material as THREE.MeshStandardMaterial;
+      if (model.name.startsWith('platform')) {
+        material = material.clone();
+        material.emissiveIntensity *= 0.6;
+      }
+      const tiles = new THREE.InstancedMesh(model.geometry, material, list.length);
       list.forEach((m, i) => tiles.setMatrixAt(i, m.multiply(model.matrixWorld)));
       tiles.receiveShadow = true; // the blocks behind them already cast the shadows
       this.arena.add(tiles);
@@ -206,7 +212,7 @@ export class World3D {
     // Blocks: dark metal boxes with a lit top; the front face shows the tile art.
     const side = new THREE.MeshStandardMaterial({ color: 0x1c2330, roughness: 0.55, metalness: 0.6 });
     const top = new THREE.MeshStandardMaterial({ color: 0x3a4658, roughness: 0.45, metalness: 0.5 });
-    const edge = new THREE.MeshStandardMaterial({ color: 0x29abe2, emissive: 0x29abe2, emissiveIntensity: 2.2 });
+    const edge = new THREE.MeshStandardMaterial({ color: 0x29abe2, emissive: 0x29abe2, emissiveIntensity: 1.6 });
     for (const s of solids) {
       const w = s.width / UNIT;
       const h = s.height / UNIT;

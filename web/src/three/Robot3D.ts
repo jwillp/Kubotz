@@ -139,15 +139,20 @@ export class Robot3D {
    * (origin bottom-left, y up), for the part currently showing `file`.
    */
   pointOn(file: string, px: number, py: number): { x: number; y: number } | null {
+    return this.pointsOn(file, px, py)[0] ?? null;
+  }
+
+  /** The point on every visible part showing that file (both fists, both feet). */
+  pointsOn(file: string, px: number, py: number): { x: number; y: number }[] {
+    const out: { x: number; y: number }[] = [];
+    const showing = this.texture(file).key;
+    this.group.updateMatrixWorld(true);
     for (const p of this.parts.values()) {
-      if (!p.holder.visible) continue;
-      const showing = this.texture(file).key;
-      if (p.key !== showing) continue;
-      this.group.updateMatrixWorld(true);
+      if (!p.holder.visible || p.key !== showing) continue;
       const v = new THREE.Vector3(px, py, 0).applyMatrix4(p.mesh.matrixWorld);
-      return { x: v.x * UNIT, y: -v.y * UNIT };
+      out.push({ x: v.x * UNIT, y: -v.y * UNIT });
     }
-    return null;
+    return out;
   }
 
   /**

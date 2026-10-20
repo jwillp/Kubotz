@@ -213,3 +213,24 @@ built from the sprites:
 - `pickups/bonus_*.glb`: spinning bonus chips (golden for invincibility, yellow for energy).
 - `tiles.glb`: tiles on blocks are placed as 2 x 2 x 2 unit 3D blocks (instanced).
 - If the models cannot be loaded, the game falls back to the sprite-built 3D.
+  On hosts with a strict content policy (the published artifact) the loader
+  fetches the files itself and rebuilds the GLB in memory (no data:/blob:
+  fetches); a failure is shown on the title screen.
+
+## Phase 5 — Combos, animation polish, particles (2026-10-20)
+
+- **Combos** (SSB jab chain): unarmed on the ground, three presses chain a jab
+  (`Punching`), a cross (`Punching_dom`) and a kick (`Kicking`). A press during
+  a move is buffered and starts the next one as it ends; a short window after a
+  move also continues the chain. The first two hits push lightly and stun
+  briefly so the chain connects; the kick finishes with a strong launch. The hit
+  point is whichever fist or foot is furthest forward.
+- **Animations**: each move plays exactly once over its hit window; longer
+  blends between locomotion clips, short ones into attacks; `Landing` on
+  touchdown, `Hit` / `Hit_2` alternate, `Grab` when grabbing, the run cycle
+  follows the speed, a fresh `Jumping` on double jumps.
+- **Platform lights**: tile glow and neon edge strips toned down a little.
+- **Particles** (`fx/Impact.ts`): hit sparks stretched along their motion and
+  tinted by the attacker, an impact flash ring and a brief 3D light, scaled by
+  damage; a motion trail behind the striking fist, foot or blade; a ring burst
+  on double jumps; run dust.

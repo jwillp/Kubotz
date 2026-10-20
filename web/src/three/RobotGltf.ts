@@ -75,16 +75,16 @@ export class RobotGltf {
   /**
    * Plays an animation at a given point (0..1), so the model stays in step
    * with the Spriter clock that drives the game (attack timings, hitboxes).
-   * Switching animations blends briefly.
+   * Switching animations blends over `fade` seconds.
    */
-  animate(name: string, progress: number, dtMs: number): void {
+  animate(name: string, progress: number, dtMs: number, fade = 0.08): void {
     const next = this.actions.get(name) ?? this.actions.get('Idle');
     if (!next) return;
     if (next !== this.current) {
       next.reset();
       next.timeScale = 0; // time is set by hand below
       next.play();
-      if (this.current) next.crossFadeFrom(this.current, 0.08, false);
+      if (this.current) next.crossFadeFrom(this.current, fade, false);
       this.current = next;
     }
     next.time = Math.min(progress, 0.9999) * next.getClip().duration;
@@ -116,6 +116,10 @@ export class RobotGltf {
 
   pointOn(file: string, px: number, py: number): { x: number; y: number } | null {
     return this.skeleton.pointOn(file, px, py);
+  }
+
+  pointsOn(file: string, px: number, py: number): { x: number; y: number }[] {
+    return this.skeleton.pointsOn(file, px, py);
   }
 
   /** Copies of the visible parts as posed now, for the K.O. explosion (see Robot3D.pieces). */

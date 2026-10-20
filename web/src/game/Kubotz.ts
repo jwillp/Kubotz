@@ -16,7 +16,8 @@ export interface Damageable {
   readonly owner: Kubotz; // who it belongs to (itself for a Kubotz); no friendly fire
   hurtbox(): Phaser.Geom.Rectangle;
   isAlive(): boolean;
-  takeDamage(amount: number, attacker: Kubotz, pushX: number): void;
+  /** @param stun ms without control (hitstun), so light combo hits connect. */
+  takeDamage(amount: number, attacker: Kubotz, pushX: number, stun?: number): void;
 }
 
 /** A point of a body part (Spriter image pixels, origin bottom-left, y up). */
@@ -27,8 +28,11 @@ export interface AttackBox {
   circles: Phaser.Geom.Circle[];
   radius: number;
   points: PartPoint[];
+  /** One circle on whichever of the points is furthest forward (the striking fist or foot), instead of one on each. */
+  striker: boolean;
   damage: number;
   knockback: number;
+  stun: number;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
 }
@@ -45,10 +49,32 @@ function bladePoints(): PartPoint[] {
 }
 
 const ANIM = {
-  IDLE: 'Idle', RUNNING: 'Running', JUMPING: 'Jumping', FALLING: 'Falling',
-  PUNCHING: 'Punching', AIR_KICKING: 'Air Kicking', SHOOTING: 'Shooting',
-  SWORD: 'Sword_slash1', HIT: 'Hit', DYING: 'Dying',
+  IDLE: 'Idle', RUNNING: 'Running', JUMPING: 'Jumping', FALLING: 'Falling', LANDING: 'Landing',
+  AIR_KICKING: 'Air Kicking', SHOOTING: 'Shooting', GRAB: 'Grab',
+  SWORD: 'Sword_slash1', HIT: 'Hit', HIT_2: 'Hit_2', DYING: 'Dying',
 } as const;
+
+/** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
+const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand_sha.png', x: 34, y: 34 }];
+const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot_sha.png', x: 24, y: 45 }];
+
+interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; knockback: number; stun: number; }
+
+/**
+ * The unarmed ground combo, Super Smash Bros. style: three presses in a row
+ * chain a jab, a cross and a kick. The first two push lightly and stun
+ * briefly so the next hit connects; the kick launches.
+ */
+const COMBO: Move[] = [
+  { anim: 'Punching', ms: 300, points: FISTS, damage: 3, knockback: 3, stun: 260 },
+  { anim: 'Punching_dom', ms: 380, points: FISTS, damage: 4, knockback: 4, stun: 300 },
+  { anim: 'Kicking', ms: 440, points: FEET, damage: 6, knockback: 13, stun: 0 },
+];
+const AIR_KICK: Move = { anim: ANIM.AIR_KICKING, ms: Config.PUNCH_DURATION, points: FEET, damage: Config.PUNCH_DAMAGE, knockback: Config.PUNCH_KNOCKBACK, stun: 0 };
+/** After a move, how long the next press still continues the combo. */
+const COMBO_WINDOW = 260;
+/** Rest after the combo's last move. */
+const COMBO_RECOVERY = 220;
 
 export interface KubotzLook { head: string | null; color: number; }
 
@@ -71,6 +97,8 @@ export interface ArenaHooks {
   playSfx(key: string, volume?: number): void;
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void;
   dust(x: number, y: number): void;
+  runDust(x: number, y: number, dir: number): void;
+  airJump(x: number, y: number, color: number): void;
 }
 
 /**
@@ -105,6 +133,14 @@ export class Kubotz implements Damageable {
   private attack: AttackBox | null = null;
   private attackEndsAt = 0;
   private attackReadyAt = 0;
+  /** Index in COMBO of the next move, the time it can still follow, and a press buffered during a move. */
+  private comboStep = 0;
+  private comboUntil = 0;
+  private comboQueued = false;
+  private inCombo = false; // the current move is part of the ground combo
+  private landUntil = 0;
+  private hitAnim: string = ANIM.HIT;
+  private grabAnimUntil = 0;
   private grabEndsAt = 0;
   private grabReadyAt = 0;
   guard: number = Config.GUARD_MAX;
@@ -117,6 +153,9 @@ export class Kubotz implements Damageable {
   private nextStepAt = 0;
   private shootingUntil = 0;
   private hitUntil = 0;
+  private flashUntil = 0;
+  /** Hitstun from light combo hits (no control, unlike a guard break it shows no wobble). */
+  private hitstunUntil = 0;
   private wasGrounded = false;
   private dead = false;
   respawnAt = 0;
@@ -176,8 +215,10 @@ export class Kubotz implements Damageable {
   currentAttack(): AttackBox | null {
     const a = this.attack;
     if (!a) return null;
-    a.circles = a.points
-      .map((p) => this.model.pointOn(p.file, p.x, p.y))
+    const at = a.points.map((p) => this.model.pointsOn(p.file, p.x, p.y));
+    // The fists (or feet): the striking one is the one furthest forward.
+    const placed = a.striker ? [at.flat().sort((u, v) => this.facing * (v.x - u.x))[0]] : at.map((l) => l[0]);
+    a.circles = placed
       .filter((p): p is { x: number; y: number } => !!p)
       .map((p) => new Phaser.Geom.Circle(p.x, p.y, a.radius));
     // Before the first pose (or if the part is hidden), fall back to the reach in front.
@@ -195,7 +236,7 @@ export class Kubotz implements Damageable {
   update(now: number, dt: number, controls = true): void {
     if (this.dead) { this.healthBar.clear(); return; }
     const read = this.controller.read();
-    const pad = this.pad = controls && now >= this.stunnedUntil ? read : emptyPad();
+    const pad = this.pad = controls && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.updateGuard(pad, now, dt);
     if (this.guarding) {
       // Guarding roots the robot: no running, jumping or attacking.
@@ -271,6 +312,10 @@ export class Kubotz implements Damageable {
         this.jumps++;
         this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
         if (grounded) this.hooks.dust(this.x, b.bottom);
+        else {
+          this.hooks.airJump(this.x, b.bottom, this.look.color);
+          if (!this.attack) this.anim.play(ANIM.JUMPING, true);
+        }
       }
     } else if (pad.down) {
       // Holding down on a soft platform drops through it (SSB-style).
@@ -285,10 +330,12 @@ export class Kubotz implements Damageable {
     if (grounded && !this.wasGrounded) {
       this.hooks.dust(this.x, b.bottom);
       this.squashUntil = now + 160;
+      this.landUntil = now + 180;
     }
     if (grounded && Math.abs(vx) > 4 && now >= this.nextStepAt) {
       this.nextStepAt = now + 260;
       this.hooks.playSfx('step', 0.25);
+      this.hooks.runDust(this.x, b.bottom, -Math.sign(vx));
     }
     this.wasGrounded = grounded;
   }
@@ -301,7 +348,12 @@ export class Kubotz implements Damageable {
   private handleActions(pad: PadState, now: number): void {
     if (this.attack && now >= this.attackEndsAt) {
       this.attack = null;
-      this.attackReadyAt = now + (this.weapon === 'laserSword' ? Config.LASER_SWORD_COOLDOWN : Config.PUNCH_COOLDOWN);
+      if (this.weapon === 'laserSword') this.attackReadyAt = now + Config.LASER_SWORD_COOLDOWN;
+      else if (!this.inCombo) this.attackReadyAt = now + Config.PUNCH_COOLDOWN;
+      else if (this.comboStep === 0) this.attackReadyAt = now + COMBO_RECOVERY; // the chain is over
+      else if (this.comboQueued && this.grounded) this.strike(COMBO[this.comboStep], now);
+      else this.attackReadyAt = now + Config.PUNCH_COOLDOWN;
+      this.comboQueued = false;
     }
 
     if (pad.attack) {
@@ -313,32 +365,72 @@ export class Kubotz implements Damageable {
           this.hooks.fireBullet(this, gun.damage, gun.speed);
           this.body.vx -= this.facing * gun.recoil * UNIT; // recoil
         }
-      } else if (!this.attack && now >= this.attackReadyAt) {
-        const sword = this.weapon === 'laserSword';
-        const air = !this.grounded;
-        this.attack = {
-          circles: [],
-          // The blade is covered by circles from hilt to tip; punches and kicks use the fist or foot.
-          radius: (sword ? 0.3 : 0.35) * UNIT,
-          points: sword ? bladePoints() : [air ? { file: 'feet/foot.png', x: 21, y: 40 } : { file: 'arms/hand.png', x: 36, y: 53 }],
-          damage: sword ? Config.LASER_SWORD_DAMAGE : Config.PUNCH_DAMAGE,
-          knockback: Config.PUNCH_KNOCKBACK * (sword ? 1.5 : 1),
-          hit: new Set(),
-        };
-        this.attackEndsAt = now + (sword ? Config.LASER_SWORD_DURATION : Config.PUNCH_DURATION);
-        this.anim.play(sword ? ANIM.SWORD : air ? ANIM.AIR_KICKING : ANIM.PUNCHING, true);
-        // The swing plays over the whole hit window.
-        this.anim.speed = sword ? 1000 / Config.LASER_SWORD_DURATION : 1;
+      } else if (this.attack) {
+        // A press during a punch is kept for the next move of the combo.
+        if (this.weapon === 'none' && this.comboStep > 0) this.comboQueued = true;
+      } else if (now >= this.attackReadyAt) {
+        if (this.weapon === 'laserSword') {
+          this.attack = {
+            circles: [],
+            // The blade is covered by circles from hilt to tip.
+            radius: 0.3 * UNIT,
+            points: bladePoints(),
+            striker: false,
+            damage: Config.LASER_SWORD_DAMAGE,
+            knockback: Config.PUNCH_KNOCKBACK * 1.5,
+            stun: 0,
+            hit: new Set(),
+          };
+          this.attackEndsAt = now + Config.LASER_SWORD_DURATION;
+          this.inCombo = false;
+          this.playOnce(ANIM.SWORD, Config.LASER_SWORD_DURATION);
+        } else if (!this.grounded) {
+          this.comboStep = 0;
+          this.strike(AIR_KICK, now);
+        } else {
+          if (now > this.comboUntil) this.comboStep = 0;
+          this.strike(COMBO[this.comboStep], now);
+        }
       }
     }
 
     if (pad.grab && now >= this.grabReadyAt && now >= this.grabEndsAt) {
       this.grabEndsAt = now + Config.GRAB_DURATION;
       this.grabReadyAt = this.grabEndsAt + Config.GRAB_COOLDOWN;
+      this.grabAnimUntil = now + 320;
     }
     if (now < this.grabEndsAt) {
       this.hooks.tryGrab(this, new Phaser.Geom.Circle(this.x, this.y, Config.GRAB_RADIUS * UNIT));
     }
+  }
+
+  /** Starts a punch or kick; on the ground it advances the combo. */
+  private strike(move: Move, now: number): void {
+    this.attack = {
+      circles: [],
+      radius: 0.35 * UNIT,
+      points: move.points,
+      striker: true,
+      damage: move.damage,
+      knockback: move.knockback,
+      stun: move.stun,
+      hit: new Set(),
+    };
+    this.attackEndsAt = now + move.ms;
+    this.playOnce(move.anim, move.ms);
+    this.inCombo = move !== AIR_KICK;
+    if (this.inCombo) {
+      this.comboStep = (this.comboStep + 1) % COMBO.length;
+      this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
+      // A small step into each hit keeps the target in reach.
+      this.body.vx += this.facing * (this.comboStep === 0 ? 5 : 3) * UNIT;
+    }
+  }
+
+  /** Plays an animation once over `ms`, whatever its own length. */
+  private playOnce(name: string, ms: number): void {
+    this.anim.play(name, true);
+    this.anim.speed = (this.anim.lengthOf(name) || ms) / ms;
   }
 
   // --------------------------------------------------------------- power ups
@@ -364,7 +456,7 @@ export class Kubotz implements Damageable {
   }
 
   // ------------------------------------------------------------------ damage
-  takeDamage(amount: number, attacker: Kubotz, pushX: number): void {
+  takeDamage(amount: number, attacker: Kubotz, pushX: number, stun = 0): void {
     if (this.dead || this.invincible || this.intangible) return;
     const now = this.hooks.now();
     this.lastAttacker = { by: attacker, at: now };
@@ -384,7 +476,14 @@ export class Kubotz implements Damageable {
     const growth = 1 + Config.KNOCKBACK_GROWTH * (1 - this.health / Config.KUBOTZ_HEALTH);
     this.body.vx += pushX * growth * UNIT;
     this.body.vy -= Math.abs(pushX) * 0.6 * growth * UNIT;
-    this.hitUntil = now + 250;
+    this.hitUntil = now + Math.max(250, stun);
+    this.flashUntil = now + 120;
+    this.hitstunUntil = Math.max(this.hitstunUntil, now + stun);
+    // Interrupted: a hit cancels the victim's own move and combo.
+    this.attack = null;
+    this.comboStep = 0;
+    this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
+    this.anim.play(this.hitAnim, true);
   }
 
   /** RespawnSystem DEAD state: hide and freeze until respawn. */
@@ -414,6 +513,7 @@ export class Kubotz implements Damageable {
     this.lastAttacker = null;
     this.guard = Config.GUARD_MAX;
     this.stunnedUntil = 0;
+    this.hitstunUntil = 0;
     this.body.enable = true;
     this.tag.setVisible(true);
     this.body.reset(x, y);
@@ -449,29 +549,35 @@ export class Kubotz implements Damageable {
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
     if (this.model instanceof RobotGltf) {
       this.model.setLoadout(this.look.head, this.weapon);
-      this.model.animate(this.guarding ? 'Guard' : this.anim.animationName, this.anim.progress, dtMs);
+      const name = this.guarding ? 'Guard' : this.anim.animationName;
+      // Quick blends into strikes and hits, softer ones between moves.
+      const fade = this.attack || now < this.hitUntil ? 0.05 : name === ANIM.LANDING ? 0.06 : 0.16;
+      this.model.animate(name, this.anim.progress, dtMs, fade);
     }
     this.model.update(this.anim.pose(), this.body.x, this.body.bottom, this.face, {
       lean, spin, squash,
       alpha: blink ? 0.45 : this.intangible ? 0.4 : 1,
-      flash: now < this.hitUntil,
+      flash: now < this.flashUntil,
     });
     this.drawOverlay(now);
   }
 
   private updateAnimationState(now: number): void {
     const a = this.anim;
-    const current = a.animationName;
+    if (this.attack) return; // the move plays out
     const vy = this.body.vy;
     const vx = this.body.vx;
-    const busy = (current === ANIM.PUNCHING || current === ANIM.AIR_KICKING || current === ANIM.SWORD) && this.attack;
-    if (busy) return;
     a.speed = 1;
-    if (now < this.hitUntil || now < this.stunnedUntil) { a.play(ANIM.HIT); return; }
+    if (now < this.hitUntil || now < this.stunnedUntil) { a.play(this.hitAnim); return; }
     if (this.guarding) { a.play(ANIM.IDLE); return; }
+    if (now < this.grabAnimUntil) { a.play(ANIM.GRAB); a.speed = 1.5; return; }
     if (now < this.shootingUntil && this.weapon !== 'none') { a.play(ANIM.SHOOTING); return; }
     if (!this.grounded) a.play(vy < 0 ? ANIM.JUMPING : ANIM.FALLING);
-    else if (Math.abs(vx) > 4) a.play(ANIM.RUNNING);
+    else if (Math.abs(vx) > 4) {
+      a.play(ANIM.RUNNING);
+      // The stride follows the speed.
+      a.speed = Phaser.Math.Clamp(Math.abs(vx) / (Config.MAX_SPEED * UNIT), 0.55, 1.15);
+    } else if (now < this.landUntil) { a.play(ANIM.LANDING); a.speed = 2.5; }
     else a.play(ANIM.IDLE);
   }
 

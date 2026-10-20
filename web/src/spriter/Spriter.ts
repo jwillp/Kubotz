@@ -187,6 +187,8 @@ export class SpriterAnimator {
   }
 
   get animationName(): string { return this.anim.name; }
+  /** Length of an animation in ms (0 if unknown). */
+  lengthOf(name: string): number { return this.spriter.animations.get(name)?.length ?? 0; }
   /** 0..1 progress through the current animation. */
   get progress(): number { return this.anim.length > 0 ? this.time / this.anim.length : 0; }
 

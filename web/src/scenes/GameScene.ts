@@ -10,6 +10,7 @@ import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { ImpactFx } from '../fx/Impact';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -34,6 +35,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private bullets: Bullet[] = [];
   private nextBonusAt = 0;
   private particles!: ParticleFx;
+  private impact!: ImpactFx;
   private effects!: Record<ParticleName, EffectDef>;
   private nextSmokeAt = 0;
   private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -189,6 +191,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private createEffects(): void {
     // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
     this.particles = new ParticleFx(this, 'pe:');
+    this.impact = new ImpactFx(this);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -213,6 +216,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   dust(x: number, y: number): void {
     this.fx('landingDust', x, y);
+  }
+
+  runDust(x: number, y: number, dir: number): void {
+    this.impact.runDust(x, y, dir);
+  }
+
+  airJump(x: number, y: number, color: number): void {
+    this.impact.airJump(x, y, color);
   }
 
   fireBullet(shooter: Kubotz, damage: number, speed: number): void {
@@ -252,15 +263,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.resolveMelee();
     this.debris.update(now, this.fighters, (victim, x, y) => {
       this.playSfx('punch', 0.3);
-      this.fx('hitStars', x, y);
+      this.impact.hit(x, y, Math.sign(victim.x - x) || 1, 0xffb060, 0.6);
     });
     this.updateBullets(now, dt);
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
     this.checkDeaths(now);
     this.updateBonusSpawns(now);
-    for (const k of this.fighters) k.render(now, dtMs);
+    for (const k of this.fighters) {
+      k.render(now, dtMs);
+      // A trail behind the striking fist, foot or blade tip.
+      const box = k.isAlive() ? k.currentAttack() : null;
+      this.impact.swing(k, box ? box.circles[box.circles.length - 1] : null, k.look.color);
+    }
     this.particles.update(dtMs);
+    this.impact.update(now, dtMs);
     this.updateCamera(dt);
     this.render3d(dtMs);
   }
@@ -271,6 +288,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 6 })),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: POWER_UPS[o.type].color, intensity: 2.5 })),
       ...this.debris.lights(this.clock),
+      ...this.impact.lights(),
     ];
     this.world3d.setLights(lights);
     this.world3d.render(this.cameras.main, this.game.canvas, dtMs);
@@ -306,24 +324,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         const meet = other?.circles.find((c) => Phaser.Geom.Intersects.CircleToCircle(at, c));
         if (other && meet && Math.abs(other.damage - box.damage) <= 5) {
           other.hit.add(attacker);
-          this.fx('hitStars', (at.x + meet.x) / 2, at.y);
+          this.impact.clash((at.x + meet.x) / 2, at.y);
           continue;
         }
-        this.hit(target, attacker, box.damage, attacker.facing * box.knockback, at.x, at.y);
+        this.hit(target, attacker, box.damage, attacker.facing * box.knockback, at.x, at.y, box.stun);
       }
     }
   }
 
-  private hit(target: Damageable, attacker: Kubotz, damage: number, pushX: number, x: number, y: number): void {
-    target.takeDamage(damage, attacker, pushX);
-    this.playSfx('punch', target instanceof Kubotz && target.guarding ? 0.2 : 0.45);
-    this.fx('hitStars', x, y);
+  private hit(target: Damageable, attacker: Kubotz, damage: number, pushX: number, x: number, y: number, stun = 0): void {
+    target.takeDamage(damage, attacker, pushX, stun);
+    const blocked = target instanceof Kubotz && (target.guarding || target.shield > 0);
+    this.playSfx('punch', blocked ? 0.2 : 0.45);
+    this.impact.hit(x, y, Math.sign(pushX) || 1, blocked ? 0x9fdcff : attacker.look.color, (damage / 4) * (blocked ? 0.5 : 1));
     if (damage >= 5) this.cameras.main.shake(90, 0.004);
   }
 
   private popBullet(b: Bullet): void {
     if (b.dead) return;
-    this.fx('hitStars', b.x, b.y);
+    this.impact.pop(b.x, b.y, b.shooter.look.color);
     b.destroy();
   }
 
