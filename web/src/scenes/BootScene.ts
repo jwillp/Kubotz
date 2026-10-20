@@ -1,10 +1,22 @@
 import Phaser from 'phaser';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
+import { EffectDef, parseEffect } from '../fx/ParticleEffect';
 import { CPU_COLORS, HEAD_FILES, P1_COLOR, P2_COLOR, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/DebugMap.tmx';
+
+/** Particle effects by name: the files the full-on-scripting branch plays. */
+export const PARTICLE_FILES = {
+  landingDust: 'landingDust.pe', // Constants.PARTICLES_LANDING_DUST
+  hitStars: 'eclatRouille.pe', // Constants.PARTICLES_HIT_STARS
+  laserSmoke: 'laserSmoke.pe', // Constants.PARTICLES_LASER_SMOKE
+  deathDust: 'deathDust.pe', // Constants.DEATH_DUST
+  pickUp: 'powerUpPickUp',
+  stars: 'stars.pe',
+} as const;
+export type ParticleName = keyof typeof PARTICLE_FILES;
 
 /** Loads the original assets: Spriter file + its images, TMX map + tiles, HUD. */
 export class BootScene extends Phaser.Scene {
@@ -29,6 +41,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('p-flame', 'particles/flameche.png');
     for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) this.load.image(`bonus_${b}`, `entities/bonus_${b}.png`);
     this.load.image('bullet', 'entities/bullet.png');
+    // LibGDX particle effects (full-on-scripting branch) and their images.
+    for (const [key, file] of Object.entries(PARTICLE_FILES)) this.load.text(`pe-file:${key}`, `particles/${file}`);
+    for (const img of ['pre_particle.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png']) this.load.image(`pe:${img}`, `particles/${img}`);
     // Original music and sounds (release v0.1-alpha), converted to mp3.
     this.load.audio('music-title', 'audio/dashboard.mp3');
     this.load.audio('music-game', 'audio/TechnoTheme.mp3');
@@ -43,6 +58,9 @@ export class BootScene extends Phaser.Scene {
     const map: TmxMap = await parseTmx(this.cache.text.get('tmx'));
     this.registry.set('spriter', spriter);
     this.registry.set('map', map);
+    const effects: Record<string, EffectDef> = {};
+    for (const key of Object.keys(PARTICLE_FILES)) effects[key] = parseEffect(this.cache.text.get(`pe-file:${key}`));
+    this.registry.set('effects', effects);
 
     for (const file of spriter.allFiles()) this.load.image(`kubotz:${file}`, `animations/${file}`);
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);

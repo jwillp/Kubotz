@@ -8,6 +8,8 @@ import { Kubotz, Damageable, ArenaHooks, P1_COLOR, P2_COLOR, CPU_COLORS } from '
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
+import type { ParticleName } from './BootScene';
+import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 export class GameScene extends Phaser.Scene implements ArenaHooks {
@@ -20,9 +22,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
   private nextBonusAt = 0;
-  private dustFx!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private hitFx!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private boomFx!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private particles!: ParticleFx;
+  private effects!: Record<ParticleName, EffectDef>;
+  private nextSmokeAt = 0;
   private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
@@ -169,21 +171,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private createEffects(): void {
-    this.dustFx = this.add.particles(0, 0, 'spark', {
-      speed: { min: 20, max: 90 }, angle: { min: 200, max: 340 }, lifespan: { min: 250, max: 500 },
-      scale: { start: 0.7, end: 0 }, alpha: { start: 0.5, end: 0 }, tint: 0xbfe6ff, emitting: false,
-    }).setDepth(9);
-    this.hitFx = this.add.particles(0, 0, 'p-star', {
-      speed: { min: 150, max: 380 }, lifespan: 380, scale: { start: 0.6, end: 0 },
-      rotate: { min: 0, max: 360 }, blendMode: 'ADD', emitting: false,
-    }).setDepth(15);
-    this.boomFx = this.add.particles(0, 0, 'p-hexa', {
-      speed: { min: 120, max: 520 }, lifespan: { min: 400, max: 900 }, scale: { start: 0.9, end: 0 },
-      rotate: { min: 0, max: 360 }, blendMode: 'ADD', emitting: false,
-    }).setDepth(15);
+    // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
+    this.particles = new ParticleFx(this, 'pe:');
+    this.effects = this.registry.get('effects');
+    // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
       speed: { min: 60, max: 220 }, lifespan: 500, scale: { start: 0.8, end: 0 }, blendMode: 'ADD', emitting: false,
     }).setDepth(15);
+  }
+
+  private fx(name: ParticleName, x: number, y: number): void {
+    this.particles.play(this.effects[name], x, y);
   }
 
   // -------------------------------------------------------------- ArenaHooks
@@ -197,7 +195,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   dust(x: number, y: number): void {
-    this.dustFx.explode(8, x, y);
+    this.fx('landingDust', x, y);
   }
 
   fireBullet(shooter: Kubotz, damage: number, speed: number): void {
@@ -213,7 +211,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
       kubotz.givePowerUp(orb.type, this.clock);
-      this.pickupFx.explode(18, orb.x, orb.y);
+      this.fx('pickUp', orb.x, orb.y);
       this.floatText(kubotz.x, kubotz.body.top - 40, POWER_UPS[orb.type].label, POWER_UPS[orb.type].color);
       orb.destroy();
       this.orbs = this.orbs.filter((o) => o !== orb);
@@ -242,6 +240,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkDeaths(now);
     this.updateBonusSpawns(now);
     for (const k of this.fighters) k.render(now, dtMs);
+    this.particles.update(dtMs);
     this.updateCamera(dt);
   }
 
@@ -273,7 +272,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         if (other && Phaser.Geom.Intersects.CircleToCircle(box.circle, other.circle)
           && Math.abs(other.damage - box.damage) <= 5) {
           other.hit.add(attacker);
-          this.hitFx.explode(6, (box.circle.x + other.circle.x) / 2, box.circle.y);
+          this.fx('hitStars', (box.circle.x + other.circle.x) / 2, box.circle.y);
           continue;
         }
         this.hit(target, attacker, box.damage, attacker.facing * box.knockback, box.circle.x, box.circle.y);
@@ -284,19 +283,22 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private hit(target: Damageable, attacker: Kubotz, damage: number, pushX: number, x: number, y: number): void {
     target.takeDamage(damage, attacker, pushX);
     this.playSfx('punch', target instanceof Kubotz && target.guarding ? 0.2 : 0.45);
-    this.hitFx.explode(Math.min(4 + damage, 14), x, y);
+    this.fx('hitStars', x, y);
     if (damage >= 5) this.cameras.main.shake(90, 0.004);
   }
 
   private popBullet(b: Bullet): void {
     if (b.dead) return;
-    this.hitFx.explode(4, b.sprite.x, b.sprite.y);
+    this.fx('hitStars', b.sprite.x, b.sprite.y);
     b.destroy();
   }
 
   private updateBullets(now: number): void {
+    const smoke = now >= this.nextSmokeAt; // BulletGraphicsScript: a trail of laser smoke
+    if (smoke) this.nextSmokeAt = now + 60;
     for (const b of this.bullets) {
       if (b.dead) continue;
+      if (smoke) this.fx('laserSmoke', b.sprite.x, b.sprite.y);
       if (now >= b.expiresAt) { b.destroy(); continue; }
       const box = b.hitbox();
       for (const target of this.damageablesFor(b.shooter)) {
@@ -369,7 +371,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private checkDeaths(now: number): void {
     for (const k of this.fighters) {
       if (!k.isAlive() || k.health > 0) continue;
-      this.boomFx.explode(30, k.x, k.y);
+      this.fx('deathDust', k.x, k.body.bottom);
       this.cameras.main.shake(220, 0.01);
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) killer.kills++;
@@ -393,7 +395,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       return d(q) - d(p);
     })[0];
     k.respawn(spawn.x + Phaser.Math.Between(-6, 6), spawn.y);
-    this.pickupFx.explode(20, spawn.x, spawn.y);
+    this.fx('stars', spawn.x, spawn.y);
   }
 
   // ------------------------------------------------------------------ camera

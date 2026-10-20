@@ -80,7 +80,9 @@ so player 2 gets its own keys here. Gamepads are a later improvement.
 - [x] 6. Guard bubble (replaces the skill button)
 - [x] 7. HUD & game flow
 - [x] 8. CPU opponent
-- [~] 9. Graphics pass (tile art, backdrop, particles, shake, blink done; more to come)
+- [~] 9. Graphics pass (tile art, backdrop, shake, blink; the original LibGDX `.pe`
+  particle effects from the full-on-scripting branch: landing dust, hit stars, laser
+  smoke, death dust, pick-up and respawn stars)
 - [ ] 10. Deploy (on hold: the owner tests locally first)
 
 ## Known differences from the original
@@ -106,6 +108,9 @@ Bugs fixed or unfinished features completed:
   (`audio/` was never committed); they are converted to mp3 in `core/assets/audio`.
 - Power-ups use `entities/bonus_*.png` like the release; energy had no art (it
   fell back to bonus_jump, tinted here), shield and invincibility use bonus_shield.
+- Particles: `web/src/fx/ParticleEffect.ts` plays the LibGDX ParticleEditor files
+  directly, wired where the full-on-scripting branch used them (plus pick-up and
+  respawn). `eclatRouille.pe` is that branch's tuned copy of `eclatRouille`.
 - Timers (power-ups, cooldowns, respawns, match time) run on a match clock that
   stops while the game is paused.
 - Laser Gun Mk II existed but was not in the random table; it now has a small chance.

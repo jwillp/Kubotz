@@ -57,6 +57,7 @@ web/
   src/game/Kubotz.ts       the robot: movement, attacks, power-ups, respawn
   src/game/PowerUps.ts     power-up effects and pick-up orbs
   src/game/Combat.ts       laser bullets (they also go through the portals)
+  src/fx/ParticleEffect.ts LibGDX .pe particle effects runtime
   src/game/Ai.ts           CPU player (after KubotzBehaviourScript)
   src/game/Input.ts        keyboard / gamepad virtual pad
   src/scenes/*.ts          boot, title, backdrop, arena, HUD
