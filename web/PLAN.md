@@ -197,3 +197,19 @@ subtle colour grading) for mood.
   (a hole in the floor). Each is a list of blocks; the tile art is laid on them
   the way the original map does (ground/ceiling strips, side pieces, platform
   end caps, outer fades).
+
+## Phase 4 — Blender models (2026-10-20)
+
+The robot, the bonus chips and the arena tiles were remade in Blender from the
+original art (sources and build script: `W:\claude\kubotz-blender`, outside this
+repo). The exports live in `core/assets/models/` and replace the 3D the game
+built from the sprites:
+- `robot.glb` (`three/RobotGltf.ts`): the original Spriter bones and animations,
+  played at the point the game's Spriter clock is at, so attack timings and
+  hitboxes are unchanged (hit points still come from the Spriter pose, through a
+  skeleton-only `Robot3D`). Helmet and weapon variants follow the character maps;
+  `player_color` / `player_glow` materials take the player's colour; the extra
+  `Guard` animation plays while guarding.
+- `pickups/bonus_*.glb`: spinning bonus chips (golden for invincibility, yellow for energy).
+- `tiles.glb`: tiles on blocks are placed as 2 x 2 x 2 unit 3D blocks (instanced).
+- If the models cannot be loaded, the game falls back to the sprite-built 3D.

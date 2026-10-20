@@ -29,14 +29,18 @@ const geometryCache = new Map<string, THREE.BufferGeometry>();
 export class Robot3D {
   readonly group = new THREE.Group(); // at the feet, y up, units
   private readonly rig = new THREE.Group(); // Spriter space (px), mirrored to face right
-  private readonly parts = new Map<number, { holder: THREE.Group; mesh: THREE.Mesh; key: string }>();
+  private readonly parts = new Map<number, { holder: THREE.Group; mesh: THREE.Object3D; key: string }>();
   private readonly materials = new Map<string, THREE.MeshStandardMaterial>();
 
   /**
    * @param texture returns the image to use for a Spriter file, already
    * recoloured for this robot (helmet, sword), and its texture key.
    */
-  constructor(private texture: (file: string) => { key: string; img: Img }) {
+  /**
+   * @param ghost only the posed skeleton, no meshes: it gives the positions of
+   * points on the parts (hitboxes, gun muzzle) when another model is drawn.
+   */
+  constructor(private texture: (file: string) => { key: string; img: Img }, private ghost = false) {
     const s = Config.SPRITER_SCALE; // Spriter px -> units
     this.rig.scale.setScalar(s);
     this.group.add(this.rig);
@@ -92,16 +96,23 @@ export class Robot3D {
       let part = this.parts.get(o.timeline);
       if (!part) {
         const holder = new THREE.Group();
-        const mesh = new THREE.Mesh(this.geometry(key, o.file.name, img), this.material(key, img));
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
+        let mesh: THREE.Object3D;
+        if (this.ghost) {
+          mesh = new THREE.Object3D();
+        } else {
+          mesh = new THREE.Mesh(this.geometry(key, o.file.name, img), this.material(key, img));
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+        }
         holder.add(mesh);
         this.rig.add(holder);
         part = { holder, mesh, key };
         this.parts.set(o.timeline, part);
       } else if (part.key !== key) {
-        part.mesh.geometry = this.geometry(key, o.file.name, img);
-        part.mesh.material = this.material(key, img);
+        if (part.mesh instanceof THREE.Mesh) {
+          part.mesh.geometry = this.geometry(key, o.file.name, img);
+          part.mesh.material = this.material(key, img);
+        }
         part.key = key;
       }
       const depth = depthOf(o.file.name);
@@ -149,7 +160,7 @@ export class Robot3D {
     const copies = new Map<THREE.Material, THREE.MeshStandardMaterial>();
     const out: { holder: THREE.Group; radius: number }[] = [];
     for (const p of this.parts.values()) {
-      if (!p.holder.visible || !this.group.visible) continue;
+      if (!p.holder.visible || !this.group.visible || !(p.mesh instanceof THREE.Mesh)) continue;
       const geo = p.mesh.geometry;
       if (!geo.boundingBox) geo.computeBoundingBox();
       const box = geo.boundingBox!;

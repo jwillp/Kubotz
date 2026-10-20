@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
@@ -59,6 +60,9 @@ export class World3D {
   private time = 0;
   private lowFx: boolean;
 
+  /** Reflections for metal (the robots); the arena keeps its plain lighting. */
+  envMap!: THREE.Texture;
+
   constructor(parent: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -97,6 +101,9 @@ export class World3D {
 
   private setupLights(): void {
     this.scene.add(new THREE.HemisphereLight(0xb4d4ff, 0x2a2030, 1.7));
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
     // Soft fill from the camera side so the dark armour still reads.
     const fill = new THREE.DirectionalLight(0xcfe0ff, 0.9);
     fill.position.set(0, 4, 40);
@@ -134,7 +141,12 @@ export class World3D {
   set visible(v: boolean) { this.renderer.domElement.style.display = v ? 'block' : 'none'; }
 
   /** Builds the arena: extruded blocks, the tile art on their faces, the backdrop. */
-  buildArena(map: TmxMap, solids: Rect[], tile: (source: string) => Img | null, background: Img | null): void {
+  /**
+   * @param tileModels the 3D tiles made in Blender (2 x 2 x 2 unit blocks, by
+   * tile name); tiles on blocks use them instead of being painted flat.
+   */
+  buildArena(map: TmxMap, solids: Rect[], tile: (source: string) => Img | null, background: Img | null,
+    tileModels?: Map<string, THREE.Mesh>): void {
     this.arena.clear();
     const mapW = map.width * map.tileWidth;
     const mapH = map.height * map.tileHeight;
@@ -146,6 +158,7 @@ export class World3D {
     for (const c of [front, back]) { c.width = mapW; c.height = mapH; }
     const fctx = front.getContext('2d')!;
     const bctx = back.getContext('2d')!;
+    const placed = new Map<THREE.Mesh, THREE.Matrix4[]>();
     for (const layer of map.layers) {
       layer.gids.forEach((gid, i) => {
         const info = map.tileImages.get(gid);
@@ -156,7 +169,16 @@ export class World3D {
         const bottom = (Math.floor(i / map.width) + 1) * map.tileHeight;
         const r = { x, y: bottom - img.height, width: img.width, height: img.height };
         const onBlock = solids.some((s) => r.x < s.x + s.width && r.x + r.width > s.x && r.y < s.y + s.height && r.y + r.height > s.y);
-        (onBlock ? fctx : bctx).drawImage(img, x, bottom - img.height);
+        const model = onBlock ? tileModels?.get(info.source.replace(/\.png$/, '')) : undefined;
+        if (model) {
+          // Front face just ahead of the block's, a hair above its top.
+          const at = new THREE.Matrix4().makeTranslation(x / UNIT, -bottom / UNIT + 0.01, BLOCK_DEPTH / 2 + 0.02);
+          const list = placed.get(model) ?? [];
+          list.push(at);
+          placed.set(model, list);
+        } else {
+          (onBlock ? fctx : bctx).drawImage(img, x, bottom - img.height);
+        }
       });
     }
     const artPlane = (canvas: HTMLCanvasElement, z: number, emissive: number) => {
@@ -172,6 +194,12 @@ export class World3D {
       mesh.receiveShadow = true;
       this.arena.add(mesh);
     };
+    for (const [model, list] of placed) {
+      const tiles = new THREE.InstancedMesh(model.geometry, model.material, list.length);
+      list.forEach((m, i) => tiles.setMatrixAt(i, m.multiply(model.matrixWorld)));
+      tiles.receiveShadow = true; // the blocks behind them already cast the shadows
+      this.arena.add(tiles);
+    }
     artPlane(front, BLOCK_DEPTH / 2 + 0.01, 0.55);
     artPlane(back, -BLOCK_DEPTH / 2 - 0.5, 0.5);
 

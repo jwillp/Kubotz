@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { explosionBuffer } from '../game/Debris';
+import { loadModels } from '../three/Models';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
@@ -57,6 +58,9 @@ export class BootScene extends Phaser.Scene {
   async create(): Promise<void> {
     const spriter = new SpriterData(this.cache.text.get('scml'), 'Kubotz');
     const map: TmxMap = await parseTmx(this.cache.text.get('tmx'));
+    // The Blender models (robot, bonus chips, tiles); without them the game
+    // builds its 3D from the sprites as before.
+    await loadModels().catch((e) => console.warn('3D models not loaded, using the sprite-built ones', e));
     this.registry.set('spriter', spriter);
     this.registry.set('map', map);
     const effects: Record<string, EffectDef> = {};

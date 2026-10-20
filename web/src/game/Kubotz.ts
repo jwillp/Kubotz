@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { SpriterAnimator, SpriterData } from '../spriter/Spriter';
 import { Robot3D } from '../three/Robot3D';
+import { RobotGltf } from '../three/RobotGltf';
+import { getModels } from '../three/Models';
 import type { World3D } from '../three/World3D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
@@ -79,7 +81,7 @@ export class Kubotz implements Damageable {
   readonly owner = this;
   readonly body: KubotzBody;
   private readonly anim: SpriterAnimator;
-  readonly model: Robot3D;
+  readonly model: Robot3D | RobotGltf;
   private face = -1; // eased facing for the turn-round animation
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
@@ -139,13 +141,17 @@ export class Kubotz implements Damageable {
     this.look = { head: HEADS[index % HEADS.length], color };
     if (this.look.head) this.anim.setCharacterMaps([this.look.head]);
     // The 3D robot: helmets and laser sword are painted in the player's colour.
-    this.model = new Robot3D((file) => {
+    const texture = (file: string) => {
       let key = `kubotz:${file}`;
       if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
       else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
       if (!scene.textures.exists(key)) key = `kubotz:${file}`;
       return { key, img: scene.textures.get(key).getSourceImage() as HTMLImageElement };
-    });
+    };
+    // The robot made in Blender from the original art; if its file could not
+    // be loaded, the robot built in code from the sprites.
+    const models = getModels();
+    this.model = models ? new RobotGltf(models.robot, color, new Robot3D(texture, true), world3d.envMap) : new Robot3D(texture);
     world3d.add(this.model.group);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
@@ -441,6 +447,10 @@ export class Kubotz implements Damageable {
     const spin = this.intangible ? -((this.dodgeUntil - now) / Config.AIR_DODGE_DURATION) * Math.PI * 2 * this.facing : 0;
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
+    if (this.model instanceof RobotGltf) {
+      this.model.setLoadout(this.look.head, this.weapon);
+      this.model.animate(this.guarding ? 'Guard' : this.anim.animationName, this.anim.progress, dtMs);
+    }
     this.model.update(this.anim.pose(), this.body.x, this.body.bottom, this.face, {
       lean, spin, squash,
       alpha: blink ? 0.45 : this.intangible ? 0.4 : 1,

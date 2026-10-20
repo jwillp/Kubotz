@@ -15,6 +15,7 @@ import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { ARENAS, buildArenaMap } from '../map/Arenas';
 import type { World3D } from '../three/World3D';
+import { getModels } from '../three/Models';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 export class GameScene extends Phaser.Scene implements ArenaHooks {
@@ -78,6 +79,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.map, this.solids,
       (source) => (this.textures.exists(`tile:${source}`) ? this.textures.get(`tile:${source}`).getSourceImage() as HTMLImageElement : null),
       this.textures.get('bg').getSourceImage() as HTMLImageElement,
+      getModels()?.tiles,
     );
     this.world3d.visible = true;
     this.debris = new DebrisField(this.physicsWorld, this.world3d);
@@ -359,7 +361,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
     if (this.orbs.length >= Config.MAX_NB_BONUS || this.bonusSpawns.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(this.bonusSpawns);
-    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
+    const orb = new PowerUpOrb(this, this.physicsWorld, this.world3d, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
     this.pickupFx.explode(12, orb.x, orb.y);
     this.orbs.push(orb);
   }
