@@ -152,19 +152,21 @@ port of Box2D, replaces Phaser Arcade — done:
 - The original body was 2 x 4 units (`withHeight(2)` gives half-extents 1 x 2); the
   same capsule is scaled to the 1 x 2 robot that the art and map of this port use.
 
-**C. 3D (2.5D) rendering** — [three.js](https://threejs.org) r186:
+**C. 3D (2.5D) rendering** — [three.js](https://threejs.org) r186 — done:
 - Gameplay stays on the 2D plane (an SSB-style platformer); only the view is 3D.
 - A three.js canvas draws the world behind Phaser's (now transparent) canvas;
   Phaser keeps the title screen, HUD, input and sound.
-- Kubotz robots are modelled in code (no external modelling tool here): black
-  armoured body, the four helmet shapes in player colour, glowing visor, a
-  skeleton matching the Spriter bones, and keyframed animations ported from the
-  `.scml` timings with extra secondary motion (idle breathing, run lean, landing
-  squash, sword arcs, hit flinch, guard pose, air-dodge spin, death).
-- The sword hitbox follows the blade bone of the sword animation.
+- Kubotz robots are built in code from the original art (`three/Extrude.ts`): each
+  Spriter body part's outline is traced and extruded into a bevelled solid with
+  its painting on the faces, parts are stacked front to back in drawing order,
+  and the `.scml` animations drive them (`SpriterAnimator`). Extra motion on top:
+  3/4 view, turning round, run lean, landing squash, air-dodge spin, stun wobble.
+  Helmets and laser sword are painted in the player's colour.
+- Hitboxes follow the striking part: circles along the laser blade, the fist for
+  punches, the foot for air kicks; lasers leave from the gun barrel.
 - Arena blocks are extruded in 3D and textured with the original tile art; the
   background image becomes a distant backdrop; the camera keeps framing all robots.
 
-**D. Lighting** — scene lights (key, rim, per-player light), emissive lasers with
+**D. Lighting** — done (add `?lowfx` to the URL to turn bloom and shadows off) — scene lights (key, rim, per-player light), emissive lasers with
 point lights, shadows on the arena, and a post-processing pass (bloom, vignette,
 subtle colour grading) for mood.

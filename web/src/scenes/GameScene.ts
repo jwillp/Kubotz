@@ -11,12 +11,14 @@ import type { MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PhysicsWorld } from '../physics/Physics';
+import type { World3D } from '../three/World3D';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 export class GameScene extends Phaser.Scene implements ArenaHooks {
   fighters: Kubotz[] = [];
   private map!: TmxMap;
   private physicsWorld!: PhysicsWorld;
+  private world3d!: World3D;
   private solids: Phaser.Geom.Rectangle[] = [];
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
@@ -61,9 +63,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
 
-    this.scene.launch('Backdrop');
-    this.scene.sendToBack('Backdrop');
+    this.world3d = this.registry.get('world3d');
     this.buildMap();
+    this.world3d.buildArena(
+      this.map, this.solids,
+      (source) => (this.textures.exists(`tile:${source}`) ? this.textures.get(`tile:${source}`).getSourceImage() as HTMLImageElement : null),
+      this.textures.get('bg').getSourceImage() as HTMLImageElement,
+    );
+    this.world3d.visible = true;
     this.createEffects();
 
     const humans = { P1: 0, P2: 0 };
@@ -84,7 +91,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         humans[slot]++;
       }
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
-      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this, this.physicsWorld);
+      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this, this.physicsWorld, this.world3d);
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
@@ -114,29 +121,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.music?.destroy();
       this.scene.stop('Hud');
-      this.scene.stop('Backdrop');
+      this.world3d.visible = false;
+      for (const k of this.fighters) k.destroy();
     });
   }
 
   // ---------------------------------------------------------------------- map
   private buildMap(): void {
     const m = this.map;
-    // The original kept these Tiled layers hidden behind its debug shapes; the
-    // port draws them so the arena looks like its art (blocks stay invisible). Everything
-    // static is baked into one render texture: one quad instead of ~350 sprites.
+    // The original kept the Tiled art layers hidden behind its debug shapes; the
+    // port draws them in 3D (World3D.buildArena): blocks are extruded boxes with
+    // the tile art on their faces.
     const mapW = m.width * m.tileWidth;
-    const art = this.add.renderTexture(0, 0, mapW, m.height * m.tileHeight).setOrigin(0, 0).setDepth(2);
-    const stamp = this.make.image({ x: 0, y: 0, key: '__DEFAULT' }, false).setOrigin(0, 1);
-    for (const layer of m.layers) {
-      layer.gids.forEach((gid, i) => {
-        const img = m.tileImages.get(gid);
-        if (!img) return;
-        // Tiled anchors image tiles at the cell's bottom-left corner.
-        stamp.setTexture(`tile:${img.source}`).setOrigin(0, 1);
-        art.draw(stamp, (i % m.width) * m.tileWidth, (Math.floor(i / m.width) + 1) * m.tileHeight);
-      });
-    }
-    stamp.destroy();
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -199,8 +195,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   fireBullet(shooter: Kubotz, damage: number, speed: number): void {
-    const x = shooter.x + shooter.facing * UNIT * 1.1;
-    const y = shooter.y - UNIT * 0.15;
+    const { x, y } = shooter.muzzle();
     const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock);
     this.playSfx('shot', 0.3);
     this.bullets.push(b);
@@ -242,6 +237,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const k of this.fighters) k.render(now, dtMs);
     this.particles.update(dtMs);
     this.updateCamera(dt);
+    this.render3d(dtMs);
+  }
+
+  /** Lights for lasers and power-ups, then the 3D frame under Phaser's. */
+  private render3d(dtMs: number): void {
+    const lights = [
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 6 })),
+      ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: POWER_UPS[o.type].color, intensity: 2.5 })),
+    ];
+    this.world3d.setLights(lights);
+    this.world3d.render(this.cameras.main, this.game.canvas, dtMs);
   }
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
@@ -265,17 +271,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (!box) continue;
       for (const target of this.damageablesFor(attacker)) {
         if (box.hit.has(target)) continue;
-        if (!Phaser.Geom.Intersects.CircleToRectangle(box.circle, target.hurtbox())) continue;
+        const hurt = target.hurtbox();
+        const at = box.circles.find((c) => Phaser.Geom.Intersects.CircleToRectangle(c, hurt));
+        if (!at) continue;
         box.hit.add(target);
         // Clash: two attacks of similar strength meeting cancel out (CLASH_THRESHOLD = 5).
         const other = target instanceof Kubotz ? target.currentAttack() : null;
-        if (other && Phaser.Geom.Intersects.CircleToCircle(box.circle, other.circle)
-          && Math.abs(other.damage - box.damage) <= 5) {
+        const meet = other?.circles.find((c) => Phaser.Geom.Intersects.CircleToCircle(at, c));
+        if (other && meet && Math.abs(other.damage - box.damage) <= 5) {
           other.hit.add(attacker);
-          this.fx('hitStars', (box.circle.x + other.circle.x) / 2, box.circle.y);
+          this.fx('hitStars', (at.x + meet.x) / 2, at.y);
           continue;
         }
-        this.hit(target, attacker, box.damage, attacker.facing * box.knockback, box.circle.x, box.circle.y);
+        this.hit(target, attacker, box.damage, attacker.facing * box.knockback, at.x, at.y);
       }
     }
   }

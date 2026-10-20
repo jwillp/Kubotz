@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
-import { CPU_COLORS, HEAD_FILES, P1_COLOR, P2_COLOR, hex } from '../game/Kubotz';
+import { CPU_COLORS, GUN_FILE, HEAD_FILES, P1_COLOR, P2_COLOR, PART_TIPS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/DebugMap.tmx';
@@ -77,11 +77,55 @@ export class BootScene extends Phaser.Scene {
       for (const file of HEAD_FILES) this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
       this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
+      this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
     }
+    this.measureWeapons();
     const g = this.make.graphics({}, false);
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
     g.generateTexture('spark', 16, 16);
     g.destroy();
+  }
+
+  /**
+   * Finds the sword's blade (hilt to tip) and the gun's muzzle on their images,
+   * measured from the forearm pivot they share, for hitboxes and bullets.
+   */
+  private measureWeapons(): void {
+    const pixels = (key: string) => {
+      const img = this.textures.get(key).getSourceImage() as HTMLImageElement;
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      const ctx = c.getContext('2d', { willReadFrequently: true })!;
+      ctx.drawImage(img, 0, 0);
+      return { d: ctx.getImageData(0, 0, img.width, img.height).data, w: img.width, h: img.height };
+    };
+    // fore_arm.png pivot (0.0725, 0.111), y up
+    const sword = pixels(`kubotz:${SWORD_FILE}`);
+    const px = 0.0725 * sword.w;
+    const py = 0.111 * sword.h;
+    let tip = { x: 0, y: 0, d: -1 };
+    let base = { x: 0, y: 0, d: 1e9 };
+    for (let y = 0; y < sword.h; y += 2) for (let x = 0; x < sword.w; x += 2) {
+      const i = (y * sword.w + x) * 4;
+      const [r, g, b, a] = [sword.d[i], sword.d[i + 1], sword.d[i + 2], sword.d[i + 3]];
+      const max = Math.max(r, g, b);
+      const glowing = a > 150 && max > 180 && (max - Math.min(r, g, b)) / max > 0.4;
+      if (!glowing) continue;
+      const yy = sword.h - y;
+      const d = Math.hypot(x - px, yy - py);
+      if (d > tip.d) tip = { x, y: yy, d };
+      if (d < base.d && d > 60) base = { x, y: yy, d }; // skip the gem on the hilt
+    }
+    if (tip.d > 0) { PART_TIPS.sword = { x: tip.x, y: tip.y }; PART_TIPS.swordBase = { x: base.x, y: base.y }; }
+    const gun = pixels(`kubotz:${GUN_FILE}`);
+    let far = { x: 0, y: 0, d: -1 };
+    for (let y = 0; y < gun.h; y += 2) for (let x = 0; x < gun.w; x += 2) {
+      if (gun.d[(y * gun.w + x) * 4 + 3] < 150) continue;
+      const yy = gun.h - y;
+      const d = Math.hypot(x - 0.0725 * gun.w, yy - 0.111 * gun.h);
+      if (d > far.d) far = { x, y: yy, d };
+    }
+    if (far.d > 0) PART_TIPS.gun = { x: far.x, y: far.y };
   }
 
   /** Copies a texture painted in the hue of `color` (coloured and grey parts; blacks stay). */

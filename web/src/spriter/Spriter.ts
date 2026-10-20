@@ -1,12 +1,10 @@
-import Phaser from 'phaser';
-
 /**
  * Minimal Spriter (SCML) runtime: bones + sprite objects, linear tweening,
  * spin, character maps. Enough to play animations/kubotz.scml, which the
  * LibGDX version played through the brashmonkey Java runtime.
  */
 
-interface SpriterFile { name: string; width: number; height: number; pivotX: number; pivotY: number; }
+export interface SpriterFile { name: string; width: number; height: number; pivotX: number; pivotY: number; }
 
 interface TimelineKey {
   time: number;
@@ -131,7 +129,7 @@ export class SpriterData {
   }
 }
 
-interface Transform { x: number; y: number; angle: number; scaleX: number; scaleY: number; alpha: number; }
+export interface Transform { x: number; y: number; angle: number; scaleX: number; scaleY: number; alpha: number; }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -147,7 +145,7 @@ function applyParent(parent: Transform, child: Transform): Transform {
   const angle = flip ? 360 - child.angle : child.angle;
   const px = child.x * parent.scaleX;
   const py = child.y * parent.scaleY;
-  const rad = Phaser.Math.DegToRad(parent.angle);
+  const rad = (parent.angle * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
   return {
@@ -160,27 +158,37 @@ function applyParent(parent: Transform, child: Transform): Transform {
   };
 }
 
+/** One drawn body part of a pose, in Spriter space (pixels, y up, degrees CCW). */
+export interface PosedObject {
+  timeline: number; // stable id of the part across frames
+  z: number; // drawing order (z_index), back to front
+  file: SpriterFile;
+  folder: number;
+  fileIndex: number;
+  tr: Transform;
+  pivotX: number;
+  pivotY: number;
+}
+
 /**
- * Plays one SpriterData inside a Phaser container. Spriter is y-up with
- * counter-clockwise angles; the container converts to Phaser's y-down space.
+ * Plays one animation of a SpriterData and computes the pose (bones + parts)
+ * for any renderer: the 3D robots use it to drive their parts.
  */
-export class SpriterPlayer extends Phaser.GameObjects.Container {
+export class SpriterAnimator {
   private anim!: SpriterAnimation;
   private time = 0;
-  private sprites = new Map<number, Phaser.GameObjects.Image>();
   private charMaps: CharacterMap[] = [];
   speed = 1;
-  /** Per-instance texture swaps (file name -> texture key), e.g. recoloured helmets. */
-  textureOverrides = new Map<string, string>();
   /** Set when a non-looping animation reached its end. */
   finished = false;
 
-  constructor(scene: Phaser.Scene, private spriter: SpriterData, private textureKeyPrefix: string, initial: string) {
-    super(scene);
+  constructor(private spriter: SpriterData, initial: string) {
     this.play(initial, true);
   }
 
   get animationName(): string { return this.anim.name; }
+  /** 0..1 progress through the current animation. */
+  get progress(): number { return this.anim.length > 0 ? this.time / this.anim.length : 0; }
 
   play(name: string, restart = false): void {
     if (!restart && this.anim?.name === name) return;
@@ -195,11 +203,7 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
     this.charMaps = names.map((n) => this.spriter.characterMaps.get(n)).filter((m): m is CharacterMap => !!m);
   }
 
-  setFlipped(flipped: boolean): void {
-    this.scaleX = Math.abs(this.scaleX) * (flipped ? -1 : 1);
-  }
-
-  /** Advance by dt milliseconds and redraw. */
+  /** Advance by dt milliseconds. */
   tick(dtMs: number): void {
     const a = this.anim;
     this.time += dtMs * this.speed;
@@ -207,7 +211,6 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
       if (a.looping) this.time %= a.length;
       else { this.time = a.length; this.finished = true; }
     }
-    this.draw();
   }
 
   private keyTransform(tl: Timeline, keyIndex: number): { tr: Transform; key: TimelineKey } {
@@ -221,7 +224,7 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
       t2 = a.length;
     }
     const span = t2! - k1.time;
-    const t = span > 0 ? Phaser.Math.Clamp((this.time - k1.time) / span, 0, 1) : 0;
+    const t = span > 0 ? Math.min(1, Math.max(0, (this.time - k1.time) / span)) : 0;
     return {
       key: k1,
       tr: {
@@ -235,7 +238,8 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
     };
   }
 
-  private draw(): void {
+  /** The visible parts at the current time, back to front. */
+  pose(): PosedObject[] {
     const a = this.anim;
     let main = a.mainline[0];
     for (const k of a.mainline) if (k.time <= this.time) main = k;
@@ -247,12 +251,10 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
       bones[ref.id] = applyParent(ref.parent >= 0 ? bones[ref.parent] : root, tr);
     }
 
-    for (const s of this.sprites.values()) s.setVisible(false);
-    let depth = 0;
+    const out: PosedObject[] = [];
     for (const ref of main.objects) {
       const { tr: local, key } = this.keyTransform(a.timelines.get(ref.timeline)!, ref.key);
       const tr = applyParent(ref.parent >= 0 ? bones[ref.parent] : root, local);
-
       let folder = key.folder;
       let file = key.file;
       let hidden = false;
@@ -264,25 +266,11 @@ export class SpriterPlayer extends Phaser.GameObjects.Container {
       if (hidden) continue;
       const info = this.spriter.folders[folder]?.[file];
       if (!info) continue;
-
-      let img = this.sprites.get(ref.timeline);
-      const textureKey = this.textureOverrides.get(info.name) ?? this.textureKeyPrefix + info.name;
-      if (!img) {
-        img = this.scene.add.image(0, 0, textureKey);
-        this.sprites.set(ref.timeline, img);
-        this.add(img);
-      } else if (img.texture.key !== textureKey) {
-        img.setTexture(textureKey);
-      }
-      const pivotX = key.pivotX ?? info.pivotX;
-      const pivotY = key.pivotY ?? info.pivotY;
-      img.setVisible(true)
-        .setOrigin(pivotX, 1 - pivotY)
-        .setPosition(tr.x, -tr.y)
-        .setAngle(-tr.angle)
-        .setScale(tr.scaleX, tr.scaleY)
-        .setAlpha(tr.alpha);
-      this.moveTo(img, depth++);
+      out.push({
+        timeline: ref.timeline, z: ref.z, file: info, folder, fileIndex: file, tr,
+        pivotX: key.pivotX ?? info.pivotX, pivotY: key.pivotY ?? info.pivotY,
+      });
     }
+    return out;
   }
 }

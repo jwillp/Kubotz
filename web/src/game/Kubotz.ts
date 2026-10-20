@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
-import { SpriterData, SpriterPlayer } from '../spriter/Spriter';
+import { SpriterAnimator, SpriterData } from '../spriter/Spriter';
+import { Robot3D } from '../three/Robot3D';
+import type { World3D } from '../three/World3D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
@@ -15,12 +17,29 @@ export interface Damageable {
   takeDamage(amount: number, attacker: Kubotz, pushX: number): void;
 }
 
+/** A point of a body part (Spriter image pixels, origin bottom-left, y up). */
+export interface PartPoint { file: string; x: number; y: number; }
+
 export interface AttackBox {
-  circle: Phaser.Geom.Circle;
+  /** Hit circles, placed every frame on the striking part (fist, foot, blade). */
+  circles: Phaser.Geom.Circle[];
+  radius: number;
+  points: PartPoint[];
   damage: number;
   knockback: number;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
+}
+
+/** Spriter files of the weapons, and points measured on their images (see BootScene). */
+export const SWORD_FILE = 'arms/lazerSword.png';
+export const GUN_FILE = 'arms/gunMk1.png';
+export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
+
+/** Points from the sword's hilt to its tip, for the blade hitbox. */
+function bladePoints(): PartPoint[] {
+  const { sword: t, swordBase: b } = PART_TIPS;
+  return [0.25, 0.5, 0.75, 1].map((f) => ({ file: SWORD_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
 }
 
 const ANIM = {
@@ -59,8 +78,10 @@ export interface ArenaHooks {
 export class Kubotz implements Damageable {
   readonly owner = this;
   readonly body: KubotzBody;
-  readonly view: Phaser.GameObjects.Container;
-  private readonly anim: SpriterPlayer;
+  private readonly anim: SpriterAnimator;
+  readonly model: Robot3D;
+  private face = -1; // eased facing for the turn-round animation
+  private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
   private readonly tag: Phaser.GameObjects.Image;
   readonly look: KubotzLook;
@@ -109,17 +130,22 @@ export class Kubotz implements Damageable {
     y: number,
     private hooks: ArenaHooks,
     physics: PhysicsWorld,
+    world3d: World3D,
   ) {
     this.body = new KubotzBody(physics, x, y);
 
-    this.anim = new SpriterPlayer(scene, spriter, 'kubotz:', ANIM.IDLE);
-    const scale = Config.SPRITER_SCALE * UNIT;
-    this.anim.setScale(scale);
-    this.view = scene.add.container(x, y, [this.anim]).setDepth(10);
+    this.anim = new SpriterAnimator(spriter, ANIM.IDLE);
     this.look = { head: HEADS[index % HEADS.length], color };
     if (this.look.head) this.anim.setCharacterMaps([this.look.head]);
-    // Every helmet shape is drawn in the player's colour.
-    for (const file of HEAD_FILES) this.anim.textureOverrides.set(file, `head:${hex(color)}:${file}`);
+    // The 3D robot: helmets and laser sword are painted in the player's colour.
+    this.model = new Robot3D((file) => {
+      let key = `kubotz:${file}`;
+      if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
+      else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+      if (!scene.textures.exists(key)) key = `kubotz:${file}`;
+      return { key, img: scene.textures.get(key).getSourceImage() as HTMLImageElement };
+    });
+    world3d.add(this.model.group);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = controller.label === 'CPU' ? `label-CPU:${hex(color)}` : `label-${controller.label}`;
@@ -139,13 +165,23 @@ export class Kubotz implements Damageable {
     return new Phaser.Geom.Rectangle(this.body.left, this.body.top, this.body.width, this.body.height);
   }
 
-  /** The active melee / sword hitbox, if any. */
+  /** The active melee / sword hitbox, if any, on the striking part of the 3D robot. */
   currentAttack(): AttackBox | null {
-    if (!this.attack) return null;
-    const r = this.attack.circle.radius;
-    const offset = this.weapon === 'laserSword' ? 0.75 * UNIT : 0.75 * UNIT;
-    this.attack.circle.setTo(this.x + this.facing * offset, this.y, r);
-    return this.attack;
+    const a = this.attack;
+    if (!a) return null;
+    a.circles = a.points
+      .map((p) => this.model.pointOn(p.file, p.x, p.y))
+      .filter((p): p is { x: number; y: number } => !!p)
+      .map((p) => new Phaser.Geom.Circle(p.x, p.y, a.radius));
+    // Before the first pose (or if the part is hidden), fall back to the reach in front.
+    if (a.circles.length === 0) a.circles = [new Phaser.Geom.Circle(this.x + this.facing * 0.75 * UNIT, this.y, a.radius)];
+    return a;
+  }
+
+  /** Where the laser leaves the gun barrel (world pixels). */
+  muzzle(): { x: number; y: number } {
+    const tip = this.model.pointOn(GUN_FILE, PART_TIPS.gun.x, PART_TIPS.gun.y);
+    return tip ?? { x: this.x + this.facing * UNIT * 1.1, y: this.y - UNIT * 0.15 };
   }
 
   /** @param controls false during the countdown and while stunned. */
@@ -236,7 +272,10 @@ export class Kubotz implements Damageable {
     }
 
     b.setVelocity(vx * UNIT, vy * UNIT);
-    if (grounded && !this.wasGrounded) this.hooks.dust(this.x, b.bottom);
+    if (grounded && !this.wasGrounded) {
+      this.hooks.dust(this.x, b.bottom);
+      this.squashUntil = now + 160;
+    }
     if (grounded && Math.abs(vx) > 4 && now >= this.nextStepAt) {
       this.nextStepAt = now + 260;
       this.hooks.playSfx('step', 0.25);
@@ -266,14 +305,20 @@ export class Kubotz implements Damageable {
         }
       } else if (!this.attack && now >= this.attackReadyAt) {
         const sword = this.weapon === 'laserSword';
+        const air = !this.grounded;
         this.attack = {
-          circle: new Phaser.Geom.Circle(0, 0, (sword ? 0.75 : 0.25) * UNIT),
+          circles: [],
+          // The blade is covered by circles from hilt to tip; punches and kicks use the fist or foot.
+          radius: (sword ? 0.3 : 0.35) * UNIT,
+          points: sword ? bladePoints() : [air ? { file: 'feet/foot.png', x: 21, y: 40 } : { file: 'arms/hand.png', x: 36, y: 53 }],
           damage: sword ? Config.LASER_SWORD_DAMAGE : Config.PUNCH_DAMAGE,
           knockback: Config.PUNCH_KNOCKBACK * (sword ? 1.5 : 1),
           hit: new Set(),
         };
         this.attackEndsAt = now + (sword ? Config.LASER_SWORD_DURATION : Config.PUNCH_DURATION);
-        this.anim.play(sword ? ANIM.SWORD : this.grounded ? ANIM.PUNCHING : ANIM.AIR_KICKING, true);
+        this.anim.play(sword ? ANIM.SWORD : air ? ANIM.AIR_KICKING : ANIM.PUNCHING, true);
+        // The swing plays over the whole hit window.
+        this.anim.speed = sword ? 1000 / Config.LASER_SWORD_DURATION : 1;
       }
     }
 
@@ -347,7 +392,7 @@ export class Kubotz implements Damageable {
     this.tag.setVisible(false);
     this.body.setVelocity(0, 0);
     this.body.enable = false;
-    this.view.setVisible(false);
+    this.model.visible = false;
   }
 
   /** RespawnSystem SPAWNING state. */
@@ -362,7 +407,7 @@ export class Kubotz implements Damageable {
     this.body.enable = true;
     this.tag.setVisible(true);
     this.body.reset(x, y);
-    this.view.setVisible(true);
+    this.model.visible = true;
     this.anim.play(ANIM.IDLE, true);
   }
 
@@ -374,9 +419,7 @@ export class Kubotz implements Damageable {
   /** Runs after physics so the sprite sits exactly on the body. */
   render(now: number, dtMs: number): void {
     if (this.dead) return;
-    this.view.setPosition(this.body.x, this.body.bottom);
     this.updateAnimationState(now);
-    this.anim.setFlipped(this.facing === 1); // the Spriter art faces left
     this.anim.tick(dtMs);
 
     const maps: string[] = [];
@@ -385,11 +428,20 @@ export class Kubotz implements Damageable {
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
     this.anim.setCharacterMaps(maps);
 
-    const stunned = now < this.stunnedUntil;
-    this.anim.setAngle(stunned ? Math.sin(now / 60) * 6 : 0); // dizzy wobble after a guard break
+    // Extra motion on top of the Spriter animations: turning round, leaning into
+    // runs, squash on landing, a spin when air-dodging, a wobble when stunned.
+    this.face += (this.facing - this.face) * Math.min(1, (dtMs / 1000) * 14);
+    const vx = this.body.vx / (Config.MAX_SPEED * UNIT);
+    let lean = this.grounded ? -vx * 0.12 : -vx * 0.05;
+    if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
+    const spin = this.intangible ? -((this.dodgeUntil - now) / Config.AIR_DODGE_DURATION) * Math.PI * 2 * this.facing : 0;
+    const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
-    this.anim.setAlpha(blink ? 0.45 : this.intangible ? 0.35 : 1);
-    if (this.intangible) this.anim.setAngle(((this.dodgeUntil - now) / Config.AIR_DODGE_DURATION) * 360 * this.facing);
+    this.model.update(this.anim.pose(), this.body.x, this.body.bottom, this.face, {
+      lean, spin, squash,
+      alpha: blink ? 0.45 : this.intangible ? 0.4 : 1,
+      flash: now < this.hitUntil,
+    });
     this.drawOverlay(now);
   }
 
@@ -400,6 +452,7 @@ export class Kubotz implements Damageable {
     const vx = this.body.vx;
     const busy = (current === ANIM.PUNCHING || current === ANIM.AIR_KICKING || current === ANIM.SWORD) && this.attack;
     if (busy) return;
+    a.speed = 1;
     if (now < this.hitUntil || now < this.stunnedUntil) { a.play(ANIM.HIT); return; }
     if (this.guarding) { a.play(ANIM.IDLE); return; }
     if (now < this.shootingUntil && this.weapon !== 'none') { a.play(ANIM.SHOOTING); return; }
@@ -432,7 +485,7 @@ export class Kubotz implements Damageable {
   }
 
   destroy(): void {
-    this.view.destroy();
+    this.model.dispose();
     this.healthBar.destroy();
     this.tag.destroy();
     this.body.destroy();
