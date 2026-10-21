@@ -31,6 +31,11 @@ export class DebugScene extends Phaser.Scene {
   constructor() { super('Debug'); }
 
   create(): void {
+    // The scene object is reused on every launch: the texts of the last run were
+    // destroyed with it when the scene stopped (F3 off), so start afresh.
+    this.labels = [];
+    this.frameMs = [];
+    this.nextText = 0;
     this.g = this.add.graphics();
     this.panel = this.add.text(12, 0, '', {
       fontFamily: 'Consolas, Menlo, monospace', fontSize: '13px', color: '#d7f7ff',
@@ -159,7 +164,7 @@ export class DebugScene extends Phaser.Scene {
     this.panel.setText([
       `FPS ${this.game.loop.actualFps.toFixed(0)}   frame ${avg.toFixed(1)} ms (max ${Math.max(...ms).toFixed(1)})`,
       `bodies ${game.physicsWorld.world.getBodyCount()}  robots ${alive.length}  bullets ${game.bulletCount}  power-ups ${game.orbCount}  debris ${game.debrisCircles().length}`,
-      `clock ${(game.clock / 1000).toFixed(1)} s   speed ${state.frozen ? 'frozen' : `x${state.timeScale}`}   gravity ${Config.GRAVITY}`,
+      `clock ${(game.clock / 1000).toFixed(1)} s   speed ${state.frozen ? 'frozen' : `x${state.timeScale}`}   gravity ${Config.GRAVITY} (falling ${(Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS)).toFixed(0)})`,
       'F3 debug off · F4 slow motion · F6 freeze · F7 one frame · F8 navigation graph',
     ].join('\n'));
   }

@@ -660,3 +660,35 @@ every feature branch starts from `dev`.
 
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
+
+### Phase 11 A — heavier fall, dodge roll, debug fix (2026-10-21)
+
+- **Heavier fall**: the jump is unchanged (20.5 u/s under 44 u/s², about
+  4.6 units, 433 ms up), but past the apex robots fall under 132 u/s²
+  (`FALL_GRAVITY_BONUS` 0.1 → 2) up to a terminal 32 u/s (none before).
+  The fall from a full jump takes 283 ms instead of 450 ms (air time
+  883 → 717 ms). Fast fall (down held past the apex, no longer while rising)
+  goes straight to 44 u/s as in Melee, instead of adding 4 u/s a frame up to
+  about 22. Hitstun and the specials' bursts keep their speed (spikes, dive
+  kicks), easing back to the cap after. Nav's jump reach is unchanged (it
+  comes from the rise), and the CPUs still double jump near each apex.
+- **Dodge roll** (guard + left / right on the ground, a direction pressed
+  with the guard up or both at once; running into a guard just guards):
+  - 3.4 units in 330 ms (fast off the mark, slowing to a stop), then 110 ms
+    of end lag; intangible from 30 to 300 ms; 150 ms before the next one.
+  - Passes through robots (the body's `ghost`, kept until it no longer
+    overlaps one: `KubotzBody.overlapsRobot`); stops at walls; rolling off
+    an edge ends it and the robot falls.
+  - Ends facing back the way it came (Melee). Clips `roll` (forward ninja
+    roll from a crouch into a low tuck) and `rollBack`; afterimages like the
+    air dodge.
+  - The air dodge and the roll share one `dodge` record (kind, direction,
+    intangible window, end), so `intangible`, the afterimages and the
+    animation hold work the same for both.
+  - CPUs roll now and then instead of guarding a swing (mostly through the
+    attacker), and when cornered while low on health.
+- **Debug crash** (F3 on, off, on): the Debug scene object is reused on
+  every launch and kept its robot labels, destroyed when the scene stopped;
+  the next update called `setText` on a destroyed text (null canvas).
+  `DebugScene.create` now resets the labels and the frame times. The panel
+  also shows the falling gravity.
