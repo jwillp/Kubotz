@@ -10,7 +10,7 @@ import { Bullet } from '../game/Combat';
 import { BONUS_RATES, canHurt, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
-import { GradePipeline } from '../fx/Grade';
+import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
@@ -700,9 +700,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private gradeOn = false;
 
   /**
-   * The grade pass (vignette, split tone, grain, scanlines) on the whole view
-   * (WebGL only); off with ?lowfx or a VFX setting under half, toggled with F.
-   * No bloom: the owner preferred the crisper look without it.
+   * The grade pass (vignette, split tone, grain, scanlines) on the arena and
+   * the same grain and scanlines on the backdrop behind it, so they cover the
+   * whole view (WebGL only); off with ?lowfx or a VFX setting under half,
+   * toggled with F. No bloom: the owner preferred the crisper look without it.
    */
   private setupScreenFx(): void {
     this.gradeOn = false;
@@ -718,17 +719,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private setScreenFx(on: boolean): boolean {
-    const cam = this.cameras.main;
-    if (this.sys.renderer.type !== Phaser.WEBGL) return false;
-    // Remove the instances themselves: removing by the name 'Grade' missed
-    // (the instance is named after its class), so every toggle stacked another pass.
-    for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
-    this.gradeOn = on;
-    if (this.gradeOn) {
-      const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
-      if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
-      cam.setPostPipeline(GradePipeline);
-    }
+    this.gradeOn = setPass(this, this.cameras.main, GradePipeline, on);
+    // The backdrop reads this when it starts; once it runs, set its pass here.
+    this.registry.set('screenFx', this.gradeOn);
+    const backdrop = this.scene.get('Backdrop');
+    if (backdrop.sys.isActive()) setPass(backdrop, backdrop.cameras.main, GrainPipeline, this.gradeOn);
     return this.gradeOn;
   }
 

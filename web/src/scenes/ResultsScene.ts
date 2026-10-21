@@ -6,7 +6,7 @@ import { Robot2D } from '../anim/Robot2D';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx } from '../fx/Impact';
-import { GradePipeline } from '../fx/Grade';
+import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
 import { sfxVolume } from '../game/Settings';
@@ -113,11 +113,10 @@ export class ResultsScene extends Phaser.Scene {
     if (this.sys.renderer.type === Phaser.WEBGL) {
       this.lights.enable().setAmbientColor(0x64709a);
       for (let i = 0; i < LIGHT_POOL; i++) this.lightPool.push(this.lights.addLight(0, 0, UNIT, 0xffffff, 0).setVisible(false));
-      // The match's grade pass (vignette, split tone, grain, scanlines) on the replay.
-      if (!new URLSearchParams(location.search).has('lowfx')) {
-        const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
-        if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
-        this.worldCam.setPostPipeline(GradePipeline);
+      // The match's screen effects on the replay: the grade on the arena, the grain on the room behind.
+      if (this.registry.get('screenFx') !== false && !new URLSearchParams(location.search).has('lowfx')) {
+        setPass(this, this.worldCam, GradePipeline, true);
+        setPass(this, this.backCam, GrainPipeline, true);
       }
     }
     const lit = <T extends Phaser.GameObjects.Image>(o: T) => (this.sys.renderer.type === Phaser.WEBGL ? o.setPipeline('Light2D') : o);
