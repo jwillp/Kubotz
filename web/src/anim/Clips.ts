@@ -148,7 +148,7 @@ export const CLIPS: Record<string, Clip> = {
 
   hit2: clip('hit2', 320, [
     { t: 0, pose: READY },
-    { t: 0.2, pose: { ...CROUCH, torso: 55, head: 40, tilt: 8, x: -18, shoulderF: -95, armF: -80, shoulderB: -100, armB: -85 }, ease: 'snap' },
+    { t: 0.2, pose: { ...CROUCH, torso: 58, head: 62, tilt: 8, x: -18, shoulderF: -95, armF: -80, shoulderB: -100, armB: -85 }, ease: 'snap' },
     { t: 1, pose: READY, ease: 'inOut' },
   ]),
 

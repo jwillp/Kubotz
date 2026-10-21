@@ -64,7 +64,7 @@ rows.forEach((row, r) => {
       ctx.rotate((tr.angle * Math.PI) / 180);
       ctx.scale(tr.scaleX, tr.scaleY);
       ctx.scale(1, -1);
-      ctx.drawImage(img, -file.pivotX * file.width, -(1 - file.pivotY) * file.height, file.width, file.height);
+      ctx.drawImage(img, -part.pivotX * file.width, -(1 - part.pivotY) * file.height, file.width, file.height);
       ctx.restore();
     }
     if (q.has('bones')) {

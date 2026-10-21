@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { lit } from '../fx/NormalMaps';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 import { ItemBody, PhysicsWorld } from '../physics/Physics';
@@ -100,13 +101,14 @@ export class PowerUpOrb {
     const def = POWER_UPS[type];
     this.body = new ItemBody(physics, x, y, Config.POWERUP_RADIUS * UNIT);
     this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(UNIT * 2.4, UNIT * 2.4);
-    this.sprite = scene.add.image(x, y, def.image).setDepth(8);
+    this.sprite = lit(scene.add.image(x, y, def.image).setDepth(8));
     const tint = type === 'invincibility' ? 0xffd84d : type === 'energy' ? 0xfff27a : null;
     if (tint !== null) this.sprite.setTint(tint);
     this.sprite.setDisplaySize(UNIT * 1.1, UNIT * 1.1);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
   }
 
+  get color(): number { return POWER_UPS[this.type].color; }
   get x(): number { return this.body.x; }
   get y(): number { return this.body.y; }
 

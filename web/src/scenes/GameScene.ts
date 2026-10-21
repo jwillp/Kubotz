@@ -10,6 +10,8 @@ import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { GradePipeline } from '../fx/Grade';
+import { lit, normalMapFor } from '../fx/NormalMaps';
 import { ImpactFx } from '../fx/Impact';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
@@ -26,6 +28,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Debug mode and its time controls (F3, see DebugScene). */
   readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
   private glows: Phaser.GameObjects.Image[] = [];
+  /** Light2D: a key light and a rim light that follow the camera, and a pool for lasers, hits and pick-ups. */
+  private keyLight: Phaser.GameObjects.Light | null = null;
+  private rimLight: Phaser.GameObjects.Light | null = null;
+  private pointLights: Phaser.GameObjects.Light[] = [];
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
   private nav!: Nav;
@@ -145,6 +151,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F7', () => { if (d.on) { d.frozen = true; d.steps++; } });
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupBloom();
+    this.setupLights();
     kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 9) this.togglePause(); // Start
@@ -165,18 +172,33 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The original kept the Tiled art layers hidden behind its debug shapes; the
     // port draws them. Everything static is baked into one render texture.
     const mapW = m.width * m.tileWidth;
-    const art = this.add.renderTexture(0, 0, mapW, m.height * m.tileHeight).setOrigin(0, 0).setDepth(2);
-    const stamp = this.make.image({ x: 0, y: 0, key: '__DEFAULT' }, false).setOrigin(0, 1);
+    const mapH = m.height * m.tileHeight;
+    // Colour and normal map canvases of the whole arena, lit like everything else.
+    for (const key of ['arena', 'arena-normals']) if (this.textures.exists(key)) this.textures.remove(key);
+    const art = this.textures.createCanvas('arena', mapW, mapH)!;
+    const normals = document.createElement('canvas');
+    normals.width = mapW; normals.height = mapH;
+    const nctx = normals.getContext('2d')!;
+    nctx.fillStyle = 'rgb(128,128,255)';
+    nctx.fillRect(0, 0, mapW, mapH);
+    const actx = art.getContext();
     for (const layer of m.layers) {
       layer.gids.forEach((gid, i) => {
         const img = m.tileImages.get(gid);
         if (!img) return;
+        const source = this.textures.get(`tile:${img.source}`).getSourceImage() as HTMLImageElement;
         // Tiled anchors image tiles at the cell's bottom-left corner.
-        stamp.setTexture(`tile:${img.source}`).setOrigin(0, 1);
-        art.draw(stamp, (i % m.width) * m.tileWidth, (Math.floor(i / m.width) + 1) * m.tileHeight);
+        const x = (i % m.width) * m.tileWidth;
+        const y = (Math.floor(i / m.width) + 1) * m.tileHeight - source.height;
+        actx.drawImage(source, x, y);
+        nctx.drawImage(normalMapFor(`tile:${img.source}`, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
       });
     }
-    stamp.destroy();
+    art.refresh();
+    if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
+    lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
+    // The tiles' light strips glow on their own (added over the lit art, so they bloom).
+    this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5);
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -195,6 +217,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.blocks.push({ x: o.x, y: o.y, width: o.width, height: o.height, soft: o.type === 'STATIC_PLATFORM' });
         }
       }
+    }
+    // A lit edge along the top of every block, like the 3D version's glowing rims.
+    const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+    for (const b of this.blocks) {
+      rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.nav = new Nav(this.blocks);
     // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
@@ -313,13 +341,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.drawGlows();
   }
 
-  /** Soft additive light around lasers, explosions and hits. */
+  /** Soft additive glow and a Light2D point light around lasers, blades, pick-ups, explosions and hits. */
   private drawGlows(): void {
     const lights = [
       ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 4 })),
+      ...this.fighters.filter((k) => k.isAlive() && k.weapon === 'laserSword').map((k) => {
+        const p = k.bladeMiddle();
+        return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
+      }),
+      ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
       ...this.debris.lights(this.clock),
       ...this.impact.lights(),
     ];
+    // The brightest first, so the pool keeps the hits and lasers when there are many.
+    lights.sort((a, b) => b.intensity - a.intensity);
+    this.pointLights.forEach((light, i) => {
+      const l = lights[i];
+      if (!l) { light.setVisible(false); return; }
+      light.setVisible(true).setPosition(l.x, l.y).setColor(l.color)
+        .setIntensity(Math.min(2.2, 0.5 + l.intensity * 0.35)).setRadius(UNIT * (4 + Math.sqrt(l.intensity) * 2.5));
+    });
     while (this.glows.length < lights.length) {
       this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(13));
     }
@@ -336,16 +377,48 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** A soft bloom on the whole view (WebGL only); off with ?lowfx, toggled with F. */
   private setupBloom(): void {
-    const cam = this.cameras.main;
-    if (!cam.postFX || new URLSearchParams(location.search).has('lowfx')) return;
-    this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
+    if (new URLSearchParams(location.search).has('lowfx')) return;
+    this.toggleBloom();
   }
 
+  /** Bloom then the grade pass; both on or both off. */
   private toggleBloom(): boolean {
-    if (this.bloom) { this.cameras.main.postFX.remove(this.bloom); this.bloom = null; return false; }
-    if (!this.cameras.main.postFX) return false;
-    this.bloom = this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
+    const cam = this.cameras.main;
+    if (this.bloom) {
+      cam.postFX.remove(this.bloom);
+      cam.removePostPipeline('Grade');
+      this.bloom = null;
+      return false;
+    }
+    if (!cam.postFX || this.sys.renderer.type !== Phaser.WEBGL) return false;
+    const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
+    if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
+    this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
+    cam.setPostPipeline(GradePipeline);
     return true;
+  }
+
+  // -------------------------------------------------------------- lights
+  /**
+   * Light2D over the arena and robots (their normal maps are generated at
+   * boot): a warm key light from the upper front, a cool rim light from
+   * behind, both following the camera, and a pool of coloured point lights.
+   */
+  private setupLights(): void {
+    if (this.sys.renderer.type !== Phaser.WEBGL) return;
+    this.lights.enable().setAmbientColor(0x9ca8bc);
+    this.keyLight = this.lights.addLight(0, 0, 100, 0xfff1e0, 2.2);
+    this.rimLight = this.lights.addLight(0, 0, 100, 0x4fb8ff, 1.4);
+    for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
+    this.placeFixedLights();
+  }
+
+  private placeFixedLights(): void {
+    if (!this.keyLight || !this.rimLight) return;
+    const view = this.cameras.main.worldView;
+    const span = Math.max(view.width, view.height);
+    this.keyLight.setPosition(view.x + view.width * 0.3, view.y - view.height * 0.15).setRadius(span * 1.8);
+    this.rimLight.setPosition(view.right + view.width * 0.1, view.bottom + view.height * 0.1).setRadius(span * 1.6);
   }
 
   // -------------------------------------------------------------- debug view
@@ -549,6 +622,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const cy = Phaser.Math.Linear(cam.midPoint.y, this.camTarget.y - UNIT, t);
     this.applyZoom();
     cam.centerOn(cx, cy);
+    this.placeFixedLights();
   }
 
   private applyZoom(): void {

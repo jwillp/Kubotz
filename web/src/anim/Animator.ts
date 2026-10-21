@@ -36,7 +36,9 @@ export class Animator {
   play(name: string, opts: { restart?: boolean; ms?: number; fade?: number } = {}): void {
     const clip = CLIPS[name];
     if (!clip || (clip === this.clip && !opts.restart)) return;
-    this.from = this.last;
+    // Blend from the pose drawn last; a full spin ends where it started, so
+    // it is not unwound through the blend.
+    this.from = Object.keys(this.last).length ? { ...this.last, spin: ((this.last.spin ?? 0) % 360 + 540) % 360 - 180 } : null;
     this.blend = 0;
     this.blendMs = opts.fade ?? 110;
     this.clip = clip;

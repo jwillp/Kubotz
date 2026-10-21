@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { lit } from '../fx/NormalMaps';
 import { UNIT } from '../config';
 import { DebrisBody, PhysicsWorld } from '../physics/Physics';
 import type { Kubotz } from './Kubotz';
@@ -47,7 +48,7 @@ export class DebrisField {
       const speed = Phaser.Math.FloatBetween(11, 21) * UNIT;
       body.setVelocity(dx * speed + k.body.vx * 0.5, dy * speed - 6 * UNIT + k.body.vy * 0.3);
       body.spin = Phaser.Math.FloatBetween(-14, 14);
-      const image = this.scene.add.image(part.x, part.y, part.key)
+      const image = lit(this.scene.add.image(part.x, part.y, part.key))
         .setOrigin(part.originX, part.originY).setScale(part.scaleX, part.scaleY).setAngle(part.angle).setDepth(11);
       this.pieces.push({ body, image, angle0: part.angle - Phaser.Math.RadToDeg(body.angle), radius, owner: k, hit: new Set(), born: now });
     }

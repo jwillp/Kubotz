@@ -204,6 +204,12 @@ export class Kubotz implements Damageable {
   /** Winding up, striking or recovering (a CPU can see it coming). */
   get attacking(): boolean { return this.attack !== null; }
 
+  /** The middle of the laser blade (world pixels), for its light. */
+  bladeMiddle(): { x: number; y: number } {
+    const { sword: t, swordBase: b } = PART_TIPS;
+    return this.model.pointOn(SWORD_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
+  }
+
   /** For the debug view. */
   get hitstun(): number { return this.hitstunUntil; }
   get comboInfo(): string { return this.inCombo ? `${this.comboStep || 3}/3${this.comboQueued ? '+' : ''}` : '-'; }

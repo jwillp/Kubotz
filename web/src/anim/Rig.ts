@@ -52,7 +52,7 @@ export interface Xf { x: number; y: number; angle: number; scaleX: number; scale
 export type Pose = Partial<Record<Bone, number>> & { x?: number; y?: number; tilt?: number; spin?: number };
 
 interface RigBone { name: Bone; parent: number; rest: Xf; }
-interface RigPart { name: string; parent: number; local: Xf; z: number; folder: number; file: number; }
+interface RigPart { name: string; parent: number; local: Xf; z: number; folder: number; file: number; pivotX?: number; pivotY?: number; }
 
 /** One drawn part of a posed robot (Spriter space). */
 export interface PosedPart {
@@ -61,6 +61,9 @@ export interface PosedPart {
   folder: number;
   fileIndex: number;
   tr: Xf;
+  /** The image's pivot (0..1 from its bottom-left), from the animation key rather than the file. */
+  pivotX: number;
+  pivotY: number;
 }
 
 function compose(parent: Xf, child: Xf): Xf {
@@ -106,6 +109,8 @@ export class Rig {
         z: ref.z,
         folder: k.folder,
         file: k.file,
+        pivotX: k.pivotX,
+        pivotY: k.pivotY,
       });
     }
     this.parts.sort((a, b) => a.z - b.z);
@@ -164,7 +169,11 @@ export class Rig {
       }
       const info = this.spriter.folders[folder]?.[file];
       if (hidden || !info) continue;
-      out.push({ name: p.name, file: info, folder, fileIndex: file, tr: compose(p.parent >= 0 ? world[p.parent] : root, p.local) });
+      out.push({
+        name: p.name, file: info, folder, fileIndex: file,
+        pivotX: p.pivotX ?? info.pivotX, pivotY: p.pivotY ?? info.pivotY,
+        tr: compose(p.parent >= 0 ? world[p.parent] : root, p.local),
+      });
     }
     return out;
   }
@@ -173,8 +182,8 @@ export class Rig {
 /** A point of a part image (pixels, origin bottom-left, y up) in Spriter space. */
 export function pointOnPart(part: PosedPart, px: number, py: number): { x: number; y: number } {
   const { tr, file } = part;
-  const lx = (px - file.pivotX * file.width) * tr.scaleX;
-  const ly = (py - file.pivotY * file.height) * tr.scaleY;
+  const lx = (px - part.pivotX * file.width) * tr.scaleX;
+  const ly = (py - part.pivotY * file.height) * tr.scaleY;
   const rad = (tr.angle * Math.PI) / 180;
   return { x: tr.x + lx * Math.cos(rad) - ly * Math.sin(rad), y: tr.y + lx * Math.sin(rad) + ly * Math.cos(rad) };
 }

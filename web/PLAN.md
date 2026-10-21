@@ -266,3 +266,30 @@ animations, combat moves that travel further, and a debug mode.
   body height), so blows that visibly land connect.
 - `tools/rig.html` (dev only) draws contact sheets of every clip, used to
   tune the animations.
+
+## Phase 7 — Rig fix, lights and shading back in 2D (2026-10-21)
+
+Owner feedback: the lights and shaders were lost with the 3D version, and the
+robots' skeletons were broken (heads inside bodies).
+
+- **Rig bug**: the Spriter keys carry each part image's pivot; the rig used the
+  file default (bottom-left) instead, so every part hung off its bone wrongly
+  (the helmet sat inside the chest). `Rig.solve` now returns the key's pivot
+  per part and the drawing, hit points, ground lift and K.O. pieces use it.
+  The bone angles of the clips were right; only the images moved.
+- **Lighting (Phaser Light2D)**: normal maps are generated at boot from the
+  art itself (`fx/NormalMaps.ts`: a bevel from the alpha edge plus embossed
+  brightness detail), for the robot parts, the recoloured helmets and blades,
+  the bonus chips and the arena tiles. The arena is baked into a canvas with a
+  matching normal canvas. A warm key light and a cool rim light follow the
+  camera; a pool of 12 point lights goes to lasers, laser blades, power-ups,
+  explosions and hits (brightest first).
+- **Glow**: the tiles' light strips are added on top of the lit arena so they
+  glow and bloom; every block gets a lit cyan rim along its top.
+- **Grade**: a post-processing pass after the bloom (`fx/Grade.ts`): vignette,
+  a touch of contrast and cool shadows / warm highlights. F turns bloom and
+  grade off together; `?lowfx` starts without them.
+- Blends no longer unwind a full spin (dodge, flip) when the next clip starts.
+- Sprite sheets were considered: the only art is the original part images, so
+  pre-rendered sheets would just be frames of this rig with no extra fluidity;
+  the skeleton stays (and blends between moves, which sheets could not).

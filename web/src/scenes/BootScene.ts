@@ -3,6 +3,7 @@ import { explosionBuffer } from '../game/Debris';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
+import { addNormalMap } from '../fx/NormalMaps';
 import { CPU_COLORS, GUN_FILE, HEAD_FILES, P1_COLOR, P2_COLOR, PART_TIPS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
@@ -75,11 +76,22 @@ export class BootScene extends Phaser.Scene {
 
   /** Player-coloured helmets and CPU labels, and a small spark texture. */
   private makeTextures(): void {
+    // Normal maps so the lights shade the art: robot parts and bonus chips as
+    // rounded metal shells, the arena tiles with a flatter bevel.
+    const spriter = this.registry.get('spriter') as SpriterData;
+    const map = this.registry.get('map') as TmxMap;
+    for (const file of spriter.allFiles()) addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 });
+    for (const tile of map.tileImages.values()) addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 });
+    for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) addNormalMap(this.textures, `bonus_${b}`, { bevel: 4, detail: 0.3 });
     for (const color of [P1_COLOR, P2_COLOR, ...CPU_COLORS]) {
-      for (const file of HEAD_FILES) this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
+      for (const file of HEAD_FILES) {
+        this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
+        addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
+      }
       this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
+      addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
     }
     this.measureWeapons();
     const g = this.make.graphics({}, false);

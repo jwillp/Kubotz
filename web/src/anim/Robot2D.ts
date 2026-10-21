@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
+import { lit } from '../fx/NormalMaps';
 import { pointOnPart, type PosedPart, type Pose, type Rig } from './Rig';
 
 /** Spriter pixels to world pixels. */
@@ -39,14 +40,14 @@ export class Robot2D {
       const key = this.textureFor(p.file.name);
       let img = this.images.get(p.name);
       if (!img) {
-        img = this.scene.add.image(0, 0, key);
+        img = lit(this.scene.add.image(0, 0, key));
         this.images.set(p.name, img);
         this.view.add(img);
       } else if (img.texture.key !== key) {
         img.setTexture(key);
       }
       img.setVisible(true)
-        .setOrigin(p.file.pivotX, 1 - p.file.pivotY)
+        .setOrigin(p.pivotX, 1 - p.pivotY)
         .setPosition(p.tr.x, -p.tr.y)
         .setAngle(-p.tr.angle)
         .setScale(p.tr.scaleX, p.tr.scaleY);
@@ -80,8 +81,8 @@ export class Robot2D {
         angle: Phaser.Math.RadToDeg(m.rotationNormalized) + (this.flipX < 0 ? p.tr.angle : -p.tr.angle),
         scaleX: p.tr.scaleX * ART_SCALE * Math.sign(this.flipX),
         scaleY: p.tr.scaleY * ART_SCALE,
-        originX: p.file.pivotX,
-        originY: 1 - p.file.pivotY,
+        originX: p.pivotX,
+        originY: 1 - p.pivotY,
         size: Math.max(p.file.width * Math.abs(p.tr.scaleX), p.file.height * Math.abs(p.tr.scaleY)) * ART_SCALE,
       };
     });
