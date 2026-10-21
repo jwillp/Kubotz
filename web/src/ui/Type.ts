@@ -73,23 +73,117 @@ export function buildHeadingFont(scene: Phaser.Scene): void {
 type Glyph = Phaser.Types.GameObjects.BitmapText.BitmapFontCharacterData & { xAdvance: number };
 
 export interface HeadingOptions {
-  /** Fill colour (the glyphs are white). */
+  /** Fill colour of the letters. */
   tint?: number;
   /** Neon glow around the letters, like the logo; null for none. */
   glow?: number | null;
-  /** Glow strength. */
-  glowStrength?: number;
+}
+
+/** Lays out `text` in the heading font at `size` px: glyphs with their place on a line starting at (0, 0). */
+function layout(scene: Phaser.Scene, text: string, size: number) {
+  const font = scene.cache.bitmapFont.get(HEADING_FONT).data as Phaser.Types.GameObjects.BitmapText.BitmapFontData;
+  const scale = size / font.size;
+  const glyphs: { g: Glyph; x: number; y: number }[] = [];
+  let pen = 0;
+  let right = 0;
+  for (const c of text) {
+    const g = font.chars[c.charCodeAt(0)] as Glyph | undefined;
+    if (!g) continue;
+    glyphs.push({ g, x: pen + g.xOffset * scale, y: g.yOffset * scale });
+    right = pen + (g.xOffset + g.width) * scale;
+    pen += g.xAdvance * scale;
+  }
+  // The capitals start 10px below the line top and are 120px tall (at size 150).
+  return { glyphs, scale, width: Math.max(1, right), top: 10 * scale, height: 120 * scale };
+}
+
+/** Draws laid-out glyphs (white, as in the font) onto `ctx`, shifted by (dx, dy). */
+function drawGlyphs(scene: Phaser.Scene, ctx: CanvasRenderingContext2D, l: ReturnType<typeof layout>, dx: number, dy: number): void {
+  const src = scene.textures.get(HEADING_FONT).getSourceImage() as HTMLCanvasElement;
+  for (const { g, x, y } of l.glyphs) {
+    ctx.drawImage(src, g.x, g.y, g.width, g.height, dx + x, dy + y, g.width * l.scale, g.height * l.scale);
+  }
 }
 
 /**
- * A title or heading in Okuba Cloud, centred on (x, y). The font only has
- * letters, digits and space; other characters are dropped.
+ * A title or heading in Okuba Cloud. The letters and their neon glow are
+ * drawn once onto a canvas texture (again only when the text or glow
+ * changes), so a heading costs no more than an image to render.
  */
+export class HeadingText extends Phaser.GameObjects.Image {
+  private static count = 0;
+  private readonly key = `heading:${HeadingText.count++}`;
+  private content = '';
+
+  constructor(scene: Phaser.Scene, x: number, y: number, text: string, readonly size: number,
+    private tint_ = 0xffffff, private glow: number | null = NEON) {
+    super(scene, x, y, '__DEFAULT');
+    this.setOrigin(0.5);
+    this.redraw(text);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => scene.textures.remove(this.key));
+  }
+
+  get text(): string { return this.content; }
+
+  setText(text: string): this {
+    if (headingText(text) !== this.content) this.redraw(text);
+    return this;
+  }
+
+  /** The glow colour, or null for none. */
+  setGlow(glow: number | null): this {
+    if (glow !== this.glow) { this.glow = glow; this.redraw(this.content); }
+    return this;
+  }
+
+  /** The letters' colour. */
+  setFill(tint: number): this {
+    if (tint !== this.tint_) { this.tint_ = tint; this.redraw(this.content); }
+    return this;
+  }
+
+  private redraw(text: string): void {
+    this.content = headingText(text);
+    const l = layout(this.scene, this.content, this.size);
+    const blur = Math.max(4, this.size * 0.16);
+    const pad = Math.ceil(blur * 1.6);
+    const w = Math.ceil(l.width + pad * 2);
+    const h = Math.ceil(l.height + pad * 2);
+    const textures = this.scene.textures;
+    const tex = (textures.exists(this.key) ? textures.get(this.key) : textures.createCanvas(this.key, w, h)) as Phaser.Textures.CanvasTexture;
+    tex.setSize(w, h);
+    const ctx = tex.getContext();
+    ctx.clearRect(0, 0, w, h);
+
+    // The letters in their fill colour...
+    const letters = document.createElement('canvas');
+    letters.width = w; letters.height = h;
+    const lc = letters.getContext('2d')!;
+    drawGlyphs(this.scene, lc, l, pad, pad - l.top);
+    lc.globalCompositeOperation = 'source-in';
+    lc.fillStyle = Phaser.Display.Color.IntegerToColor(this.tint_).rgba;
+    lc.fillRect(0, 0, w, h);
+
+    // ...over a glow: their shadow, blurred, in the glow colour (twice, for a brighter halo).
+    if (this.glow !== null && this.content) {
+      ctx.save();
+      ctx.shadowColor = Phaser.Display.Color.IntegerToColor(this.glow).rgba;
+      ctx.shadowBlur = blur;
+      ctx.drawImage(letters, 0, 0);
+      ctx.shadowBlur = blur * 0.45;
+      ctx.drawImage(letters, 0, 0);
+      ctx.restore();
+    }
+    ctx.drawImage(letters, 0, 0);
+    tex.refresh();
+    this.setTexture(this.key);
+  }
+}
+
+/** A heading centred on (x, y); see HeadingText. */
 export function heading(scene: Phaser.Scene, x: number, y: number, text: string, size: number,
-  { tint = 0xffffff, glow = NEON, glowStrength = 3 }: HeadingOptions = {}): Phaser.GameObjects.BitmapText {
-  const t = scene.add.bitmapText(x, y, HEADING_FONT, headingText(text), size).setOrigin(0.5).setTint(tint);
-  if (glow !== null) t.postFX?.addGlow(glow, glowStrength, 0, false, 0.1, 12);
-  return t;
+  { tint = 0xffffff, glow = NEON }: HeadingOptions = {}): HeadingText {
+  return scene.add.existing(new HeadingText(scene, x, y, text, size, tint, glow));
 }
 
 /** Keeps the characters the heading font has. */
@@ -107,30 +201,20 @@ export function body(size: number, style: Phaser.Types.GameObjects.Text.TextStyl
  * underneath, filled with `color` and outlined in a darker shade, as texture `key`.
  */
 export function makeTagTexture(scene: Phaser.Scene, key: string, text: string, color: number): void {
-  const font = scene.cache.bitmapFont.get(HEADING_FONT).data as Phaser.Types.GameObjects.BitmapText.BitmapFontData;
-  const src = scene.textures.get(HEADING_FONT).getSourceImage() as HTMLCanvasElement;
-  const scale = 0.45;
   const outline = 6;
-  const chars = [...text].map((c) => font.chars[c.charCodeAt(0)] as Glyph).filter(Boolean);
-  const textW = chars.reduce((w, g, i) => w + (i < chars.length - 1 ? g.xAdvance : g.xOffset + g.width), 0) * scale;
-  const textH = 120 * scale;
+  const l = layout(scene, text, 150 * 0.45);
   const arrow = 18;
-  const w = Math.ceil(textW + outline * 2 + 4);
-  const h = Math.ceil(textH + arrow + outline * 2 + 4);
+  const w = Math.ceil(l.width + outline * 2 + 4);
+  const h = Math.ceil(l.height + arrow + outline * 2 + 4);
   if (scene.textures.exists(key)) scene.textures.remove(key);
 
   // The letters and pointer as a white mask...
   const mask = document.createElement('canvas');
   mask.width = w; mask.height = h;
   const m = mask.getContext('2d')!;
-  let pen = outline + 2;
-  const top = outline + 2 - 10 * scale; // glyphs start 10px below the line top
-  for (const g of chars) {
-    m.drawImage(src, g.x, g.y, g.width, g.height, pen + g.xOffset * scale, top + g.yOffset * scale, g.width * scale, g.height * scale);
-    pen += g.xAdvance * scale;
-  }
+  drawGlyphs(scene, m, l, outline + 2, outline + 2 - l.top);
   const cx = w / 2;
-  const ay = outline + 2 + textH + 4;
+  const ay = outline + 2 + l.height + 4;
   m.beginPath();
   m.moveTo(cx - arrow * 0.75, ay); m.lineTo(cx + arrow * 0.75, ay); m.lineTo(cx, ay + arrow);
   m.closePath(); m.fillStyle = '#ffffff'; m.fill();

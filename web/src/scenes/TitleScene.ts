@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { ARENA_INFO } from '../map/Arenas';
-import { body, heading, NEON } from '../ui/Type';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 export type Slot = 'P1' | 'P2' | 'CPU';
 export interface MatchSetup { slots: Slot[]; arena?: number; bonuses?: BonusRate; }
@@ -25,7 +25,7 @@ const MODES: { label: string; slots: Slot[] }[] = [
 
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
-  private items: Phaser.GameObjects.BitmapText[] = [];
+  private items: HeadingText[] = [];
   private arena = 0;
   private arenaText!: Phaser.GameObjects.Text;
   private arenaBlurb!: Phaser.GameObjects.Text;
@@ -99,11 +99,7 @@ export class TitleScene extends Phaser.Scene {
 
   private select(i: number): void {
     this.selected = i;
-    this.items.forEach((t, j) => {
-      t.postFX?.clear();
-      if (j === i) t.postFX?.addGlow(NEON, 3, 0, false, 0.1, 12);
-      t.setScale(j === i ? 1.1 : 1);
-    });
+    this.items.forEach((t, j) => t.setGlow(j === i ? NEON : null).setScale(j === i ? 1.1 : 1));
   }
 
   private pickArena(delta: number): void {

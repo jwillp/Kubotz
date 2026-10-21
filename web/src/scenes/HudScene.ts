@@ -3,7 +3,7 @@ import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, type Kubotz } from '../game/Kubotz';
 import type { GameScene } from './GameScene';
-import { body, heading, headingText, NEON } from '../ui/Type';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 interface Panel {
   container: Phaser.GameObjects.Container;
@@ -19,7 +19,7 @@ export class HudScene extends Phaser.Scene {
   private panels = new Map<Kubotz, Panel>();
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
-  private bannerText!: Phaser.GameObjects.BitmapText;
+  private bannerText!: HeadingText;
 
   constructor() { super('Hud'); }
 
@@ -103,14 +103,14 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onCountdown(word: string): void {
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140, { glowStrength: 4 }).setDepth(20).setScale(1.6).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }
 
   private onMatchOver(winner: Kubotz | null): void {
-    this.bannerText.setText(headingText(winner ? `${winner.name} WINS` : 'DRAW'));
-    this.glowBanner(winner ? winner.look.color : NEON);
+    this.bannerText.setText(winner ? `${winner.name} WINS` : 'DRAW');
+    this.bannerText.setGlow(winner ? winner.look.color : NEON);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
     this.banner.setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
@@ -118,13 +118,8 @@ export class HudScene extends Phaser.Scene {
 
   private onPause(paused: boolean): void {
     this.bannerText.setText('PAUSED');
-    this.glowBanner(NEON);
+    this.bannerText.setGlow(NEON);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen');
     this.banner.setVisible(paused).setScale(1).setAlpha(1);
-  }
-
-  private glowBanner(color: number): void {
-    this.bannerText.postFX?.clear();
-    this.bannerText.postFX?.addGlow(color, 3, 0, false, 0.1, 12);
   }
 }
