@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GrainPipeline, setPass } from '../fx/Grade';
 
 interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: number; phase: number; drift: number; base: number; }
 
@@ -47,6 +48,9 @@ export class BackdropScene extends Phaser.Scene {
 
     // Haze settling towards the floor.
     this.add.image(width / 2, height, 'haze').setOrigin(0.5, 1).setDisplaySize(width, height * 0.6).setAlpha(0.55);
+
+    // The match's film grain and scanlines, on or off with its screen effects (F).
+    setPass(this, this.cameras.main, GrainPipeline, this.registry.get('screenFx') === true);
   }
 
   update(time: number, delta: number): void {
