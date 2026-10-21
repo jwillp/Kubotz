@@ -13,24 +13,28 @@ export const look25 = { on: true };
  */
 const FRONT = 1;
 const BACK = 0.955;
-/** The dim copy of the arena further back. */
-const FAR = 0.9;
+/** Each face's colour at its front edge and at its back edge: lit near the viewer, falling into shadow. */
+const TOP: [number, number] = [0x7d8aa2, 0x283041];
+const SIDE: [number, number] = [0x46516a, 0x1a1f2a];
+const UNDER: [number, number] = [0x1a1f29, 0x0e1118];
+/** Bands a face is drawn in, front to back: enough that the shading reads as one smooth gradient. */
+const BANDS = 12;
 
-const TOP = [0x7d8aa2, 0x5a6680, 0x3e485c, 0x283041];
-const SIDE = [0x46516a, 0x353e52, 0x262d3c, 0x1a1f2a];
-const UNDER = [0x1a1f29, 0x161b24, 0x12161e, 0x0e1118];
+/** The colour `t` of the way from `a` to `b`. */
+function mix(a: number, b: number, t: number): number {
+  const ch = (shift: number) => Math.round(((a >> shift) & 0xff) * (1 - t) + ((b >> shift) & 0xff) * t) << shift;
+  return ch(16) | ch(8) | ch(0);
+}
 
 /**
  * 2.5D arena (exploration): every block keeps its original tile art as its
  * front face, on the plane the robots fight on, and gets shallow top,
  * underside and side faces going back towards the camera centre, so the
- * blocks show their depth and shift as the camera moves. A dim copy of the
- * arena further back moves slower (parallax). Redrawn each frame from the
- * camera midpoint; V (look25) switches back to the flat arena.
+ * blocks show their depth and shift as the camera moves. Redrawn each frame
+ * from the camera midpoint; V (look25) switches back to the flat arena.
  */
 export class ArenaPerspective {
   private readonly faces: Phaser.GameObjects.Graphics;
-  private readonly far: Phaser.GameObjects.Image;
   private readonly front: { obj: Phaser.GameObjects.Image; x: number; y: number; scale: number }[];
 
   constructor(
@@ -42,7 +46,6 @@ export class ArenaPerspective {
   ) {
     this.front = front.map((obj) => ({ obj, x: obj.x, y: obj.y, scale: obj.scaleX }));
     this.faces = scene.add.graphics().setDepth(1.95);
-    this.far = scene.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(1.5).setTint(0x6c7c96).setAlpha(0.12);
   }
 
   update(mid: { x: number; y: number }): void {
@@ -53,7 +56,6 @@ export class ArenaPerspective {
       const p = on ? at(f.x, f.y, k) : f;
       f.obj.setPosition(p.x, p.y).setScale(f.scale * k);
     }
-    this.far.setVisible(on).setPosition(mid.x * (1 - FAR), mid.y * (1 - FAR)).setScale(FAR);
     const g = this.faces.clear().setVisible(on);
     const r = this.rims.clear();
     const kf = on ? FRONT : 1;
@@ -71,13 +73,13 @@ export class ArenaPerspective {
     for (const b of order) {
       const x0 = b.x; const x1 = b.x + b.width;
       const y0 = b.y; const y1 = b.y + b.height;
-      // Each face from its front edge (a, b) back to its back edge, in bands darkening with depth.
-      const face = (ax: number, ay: number, bx: number, by: number, shades: number[], seams: boolean) => {
-        const n = shades.length;
-        for (let i = 0; i < n; i++) {
-          const k0 = FRONT + ((BACK - FRONT) * i) / n;
-          const k1 = FRONT + ((BACK - FRONT) * (i + 1)) / n;
-          g.fillStyle(shades[i], 1).fillPoints([at(ax, ay, k0), at(bx, by, k0), at(bx, by, k1), at(ax, ay, k1)], true);
+      // Each face from its front edge (a, b) back to its back edge, in thin
+      // bands whose colour runs from the lit front to the shadowed back.
+      const face = (ax: number, ay: number, bx: number, by: number, [near, deep]: [number, number], seams: boolean) => {
+        for (let i = 0; i < BANDS; i++) {
+          const k0 = FRONT + ((BACK - FRONT) * i) / BANDS;
+          const k1 = FRONT + ((BACK - FRONT) * (i + 1)) / BANDS;
+          g.fillStyle(mix(near, deep, (i + 0.5) / BANDS), 1).fillPoints([at(ax, ay, k0), at(bx, by, k0), at(bx, by, k1), at(ax, ay, k1)], true);
         }
         // Plate seams every tile, front to back, and a lit back edge.
         if (seams) {
@@ -102,6 +104,5 @@ export class ArenaPerspective {
 
   destroy(): void {
     this.faces.destroy();
-    this.far.destroy();
   }
 }

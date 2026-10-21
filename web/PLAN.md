@@ -841,3 +841,7 @@ layers in front of the play plane moved the robots off their platforms. The
 arena perspective stays, made much shallower (the front faces sit exactly on
 the play plane, the back edges 4.5% in, about what the portals' ovals imply), with "The Kube 2.5D" beside
 "The Kube" for a side-by-side comparison.
+Later the same day: the faces' shading became a smooth gradient (12 thin
+bands interpolated between a lit front colour and a shadowed back one) and
+the dim parallax copy of the arena went, since the blurred backdrop reads as
+far away and platform shadows on it made no sense.
