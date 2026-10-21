@@ -864,6 +864,7 @@ the Okuba Cloud / Exo 2 pairing.
 
 **Order.** HUD → pause → title + shared frame → settings → join, arena
 select, move list, results.
+
 ### Hologram spawns (`feat/hologram-spawn`)
 
 Owner: robots appear on a floating hologram projector at the match start
