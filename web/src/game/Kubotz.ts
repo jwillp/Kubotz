@@ -6,6 +6,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
+import { makeTagTexture } from '../ui/Type';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -400,7 +401,8 @@ export class Kubotz implements Damageable {
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = `label-${controller.label}:${hex(color)}`;
-    this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
+    if (!scene.textures.exists(label)) makeTagTexture(scene, label, controller.label, color);
+    this.tag = scene.add.image(x, y, label).setOrigin(0.5, 1).setDepth(21);
   }
 
   /** Winding up, striking or recovering (a CPU can see it coming). */
