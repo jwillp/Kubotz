@@ -22,6 +22,12 @@ function depthOf(file: string): Depth {
   return { z: back ? -46 : 46, round: leg ? 0.45 : 0.38, follow: leg ? 30 : 48 };
 }
 
+/** The arguments of one Robot2D.update (poses and map lists are never mutated, so they are kept by reference). */
+export interface DrawState {
+  pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
+  lean: number; squash: number; alpha: number; flash: boolean;
+}
+
 interface Ghost { view: Phaser.GameObjects.Container; born: number; life: number }
 
 /**
@@ -38,6 +44,8 @@ export class Robot2D {
   private readonly yaws = new Map<string, number>();
   private readonly ghosts: Ghost[] = [];
   private parts: PosedPart[] = [];
+  /** What update() drew last, for the kill replays (game/Replay.ts). */
+  lastDraw: DrawState | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -55,6 +63,7 @@ export class Robot2D {
    */
   update(pose: Pose, maps: string[], x: number, bottom: number, yaw: number,
     fx: { lean: number; squash: number; alpha: number; flash: boolean; dtMs: number; snap?: boolean }): void {
+    this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash };
     this.parts = this.rig.solve(pose, maps);
     // The art faces left: the container mirrors it, and yaw 180 mirrors it back.
     this.view.setPosition(x, bottom).setScale(-ART_SCALE, fx.squash * ART_SCALE).setRotation(fx.lean).setAlpha(fx.alpha);

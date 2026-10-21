@@ -7,6 +7,7 @@ import type { SpriterData } from '../spriter/Spriter';
 import { GUN_FILE, HEADS, HEAD_FILES, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
 import { opaqueOutline } from './GameScene';
+import { BODY_FAMILY, heading } from '../ui/Type';
 
 /** Where the preview stage sits in the world, away from the list (its own camera shows it). */
 const STAGE_X = 6000;
@@ -195,11 +196,9 @@ export class MoveListScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.5);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.7);
-    this.add.text(LIST.x, 30, 'MOVE LIST', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '38px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 5,
-    });
+    heading(this, LIST.x, 30, 'Move list', 48).setOrigin(0, 0);
     this.add.text(width - 32, 44, '▲▼ / W S / wheel: choose      Esc / B: back', {
-      fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#9fe3ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '17px', color: '#9fe3ff',
     }).setOrigin(1, 0.5);
 
     this.buildList();
@@ -222,12 +221,12 @@ export class MoveListScene extends Phaser.Scene {
         group = e.group;
         if (i > 0) y += 8;
         this.list.add(this.add.text(6, y + 10, group.toUpperCase(), {
-          fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#29abe2',
+          fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '15px', color: '#29abe2',
         }));
         y += HEADER_H - 8;
       }
       const t = this.add.text(22, y + ROW_H / 2, e.name, {
-        fontFamily: 'Arial, sans-serif', fontSize: '19px', color: '#e8f4ff',
+        fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '19px', color: '#e8f4ff',
       }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
       t.on('pointerdown', (p: Phaser.Input.Pointer) => { if (this.inList(p)) this.select(i); });
       this.list.add(t);
@@ -264,11 +263,11 @@ export class MoveListScene extends Phaser.Scene {
     const x = PANEL.x;
     const y = PANEL.y + PANEL.h + 18;
     this.add.rectangle(x - 8, y - 10, PANEL.w + 16, LIST.y + LIST.h + 8 - (y - 10), 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
-    this.nameText = this.add.text(x + 8, y, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '24px', color: '#ffffff' });
-    const label = (ly: number, s: string) => this.add.text(x + 8, ly, s, { fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#29abe2' });
+    this.nameText = this.add.text(x + 8, y, '', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '24px', color: '#ffffff' });
+    const label = (ly: number, s: string) => this.add.text(x + 8, ly, s, { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' });
     label(y + 40, 'KEYBOARD');
     label(y + 66, 'GAMEPAD');
-    const val = { fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#e8f4ff' };
+    const val = { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '17px', color: '#e8f4ff' };
     this.keysText = this.add.text(x + 104, y + 38, '', val);
     this.padText = this.add.text(x + 104, y + 64, '', val);
     this.descText = this.add.text(x + 8, y + 96, '', { ...val, color: '#bfe2ff', wordWrap: { width: PANEL.w - 16 }, lineSpacing: 4 });

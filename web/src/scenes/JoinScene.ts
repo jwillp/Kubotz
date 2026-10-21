@@ -5,6 +5,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import { TEAM_NAMES, type FighterSpec } from '../game/Match';
 import type { SpriterData } from '../spriter/Spriter';
+import { BODY_FAMILY, heading } from '../ui/Type';
 
 /** What drives a seat: keyboard set 1 or 2, a gamepad (its index), or the computer. */
 type Device = 'K1' | 'K2' | number | 'CPU';
@@ -31,7 +32,7 @@ const KEYS: Record<'K1' | 'K2', Record<Action, string[]>> = {
 /** Gamepad buttons (standard mapping, Smash layout): A right face, B bottom face, L / R shoulders, Start. */
 const PAD = { B: 0, A: 1, L: 4, R: 5, START: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
 
-const font = (size: number, color = '#ffffff') => ({ fontFamily: 'Arial Black, sans-serif', fontSize: `${size}px`, color });
+const font = (size: number, color = '#ffffff') => ({ fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: `${size}px`, color });
 const deviceLabel = (d: Device) => (d === 'K1' ? 'Keyboard 1' : d === 'K2' ? 'Keyboard 2' : d === 'CPU' ? 'Computer' : `Gamepad ${d + 1}`);
 
 interface Panel {
@@ -81,9 +82,9 @@ export class JoinScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.7);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.55);
-    this.add.text(width / 2, 46, 'CHOOSE YOUR KUBOT', { ...font(44), stroke: '#29abe2', strokeThickness: 6 }).setOrigin(0.5);
+    heading(this, width / 2, 46, 'Choose your Kubot', 54);
     this.add.text(width / 2, 92, 'Attack to join (O · , · gamepad A), special to leave (P · N · B)   ·   up / down: helmet   ·   left / right: colour (same colour = same team)', {
-      fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#9fe3ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff',
     }).setOrigin(0.5);
 
     if (this.sys.renderer.type === Phaser.WEBGL) {
@@ -101,12 +102,12 @@ export class JoinScene extends Phaser.Scene {
     this.button(width / 2 - 400, cy, '◀', () => this.setCpus(this.state.cpuCount - 1), 30);
     this.cpuText = this.add.text(width / 2 - 355, cy, '', font(30)).setOrigin(0.5);
     this.button(width / 2 - 310, cy, '▶', () => this.setCpus(this.state.cpuCount + 1), 30);
-    this.add.text(width / 2 - 470, cy + 32, '+ / - · gamepad L / R', { fontFamily: 'Arial, sans-serif', fontSize: '13px', color: '#9fe3ff' }).setOrigin(0, 0.5);
-    this.status = this.add.text(width / 2 + 40, cy, '', { fontFamily: 'Arial, sans-serif', fontSize: '18px', color: '#cfe9ff' }).setOrigin(0.5);
+    this.add.text(width / 2 - 470, cy + 32, '+ / - · gamepad L / R', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '13px', color: '#9fe3ff' }).setOrigin(0, 0.5);
+    this.status = this.add.text(width / 2 + 40, cy, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '18px', color: '#cfe9ff' }).setOrigin(0.5);
     this.fight = this.button(width / 2 + 440, cy, 'ARENA ▶', () => this.next(), 30);
     this.button(70, height - 30, '◀ Back', () => this.back(), 20);
     this.add.text(width - 20, height - 30, 'Enter / Start: choose the arena   ·   Esc: back   ·   1-4: change a slot\'s colour', {
-      fontFamily: 'Arial, sans-serif', fontSize: '14px', color: '#9fe3ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '14px', color: '#9fe3ff',
     }).setOrigin(1, 0.5);
 
     const kb = this.input.keyboard!;
@@ -153,10 +154,10 @@ export class JoinScene extends Phaser.Scene {
     const zone = this.add.zone(x, PANEL_Y, PANEL_W, PANEL_H).setInteractive({ useHandCursor: true });
     zone.on('pointerdown', () => { if (i >= this.slots().length) this.setCpus(this.state.cpuCount + 1); });
     const title = this.add.text(x, top + 26, '', { ...font(28), stroke: '#0b1d33', strokeThickness: 5 }).setOrigin(0.5);
-    const device = this.add.text(x, top + 56, '', { fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#cfe9ff' }).setOrigin(0.5);
-    const helmet = this.add.text(x, top + PANEL_H - 86, '', { fontFamily: 'Arial, sans-serif', fontSize: '16px', color: '#ffffff' }).setOrigin(0.5);
+    const device = this.add.text(x, top + 56, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#cfe9ff' }).setOrigin(0.5);
+    const helmet = this.add.text(x, top + PANEL_H - 86, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '16px', color: '#ffffff' }).setOrigin(0.5);
     const team = this.add.text(x, top + PANEL_H - 40, '', { ...font(22), stroke: '#0b1d33', strokeThickness: 4 }).setOrigin(0.5);
-    const empty = this.add.text(x, PANEL_Y, '', { fontFamily: 'Arial, sans-serif', fontSize: '18px', color: '#9fe3ff', align: 'center', lineSpacing: 10 }).setOrigin(0.5);
+    const empty = this.add.text(x, PANEL_Y, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '18px', color: '#9fe3ff', align: 'center', lineSpacing: 10 }).setOrigin(0.5);
     const arrows = [
       this.button(x - PANEL_W / 2 + 26, top + PANEL_H - 86, '▲', () => this.cycleHelmet(i, -1), 20),
       this.button(x + PANEL_W / 2 - 26, top + PANEL_H - 86, '▼', () => this.cycleHelmet(i, 1), 20),

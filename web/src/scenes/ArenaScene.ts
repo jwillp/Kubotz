@@ -4,12 +4,13 @@ import { arenaMap, eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
+import { BODY_FAMILY, heading } from '../ui/Type';
 
 const PREVIEW_W = 600;
 const PREVIEW_Y = 340;
 const PAD = { B: 0, A: 1, Y: 2, X: 3, START: 9, LEFT: 14, RIGHT: 15 } as const;
 
-const font = (size: number, color = '#ffffff') => ({ fontFamily: 'Arial Black, sans-serif', fontSize: `${size}px`, color });
+const font = (size: number, color = '#ffffff') => ({ fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: `${size}px`, color });
 
 /**
  * The arena select: a picture of each arena (its tile art drawn small, the
@@ -41,7 +42,7 @@ export class ArenaScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.7);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.55);
-    this.add.text(width / 2, 46, 'CHOOSE THE ARENA', { ...font(44), stroke: '#29abe2', strokeThickness: 6 }).setOrigin(0.5);
+    heading(this, width / 2, 46, 'Choose the arena', 54);
 
     // Who is fighting: a chip per robot in its team colour.
     const chipW = 96;
@@ -67,7 +68,7 @@ export class ArenaScene extends Phaser.Scene {
 
     const below = PREVIEW_Y + this.preview.height / 2;
     this.nameText = this.add.text(width / 2, below + 38, '', { ...font(36), stroke: '#0b1d33', strokeThickness: 6 }).setOrigin(0.5);
-    this.blurbText = this.add.text(width / 2, below + 72, '', { fontFamily: 'Arial, sans-serif', fontSize: '19px', color: '#9fe3ff' }).setOrigin(0.5);
+    this.blurbText = this.add.text(width / 2, below + 72, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '19px', color: '#9fe3ff' }).setOrigin(0.5);
     ARENA_INFO.forEach((_, i) => {
       const dot = this.add.circle(width / 2 + (i - (ARENA_INFO.length - 1) / 2) * 26, below + 100, 7, 0xffffff)
         .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pick(i - this.arena));
@@ -76,7 +77,7 @@ export class ArenaScene extends Phaser.Scene {
     this.bonusText = this.add.text(width / 2, below + 132, '', font(20)).setOrigin(0.5)
       .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
     this.add.text(width / 2 - 20, height - 22, '◀ ▶ change   ·   attack / Enter / A: fight!   ·   special / Esc / B: back   ·   B key / gamepad X: power-ups', {
-      fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#9fe3ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff',
     }).setOrigin(0.5);
     const back = this.add.text(70, height - 22, '◀ Back', font(20, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
     back.on('pointerdown', () => this.back());

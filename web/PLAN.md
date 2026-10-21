@@ -661,85 +661,6 @@ every feature branch starts from `dev`.
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
 
-### Phase 11 E — Move list (`feat/move-list`)
-
-- **Moves** on the title screen opens `MoveListScene`: a scrollable list
-  grouped as ground, smash attacks, aerials, specials (ground and air),
-  laser sword, laser gun (tap and charged shot), grab and throws, defence
-  and ledges (guard, air dodge, ledge climb / jump / roll / attack, taunt),
-  and combos (jab chain, sword chain, up tilt → up air, down tilt →
-  forward air, short hop nair → jab combo, down throw → Raptor Dash).
-- Each entry: P1 keyboard and Smash Ultimate gamepad inputs and a line
-  with damage and launch read from the move tables of `Kubotz.ts`
-  (`COMBO`, `DIR_MOVES`, `SPECIALS`, `THROWS`... now exported; the ledge
-  get-up times and attack moved into `LEDGE_GETUP_MS` / `LEDGE_ATTACK`).
-- One data table, `game/MoveList.ts`: each entry is a list of steps (a clip
-  and its length, the strike it plays, a held smash charge, a jump, a set
-  velocity, a ledge get-up path, until-landing...). No per-move code.
-- The preview plays the steps on a `Robot2D` in a loop with a 650 ms pause:
-  real clips, weapon maps (sword, gun, fire gauntlet), root motion and
-  bursts as body travel, gravity and landing on a floor line (a ledge block
-  for the ledge entries), afterimages, a glow on the striking points during
-  the active frames, the guard bubble, laser bolts. Each entry is played
-  once off-screen first to centre and zoom its own camera on the motion.
-- Navigation: W/S, arrows, Page Up/Down, D-pad or stick (repeats while
-  held), mouse wheel and click; Esc, Backspace or B back to the title.
-### Phase 11 C — Join screen, teams, arena select
-
-- **Title**: one menu entry, Play, opens the join screen (other entries,
-  Settings and the move list, join the same `ENTRIES` list).
-- **JoinScene** (Smash character select): four slots. Keyboard 1 (O), keyboard
-  2 (,) or a gamepad (A) joins, special (P / N / B) leaves (with nobody in,
-  back to the title); up / down cycles the helmet, left / right the colour.
-  The colour is the faction. A live preview of each robot (the rig in its
-  colour and helmet, idling, a taunt on a change). CPUs 0-3 (max 4 robots;
-  + / -, gamepad L / R, or the mouse), each CPU's colour and helmet set with
-  the mouse (or keys 1-4 for a slot's colour). Goes on with two robots on at
-  least two teams. The choices stay in the registry (`join`).
-- **ArenaScene**: a picture of each arena (its tile art drawn small with the
-  same `eachTile` GameScene bakes from, the rims and portals), name, blurb,
-  left / right to change, attack / Enter to fight, special / Esc back. The
-  power-up rate moved here.
-- **Match types** (`game/Match.ts`): `MatchSetup = { fighters: FighterSpec[];
-  arena; bonuses }`, `BONUS_RATES`, `TEAM_NAMES`, and the one friendly-fire
-  rule `canHurt(a, b)` (different teams). `Kubotz.team` is checked in
-  `takeDamage` and by every targeting query: melee and bullets
-  (`damageablesFor`), grabs (`grabTarget`), K.O. debris and the CPUs' enemy
-  list, so teammates are passed through. The match ends when one team (or
-  nobody) is left: `GameScene.winnerTeam`, `'match-over'` carries the team,
-  `GameScene.result()` gives the `MatchResult` (stats left empty for D).
-- **HUD**: a team tag in the team colour on each panel; with two teams each
-  side of the screen is one team; the banner names the team (or the robot
-  if it is alone).
-- Humans who join with a gamepad drive with that pad only, keyboard players
-  with their keys only.
-### Phase 11 B — Settings screen (`feat/settings`)
-
-- `game/Settings.ts` (the store, saved in `localStorage`) gains a change
-  listener (`onSettingsChange`) and the helpers everything reads it through:
-  `sfxVolume(base)` for every sound effect (`GameScene.playSfx`, the
-  narrator), `addMusic(scene, key, base)` for the title and arena music (the
-  volume follows the setting live), and the VFX multiplier `vfx()` /
-  `vfxCount(n)` / `vfxChance()`.
-- VFX (0..1, 0 = minimal like `?lowfx`) scales: the .pe particle counts and
-  emission (`ParticleFx`), the impact sparks, bits, motes and dust
-  (`ImpactFx.add`; single flashes, rings and beams stay until 0), portal
-  motes, the power-up sparkle burst, screen shake trauma, the hit and K.O.
-  glows/lights, the robots' white hit flash (off at 0) and the grade pass
-  (on from 0.5; F still toggles it for the match).
-- `scenes/SettingsScene.ts`: three sliders (music, sound effects, visual
-  effects) and Back; arrows / WASD, D-pad or stick (held keys repeat),
-  Enter / Esc / pad A / B back, mouse click and drag. A test sound plays when
-  the sound effects level changes. It is drawn over the scene that opened it,
-  which is paused (Phaser pause) until Back.
-- `scenes/MenuInput.ts`: menu navigation shared by menus. It polls its own
-  window key listeners and `navigator.getGamepads()` instead of a scene's
-  input plugins, and a button only counts once seen up, so the press that
-  opens a menu (or closes it: the settings act on release) never leaks into
-  the scene behind.
-- Title: a "⚙ Settings" entry in the top corner, the last item of the menu
-  (Up from the first mode wraps to it). Pause: the PAUSED banner is now a
-  menu, Resume · Settings · Quit to title (Esc / Q / Start / Select still work).
 ### Phase 11 A — heavier fall, dodge roll, debug fix (2026-10-21)
 
 - **Heavier fall**: the jump is unchanged (20.5 u/s under 44 u/s², about
@@ -771,3 +692,122 @@ PRs B to E each build on the previous one where they touch the same scenes
   the next update called `setText` on a destroyed text (null canvas).
   `DebugScene.create` now resets the labels and the frame times. The panel
   also shows the falling gravity.
+
+### Phase 11 B — Settings screen (`feat/settings`)
+
+- `game/Settings.ts` (the store, saved in `localStorage`) gains a change
+  listener (`onSettingsChange`) and the helpers everything reads it through:
+  `sfxVolume(base)` for every sound effect (`GameScene.playSfx`, the
+  narrator), `addMusic(scene, key, base)` for the title and arena music (the
+  volume follows the setting live), and the VFX multiplier `vfx()` /
+  `vfxCount(n)` / `vfxChance()`.
+- VFX (0..1, 0 = minimal like `?lowfx`) scales: the .pe particle counts and
+  emission (`ParticleFx`), the impact sparks, bits, motes and dust
+  (`ImpactFx.add`; single flashes, rings and beams stay until 0), portal
+  motes, the power-up sparkle burst, screen shake trauma, the hit and K.O.
+  glows/lights, the robots' white hit flash (off at 0) and the grade pass
+  (on from 0.5; F still toggles it for the match).
+- `scenes/SettingsScene.ts`: three sliders (music, sound effects, visual
+  effects) and Back; arrows / WASD, D-pad or stick (held keys repeat),
+  Enter / Esc / pad A / B back, mouse click and drag. A test sound plays when
+  the sound effects level changes. It is drawn over the scene that opened it,
+  which is paused (Phaser pause) until Back.
+- `scenes/MenuInput.ts`: menu navigation shared by menus. It polls its own
+  window key listeners and `navigator.getGamepads()` instead of a scene's
+  input plugins, and a button only counts once seen up, so the press that
+  opens a menu (or closes it: the settings act on release) never leaks into
+  the scene behind.
+- Title: a "⚙ Settings" entry in the top corner, the last item of the menu
+  (Up from the first mode wraps to it). Pause: the PAUSED banner is now a
+  menu, Resume · Settings · Quit to title (Esc / Q / Start / Select still work).
+
+### Phase 11 C — Join screen, teams, arena select
+
+- **Title**: one menu entry, Play, opens the join screen (other entries,
+  Settings and the move list, join the same `ENTRIES` list).
+- **JoinScene** (Smash character select): four slots. Keyboard 1 (O), keyboard
+  2 (,) or a gamepad (A) joins, special (P / N / B) leaves (with nobody in,
+  back to the title); up / down cycles the helmet, left / right the colour.
+  The colour is the faction. A live preview of each robot (the rig in its
+  colour and helmet, idling, a taunt on a change). CPUs 0-3 (max 4 robots;
+  + / -, gamepad L / R, or the mouse), each CPU's colour and helmet set with
+  the mouse (or keys 1-4 for a slot's colour). Goes on with two robots on at
+  least two teams. The choices stay in the registry (`join`).
+- **ArenaScene**: a picture of each arena (its tile art drawn small with the
+  same `eachTile` GameScene bakes from, the rims and portals), name, blurb,
+  left / right to change, attack / Enter to fight, special / Esc back. The
+  power-up rate moved here.
+- **Match types** (`game/Match.ts`): `MatchSetup = { fighters: FighterSpec[];
+  arena; bonuses }`, `BONUS_RATES`, `TEAM_NAMES`, and the one friendly-fire
+  rule `canHurt(a, b)` (different teams). `Kubotz.team` is checked in
+  `takeDamage` and by every targeting query: melee and bullets
+  (`damageablesFor`), grabs (`grabTarget`), K.O. debris and the CPUs' enemy
+  list, so teammates are passed through. The match ends when one team (or
+  nobody) is left: `GameScene.winnerTeam`, `'match-over'` carries the team,
+  `GameScene.result()` gives the `MatchResult` (stats left empty for D).
+- **HUD**: a team tag in the team colour on each panel; with two teams each
+  side of the screen is one team; the banner names the team (or the robot
+  if it is alone).
+- Humans who join with a gamepad drive with that pad only, keyboard players
+  with their keys only.
+
+### Phase 11 E — Move list (`feat/move-list`)
+
+- **Moves** on the title screen opens `MoveListScene`: a scrollable list
+  grouped as ground, smash attacks, aerials, specials (ground and air),
+  laser sword, laser gun (tap and charged shot), grab and throws, defence
+  and ledges (guard, air dodge, ledge climb / jump / roll / attack, taunt),
+  and combos (jab chain, sword chain, up tilt → up air, down tilt →
+  forward air, short hop nair → jab combo, down throw → Raptor Dash).
+- Each entry: P1 keyboard and Smash Ultimate gamepad inputs and a line
+  with damage and launch read from the move tables of `Kubotz.ts`
+  (`COMBO`, `DIR_MOVES`, `SPECIALS`, `THROWS`... now exported; the ledge
+  get-up times and attack moved into `LEDGE_GETUP_MS` / `LEDGE_ATTACK`).
+- One data table, `game/MoveList.ts`: each entry is a list of steps (a clip
+  and its length, the strike it plays, a held smash charge, a jump, a set
+  velocity, a ledge get-up path, until-landing...). No per-move code.
+- The preview plays the steps on a `Robot2D` in a loop with a 650 ms pause:
+  real clips, weapon maps (sword, gun, fire gauntlet), root motion and
+  bursts as body travel, gravity and landing on a floor line (a ledge block
+  for the ledge entries), afterimages, a glow on the striking points during
+  the active frames, the guard bubble, laser bolts. Each entry is played
+  once off-screen first to centre and zoom its own camera on the motion.
+- Navigation: W/S, arrows, Page Up/Down, D-pad or stick (repeats while
+  held), mouse wheel and click; Esc, Backspace or B back to the title.
+
+### Phase 11 D — Post-match: victory dance, results, kill replays (2026-10-21)
+
+Owner: "When the last man standing wins and is celebrating (by doing a
+dance) the player is prompted to press a key/button for next and then it
+goes to a screen that shows a few tasks [stats], and the kills of the match
+rapid and then a few frames before the kill slow motions."
+
+- **Victory**: the winners stop taking input (`Kubotz.celebrating`) and,
+  once on the ground, loop the new `victory` clip (2.6 s, a ninja's beats:
+  hand seal and bow, high front kick, back flip with the arms out, fist
+  raised). The camera closes in to a 15-unit view. After 1.6 s the HUD
+  banner (moved up out of the way) shows "Press attack / Enter / A to
+  continue": a fresh attack press from any human, Enter, Space, or pad
+  A / B / Start goes to the results.
+- **Stats** (`FighterStats` on every Kubotz, `MatchResult` in Match.ts): one
+  generic hook in `Kubotz.takeDamage` (`countHit`: damage dealt / taken
+  capped at the health left, hits landed, combos = hits landing before the
+  last one's hitstun wore off) and one in `GameScene.checkDeaths` (K.O.s,
+  falls). Guarded and shielded hits do not count. Until match setup gives
+  robots teams, `team` = slot index.
+- **Kill replays** (game/Replay.ts): `Robot2D.lastDraw` keeps the arguments
+  of every draw (pose, part maps, place, yaw, lean, squash, flash, by
+  reference: no copies); `ReplayRecorder` keeps 6 s of frames (robots and
+  the camera's centre, zoom and roll) and on each K.O. cuts out from 2.6 s
+  before the blow (the victim's last hit if within 3 s, else the K.O.) to
+  0.6 s after the K.O.
+- **ResultsScene**: three cameras (backdrop, arena, screen). The stats table
+  (a row per robot in its colour, the best of each column lit, the winner
+  marked), then each K.O. over the arena art (its textures outlive the
+  match) with the robots redrawn by Robot2D from the frames, interpolated:
+  2.4x through the run-up, easing into 0.2x just before the blow, held
+  through the hit, back to 1x for the flight, and the victim bursting apart
+  at the K.O. "K.O. 2/3  P1 K.O.'d CPU 2" on top. Attack / Enter skips to the
+  next K.O., Esc back to the stats; then Continue goes to the title (R
+  replays the K.O.s again). Not redrawn in replays: sabre glow, bullets,
+  particles, power-up balls.

@@ -4,8 +4,8 @@ import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
-import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { MenuInput } from './MenuInput';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 const PAUSE_ITEMS = ['Resume', 'Settings', 'Quit to title'];
 
@@ -59,9 +59,7 @@ export class HudScene extends Phaser.Scene {
     const hint = this.add.text(0, 55, '', body(22, { color: '#cfe9ff', fontStyle: '500' })).setOrigin(0.5).setName('hint');
     this.banner.add([bg, this.bannerText, hint]);
     this.pauseItems = PAUSE_ITEMS.map((label, i) => {
-      const t = this.add.text((i - 1) * 260, 48, label, {
-        fontFamily: 'Arial Black, sans-serif', fontSize: '28px', color: '#ffffff',
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      const t = this.add.text((i - 1) * 260, 48, label, body(28, { fontStyle: '800' })).setOrigin(0.5).setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.selectPause(i));
       t.on('pointerdown', () => this.choosePause(i));
       return t;
@@ -75,7 +73,9 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
     this.game_.events.on('countdown', this.onCountdown, this);
+    this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
       this.game_.events.off('pause', this.onPause, this);
@@ -85,7 +85,7 @@ export class HudScene extends Phaser.Scene {
   private makePanel(k: Kubotz, x: number, y: number): Panel {
     const c = this.add.container(x, y);
     const badge = this.add.image(0, 0, 'hud-badge').setOrigin(0, 0).setScale(0.5);
-    const label = this.add.image(40, 30, `label-${k.controller.label}:${hex(k.look.color)}`).setScale(0.42);
+    const label = this.add.image(40, 30, k.tagKey).setScale(0.42);
     const name = this.add.text(92, 2, k.name, body(18, { fontStyle: '800', stroke: '#0b1d33', strokeThickness: 4 }));
     // The robot's team (its colour): a coloured tag after the name.
     const team = this.add.text(92 + name.width + 10, 6, `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(), body(12, { fontStyle: '800', color: '#' + hex(k.look.color), stroke: '#0b1d33', strokeThickness: 3 }));
@@ -142,10 +142,11 @@ export class HudScene extends Phaser.Scene {
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
     this.bannerText.setText(winnerTeam === null ? 'DRAW' : `${title} WINS`);
     this.bannerText.setGlow(winnerTeam === null ? NEON : SLOT_COLORS[winnerTeam]);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu').setY(55).setFontSize(22);
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('').setY(55).setFontSize(22);
     this.bannerText.setY(-20);
     for (const t of this.pauseItems) t.setVisible(false);
-    this.banner.setVisible(true).setScale(0.6).setAlpha(0);
+    // High up, so the camera's close-up of the winners' dance stays clear.
+    this.banner.setY(150).setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
   }
 
@@ -155,7 +156,7 @@ export class HudScene extends Phaser.Scene {
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen').setY(-82).setFontSize(16);
     for (const t of this.pauseItems) t.setVisible(true);
     this.bannerText.setY(-28);
-    this.banner.setVisible(paused).setScale(1).setAlpha(1);
+    this.banner.setY(this.scale.height / 2).setVisible(paused).setScale(1).setAlpha(1);
     this.pauseMenu.reset();
     this.selectPause(0);
   }
@@ -170,5 +171,12 @@ export class HudScene extends Phaser.Scene {
     if (i === 0) this.game_.togglePause();
     else if (i === 1) this.game_.openSettings();
     else this.game_.backToTitle();
+  }
+
+  /** After the winners have danced a little: what continues to the results. */
+  private onContinuePrompt(): void {
+    const hint = (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press attack / Enter / A to continue').setAlpha(0);
+    this.tweens.add({ targets: hint, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: hint, scale: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: 300 });
   }
 }

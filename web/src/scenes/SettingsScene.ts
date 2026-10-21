@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { settings, updateSettings, sfxVolume, type Settings } from '../game/Settings';
 import { MenuInput } from './MenuInput';
+import { BODY_FAMILY, heading } from '../ui/Type';
 
 /** What opened the settings: the scenes it paused, resumed when it closes. */
 export interface SettingsData { resume?: string[]; }
@@ -49,20 +50,18 @@ export class SettingsScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.add.rectangle(width / 2, height / 2, width, height, 0x02050c, 0.72).setInteractive(); // eats clicks meant for the scene behind
     this.add.rectangle(width / 2, height / 2, 980, 520, 0x0b1d33, 0.92).setStrokeStyle(3, BLUE, 0.9);
-    this.add.text(width / 2, height / 2 - 210, 'SETTINGS', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '52px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 7,
-    }).setOrigin(0.5);
+    heading(this, width / 2, height / 2 - 210, 'Settings', 64);
 
     ROWS.forEach((r, i) => {
       const y = height / 2 - 110 + i * 105;
       const left = width / 2 - 440;
       const tx = width / 2 - 10;
-      const name = this.add.text(left, y - 14, r.label, { fontFamily: 'Arial Black, sans-serif', fontSize: '26px', color: '#ffffff' }).setOrigin(0, 0.5);
-      this.add.text(left, y + 20, r.hint, { fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#9fe3ff' }).setOrigin(0, 0.5);
+      const name = this.add.text(left, y - 14, r.label, { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '26px', color: '#ffffff' }).setOrigin(0, 0.5);
+      this.add.text(left, y + 20, r.hint, { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff' }).setOrigin(0, 0.5);
       const track = this.add.rectangle(tx, y, TRACK_W, 12, 0x24415f).setOrigin(0, 0.5).setStrokeStyle(1, 0x5d86ad);
       const fill = this.add.rectangle(tx, y, 0, 12, BLUE).setOrigin(0, 0.5);
       const knob = this.add.circle(tx, y, 14, 0xffffff).setStrokeStyle(3, BLUE);
-      const value = this.add.text(tx + TRACK_W + 22, y, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '22px', color: '#ffffff' }).setOrigin(0, 0.5);
+      const value = this.add.text(tx + TRACK_W + 22, y, '', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '22px', color: '#ffffff' }).setOrigin(0, 0.5);
       const row: Row = { ...r, track, fill, knob, value, name };
       // A taller hit area than the thin track, so the slider is easy to grab.
       const hit = this.add.rectangle(tx - 16, y, TRACK_W + 32, 44, 0, 0).setOrigin(0, 0.5).setInteractive({ useHandCursor: true });
@@ -73,14 +72,14 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     this.back = this.add.text(width / 2, height / 2 + 200, 'Back', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '30px', color: '#ffffff',
+      fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '30px', color: '#ffffff',
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     let backDown = false;
     this.back.on('pointerover', () => this.select(ROWS.length));
     this.back.on('pointerdown', () => { backDown = true; });
     this.back.on('pointerup', () => { if (backDown) this.close(); });
     this.add.text(width / 2, height / 2 + 240, '↑↓ choose · ←→ adjust · Enter / Esc back   ·   pad: D-pad or stick · A / B back', {
-      fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#cfe9ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#cfe9ff',
     }).setOrigin(0.5);
 
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.dragging && p.isDown) this.setFromPointer(this.dragging, p.x); });
