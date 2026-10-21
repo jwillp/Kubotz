@@ -811,3 +811,26 @@ rapid and then a few frames before the kill slow motions."
   next K.O., Esc back to the stats; then Continue goes to the title (R
   replays the K.O.s again). Not redrawn in replays: sabre glow, bullets,
   particles, power-up balls.
+
+## Exploration — a 2.5D look for the arenas and the robots (2026-10-21, `explore/2.5d`)
+
+The owner wants to try a more 2.5D look for the platforms, the ground and the
+character animations. The 3D version (phase 4) was dropped because the
+animations felt stiff, not because of the look, so whatever we do must keep the
+2D rig and its code-written clips, which are what made the moves fluid.
+
+| Option | What it is | Animation fluidity | Art reuse | Performance |
+|---|---|---|---|---|
+| A. Pre-rendered 3D sprites (Blender) | Render the Blender robot and blocks to sprite sheets / block images | Worst: frames are fixed, no blends between clips, every new move needs a re-render on the Windows side | Good for blocks; robot sheets per helmet, weapon and colour multiply | Good, but large textures |
+| B. Perspective blocks in engine | Each block keeps its front face (the original tile art) and gets a top, bottom and side faces drawn towards a vanishing point at the camera centre, so they shift as the camera moves; a dim, slower parallax copy of the arena behind | Not affected | Full: faces are made from the original tile art | Cheap: a few hundred quads redrawn when the camera moves |
+| C. Volumetric rig parts | Keep the rig and its clips, but lift every part image into a rounded volume (the same method as the Blender port: distance from the edge gives the thickness) and render it at several yaw angles at boot, with real normal maps; turns and spins then show the part's side instead of a squeezed flat image | Best: same clips and blends, with real volume in turns | Full: works from the part images, so every helmet, weapon and player colour comes for free | Boot-time cost (a few views per part), nothing per frame |
+| D. Drawn side faces and foreshortening only | Fake thickness by stacking darker copies of each part during a turn | Same as now | Full | Cheap, but reads as cardboard |
+
+**Recommendation: B for the arenas plus C for the robots.** Both keep the
+original art and the rig, need no Blender round trip, and react to the camera
+and the turns, which is what sells 2.5D. Blender pre-renders (A) stay an option
+later for hero props or backgrounds.
+
+**Prototype scope**: The Foundry gets the perspective blocks and a parallax
+back layer; player 1's robot gets the volumetric parts (the CPUs keep the flat
+parts, for comparison). `V` toggles the 2.5D look on and off in a match.
