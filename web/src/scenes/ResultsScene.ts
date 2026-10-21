@@ -7,6 +7,7 @@ import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx } from '../fx/Impact';
 import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
+import { DISSOLVE_MS, clearHolo, drawSpawn, holoPiece, holoRobot } from '../fx/Hologram';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
 import { drawPlate, drawStrip, shutter } from '../ui/Plate';
@@ -45,7 +46,7 @@ const SLOW = 0.2;
 const FONT = BODY_FAMILY;
 const css = (c: number) => '#' + hex(c);
 
-interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: number; age: number }
+interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: number; age: number; end: number }
 
 /**
  * After the match (phase 11 D): every robot's numbers in its colour, then
@@ -72,6 +73,8 @@ export class ResultsScene extends Phaser.Scene {
   /** The last frame whose sounds and effects went off. */
   private fired = -1;
   private flash!: Phaser.GameObjects.Graphics;
+  private holoG!: Phaser.GameObjects.Graphics;
+  private holoAdd!: Phaser.GameObjects.Graphics;
   private pieces: Piece[] = [];
   /** Which replay plays (-1: the stats are up), its clock, its frame cursor, and whether its K.O. burst went off. */
   private current = -1;
@@ -138,6 +141,11 @@ export class ResultsScene extends Phaser.Scene {
     });
     this.flash = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.only(this.worldCam, this.flash);
+    // Spawn holograms (fx/Hologram.ts): the beam over the robot, the projector in front of it.
+    this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
+    this.holoG = this.add.graphics().setDepth(10.5);
+    this.only(this.worldCam, this.holoAdd);
+    this.only(this.worldCam, this.holoG);
     // Hit sparks, rings and dust replayed from the match's calls.
     const before = new Set(this.children.list);
     this.impact = new ImpactFx(this);
@@ -315,7 +323,9 @@ export class ResultsScene extends Phaser.Scene {
       this.burst = true;
       this.explode(ko);
     }
-    a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom));
+    this.holoG.clear();
+    this.holoAdd.clear();
+    a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom, this.tau - a.t));
     this.updatePieces(step);
   }
 
@@ -339,7 +349,8 @@ export class ResultsScene extends Phaser.Scene {
     });
   }
 
-  private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number): void {
+  /** @param since ms since frame `ra` was recorded (for the spawn hologram's clock) */
+  private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number, since: number): void {
     const robot = this.robots[i];
     const tag = this.tags[i];
     if (!ra.visible) { robot.visible = false; tag.setVisible(false); return; }
@@ -352,6 +363,11 @@ export class ResultsScene extends Phaser.Scene {
       dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash,
     });
     tag.setVisible(true).setPosition(L(ra.x, rb.x), bottom - 2.9 * UNIT).setScale(1 / zoom);
+    if (ra.holo) {
+      const [age, hx, feet] = ra.holo;
+      holoRobot(robot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
+      drawSpawn(this.holoG, this.holoAdd, hx, feet, age + since, this.tau);
+    } else clearHolo(robot.view);
   }
 
   private explode(ko: KoReplay): void {
@@ -369,7 +385,8 @@ export class ResultsScene extends Phaser.Scene {
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
       const speed = Phaser.Math.FloatBetween(11, 21) * UNIT;
-      this.pieces.push({ img, vx: dx * speed, vy: dy * speed - 6 * UNIT, spin: Phaser.Math.FloatBetween(-600, 600), age: 0 });
+      // Each piece scans out on its own before the replay moves on.
+      this.pieces.push({ img, vx: dx * speed, vy: dy * speed - 6 * UNIT, spin: Phaser.Math.FloatBetween(-600, 600), age: 0, end: Phaser.Math.FloatBetween(950, 1500) });
     }
     if (parts.length) {
       this.flash.clear().fillStyle(color, 0.55).fillCircle(cx, cy, 2.4 * UNIT).fillStyle(0xffffff, 0.8).fillCircle(cx, cy, 1.1 * UNIT);
@@ -384,7 +401,9 @@ export class ResultsScene extends Phaser.Scene {
     for (const p of this.pieces) {
       p.age += dtMs;
       p.vy += 30 * UNIT * dt;
-      p.img.setPosition(p.img.x + p.vx * dt, p.img.y + p.vy * dt).setAngle(p.img.angle + p.spin * dt).setAlpha(Math.max(0, 1 - p.age / 2500));
+      p.img.setPosition(p.img.x + p.vx * dt, p.img.y + p.vy * dt).setAngle(p.img.angle + p.spin * dt).setVisible(p.age < p.end);
+      const t = 1 - (p.end - p.age) / DISSOLVE_MS;
+      if (t > 0) holoPiece(p.img, Math.min(1, t), this.worldCam);
     }
   }
 
@@ -392,5 +411,7 @@ export class ResultsScene extends Phaser.Scene {
     for (const p of this.pieces) p.img.destroy();
     this.pieces = [];
     this.flash?.clear();
+    this.holoG?.clear();
+    this.holoAdd?.clear();
   }
 }
