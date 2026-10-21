@@ -661,6 +661,33 @@ every feature branch starts from `dev`.
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
 
+### Phase 11 B — Settings screen (`feat/settings`)
+
+- `game/Settings.ts` (the store, saved in `localStorage`) gains a change
+  listener (`onSettingsChange`) and the helpers everything reads it through:
+  `sfxVolume(base)` for every sound effect (`GameScene.playSfx`, the
+  narrator), `addMusic(scene, key, base)` for the title and arena music (the
+  volume follows the setting live), and the VFX multiplier `vfx()` /
+  `vfxCount(n)` / `vfxChance()`.
+- VFX (0..1, 0 = minimal like `?lowfx`) scales: the .pe particle counts and
+  emission (`ParticleFx`), the impact sparks, bits, motes and dust
+  (`ImpactFx.add`; single flashes, rings and beams stay until 0), portal
+  motes, the power-up sparkle burst, screen shake trauma, the hit and K.O.
+  glows/lights, the robots' white hit flash (off at 0) and the grade pass
+  (on from 0.5; F still toggles it for the match).
+- `scenes/SettingsScene.ts`: three sliders (music, sound effects, visual
+  effects) and Back; arrows / WASD, D-pad or stick (held keys repeat),
+  Enter / Esc / pad A / B back, mouse click and drag. A test sound plays when
+  the sound effects level changes. It is drawn over the scene that opened it,
+  which is paused (Phaser pause) until Back.
+- `scenes/MenuInput.ts`: menu navigation shared by menus. It polls its own
+  window key listeners and `navigator.getGamepads()` instead of a scene's
+  input plugins, and a button only counts once seen up, so the press that
+  opens a menu (or closes it: the settings act on release) never leaks into
+  the scene behind.
+- Title: a "⚙ Settings" entry in the top corner, the last item of the menu
+  (Up from the first mode wraps to it). Pause: the PAUSED banner is now a
+  menu, Resume · Settings · Quit to title (Esc / Q / Start / Select still work).
 ### Phase 11 A — heavier fall, dodge roll, debug fix (2026-10-21)
 
 - **Heavier fall**: the jump is unchanged (20.5 u/s under 44 u/s², about

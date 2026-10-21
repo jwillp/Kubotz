@@ -20,6 +20,7 @@ import { DebrisField } from '../game/Debris';
 import { ARENAS, buildArenaMap } from '../map/Arenas';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
+import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { body } from '../ui/Type';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
@@ -156,7 +157,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : Config.COUNTDOWN + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
-    this.music = this.sound.add('music-game', { loop: true, volume: 0.28 });
+    this.music = addMusic(this, 'music-game', 0.28);
     this.music.play();
 
     this.scene.launch('Hud');
@@ -192,7 +193,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (button.index === 9) this.togglePause(); // Start
       if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
     });
+    // The settings screen (opened from the pause) applies its VFX level live.
+    const offSettings = onSettingsChange(() => this.setScreenFx(this.wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      offSettings();
+      this.scene.stop('Settings');
       this.music?.destroy();
       this.scene.stop('Hud');
       this.scene.stop('Debug');
@@ -456,7 +461,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       detune += Phaser.Math.Between(-80, 80);
     }
     if (!this.cache.audio.exists(key)) return;
-    this.sound.play(key, { volume, detune });
+    this.sound.play(key, { volume: sfxVolume(volume), detune });
   }
 
   dust(x: number, y: number): void {
@@ -631,9 +636,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
       }),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
-      ...this.debris.lights(this.clock),
-      ...this.impact.lights(),
-    ];
+      // Explosion and hit flashes dim with the VFX setting.
+      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: l.intensity * vfx() })),
+    ].filter((l) => l.intensity > 0);
     // The brightest first, so the pool keeps the hits and lasers when there are many.
     lights.sort((a, b) => b.intensity - a.intensity);
     this.pointLights.forEach((light, i) => {
@@ -658,21 +663,29 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /**
    * The grade pass (vignette, split tone, grain, scanlines) on the whole view
-   * (WebGL only); off with ?lowfx, toggled with F. No bloom: the owner
-   * preferred the crisper look without it.
+   * (WebGL only); off with ?lowfx or a VFX setting under half, toggled with F.
+   * No bloom: the owner preferred the crisper look without it.
    */
   private setupScreenFx(): void {
-    if (new URLSearchParams(location.search).has('lowfx')) return;
-    this.toggleScreenFx();
+    this.gradeOn = false;
+    this.setScreenFx(this.wantScreenFx());
+  }
+
+  private wantScreenFx(): boolean {
+    return vfx() >= 0.5 && !new URLSearchParams(location.search).has('lowfx');
   }
 
   private toggleScreenFx(): boolean {
+    return this.setScreenFx(!this.gradeOn);
+  }
+
+  private setScreenFx(on: boolean): boolean {
     const cam = this.cameras.main;
     if (this.sys.renderer.type !== Phaser.WEBGL) return false;
     // Remove the instances themselves: removing by the name 'Grade' missed
     // (the instance is named after its class), so every toggle stacked another pass.
     for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
-    this.gradeOn = !this.gradeOn;
+    this.gradeOn = on;
     if (this.gradeOn) {
       const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
       if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
@@ -728,7 +741,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (step === this.countdownStep) return;
     this.countdownStep = step;
     const word = ['3', '2', '1', 'fight'][step];
-    this.sound.play(`narrator-${word}`, { volume: 0.8 });
+    this.sound.play(`narrator-${word}`, { volume: sfxVolume(0.8) });
     this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
   }
 
@@ -856,7 +869,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (free.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(free);
     const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
-    this.pickupFx.explode(12, orb.x, orb.y);
+    this.pickupFx.explode(vfxCount(12), orb.x, orb.y);
     this.orbs.push(orb);
   }
 
@@ -980,7 +993,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    this.trauma = Math.min(1, this.trauma + amount);
+    this.trauma = Math.min(1, this.trauma + amount * vfx());
   }
 
   private applyZoom(): void {
@@ -1000,6 +1013,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.paused = !this.paused;
     if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
     this.events.emit('pause', this.paused);
+  }
+
+  /** From the pause menu: the settings screen over the paused match; back to the pause after. */
+  openSettings(): void {
+    if (!this.paused) return;
+    this.scene.pause('Hud');
+    this.scene.pause();
+    this.scene.launch('Settings', { resume: ['Game', 'Hud'] });
+    this.scene.bringToTop('Settings');
   }
 
   backToTitle(): void {

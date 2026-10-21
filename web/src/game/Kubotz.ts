@@ -6,6 +6,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
+import { vfx } from './Settings';
 import { makeTagTexture } from '../ui/Type';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
@@ -1517,7 +1518,7 @@ export class Kubotz implements Damageable {
       dtMs,
       lean, squash,
       alpha: this.intangible ? 0.55 : 1,
-      flash: now < this.flashUntil || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
+      flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
     const fast = Math.hypot(this.body.vx, this.body.vy) > 17 * UNIT;
