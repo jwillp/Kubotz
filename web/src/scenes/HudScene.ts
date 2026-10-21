@@ -55,7 +55,9 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
     this.game_.events.on('countdown', this.onCountdown, this);
+    this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
       this.game_.events.off('pause', this.onPause, this);
@@ -120,14 +122,22 @@ export class HudScene extends Phaser.Scene {
   private onMatchOver(winner: Kubotz | null): void {
     this.bannerText.setText(winner ? `${winner.name} WINS!` : 'DRAW');
     if (winner) this.bannerText.setStroke('#' + hex(winner.look.color), 8);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
-    this.banner.setVisible(true).setScale(0.6).setAlpha(0);
+    // High up, so the camera's close-up of the winners' dance stays clear.
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('');
+    this.banner.setY(150).setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
   }
 
   private onPause(paused: boolean): void {
     this.bannerText.setText('PAUSED').setStroke('#29abe2', 8);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen');
-    this.banner.setVisible(paused).setScale(1).setAlpha(1);
+    this.banner.setY(this.scale.height / 2).setVisible(paused).setScale(1).setAlpha(1);
+  }
+
+  /** After the winners have danced a little: what continues to the results. */
+  private onContinuePrompt(): void {
+    const hint = (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press attack / Enter / A to continue').setAlpha(0);
+    this.tweens.add({ targets: hint, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: hint, scale: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: 300 });
   }
 }

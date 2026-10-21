@@ -4,7 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS, HEADS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import { BONUS_RATES, type MatchSetup } from './TitleScene';
@@ -20,6 +20,8 @@ import { DebrisField } from '../game/Debris';
 import { ARENAS, buildArenaMap } from '../map/Arenas';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
+import { ReplayRecorder } from '../game/Replay';
+import type { MatchResult } from '../game/Match';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -87,6 +89,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private countdownStep = -1;
   paused = false;
   private music?: Phaser.Sound.BaseSound;
+  /** Post-match (phase 11 D): kill replays, when the match ended, humans' attack last frame (a fresh press continues). */
+  private recorder = new ReplayRecorder();
+  private overAt = 0;
+  private promptShown = false;
+  private attackWasDown = new Set<Kubotz>();
 
   constructor() { super('Game'); }
 
@@ -103,6 +110,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.paused = false;
     this.clock = 0;
     this.countdownStep = -1;
+    this.recorder = new ReplayRecorder();
+    this.promptShown = false;
+    this.attackWasDown.clear();
   }
 
   create(setup: MatchSetup): void {
@@ -184,10 +194,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupScreenFx();
     this.setupLights();
-    kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
+    kb.on('keydown-ENTER', () => this.continueAfterMatch());
+    kb.on('keydown-SPACE', () => this.continueAfterMatch());
     // From the pause: Q quits to the title screen.
     kb.on('keydown-Q', () => { if (this.paused) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+      if (button.index === 0 || button.index === 1 || button.index === 9) this.continueAfterMatch(); // B, A, Start after the match
       if (button.index === 9) this.togglePause(); // Start
       if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
     });
@@ -587,6 +599,38 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
+    this.recorder.record(now, this.fighters, this.cameras.main);
+    this.updateAfterMatch(now);
+  }
+
+  // -------------------------------------------------------------- post-match (phase 11 D)
+  /** The winners dance; after a beat any human's fresh attack press (or Enter, Space, pad A / B / Start) continues. */
+  private updateAfterMatch(now: number): void {
+    if (this.winner === undefined) return;
+    const ready = now >= this.overAt + CONTINUE_DELAY;
+    if (ready && !this.promptShown) { this.promptShown = true; this.events.emit('continue-prompt'); }
+    for (const k of this.fighters) {
+      if (k.controller.label === 'CPU') continue;
+      const down = k.controller.read().attack;
+      if (ready && down && !this.attackWasDown.has(k)) { this.continueAfterMatch(); return; }
+      if (down) this.attackWasDown.add(k); else this.attackWasDown.delete(k);
+    }
+  }
+
+  private continueAfterMatch(): void {
+    if (this.winner === undefined || !this.promptShown || !this.scene.isActive()) return;
+    const result: MatchResult = {
+      // The team is the slot until match setup gives robots teams.
+      fighters: this.fighters.map((k) => ({ input: k.controller.label, team: k.index, helmet: k.index % HEADS.length })),
+      stats: this.fighters.map((k) => ({ ...k.stats })),
+      winnerTeam: this.winner ? this.winner.index : null,
+      duration: Math.max(0, this.overAt - this.startedAt),
+      names: this.fighters.map((k) => k.name),
+      colors: this.fighters.map((k) => k.look.color),
+      replays: this.recorder.flush(),
+      hull: this.warpZones.length > 0,
+    };
+    this.scene.start('Results', result);
   }
 
   private lastTips = new Map<Kubotz, { x: number; y: number }>();
@@ -907,7 +951,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.fx('deathDust', k.x, k.body.bottom);
       this.shake(0.7);
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
-      if (killer && killer !== k) killer.kills++;
+      if (killer && killer !== k) { killer.kills++; killer.stats.kos++; }
+      k.stats.falls++;
+      const blow = k.lastAttacker && now - k.lastAttacker.at < 3000 ? k.lastAttacker.at : now;
+      this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, blow);
       this.debris.explode(k, now);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
@@ -917,6 +964,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const alive = this.fighters.filter((f) => !f.eliminated);
       if (alive.length <= 1) {
         this.winner = alive[0] ?? null;
+        this.overAt = now;
+        for (const f of alive) f.celebrating = true;
         this.events.emit('match-over', this.winner);
       }
     }
@@ -958,7 +1007,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
       const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
       const aspect = this.scale.width / this.scale.height;
-      const wanted = Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
+      // After the match the camera closes in on the dancing winner.
+      const wanted = this.winner ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
       this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * dt));
       this.camTarget.copy(this.centerOfFighters());
     }
@@ -1006,6 +1056,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.scene.start('Title');
   }
 }
+
+/** The match is over: how long the winners dance before "press to continue" (ms). */
+const CONTINUE_DELAY = 1600;
 
 /** Camera shake: the largest offset (world px) and how fast trauma wears off (per second). */
 const SHAKE_MAX = 0.45 * UNIT;

@@ -6,6 +6,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
+import { emptyStats, type FighterStats } from './Match';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -187,6 +188,16 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
+/** Texture key for a part image: helmets and the laser blade are painted in the robot's colour. */
+export function partTexture(scene: Phaser.Scene, color: number): (file: string) => string {
+  return (file) => {
+    let key = `kubotz:${file}`;
+    if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
+    else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+    return scene.textures.exists(key) ? key : `kubotz:${file}`;
+  };
+}
+
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
@@ -266,6 +277,12 @@ export class Kubotz implements Damageable {
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
+  /** Numbers for the results screen (phase 11 D). */
+  readonly stats: FighterStats = emptyStats();
+  /** Hits taken in the current combo (each one landing before the last one's hitstun wore off). */
+  private comboTaken = 0;
+  /** Won the match: no more controls, the victory dance once on the ground. */
+  celebrating = false;
 
   private jumps = 0;
   maxJumps: number = Config.NB_JUMPS;
@@ -382,13 +399,7 @@ export class Kubotz implements Damageable {
 
     this.anim = new Animator(rig);
     this.look = { head: HEADS[index % HEADS.length], color };
-    // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Robot2D(scene, rig, (file) => {
-      let key = `kubotz:${file}`;
-      if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
-      else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
-      return scene.textures.exists(key) ? key : `kubotz:${file}`;
-    });
+    this.model = new Robot2D(scene, rig, partTexture(scene, color));
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = `label-${controller.label}:${hex(color)}`;
@@ -499,7 +510,7 @@ export class Kubotz implements Damageable {
   update(now: number, dt: number, controls = true): void {
     if (this.dead) { this.healthBar.clear(); return; }
     const read = this.controller.read();
-    const pad = this.pad = controls && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
+    const pad = this.pad = controls && !this.celebrating && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
     // Grabs and ledges take over the controls while they last.
     if (!this.heldBy && this.ghosted) { this.body.ghost = false; this.ghosted = false; }
@@ -1282,6 +1293,7 @@ export class Kubotz implements Damageable {
     if (this.holding || this.heldBy) this.breakGrab();
     this.releaseLedge(now);
     this.lockUntil = 0;
+    const prev = this.lastAttacker;
     this.lastAttacker = { by: attacker, at: now };
     const pushX = dirX * launch.knockback;
     if (this.guarding) {
@@ -1295,6 +1307,7 @@ export class Kubotz implements Damageable {
       this.body.vx += (pushX / 2) * UNIT;
       return;
     }
+    this.countHit(attacker, Math.min(this.health, amount), prev?.by === attacker && now < Math.max(this.hitstunUntil, this.hitUntil));
     this.health = Math.max(0, this.health - amount);
     let hitstun: number;
     let tumble = false;
@@ -1332,6 +1345,15 @@ export class Kubotz implements Damageable {
       this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
       this.anim.play(this.hitAnim, { restart: true, fade: 30 });
     }
+  }
+
+  /** Stats: a hit that got through (not guarded or shielded); `chained` = landed while the last one still stunned. */
+  private countHit(attacker: Kubotz, damage: number, chained: boolean): void {
+    this.comboTaken = chained ? this.comboTaken + 1 : 1;
+    this.stats.damageTaken += damage;
+    attacker.stats.damageDealt += damage;
+    attacker.stats.hits++;
+    attacker.stats.longestCombo = Math.max(attacker.stats.longestCombo, this.comboTaken);
   }
 
   /** RespawnSystem DEAD state: hide and freeze until respawn. */
@@ -1459,6 +1481,7 @@ export class Kubotz implements Damageable {
     if (now < this.knockdownUntil) return; // the knockdown plays out
     if (this.tumbling) { a.play('tumble', { fade: 40 }); return; }
     if (now < this.hitUntil || now < this.stunnedUntil || now < this.hitstunUntil) { a.play(this.hitAnim, { fade: 30 }); return; }
+    if (this.celebrating && this.grounded) { a.play('victory', { fade: 220 }); return; }
     if (this.guarding) { a.play(ANIM.GUARD, { fade: 70 }); return; }
     if (now < this.grabAnimUntil) return;
     if (now < this.shootingUntil && this.weapon !== 'none') return;

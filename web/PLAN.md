@@ -660,3 +660,40 @@ every feature branch starts from `dev`.
 
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
+
+### Phase 11 D — Post-match: victory dance, results, kill replays (2026-10-21)
+
+Owner: "When the last man standing wins and is celebrating (by doing a
+dance) the player is prompted to press a key/button for next and then it
+goes to a screen that shows a few tasks [stats], and the kills of the match
+rapid and then a few frames before the kill slow motions."
+
+- **Victory**: the winners stop taking input (`Kubotz.celebrating`) and,
+  once on the ground, loop the new `victory` clip (2.6 s, a ninja's beats:
+  hand seal and bow, high front kick, back flip with the arms out, fist
+  raised). The camera closes in to a 15-unit view. After 1.6 s the HUD
+  banner (moved up out of the way) shows "Press attack / Enter / A to
+  continue": a fresh attack press from any human, Enter, Space, or pad
+  A / B / Start goes to the results.
+- **Stats** (`FighterStats` on every Kubotz, `MatchResult` in Match.ts): one
+  generic hook in `Kubotz.takeDamage` (`countHit`: damage dealt / taken
+  capped at the health left, hits landed, combos = hits landing before the
+  last one's hitstun wore off) and one in `GameScene.checkDeaths` (K.O.s,
+  falls). Guarded and shielded hits do not count. Until match setup gives
+  robots teams, `team` = slot index.
+- **Kill replays** (game/Replay.ts): `Robot2D.lastDraw` keeps the arguments
+  of every draw (pose, part maps, place, yaw, lean, squash, flash, by
+  reference: no copies); `ReplayRecorder` keeps 6 s of frames (robots and
+  the camera's centre, zoom and roll) and on each K.O. cuts out from 2.6 s
+  before the blow (the victim's last hit if within 3 s, else the K.O.) to
+  0.6 s after the K.O.
+- **ResultsScene**: three cameras (backdrop, arena, screen). The stats table
+  (a row per robot in its colour, the best of each column lit, the winner
+  marked), then each K.O. over the arena art (its textures outlive the
+  match) with the robots redrawn by Robot2D from the frames, interpolated:
+  2.4x through the run-up, easing into 0.2x just before the blow, held
+  through the hit, back to 1x for the flight, and the victim bursting apart
+  at the K.O. "K.O. 2/3  P1 K.O.'d CPU 2" on top. Attack / Enter skips to the
+  next K.O., Esc back to the stats; then Continue goes to the title (R
+  replays the K.O.s again). Not redrawn in replays: sabre glow, bullets,
+  particles, power-up balls.
