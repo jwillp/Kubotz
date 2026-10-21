@@ -643,3 +643,20 @@ Done (2026-10-21), one build per step:
   Plasma Kick or Ion Punch now and then, Raptor Dash and Shadow Dive to
   recover once out of jumps.
 
+
+## Phase 11 — Feature batch (2026-10-21)
+
+The owner asked for a batch of features, each group in its own branch and PR.
+`web-port` is merged into `dev` (the repository's default branch) first, and
+every feature branch starts from `dev`.
+
+| PR | Branch | Asks |
+|----|--------|------|
+| A | `feat/heavier-fall-roll` | Heavier robots: normal jump, much stronger pull on the way down (fall gravity and fast-fall). Ground dodge roll: guard + left/right on the ground rolls through enemies, intangible, the ground version of the air dodge. Fix: debug on, off, on again crashed. |
+| B | `feat/settings` | Settings screen: music, sound effects and visual effects volumes (VFX intensity), saved in the browser, reachable from the title screen and the pause menu mid-battle. |
+| C | `feat/match-setup` | Join screen: each human presses to join, picks a helmet and a colour; the colour is a faction (same colour = same team, no friendly damage, the last team standing wins); the number of CPUs and their colours. Then an arena select with a live preview of each arena. |
+| D | `feat/post-match` | The winners dance; "press to continue" prompt; a results screen with per-player stats (K.O.s, falls, damage dealt and taken, hits, longest combo) and a replay of each K.O.: the frames before it, slowing to slow motion at the blow. |
+| E | `feat/move-list` | Move list: every move and combo, grouped (ground, smash, air, special, sword, gun); the selected move plays on a robot in a loop with its input. |
+
+PRs B to E each build on the previous one where they touch the same scenes
+(C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
