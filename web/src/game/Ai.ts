@@ -91,6 +91,14 @@ export class CpuController implements Controller {
 
     const danger = untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
     if (danger) {
+      // Cornered on the ground: now and then a dodge roll away (or through it).
+      if (me.grounded && manhattan(me, danger) < 2.2 && !me.rolling && Math.random() < 0.15) {
+        pad.guard = true;
+        const away = danger.x < me.x ? 'right' : 'left';
+        pad[Math.random() < 0.7 ? away : away === 'left' ? 'right' : 'left'] = true;
+        this.debug.mode = 'roll';
+        return pad;
+      }
       if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) this.fleeTarget = this.refuge(danger);
       dest = { ...this.fleeTarget, bottom: this.fleeTarget.y };
       this.debug.mode = 'flee';
@@ -172,6 +180,11 @@ export class CpuController implements Controller {
       // Raise the guard against a swing that is about to land, now and then.
       if (enemy.attacking && manhattan(me, enemy) < 2.5 && me.guard > Config.GUARD_MAX * 0.3 && Math.random() < 0.4) {
         pad.guard = true;
+        // Now and then a dodge roll instead: through the attacker (behind it to punish) or away.
+        if (me.grounded && Math.random() < 0.3) {
+          const through = dx < 0 ? 'left' : 'right';
+          pad[Math.random() < 0.65 ? through : through === 'left' ? 'right' : 'left'] = true;
+        }
         return pad;
       }
       if (ranged && Math.abs(dx) < 6 * UNIT && Math.abs(dy) < 0.8 * UNIT) return pad; // hold position and shoot
