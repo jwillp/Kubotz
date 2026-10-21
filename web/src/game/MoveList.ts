@@ -58,6 +58,8 @@ export interface MoveEntry {
   /** Where the robot starts (units, x forwards, y up) and whether a ledge stands at x = 0. */
   start?: [number, number];
   ledge?: boolean;
+  /** A second robot stands in reach to be grabbed, pummelled, thrown and hit. */
+  victim?: boolean;
   steps: Step[];
 }
 
@@ -147,12 +149,12 @@ export const MOVE_LIST: MoveEntry[] = [
   { group: 'Laser gun', name: 'Charged shot', keys: 'Hold O, release', pad: 'Hold A, release', desc: `Charges for up to ${GUN_CHARGE_MS / 1000} s: a big, slower bolt with strong recoil, up to ${shotDamage(1)} dmg (Mk I).`, weapon: 'laserGunMkI', steps: [clip('idle', { ms: GUN_CHARGE_MS, gather: true }), shot(1)] },
 
   // ---------------------------------------------------------------- grabs
-  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front, through guards; also picks up power-up balls. A miss has end lag.', steps: [clip('grab'), clip('idle', { ms: 400 })] },
-  { group: 'Grab and throws', name: 'Pummel', keys: 'O while holding', pad: 'A while holding', desc: `${PUMMEL_DAMAGE} dmg a hit.`, steps: [clip('grab'), clip('grabHold', { ms: 300 }), clip('pummel', { ms: PUMMEL_MS }), clip('pummel', { ms: PUMMEL_MS }), clip('grabHold', { ms: 300 })] },
-  { group: 'Grab and throws', name: 'Forward throw', keys: 'Forward while holding', pad: '◀▶ while holding', desc: `${stats(THROWS.forward)}.`, steps: throwSteps('forward') },
-  { group: 'Grab and throws', name: 'Back throw', keys: 'Back while holding', pad: 'Back while holding', desc: `With a spin. ${stats(THROWS.back)}.`, steps: throwSteps('back') },
-  { group: 'Grab and throws', name: 'Up throw', keys: 'W while holding', pad: '▲ while holding', desc: `${stats(THROWS.up)}.`, steps: throwSteps('up') },
-  { group: 'Grab and throws', name: 'Down throw', keys: 'S while holding', pad: '▼ while holding', desc: `${stats(THROWS.down)}.`, steps: throwSteps('down') },
+  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front, through guards; also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
+  { group: 'Grab and throws', name: 'Pummel', keys: 'O while holding', pad: 'A while holding', desc: `${PUMMEL_DAMAGE} dmg a hit.`, victim: true, steps: [clip('grab'), clip('grabHold', { ms: 300 }), clip('pummel', { ms: PUMMEL_MS }), clip('pummel', { ms: PUMMEL_MS }), clip('grabHold', { ms: 300 })] },
+  { group: 'Grab and throws', name: 'Forward throw', keys: 'Forward while holding', pad: '◀▶ while holding', desc: `${stats(THROWS.forward)}.`, victim: true, steps: throwSteps('forward') },
+  { group: 'Grab and throws', name: 'Back throw', keys: 'Back while holding', pad: 'Back while holding', desc: `With a spin. ${stats(THROWS.back)}.`, victim: true, steps: throwSteps('back') },
+  { group: 'Grab and throws', name: 'Up throw', keys: 'W while holding', pad: '▲ while holding', desc: `${stats(THROWS.up)}.`, victim: true, steps: throwSteps('up') },
+  { group: 'Grab and throws', name: 'Down throw', keys: 'S while holding', pad: '▼ while holding', desc: `${stats(THROWS.down)}.`, victim: true, steps: throwSteps('down') },
 
   // ---------------------------------------------------------------- defence and movement
   { group: 'Defence and ledges', name: 'Guard', keys: 'Hold Shift', pad: 'Hold R, ZL or ZR', desc: `A shield bubble that soaks hits and shrinks while held; it breaks when empty (${Config.GUARD_MAX} guard).`, steps: [clip('guard', { ms: 1200, bubble: true })] },
@@ -170,5 +172,5 @@ export const MOVE_LIST: MoveEntry[] = [
   { group: 'Combos', name: 'Up tilt → up air', keys: 'W + O, Space, W + O', pad: 'Tilt ▲ + A, X, ▲ + A', desc: `The up tilt pops them up; jump and follow with the up air: ${D.utilt.damage + D.uair.damage} dmg.`, steps: [strike(D.utilt), JUMP, strike(D.uair), FALL, LAND] },
   { group: 'Combos', name: 'Down tilt → forward air', keys: 'S + O, Space, forward + O', pad: 'Tilt ▼ + A, X, ◀▶ + A', desc: `The sweep lifts them; a short hop forward air follows: ${D.dtilt.damage + D.fair.damage} dmg.`, steps: [strike(D.dtilt), HOP, strike(D.fair), FALL, LAND] },
   { group: 'Combos', name: 'Short hop nair → jab combo', keys: 'Tap Space, O, land, O O O', pad: 'Tap X, A, land, A A A', desc: `A neutral air on the way down, then the jab combo on landing: ${D.nair.damage + sum(COMBO)} dmg.`, steps: [HOP, strike(D.nair), FALL, ...COMBO.map((m) => strike(m))] },
-  { group: 'Combos', name: 'Down throw → Raptor Dash', keys: 'I, S, A/D + P', pad: 'L, ▼, ◀▶ + B', desc: `Throw down, then chase with the dashing uppercut: ${THROWS.down.damage + SP.raptor.damage} dmg.`, steps: [...throwSteps('down'), strike(SP.raptor)] },
+  { group: 'Combos', name: 'Down throw → Raptor Dash', keys: 'I, S, A/D + P', pad: 'L, ▼, ◀▶ + B', desc: `Throw down, then chase with the dashing uppercut: ${THROWS.down.damage + SP.raptor.damage} dmg.`, victim: true, steps: [...throwSteps('down'), strike(SP.raptor)] },
 ];
