@@ -184,13 +184,24 @@ export class KubotzBody extends PxBody {
 
 /** A power-up pick-up (PowerUpFactory): circle, density 0.8, restitution 0.5. */
 export class ItemBody extends PxBody {
+  /** A power-up ball: it rolls, bounces off the arena and the other balls. */
   constructor(physics: PhysicsWorld, x: number, y: number, radius: number) {
-    super(physics.world.createBody({ type: 'dynamic', position: Vec2(x / UNIT, y / UNIT), fixedRotation: true }));
+    super(physics.world.createBody({ type: 'dynamic', position: Vec2(x / UNIT, y / UNIT), bullet: true }));
     this.body.createFixture({
-      shape: new Circle(radius / UNIT), density: 0.8, restitution: 0.5, friction: 0.5,
-      filterCategoryBits: CAT_ITEM, filterMaskBits: CAT_STATIC, userData: 'item' as FixtureTag,
+      shape: new Circle(radius / UNIT), density: 0.6, restitution: 0.55, friction: 0.8,
+      filterCategoryBits: CAT_ITEM, filterMaskBits: CAT_STATIC | CAT_ITEM, userData: 'item' as FixtureTag,
     });
-    this.body.setLinearDamping(0.5);
+    this.body.setLinearDamping(0.12);
+    this.body.setAngularDamping(0.25);
+  }
+
+  get angle(): number { return this.body.getAngle(); }
+
+  /** Adds to its velocity (pixels/s), e.g. kicked or struck. */
+  push(vx: number, vy: number): void {
+    const v = this.body.getLinearVelocity();
+    this.body.setLinearVelocity(Vec2(v.x + vx / UNIT, v.y + vy / UNIT));
+    this.body.setAwake(true);
   }
 }
 

@@ -77,7 +77,7 @@ export const Config = {
   MAX_DELAY_BONUS_SPAWN: 10000,
   POWERUP_LIFETIME: 20000,
   POWERUP_DURATION: 30000,
-  POWERUP_RADIUS: 0.3,
+  POWERUP_RADIUS: 0.45,
 
   // Camera (GameCamera / CameraSystem)
   CAMERA_VIEW_WIDTH: 80,

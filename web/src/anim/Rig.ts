@@ -146,16 +146,25 @@ export class Rig {
 
   /** How far up the pose must be lifted for its lowest boot to touch the ground (y = 0). */
   groundLift(pose: Pose): number {
-    let low = Infinity;
+    const low = this.lowestFoot(pose).y;
+    return low === Infinity ? 0 : -low;
+  }
+
+  /** The lowest foot of a pose (the one on the ground) and its height (Spriter pixels). */
+  lowestFoot(pose: Pose): { foot: string; y: number } {
+    let low = Infinity; let foot = '';
     for (const p of this.solve({ ...pose, y: 0 })) {
       if (p.name !== 'foot' && p.name !== 'foot_sha') continue;
       const { width: w, height: h } = p.file;
       // The foot's visible outline when known (the image corners are transparent,
       // so a tilted foot would hover above the floor by them).
       const pts = this.outlines.get(p.file.name) ?? [[0, 0], [w, 0], [0, h], [w, h]];
-      for (const [cx, cy] of pts) low = Math.min(low, pointOnPart(p, cx, cy).y);
+      for (const [cx, cy] of pts) {
+        const y = pointOnPart(p, cx, cy).y;
+        if (y < low) { low = y; foot = p.name; }
+      }
     }
-    return low === Infinity ? 0 : -low;
+    return { foot, y: low };
   }
 
   /**

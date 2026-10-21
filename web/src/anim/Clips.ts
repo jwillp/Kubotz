@@ -48,6 +48,8 @@ const READY: Pose = {
   thighF: -38, legF: -112, footF: -88, thighB: -128, legB: -118, footB: -96,
   shoulderF: -22, armF: 14, handF: 22, shoulderB: -125, armB: -150, handB: -160,
 };
+/** The fighting stance: the original guard with the knees bent. */
+const FIGHT: Pose = { ...S, torso: 86, head: 92, thighF: -50, legF: -108, footF: -86, thighB: -98, legB: -128, footB: -84 };
 const CROUCH: Pose = {
   ...READY, torso: 78, head: 88, thighF: -15, legF: -125, footF: -95, thighB: -60, legB: -150, footB: -100,
   shoulderF: -60, armF: 60, shoulderB: -45, armB: -10,
@@ -77,10 +79,10 @@ function clip(name: string, ms: number, keys: Key[], opts: { loop?: boolean; pla
 // ------------------------------------------------------------------ clips
 
 export const CLIPS: Record<string, Clip> = {
-  /** The ninja's ready stance, low and wide, breathing; the lead hand drifts. */
-  idle: clip('idle', 1500, [
-    { t: 0, pose: READY },
-    { t: 0.5, pose: { ...READY, torso: 77, head: 90, y: -4, thighF: -42, legF: -108, thighB: -124, legB: -122, shoulderF: -30, armF: 4, handF: 12, shoulderB: -118, armB: -142 } },
+  /** The fighting stance (guard up, knees bent), bouncing lightly on the balls of the feet. */
+  idle: clip('idle', 860, [
+    { t: 0, pose: FIGHT, ease: 'inOut' },
+    { t: 0.5, pose: { ...FIGHT, torso: 84, head: 90, thighF: -40, legF: -116, footF: -88, thighB: -88, legB: -136, footB: -86, shoulderF: -70, armF: 52, handF: 64, armB: -30 }, ease: 'inOut' },
   ], { loop: true }),
 
   /** The original game's run, smoothed (resampled and rounded off), a touch faster and leaning in. */
@@ -129,7 +131,7 @@ export const CLIPS: Record<string, Clip> = {
   land: clip('land', 240, [
     { t: 0, pose: { ...CROUCH, torso: 74 } },
     { t: 0.35, pose: { ...CROUCH, torso: 72, head: 84 }, ease: 'out' },
-    { t: 1, pose: READY },
+    { t: 1, pose: FIGHT },
   ]),
 
   guard: clip('guard', 900, [
@@ -143,21 +145,21 @@ export const CLIPS: Record<string, Clip> = {
   ], { planted: false }),
 
   hit: clip('hit', 320, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.2, pose: { ...READY, torso: 108, head: 118, tilt: -6, x: -20, shoulderF: -135, armF: -95, shoulderB: -145, armB: -110, thighF: -40, legF: -100 }, ease: 'snap' },
-    { t: 1, pose: READY, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
   hit2: clip('hit2', 320, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.2, pose: { ...CROUCH, torso: 58, head: 62, tilt: 8, x: -18, shoulderF: -95, armF: -80, shoulderB: -100, armB: -85 }, ease: 'snap' },
-    { t: 1, pose: READY, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
   grab: clip('grab', 300, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.4, pose: { ...READY, tilt: 10, x: 20, torso: 80, shoulderF: -5, armF: 0, handF: 0, shoulderB: 0, armB: 5, handB: 5, thighF: -35, legF: -90 }, ease: 'snap' },
-    { t: 1, pose: READY },
+    { t: 1, pose: FIGHT },
   ]),
 
   shoot: clip('shoot', 260, [
@@ -169,7 +171,7 @@ export const CLIPS: Record<string, Clip> = {
   // -------------------------------------------------------------- combat
   /** Combo 1: a palm strike, stepping in. */
   jab: clip('jab', 260, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.2, pose: { ...READY, torso: 82, x: -8, shoulderF: -70, armF: 70, handF: 80, shoulderB: -100, armB: -60 }, ease: 'out' },
     { t: 0.42, pose: { ...READY, torso: 66, tilt: 10, x: 38, shoulderF: 2, armF: 4, handF: 70, shoulderB: -150, armB: -170, thighF: -26, legF: -92, thighB: -140, legB: -130 }, ease: 'snap' },
     { t: 0.7, pose: { ...READY, torso: 67, tilt: 10, x: 40, shoulderF: -2, armF: 0, handF: 66, shoulderB: -148, armB: -168, thighF: -26, legF: -92, thighB: -140, legB: -130 } },
@@ -224,7 +226,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Sword combo 1: overhead slash down. */
   slash1: clip('slash1', 340, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...READY, torso: 100, head: 100, tilt: -4, x: -6, shoulderF: 120, armF: 150, handF: 150 }, ease: 'out' },
     { t: 0.52, pose: { ...READY, torso: 72, head: 78, tilt: 14, x: 56, shoulderF: -55, armF: -60, handF: -60, thighF: -28, legF: -84, thighB: -124, legB: -130 }, ease: 'snap' },
     { t: 0.75, pose: { ...READY, torso: 73, head: 79, tilt: 13, x: 56, shoulderF: -60, armF: -66, handF: -66, thighF: -28, legF: -84, thighB: -124, legB: -130 } },
@@ -359,14 +361,14 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Turning round on the spot: a pivot step with the shoulders swinging through. */
   turn: clip('turn', 180, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.5, pose: { ...READY, torso: 100, head: 96, tilt: -3, y: 4, thighF: -76, legF: -102, footF: -84, thighB: -78, legB: -122, footB: -82, shoulderF: -110, armF: -40, shoulderB: -40, armB: 30 }, ease: 'out' },
-    { t: 1, pose: READY, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
   /** Forward tilt: a chambered side kick, the body leaning away from it. */
   ftilt: clip('ftilt', 380, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.25, pose: { ...READY, torso: 104, head: 96, tilt: -6, x: 12, thighF: 50, legF: -125, footF: -100, shoulderF: -60, armF: 40, shoulderB: -110, armB: -60 }, ease: 'out' },
     { t: 0.42, pose: {
     ...READY, torso: 128, head: 108, tilt: -12, x: 64, thighF: 6, legF: 2, footF: 28, thighB: -100, legB: -112, footB: -92,
@@ -381,7 +383,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Forward smash: the burning fist. Coils (held while charging), then a long lunging punch. */
   fsmash: clip('fsmash', 560, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.3, pose: {
     ...READY, torso: 104, head: 96, tilt: -10, x: -16, y: -4, thighF: -30, legF: -110, thighB: -146, legB: -126, footB: -100,
     shoulderF: -172, armF: 160, handF: 165, shoulderB: -20, armB: 40, handB: 50,
@@ -399,7 +401,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Down smash: drops into a split, kicking out both ways at once. */
   dsmash: clip('dsmash', 480, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...CROUCH, torso: 92, head: 94, y: -8, thighF: -10, legF: -140, thighB: -170, legB: -150, shoulderF: 30, armF: 120, shoulderB: 20, armB: 120 }, ease: 'out' },
     { t: 0.44, pose: {
     torso: 92, head: 96, thighF: -6, legF: -8, footF: 4, thighB: -174, legB: -172, footB: -262,
@@ -409,12 +411,12 @@ export const CLIPS: Record<string, Clip> = {
     torso: 90, head: 95, thighF: -5, legF: -7, footF: 6, thighB: -175, legB: -173, footB: -264,
     shoulderF: 122, armF: 148, handF: 158, shoulderB: 58, armB: 32, handB: 22,
   } },
-    { t: 1, pose: READY, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
   /** Sword forward tilt: a full spinning slash, the blade sweeping round flat. */
   sftilt: clip('sftilt', 420, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.22, pose: { ...READY, yaw: 40, torso: 82, x: 10, shoulderF: -150, armF: -168, handF: -168, shoulderB: -40, armB: 30 }, ease: 'out' },
     { t: 0.48, pose: { ...READY, yaw: 300, torso: 72, tilt: 8, x: 64, shoulderF: -8, armF: -4, handF: -4, shoulderB: -150, armB: -170, thighF: -28, legF: -92, thighB: -142, legB: -132 }, ease: 'linear' },
     { t: 0.72, pose: { ...READY, yaw: 360, torso: 73, tilt: 8, x: 72, shoulderF: -10, armF: -8, handF: -8, shoulderB: -150, armB: -170, thighF: -28, legF: -92, thighB: -142, legB: -132 }, ease: 'out' },
@@ -423,7 +425,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Sword forward smash: blade raised overhead (held while charging), then a leaping cleave. */
   sfsmash: clip('sfsmash', 600, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.3, pose: {
     ...READY, torso: 104, head: 98, tilt: -10, x: -14, shoulderF: 150, armF: 172, handF: 172, shoulderB: 140, armB: 160,
     thighF: -30, legF: -112, thighB: -146, legB: -126,
@@ -441,7 +443,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /** Sword down smash: crouched, a flat spin slash round both sides. */
   sdsmash: clip('sdsmash', 520, [
-    { t: 0, pose: READY },
+    { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...CROUCH, yaw: 0, torso: 76, y: -6, shoulderF: -150, armF: -170, handF: -170, shoulderB: -40, armB: 40 }, ease: 'out' },
     { t: 0.5, pose: { ...CROUCH, yaw: 200, torso: 70, y: -10, shoulderF: -30, armF: -22, handF: -22, shoulderB: -150, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'linear' },
     { t: 0.72, pose: { ...CROUCH, yaw: 360, torso: 70, y: -10, shoulderF: -30, armF: -22, handF: -22, shoulderB: -150, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'linear' },

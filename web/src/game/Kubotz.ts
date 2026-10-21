@@ -221,7 +221,9 @@ export class Kubotz implements Damageable {
   private dropUntil = 0;
   private dodgeReady = true;
   private guardHeld = false;
-  private nextStepAt = 0;
+  /** The foot on the ground in the last drawn run frame (a change = a footfall). */
+  private plantedFoot = '';
+  private lastStepAt = 0;
   private shootingUntil = 0;
   private hitUntil = 0;
   private flashUntil = 0;
@@ -267,7 +269,7 @@ export class Kubotz implements Damageable {
     readonly index: number,
     readonly controller: Controller,
     color: number,
-    rig: Rig,
+    private readonly rig: Rig,
     x: number,
     y: number,
     private hooks: ArenaHooks,
@@ -538,17 +540,14 @@ export class Kubotz implements Damageable {
       this.landUntil = now + 200;
       if (!this.attack) this.anim.play(ANIM.LAND, { restart: true, fade: 40 });
     }
-    if (grounded && Math.abs(vx) > 4 && now >= this.nextStepAt) {
-      this.nextStepAt = now + 260;
-      this.hooks.playSfx('step', 0.25);
-      this.hooks.runDust(this.x, b.bottom, -Math.sign(vx));
-    }
     this.wasGrounded = grounded;
   }
 
   private turnTo(dir: 1 | -1, now: number, grounded: boolean): void {
     if (this.facing === dir) return;
     this.facing = dir;
+    // Dust kicked up by the change of direction.
+    if (grounded) this.hooks.runDust(this.x, this.body.bottom, -dir);
     if (grounded && !this.attack && !this.guarding) {
       this.turnUntil = now + TURN_MS;
       this.anim.play(ANIM_TURN, { restart: true, ms: TURN_MS, fade: 40 });
@@ -900,6 +899,15 @@ export class Kubotz implements Damageable {
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
     const pose = this.anim.pose();
+    // Footsteps land when the other foot touches down in the run.
+    if (this.anim.name === ANIM.RUN && this.grounded) {
+      const foot = this.rig.lowestFoot(pose).foot;
+      if (this.plantedFoot && foot !== this.plantedFoot && now - this.lastStepAt > 120) {
+        this.lastStepAt = now;
+        this.hooks.playSfx('step', 0.25);
+      }
+      this.plantedFoot = foot;
+    } else this.plantedFoot = '';
     // A clip's own spin (yaw) turns the same way whichever side the robot faces.
     const yaw = this.yaw + (pose.yaw ?? 0) * this.facing;
     // Charging shakes with the building power.

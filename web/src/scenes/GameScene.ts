@@ -378,7 +378,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.update(now, dt, fighting);
     }
     this.physicsWorld.step(dt);
-    this.resolveMelee();
+    this.resolveMelee(now);
+    this.kickOrbs(now);
     this.debris.update(now, this.fighters, (victim, x, y) => {
       this.playSfx('punch', 0.3);
       this.impact.hit(x, y, Math.sign(victim.x - x) || 1, 0xffb060, 0.6);
@@ -532,7 +533,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /** MeleeSystem / LaserSwordSystem hitboxes + DamageSystem (with clashes). */
-  private resolveMelee(): void {
+  private resolveMelee(now: number): void {
     for (const attacker of this.fighters) {
       const box = attacker.isAlive() ? attacker.currentAttack() : null;
       if (!box) continue;
@@ -551,6 +552,37 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           continue;
         }
         this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
+      }
+      // Strikes knock the power-up balls away along the move's launch angle.
+      for (const orb of this.orbs) {
+        if (now < orb.kickedUntil) continue;
+        const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
+        if (!box.circles.some((c) => Phaser.Geom.Intersects.CircleToCircle(c, ball))) continue;
+        const dir = box.both ? (orb.x < attacker.x ? -1 : 1) : box.behind ? -attacker.facing : attacker.facing;
+        const ang = Phaser.Math.DegToRad(Math.max(20, box.launch.angle));
+        const speed = (6 + box.launch.knockback * 0.9) * UNIT;
+        orb.body.push(dir * Math.cos(ang) * speed, -Math.sin(ang) * speed);
+        orb.kickedUntil = now + 250;
+        this.impact.pop(orb.x, orb.y, orb.color);
+      }
+    }
+  }
+
+  /** Robots running into a power-up ball kick it along. */
+  private kickOrbs(now: number): void {
+    for (const orb of this.orbs) {
+      if (now < orb.kickedUntil) continue;
+      const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
+      for (const k of this.fighters) {
+        if (!k.isAlive() || !Phaser.Geom.Intersects.CircleToRectangle(ball, k.hurtbox())) continue;
+        const away = orb.x < k.x ? -1 : 1;
+        const vx = k.body.vx;
+        // Faster when running into it; a nudge out of the way when standing.
+        const kick = Math.sign(vx) === away ? Math.abs(vx) * 1.1 + 2 * UNIT : 3 * UNIT;
+        if (orb.body.vx * away < kick) orb.body.vx = away * kick;
+        orb.body.vy = Math.min(orb.body.vy, -(1.5 + (Math.abs(vx) / UNIT) * 0.12) * UNIT);
+        orb.kickedUntil = now + 180;
+        break;
       }
     }
   }
@@ -580,6 +612,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (now >= b.expiresAt) { b.destroy(); continue; }
       const box = b.hitbox();
       if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
+      // A laser bolt knocks a power-up ball away.
+      const orb = this.orbs.find((o) => Phaser.Geom.Intersects.CircleToRectangle(new Phaser.Geom.Circle(o.x, o.y, o.radius), box));
+      if (orb) {
+        orb.body.push(Math.sign(b.pushX) * (8 + Math.abs(b.pushX) * 0.6) * UNIT, -4 * UNIT);
+        this.popBullet(b);
+        continue;
+      }
       for (const target of this.damageablesFor(b.shooter)) {
         if (!Phaser.Geom.Intersects.RectangleToRectangle(box, target.hurtbox())) continue;
         this.hit(target, b.shooter, b.damage, { knockback: Math.abs(b.pushX), angle: 20 }, b.pushX < 0 ? -1 : 1, b.x, b.y);

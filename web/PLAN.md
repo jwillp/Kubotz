@@ -393,3 +393,17 @@ film grain and scanlines; the robots moved like retro boxers.
   which are transparent; they now ground the feet's opaque outline.
 - **Lightsabers**: a white-hot core inside a coloured blade and a wide soft
   halo, drawn additively over the blade art with a slight flicker.
+
+### Phase 9c — owner feedback (2026-10-21)
+
+- **Idle**: back to the fighting stance (the original guard, knees bent),
+  bouncing at 860 ms per cycle instead of the slow ninja breathing; the
+  attacks start and end in it.
+- **Footsteps**: the step sound plays when the run's planted foot changes
+  (`Rig.lowestFoot`), so it lands with each footfall.
+- **Dust**: no longer while running; a puff when changing direction on the
+  ground (and on landing, as before).
+- **Power-up balls**: power-ups are rolling physics balls (radius 0.45 units,
+  bouncy, bump each other). Robots running into one kick it along, strikes
+  knock it away along the move's launch angle, laser bolts push it. The art
+  rolls with the ball under a fixed shading and highlight. Grab picks it up.

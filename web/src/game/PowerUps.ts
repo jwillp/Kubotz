@@ -91,20 +91,56 @@ export function randomPowerUp(): PowerUpType {
 }
 
 /** The bouncing pick-up (PowerUpFactory): a Box2D circle, lifetime 20 s, grabbable. */
+/** Shading laid over a ball (dark rim, a light from the upper left), made once. */
+function ballTextures(scene: Phaser.Scene): void {
+  if (scene.textures.exists('ball-shade')) return;
+  const n = 128;
+  const shade = scene.textures.createCanvas('ball-shade', n, n)!;
+  const c = shade.getContext();
+  let g = c.createRadialGradient(n * 0.42, n * 0.4, n * 0.1, n / 2, n / 2, n / 2);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(0.7, 'rgba(0,0,0,0.15)');
+  g.addColorStop(1, 'rgba(0,0,0,0.7)');
+  c.fillStyle = g; c.beginPath(); c.arc(n / 2, n / 2, n / 2, 0, Math.PI * 2); c.fill();
+  shade.refresh();
+  const shine = scene.textures.createCanvas('ball-shine', n, n)!;
+  const s = shine.getContext();
+  g = s.createRadialGradient(n * 0.34, n * 0.3, 0, n * 0.34, n * 0.3, n * 0.26);
+  g.addColorStop(0, 'rgba(255,255,255,0.85)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  s.fillStyle = g; s.fillRect(0, 0, n, n);
+  shine.refresh();
+}
+
+/**
+ * A power-up: a ball that rolls round the arena (a physics circle). Robots
+ * running into it kick it along, hits and laser bolts knock it away; grab
+ * picks it up.
+ */
 export class PowerUpOrb {
   readonly sprite: Phaser.GameObjects.Image;
   private readonly glow: Phaser.GameObjects.Image;
+  private readonly shade: Phaser.GameObjects.Image;
+  private readonly shine: Phaser.GameObjects.Image;
   readonly body: ItemBody;
   readonly expiresAt: number;
+  readonly radius = Config.POWERUP_RADIUS * UNIT;
+  /** No kicks again until then (a robot overlapping it pushes it once, not every frame). */
+  kickedUntil = 0;
 
   constructor(scene: Phaser.Scene, physics: PhysicsWorld, x: number, y: number, readonly type: PowerUpType, now: number) {
     const def = POWER_UPS[type];
-    this.body = new ItemBody(physics, x, y, Config.POWERUP_RADIUS * UNIT);
-    this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(UNIT * 2.4, UNIT * 2.4);
+    ballTextures(scene);
+    this.body = new ItemBody(physics, x, y, this.radius);
+    this.body.push(Phaser.Math.Between(-3, 3) * UNIT, 0);
+    const size = this.radius * 2;
+    this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(size * 2.6, size * 2.6);
     this.sprite = lit(scene.add.image(x, y, def.image).setDepth(8));
     const tint = type === 'invincibility' ? 0xffd84d : type === 'energy' ? 0xfff27a : null;
     if (tint !== null) this.sprite.setTint(tint);
-    this.sprite.setDisplaySize(UNIT * 1.1, UNIT * 1.1);
+    this.sprite.setDisplaySize(size, size);
+    this.shade = scene.add.image(x, y, 'ball-shade').setDepth(8.1).setDisplaySize(size, size);
+    this.shine = scene.add.image(x, y, 'ball-shine').setDepth(8.2).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(size, size);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
   }
 
@@ -115,17 +151,19 @@ export class PowerUpOrb {
   update(now: number): void {
     const left = this.expiresAt - now;
     const blink = left < 3000 && Math.floor(now / 120) % 2 === 0; // blink before vanishing
-    // The art sits on the 0.3-unit physics circle; it bobs and turns like a coin.
-    const y = this.y - UNIT * 0.2 + Math.sin(now / 260) * 4;
-    const size = UNIT * 1.1;
-    this.sprite.setPosition(this.x, y).setAlpha(blink ? 0.35 : 1)
-      .setDisplaySize(size * Math.max(0.15, Math.abs(Math.cos(now / 420))), size);
-    this.glow.setPosition(this.x, y).setAlpha((blink ? 0.2 : 0.55) + 0.15 * Math.sin(now / 180));
+    const a = blink ? 0.35 : 1;
+    // The art rolls with the ball; the shading and the highlight stay lit from above.
+    this.sprite.setPosition(this.x, this.y).setRotation(this.body.angle).setAlpha(a);
+    this.shade.setPosition(this.x, this.y).setAlpha(a);
+    this.shine.setPosition(this.x, this.y).setAlpha(a);
+    this.glow.setPosition(this.x, this.y).setAlpha((blink ? 0.2 : 0.45) + 0.12 * Math.sin(now / 180));
   }
 
   destroy(): void {
     this.sprite.destroy();
     this.glow.destroy();
+    this.shade.destroy();
+    this.shine.destroy();
     this.body.destroy();
   }
 }
