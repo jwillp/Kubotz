@@ -6,9 +6,17 @@
 export const UNIT = 64;
 
 export const Config = {
-  GRAVITY: 44, // PhysicsSystem had 40; a touch heavier (owner, phase 10)
-  /** Extra gravity on robots once they fall (fraction of GRAVITY): the apex comes sooner. */
-  FALL_GRAVITY_BONUS: 0.1,
+  GRAVITY: 44, // PhysicsSystem had 40; a touch heavier (owner, phase 10). Robots rise under this.
+  /**
+   * Extra gravity on robots once they fall (fraction of GRAVITY), Melee-style
+   * heavy bodies: a normal jump, then pulled back down hard past the apex
+   * (phase 11 A: 0.1 -> 2, so 48.4 -> 132 u/s² on the way down).
+   */
+  FALL_GRAVITY_BONUS: 2,
+  /** Terminal fall speed (u/s), outside hitstun and specials. */
+  MAX_FALL_SPEED: 32,
+  /** Fast fall (down held past the apex): straight to this speed (u/s), as in Melee. */
+  FAST_FALL_SPEED: 44,
 
   // Kubotz body (KubotzFactory.withHeight(2.0f))
   KUBOTZ_WIDTH: 1,
@@ -22,7 +30,6 @@ export const Config = {
   JUMP_VELOCITY: 20.5, // was 20; keeps the jump near its old height under the heavier gravity
   JUMP_COOLDOWN: 500,
   NB_JUMPS: 3, // new JumpComponent(3)
-  FAST_FALL_FACTOR: 0.2,
 
   // Punch (MeleeSystem)
   PUNCH_DAMAGE: 3,
@@ -65,6 +72,14 @@ export const Config = {
   // Guard in mid-air: air dodge (SSB), once per jump.
   AIR_DODGE_SPEED: 16,
   AIR_DODGE_DURATION: 350, // intangible: attacks and bullets pass through
+  // Guard + left / right on the ground: dodge roll (SSB), intangible for most of it,
+  // passing through robots.
+  ROLL_DISTANCE: 3.4, // units
+  ROLL_DURATION: 330, // ms of travel
+  ROLL_END_LAG: 110, // ms after it, no actions
+  ROLL_SAFE_FROM: 30, // ms: intangible from here...
+  ROLL_SAFE_UNTIL: 300, // ...to here
+  ROLL_COOLDOWN: 150, // ms after the end lag before the next roll
 
   // Match start: narrator counts 3, 2, 1, Fight! while inputs are off.
   COUNTDOWN: 3000,
