@@ -31,6 +31,8 @@ export class CpuController implements Controller {
   private orbChaseSince = 0;
   private ignoreOrbsUntil = 0;
   private link: Link | null = null;
+  /** What it is doing, where to, and the path planned (for the debug view). */
+  readonly debug: { mode: string; dest: { x: number; y: number } | null; path: Link[] } = { mode: '', dest: null, path: [] };
   private linkSince = 0;
 
   constructor(private world: AiWorld, private reactionMs = 140) {}
@@ -51,7 +53,8 @@ export class CpuController implements Controller {
     const me = this.agent;
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
-    if (this.recover(pad)) return pad;
+    this.debug.dest = null;
+    if (this.recover(pad)) { this.debug.mode = 'recover'; return pad; }
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
     const alive = this.world.enemiesOf(me).filter((e) => e.isAlive());
@@ -69,12 +72,14 @@ export class CpuController implements Controller {
     if (danger) {
       if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) this.fleeTarget = this.refuge(danger);
       dest = { ...this.fleeTarget, bottom: this.fleeTarget.y };
+      this.debug.mode = 'flee';
     } else {
       this.fleeTarget = null;
       const orbs = now < this.ignoreOrbsUntil ? [] : this.world.powerUpPositions();
       const orb = orbs.sort((a, b) => manhattan(me, a) - manhattan(me, b))[0];
       if (orb && manhattan(me, orb) < 14 && (!enemy || manhattan(me, orb) < manhattan(me, enemy) * 0.6)) {
         dest = { ...orb, bottom: orb.y };
+        this.debug.mode = 'power-up';
         if (manhattan(me, orb) < 1.6) pad.grab = true;
         // Give up on power-ups it cannot reach and go fight instead.
         if (!this.orbChaseSince) this.orbChaseSince = now;
@@ -83,9 +88,11 @@ export class CpuController implements Controller {
         this.orbChaseSince = 0;
         dest = { x: enemy.x, y: enemy.y, bottom: enemy.body.bottom };
         wantsAttack = true;
+        this.debug.mode = `fight ${enemy.name}`;
       }
     }
-    if (!dest) return pad;
+    if (!dest) { this.debug.mode = 'idle'; return pad; }
+    this.debug.dest = dest;
 
     const dx = dest.x - me.x;
     const dy = dest.y - me.y; // negative = above
@@ -101,7 +108,7 @@ export class CpuController implements Controller {
         if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
       }
       // Raise the guard against a swing that is about to land, now and then.
-      if (enemy.currentAttack() && manhattan(me, enemy) < 2.5 && me.guard > Config.GUARD_MAX * 0.3 && Math.random() < 0.4) {
+      if (enemy.attacking && manhattan(me, enemy) < 2.5 && me.guard > Config.GUARD_MAX * 0.3 && Math.random() < 0.4) {
         pad.guard = true;
         return pad;
       }
@@ -155,6 +162,7 @@ export class CpuController implements Controller {
       const goal = nav.surfaceAt(dest.x, dest.bottom);
       if (!goal || mine.id === goal.id) {
         this.link = null;
+        this.debug.path = [];
         return 'here';
       }
       if (!this.link || this.link.from !== mine.id) {
@@ -164,6 +172,7 @@ export class CpuController implements Controller {
           return 'unreachable';
         }
         this.link = path[0];
+        this.debug.path = path;
         this.linkSince = now;
       }
     }

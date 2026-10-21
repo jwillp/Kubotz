@@ -1,8 +1,6 @@
-import * as THREE from 'three';
 import Phaser from 'phaser';
 import { UNIT } from '../config';
 import { DebrisBody, PhysicsWorld } from '../physics/Physics';
-import type { World3D } from '../three/World3D';
 import type { Kubotz } from './Kubotz';
 
 const LIFETIME = 3200; // ms
@@ -13,69 +11,54 @@ const HARMFUL_SPEED = 5 * UNIT; // pieces lying around do not hurt
 
 interface Piece {
   body: DebrisBody;
-  holder: THREE.Group;
-  q0: THREE.Quaternion;
-  a0: number;
-  axis: THREE.Vector3;
-  tumble: number;
+  image: Phaser.GameObjects.Image;
+  angle0: number; // image angle when the body's angle was 0 (degrees)
   radius: number; // px
   owner: Kubotz;
   hit: Set<Kubotz>;
-  materials: THREE.MeshStandardMaterial[];
   born: number;
 }
 
 /**
  * K.O.: the robot blows apart. Every body part (helmet, arms, legs, weapon...)
- * flies off as a tumbling solid that bounces around the arena, and knocks the
+ * flies off as a spinning piece that bounces around the arena, and knocks the
  * robots it hits a little.
  */
 export class DebrisField {
   private pieces: Piece[] = [];
   private flashes: { x: number; y: number; color: number; born: number }[] = [];
 
-  constructor(private physics: PhysicsWorld, private world3d: World3D) {}
+  constructor(private scene: Phaser.Scene, private physics: PhysicsWorld) {}
+
+  get count(): number { return this.pieces.length; }
 
   explode(k: Kubotz, now: number): void {
     const cx = k.x;
     const cy = k.y;
     this.flashes.push({ x: cx, y: cy, color: k.look.color, born: now });
-    for (const { holder, radius } of k.model.pieces()) {
-      const x = holder.position.x * UNIT;
-      const y = -holder.position.y * UNIT;
-      const body = new DebrisBody(this.physics, x, y, radius * UNIT);
+    for (const part of k.model.pieces()) {
+      const radius = Phaser.Math.Clamp(part.size * 0.32, 0.12 * UNIT, 0.45 * UNIT);
+      const body = new DebrisBody(this.physics, part.x, part.y, radius);
       // Outwards from the robot's middle, a little upwards, plus its momentum.
-      let dx = x - cx + Phaser.Math.FloatBetween(-8, 8);
-      let dy = y - cy - 18 + Phaser.Math.FloatBetween(-8, 8);
+      let dx = part.x - cx + Phaser.Math.FloatBetween(-8, 8);
+      let dy = part.y - cy - 18 + Phaser.Math.FloatBetween(-8, 8);
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
       const speed = Phaser.Math.FloatBetween(11, 21) * UNIT;
       body.setVelocity(dx * speed + k.body.vx * 0.5, dy * speed - 6 * UNIT + k.body.vy * 0.3);
       body.spin = Phaser.Math.FloatBetween(-14, 14);
-      this.world3d.add(holder);
-      const materials: THREE.MeshStandardMaterial[] = [];
-      holder.traverse((o) => { if (o instanceof THREE.Mesh) materials.push(o.material as THREE.MeshStandardMaterial); });
-      this.pieces.push({
-        body, holder, q0: holder.quaternion.clone(), a0: body.angle,
-        axis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, 0).normalize(),
-        tumble: Phaser.Math.FloatBetween(-9, 9),
-        radius: radius * UNIT, owner: k, hit: new Set(), materials, born: now,
-      });
+      const image = this.scene.add.image(part.x, part.y, part.key)
+        .setOrigin(part.originX, part.originY).setScale(part.scaleX, part.scaleY).setAngle(part.angle).setDepth(11);
+      this.pieces.push({ body, image, angle0: part.angle - Phaser.Math.RadToDeg(body.angle), radius, owner: k, hit: new Set(), born: now });
     }
   }
 
   /** Moves the pieces with their bodies (after the physics step), hurts robots, clears old ones. */
   update(now: number, fighters: Kubotz[], onHit: (victim: Kubotz, x: number, y: number) => void): void {
-    const zAxis = new THREE.Vector3(0, 0, 1);
     for (const p of this.pieces) {
       const age = now - p.born;
       const { x, y } = p.body;
-      p.holder.position.set(x / UNIT, -y / UNIT, p.holder.position.z);
-      p.holder.quaternion.copy(p.q0);
-      p.holder.rotateOnWorldAxis(zAxis, -(p.body.angle - p.a0));
-      p.holder.rotateOnWorldAxis(p.axis, (p.tumble * Math.min(age, 1200)) / 1000);
-      const alpha = Math.min(1, (LIFETIME - age) / FADE);
-      for (const m of p.materials) { m.opacity = alpha; m.depthWrite = alpha > 0.99; }
+      p.image.setPosition(x, y).setAngle(p.angle0 + Phaser.Math.RadToDeg(p.body.angle)).setAlpha(Math.min(1, (LIFETIME - age) / FADE));
 
       if (Math.hypot(p.body.vx, p.body.vy) < HARMFUL_SPEED) continue;
       for (const f of fighters) {
@@ -94,6 +77,11 @@ export class DebrisField {
     this.flashes = this.flashes.filter((f) => now - f.born < 600);
   }
 
+  /** Physics circles of the pieces, for the debug view. */
+  circles(): Phaser.Geom.Circle[] {
+    return this.pieces.map((p) => new Phaser.Geom.Circle(p.body.x, p.body.y, p.radius));
+  }
+
   /** Bright flash where a robot blew up, fading out. */
   lights(now: number): { x: number; y: number; color: number; intensity: number }[] {
     return this.flashes.map((f) => ({ x: f.x, y: f.y, color: f.color, intensity: 40 * (1 - (now - f.born) / 600) }));
@@ -101,8 +89,7 @@ export class DebrisField {
 
   private remove(p: Piece): void {
     p.body.destroy();
-    p.holder.removeFromParent();
-    for (const m of p.materials) m.dispose();
+    p.image.destroy();
   }
 
   destroy(): void {

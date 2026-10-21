@@ -32,6 +32,8 @@ const MAX_DROP = 30 * UNIT;
 
 export class Nav {
   readonly surfaces: Surface[] = [];
+  /** Every link, for the debug view. */
+  allLinks(): Link[] { return [...this.links.values()].flat(); }
   private links = new Map<number, Link[]>();
 
   constructor(blocks: NavBlock[]) {

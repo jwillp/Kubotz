@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { explosionBuffer } from '../game/Debris';
-import { loadModels } from '../three/Models';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
@@ -58,12 +57,6 @@ export class BootScene extends Phaser.Scene {
   async create(): Promise<void> {
     const spriter = new SpriterData(this.cache.text.get('scml'), 'Kubotz');
     const map: TmxMap = await parseTmx(this.cache.text.get('tmx'));
-    // The Blender models (robot, bonus chips, tiles); without them the game
-    // builds its 3D from the sprites as before.
-    await loadModels().catch((e) => {
-      console.error('3D models not loaded, using the sprite-built ones', e);
-      this.registry.set('modelsError', String(e?.message ?? e));
-    });
     this.registry.set('spriter', spriter);
     this.registry.set('map', map);
     const effects: Record<string, EffectDef> = {};
@@ -93,6 +86,16 @@ export class BootScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
     g.generateTexture('spark', 16, 16);
     g.destroy();
+    // A soft round light for glows (additive).
+    const glow = this.textures.createCanvas('glow', 128, 128)!;
+    const ctx = glow.getContext();
+    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.25, 'rgba(255,255,255,0.45)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+    glow.refresh();
   }
 
   /**

@@ -1,10 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
-import * as THREE from 'three';
 import { ItemBody, PhysicsWorld } from '../physics/Physics';
-import { getModels } from '../three/Models';
-import type { World3D } from '../three/World3D';
 
 /** PowerUpEffect.java subclasses. */
 export type PowerUpType =
@@ -95,39 +92,19 @@ export function randomPowerUp(): PowerUpType {
 /** The bouncing pick-up (PowerUpFactory): a Box2D circle, lifetime 20 s, grabbable. */
 export class PowerUpOrb {
   readonly sprite: Phaser.GameObjects.Image;
+  private readonly glow: Phaser.GameObjects.Image;
   readonly body: ItemBody;
   readonly expiresAt: number;
-  /** The bonus chip made in Blender, spinning; the sprite is then only its pick-up area. */
-  private chip: THREE.Object3D | null = null;
-  private mixer: THREE.AnimationMixer | null = null;
-  private lastNow: number;
 
-  constructor(scene: Phaser.Scene, physics: PhysicsWorld, world3d: World3D, x: number, y: number, readonly type: PowerUpType, now: number) {
+  constructor(scene: Phaser.Scene, physics: PhysicsWorld, x: number, y: number, readonly type: PowerUpType, now: number) {
     const def = POWER_UPS[type];
     this.body = new ItemBody(physics, x, y, Config.POWERUP_RADIUS * UNIT);
+    this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(UNIT * 2.4, UNIT * 2.4);
     this.sprite = scene.add.image(x, y, def.image).setDepth(8);
     const tint = type === 'invincibility' ? 0xffd84d : type === 'energy' ? 0xfff27a : null;
     if (tint !== null) this.sprite.setTint(tint);
     this.sprite.setDisplaySize(UNIT * 1.1, UNIT * 1.1);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
-    this.lastNow = now;
-
-    const gltf = getModels()?.pickups.get(def.image);
-    if (gltf) {
-      this.chip = gltf.scene.clone();
-      this.chip.traverse((o) => {
-        if (!(o instanceof THREE.Mesh)) return;
-        const m = (o.material as THREE.MeshStandardMaterial).clone();
-        if (tint !== null) { m.color.multiply(new THREE.Color(tint)); m.emissive.multiply(new THREE.Color(tint)); }
-        m.transparent = true;
-        o.material = m;
-        o.castShadow = true;
-      });
-      this.mixer = new THREE.AnimationMixer(this.chip);
-      for (const clip of gltf.animations) this.mixer.clipAction(clip).play();
-      world3d.add(this.chip);
-      this.sprite.setVisible(false);
-    }
   }
 
   get x(): number { return this.body.x; }
@@ -136,26 +113,17 @@ export class PowerUpOrb {
   update(now: number): void {
     const left = this.expiresAt - now;
     const blink = left < 3000 && Math.floor(now / 120) % 2 === 0; // blink before vanishing
-    // The art sits on the 0.3-unit physics circle.
-    if (this.chip) {
-      this.chip.position.set(this.x / UNIT, -(this.y - UNIT * 0.2) / UNIT, 0);
-      this.chip.traverse((o) => { if (o instanceof THREE.Mesh) (o.material as THREE.Material).opacity = blink ? 0.35 : 1; });
-      this.mixer!.update(Math.max(0, now - this.lastNow) / 1000);
-      this.lastNow = now;
-      this.sprite.setPosition(this.x, this.y - UNIT * 0.2);
-      return;
-    }
-    this.sprite.setPosition(this.x, this.y - UNIT * 0.2);
-    this.sprite.setAlpha(blink ? 0.35 : 1);
-    this.sprite.setAngle(Math.sin(now / 300) * 8);
+    // The art sits on the 0.3-unit physics circle; it bobs and turns like a coin.
+    const y = this.y - UNIT * 0.2 + Math.sin(now / 260) * 4;
+    const size = UNIT * 1.1;
+    this.sprite.setPosition(this.x, y).setAlpha(blink ? 0.35 : 1)
+      .setDisplaySize(size * Math.max(0.15, Math.abs(Math.cos(now / 420))), size);
+    this.glow.setPosition(this.x, y).setAlpha((blink ? 0.2 : 0.55) + 0.15 * Math.sin(now / 180));
   }
 
   destroy(): void {
-    if (this.chip) {
-      this.chip.removeFromParent();
-      this.chip.traverse((o) => { if (o instanceof THREE.Mesh) (o.material as THREE.Material).dispose(); });
-    }
     this.sprite.destroy();
+    this.glow.destroy();
     this.body.destroy();
   }
 }

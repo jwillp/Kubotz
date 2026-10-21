@@ -15,15 +15,17 @@ import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { ARENAS, buildArenaMap } from '../map/Arenas';
-import type { World3D } from '../three/World3D';
-import { getModels } from '../three/Models';
+import { Rig } from '../anim/Rig';
+import type { DebugState } from './DebugScene';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 export class GameScene extends Phaser.Scene implements ArenaHooks {
   fighters: Kubotz[] = [];
   private map!: TmxMap;
-  private physicsWorld!: PhysicsWorld;
-  private world3d!: World3D;
+  physicsWorld!: PhysicsWorld;
+  /** Debug mode and its time controls (F3, see DebugScene). */
+  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
+  private glows: Phaser.GameObjects.Image[] = [];
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
   private nav!: Nav;
@@ -72,19 +74,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const arena = ARENAS[setup.arena ?? 0];
     this.map = arena ? buildArenaMap(arena, original) : original;
     const spriter: SpriterData = this.registry.get('spriter');
+    const rig = new Rig(spriter);
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
 
-    this.world3d = this.registry.get('world3d');
+    this.scene.launch('Backdrop');
+    this.scene.sendToBack('Backdrop');
     this.buildMap();
-    this.world3d.buildArena(
-      this.map, this.solids,
-      (source) => (this.textures.exists(`tile:${source}`) ? this.textures.get(`tile:${source}`).getSourceImage() as HTMLImageElement : null),
-      this.textures.get('bg').getSourceImage() as HTMLImageElement,
-      getModels()?.tiles,
-    );
-    this.world3d.visible = true;
-    this.debris = new DebrisField(this.physicsWorld, this.world3d);
+    this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
 
     const humans = { P1: 0, P2: 0 };
@@ -106,7 +103,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         humans[slot]++;
       }
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
-      const k = new Kubotz(this, i, controller, color, spriter, spawn.x, spawn.y, this, this.physicsWorld, this.world3d);
+      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld);
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
@@ -130,9 +127,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-ESC', () => this.togglePause());
     kb.on('keydown-P', () => this.togglePause());
     kb.on('keydown-F', () => {
-      const on = this.world3d.toggleEffects();
+      const on = this.toggleBloom();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
+    // Debug mode; the function keys are kept from the browser while the game has the keyboard.
+    kb.addCapture([Phaser.Input.Keyboard.KeyCodes.F3, Phaser.Input.Keyboard.KeyCodes.F4, Phaser.Input.Keyboard.KeyCodes.F6,
+      Phaser.Input.Keyboard.KeyCodes.F7, Phaser.Input.Keyboard.KeyCodes.F8]);
+    const d = this.debugState;
+    const toggleDebug = () => {
+      d.on = !d.on;
+      if (d.on) { this.scene.launch('Debug'); this.scene.bringToTop('Debug'); } else { this.scene.stop('Debug'); d.timeScale = 1; d.frozen = false; }
+    };
+    kb.on('keydown-F3', toggleDebug);
+    kb.on('keydown-BACKTICK', toggleDebug);
+    kb.on('keydown-F4', () => { if (d.on) d.timeScale = d.timeScale === 1 ? 0.5 : d.timeScale === 0.5 ? 0.25 : 1; });
+    kb.on('keydown-F6', () => { if (d.on) d.frozen = !d.frozen; });
+    kb.on('keydown-F7', () => { if (d.on) { d.frozen = true; d.steps++; } });
+    kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
+    this.setupBloom();
     kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 9) this.togglePause(); // Start
@@ -140,7 +152,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.music?.destroy();
       this.scene.stop('Hud');
-      this.world3d.visible = false;
+      this.scene.stop('Debug');
+      this.scene.stop('Backdrop');
       this.debris.destroy();
       for (const k of this.fighters) k.destroy();
     });
@@ -150,9 +163,20 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private buildMap(): void {
     const m = this.map;
     // The original kept the Tiled art layers hidden behind its debug shapes; the
-    // port draws them in 3D (World3D.buildArena): blocks are extruded boxes with
-    // the tile art on their faces.
+    // port draws them. Everything static is baked into one render texture.
     const mapW = m.width * m.tileWidth;
+    const art = this.add.renderTexture(0, 0, mapW, m.height * m.tileHeight).setOrigin(0, 0).setDepth(2);
+    const stamp = this.make.image({ x: 0, y: 0, key: '__DEFAULT' }, false).setOrigin(0, 1);
+    for (const layer of m.layers) {
+      layer.gids.forEach((gid, i) => {
+        const img = m.tileImages.get(gid);
+        if (!img) return;
+        // Tiled anchors image tiles at the cell's bottom-left corner.
+        stamp.setTexture(`tile:${img.source}`).setOrigin(0, 1);
+        art.draw(stamp, (i % m.width) * m.tileWidth, (Math.floor(i / m.width) + 1) * m.tileHeight);
+      });
+    }
+    stamp.destroy();
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -247,7 +271,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ update
   update(_time: number, deltaMs: number): void {
     if (this.paused) return;
-    const dtMs = Math.min(deltaMs, 50);
+    // Debug time controls: slow motion, or frozen and stepped frame by frame.
+    const d = this.debugState;
+    let dtMs = Math.min(deltaMs, 50) * d.timeScale;
+    if (d.frozen) {
+      if (d.steps <= 0) return;
+      d.steps--;
+      dtMs = 1000 / 60;
+    }
     const dt = dtMs / 1000;
     // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
     // it stops while the game is paused.
@@ -279,20 +310,50 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.updateCamera(dt);
-    this.render3d(dtMs);
+    this.drawGlows();
   }
 
-  /** Lights for lasers and power-ups, then the 3D frame under Phaser's. */
-  private render3d(dtMs: number): void {
+  /** Soft additive light around lasers, explosions and hits. */
+  private drawGlows(): void {
     const lights = [
-      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 6 })),
-      ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: POWER_UPS[o.type].color, intensity: 2.5 })),
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 4 })),
       ...this.debris.lights(this.clock),
       ...this.impact.lights(),
     ];
-    this.world3d.setLights(lights);
-    this.world3d.render(this.cameras.main, this.game.canvas, dtMs);
+    while (this.glows.length < lights.length) {
+      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(13));
+    }
+    this.glows.forEach((img, i) => {
+      const l = lights[i];
+      if (!l) { img.setVisible(false); return; }
+      const size = UNIT * (1.2 + Math.min(6, Math.sqrt(l.intensity) * 0.9));
+      img.setVisible(true).setPosition(l.x, l.y).setTint(l.color).setDisplaySize(size, size).setAlpha(Math.min(0.85, 0.25 + l.intensity * 0.05));
+    });
   }
+
+  // -------------------------------------------------------------- bloom
+  private bloom: Phaser.FX.Bloom | null = null;
+
+  /** A soft bloom on the whole view (WebGL only); off with ?lowfx, toggled with F. */
+  private setupBloom(): void {
+    const cam = this.cameras.main;
+    if (!cam.postFX || new URLSearchParams(location.search).has('lowfx')) return;
+    this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
+  }
+
+  private toggleBloom(): boolean {
+    if (this.bloom) { this.cameras.main.postFX.remove(this.bloom); this.bloom = null; return false; }
+    if (!this.cameras.main.postFX) return false;
+    this.bloom = this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
+    return true;
+  }
+
+  // -------------------------------------------------------------- debug view
+  get warpZoneRects(): Phaser.Geom.Rectangle[] { return this.warpZones; }
+  get navGraph(): Nav { return this.nav; }
+  get bulletCount(): number { return this.bullets.length; }
+  get orbCount(): number { return this.orbs.length; }
+  debrisCircles(): Phaser.Geom.Circle[] { return this.debris.circles(); }
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
   private updateCountdown(now: number): void {
@@ -380,7 +441,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
     if (this.orbs.length >= Config.MAX_NB_BONUS || this.bonusSpawns.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(this.bonusSpawns);
-    const orb = new PowerUpOrb(this, this.physicsWorld, this.world3d, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
+    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
     this.pickupFx.explode(12, orb.x, orb.y);
     this.orbs.push(orb);
   }

@@ -234,3 +234,35 @@ built from the sprites:
   tinted by the attacker, an impact flash ring and a brief 3D light, scaled by
   damage; a motion trail behind the striking fist, foot or blade; a ring burst
   on double jumps; run dust.
+
+## Phase 6 — Back to 2D, a new animation set, debug mode (2026-10-21)
+
+The owner asked to drop the 3D look and go back to 2D, with smoother
+animations, combat moves that travel further, and a debug mode.
+
+- **2D rendering again**: Phaser draws everything. The arena is the original
+  tile art baked into one texture (as in phase 1), robots are their original
+  part images, bonuses are their original icons, K.O. debris are the robot's
+  own part images flying on Box2D bodies. Glow comes from additive sprites and
+  an optional camera bloom (F toggles it). three.js, the Blender models and the
+  3D code are removed from the build (the models stay in `core/assets/models`).
+- **New animation set** (`anim/Rig.ts`, `anim/Clips.ts`): the original
+  skeleton (15 bones of `kubotz.scml`) and part images, posed by a new set of
+  clips written in code instead of the Spriter keyframes. Poses are bone
+  rotations from the original stance plus a body offset, keyed with easing
+  curves (anticipation, snappy strikes, follow-through), and every switch
+  between clips blends over a few frames. Clips: idle, run, jump, double jump
+  flip, fall, land, crouch, guard, air dodge, hit (2), grab, shoot, jab,
+  cross, roundhouse kick, air kick, three sword slashes.
+- **Moves travel**: each strike carries the robot forward (lunge) on its
+  active frames, larger for later hits of a combo; the laser sword gets its own
+  three-hit combo; the air kick dives.
+- **Debug mode** (F3 or `): Box2D fixtures, hurtboxes, attack and grab
+  circles, the navigation graph and each CPU's path and state, per-robot
+  readouts (animation, velocity, combo step, stun), FPS and frame time graph,
+  entity counts. While it is on: F4 cycles slow motion (1, ½, ¼), F6 freezes,
+  F7 steps one frame while frozen, F8 toggles the navigation graph.
+- **Hurtbox** covers the physics body plus the head drawn above it (40% of the
+  body height), so blows that visibly land connect.
+- `tools/rig.html` (dev only) draws contact sheets of every clip, used to
+  tune the animations.

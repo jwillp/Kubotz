@@ -1,10 +1,8 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
-import { SpriterAnimator, SpriterData } from '../spriter/Spriter';
-import { Robot3D } from '../three/Robot3D';
-import { RobotGltf } from '../three/RobotGltf';
-import { getModels } from '../three/Models';
-import type { World3D } from '../three/World3D';
+import { Animator } from '../anim/Animator';
+import type { Rig } from '../anim/Rig';
+import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
@@ -48,17 +46,21 @@ function bladePoints(): PartPoint[] {
   return [0.25, 0.5, 0.75, 1].map((f) => ({ file: SWORD_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
 }
 
+/** Clips of anim/Clips.ts. */
 const ANIM = {
-  IDLE: 'Idle', RUNNING: 'Running', JUMPING: 'Jumping', FALLING: 'Falling', LANDING: 'Landing',
-  AIR_KICKING: 'Air Kicking', SHOOTING: 'Shooting', GRAB: 'Grab',
-  SWORD: 'Sword_slash1', HIT: 'Hit', HIT_2: 'Hit_2', DYING: 'Dying',
+  IDLE: 'idle', RUN: 'run', CROUCH: 'crouch', JUMP: 'jump', FLIP: 'flip', FALL: 'fall', LAND: 'land',
+  GUARD: 'guard', DODGE: 'dodge', HIT: 'hit', HIT_2: 'hit2', GRAB: 'grab', SHOOT: 'shoot',
 } as const;
+
+/** Strikes carry the robot this many times further than their clip's own forward travel. */
+const ROOT_MOTION_GAIN = 3;
 
 /** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
 const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand_sha.png', x: 34, y: 34 }];
 const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot_sha.png', x: 24, y: 45 }];
 
-interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; knockback: number; stun: number; }
+/** A strike: its clip, length, striking points, effect, and the part of it (0..1) that hurts. */
+interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; knockback: number; stun: number; active: [number, number] }
 
 /**
  * The unarmed ground combo, Super Smash Bros. style: three presses in a row
@@ -66,11 +68,18 @@ interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; 
  * briefly so the next hit connects; the kick launches.
  */
 const COMBO: Move[] = [
-  { anim: 'Punching', ms: 300, points: FISTS, damage: 3, knockback: 3, stun: 260 },
-  { anim: 'Punching_dom', ms: 380, points: FISTS, damage: 4, knockback: 4, stun: 300 },
-  { anim: 'Kicking', ms: 440, points: FEET, damage: 6, knockback: 13, stun: 0 },
+  { anim: 'jab', ms: 280, points: FISTS, damage: 3, knockback: 3, stun: 280, active: [0.3, 0.72] },
+  { anim: 'cross', ms: 360, points: FISTS, damage: 4, knockback: 4, stun: 320, active: [0.36, 0.78] },
+  { anim: 'kick', ms: 440, points: FEET, damage: 6, knockback: 13, stun: 0, active: [0.32, 0.74] },
 ];
-const AIR_KICK: Move = { anim: ANIM.AIR_KICKING, ms: Config.PUNCH_DURATION, points: FEET, damage: Config.PUNCH_DAMAGE, knockback: Config.PUNCH_KNOCKBACK, stun: 0 };
+/** The laser sword's combo: overhead slash, rising slash, lunging thrust. */
+const SWORD_COMBO: Move[] = [
+  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, knockback: 4, stun: 300, active: [0.36, 0.78] },
+  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, knockback: 5, stun: 320, active: [0.28, 0.66] },
+  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, knockback: 15, stun: 0, active: [0.35, 0.8] },
+];
+const AIR_KICK: Move = { anim: 'airKick', ms: 420, points: FEET, damage: Config.PUNCH_DAMAGE, knockback: Config.PUNCH_KNOCKBACK, stun: 0, active: [0.35, 1] };
+const AIR_SLASH: Move = { ...SWORD_COMBO[1], stun: 0, knockback: 9 };
 /** After a move, how long the next press still continues the combo. */
 const COMBO_WINDOW = 260;
 /** Rest after the combo's last move. */
@@ -108,8 +117,8 @@ export interface ArenaHooks {
 export class Kubotz implements Damageable {
   readonly owner = this;
   readonly body: KubotzBody;
-  private readonly anim: SpriterAnimator;
-  readonly model: Robot3D | RobotGltf;
+  readonly anim: Animator;
+  readonly model: Robot2D;
   private face = -1; // eased facing for the turn-round animation
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
@@ -132,6 +141,8 @@ export class Kubotz implements Damageable {
   private jumpReadyAt = 0;
   private attack: AttackBox | null = null;
   private attackEndsAt = 0;
+  private attackStart = 0;
+  private attackActive: [number, number] = [0, 1];
   private attackReadyAt = 0;
   /** Index in COMBO of the next move, the time it can still follow, and a press buffered during a move. */
   private comboStep = 0;
@@ -167,36 +178,35 @@ export class Kubotz implements Damageable {
     readonly index: number,
     readonly controller: Controller,
     color: number,
-    spriter: SpriterData,
+    rig: Rig,
     x: number,
     y: number,
     private hooks: ArenaHooks,
     physics: PhysicsWorld,
-    world3d: World3D,
   ) {
     this.body = new KubotzBody(physics, x, y);
 
-    this.anim = new SpriterAnimator(spriter, ANIM.IDLE);
+    this.anim = new Animator(rig);
     this.look = { head: HEADS[index % HEADS.length], color };
-    if (this.look.head) this.anim.setCharacterMaps([this.look.head]);
-    // The 3D robot: helmets and laser sword are painted in the player's colour.
-    const texture = (file: string) => {
+    // Helmets and the laser blade are painted in the player's colour.
+    this.model = new Robot2D(scene, rig, (file) => {
       let key = `kubotz:${file}`;
       if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
       else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
-      if (!scene.textures.exists(key)) key = `kubotz:${file}`;
-      return { key, img: scene.textures.get(key).getSourceImage() as HTMLImageElement };
-    };
-    // The robot made in Blender from the original art; if its file could not
-    // be loaded, the robot built in code from the sprites.
-    const models = getModels();
-    this.model = models ? new RobotGltf(models.robot, color, new Robot3D(texture, true), world3d.envMap) : new Robot3D(texture);
-    world3d.add(this.model.group);
+      return scene.textures.exists(key) ? key : `kubotz:${file}`;
+    });
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = controller.label === 'CPU' ? `label-CPU:${hex(color)}` : `label-${controller.label}`;
     this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
   }
+
+  /** Winding up, striking or recovering (a CPU can see it coming). */
+  get attacking(): boolean { return this.attack !== null; }
+
+  /** For the debug view. */
+  get hitstun(): number { return this.hitstunUntil; }
+  get comboInfo(): string { return this.inCombo ? `${this.comboStep || 3}/3${this.comboQueued ? '+' : ''}` : '-'; }
 
   get name(): string { return this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label; }
   get x(): number { return this.body.x; }
@@ -207,14 +217,19 @@ export class Kubotz implements Damageable {
   get intangible(): boolean { return this.hooks.now() < this.dodgeUntil; }
   isAlive(): boolean { return !this.dead; }
 
+  /** The physics body plus the head and shoulders drawn above it, so blows that look like they land do. */
   hurtbox(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(this.body.left, this.body.top, this.body.width, this.body.height);
+    const extra = this.body.height * 0.4;
+    return new Phaser.Geom.Rectangle(this.body.left, this.body.top - extra, this.body.width, this.body.height + extra);
   }
 
-  /** The active melee / sword hitbox, if any, on the striking part of the 3D robot. */
+  /** The active melee / sword hitbox, if any, on the striking part of the robot. */
   currentAttack(): AttackBox | null {
     const a = this.attack;
     if (!a) return null;
+    // Only the strike itself hurts, not the wind-up or the recovery.
+    const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
+    if (t < this.attackActive[0] || t > this.attackActive[1]) return null;
     const at = a.points.map((p) => this.model.pointsOn(p.file, p.x, p.y));
     // The fists (or feet): the striking one is the one furthest forward.
     const placed = a.striker ? [at.flat().sort((u, v) => this.facing * (v.x - u.x))[0]] : at.map((l) => l[0]);
@@ -248,6 +263,11 @@ export class Kubotz implements Damageable {
       this.move(pad, now, dt);
       this.handleActions(pad, now);
     }
+    // Strikes carry the robot forwards with their motion (root motion).
+    const travel = this.anim.takeRootMotion() * ART_SCALE * ROOT_MOTION_GAIN;
+    if (this.attack && travel > 0 && dt > 0) {
+      this.body.vx = this.facing * Math.min(travel / dt, 26 * UNIT);
+    }
     this.updatePowerUps(now);
   }
 
@@ -266,6 +286,7 @@ export class Kubotz implements Damageable {
       const len = Math.hypot(dx, dy) || 1;
       this.body.setVelocity((dx / len) * Config.AIR_DODGE_SPEED * UNIT, (dy / len) * Config.AIR_DODGE_SPEED * UNIT);
       this.hooks.playSfx('dodge', 0.3);
+      this.anim.play(ANIM.DODGE, { restart: true, ms: Config.AIR_DODGE_DURATION, fade: 40 });
     }
     if (pad.guard && this.grounded && (this.guarding || this.guard >= Config.GUARD_MIN_RAISE)) {
       if (!this.guarding) this.attack = null;
@@ -311,10 +332,12 @@ export class Kubotz implements Damageable {
         vy = -Config.JUMP_VELOCITY;
         this.jumps++;
         this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
-        if (grounded) this.hooks.dust(this.x, b.bottom);
-        else {
+        if (grounded) {
+          this.hooks.dust(this.x, b.bottom);
+          if (!this.attack) this.anim.play(ANIM.JUMP, { restart: true, fade: 50 });
+        } else {
           this.hooks.airJump(this.x, b.bottom, this.look.color);
-          if (!this.attack) this.anim.play(ANIM.JUMPING, true);
+          if (!this.attack) this.anim.play(ANIM.FLIP, { restart: true, fade: 40 });
         }
       }
     } else if (pad.down) {
@@ -330,7 +353,8 @@ export class Kubotz implements Damageable {
     if (grounded && !this.wasGrounded) {
       this.hooks.dust(this.x, b.bottom);
       this.squashUntil = now + 160;
-      this.landUntil = now + 180;
+      this.landUntil = now + 200;
+      if (!this.attack) this.anim.play(ANIM.LAND, { restart: true, fade: 40 });
     }
     if (grounded && Math.abs(vx) > 4 && now >= this.nextStepAt) {
       this.nextStepAt = now + 260;
@@ -346,12 +370,12 @@ export class Kubotz implements Damageable {
 
   // ----------------------------------------------------------------- actions
   private handleActions(pad: PadState, now: number): void {
+    const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
     if (this.attack && now >= this.attackEndsAt) {
       this.attack = null;
-      if (this.weapon === 'laserSword') this.attackReadyAt = now + Config.LASER_SWORD_COOLDOWN;
-      else if (!this.inCombo) this.attackReadyAt = now + Config.PUNCH_COOLDOWN;
+      if (!this.inCombo) this.attackReadyAt = now + Config.PUNCH_COOLDOWN;
       else if (this.comboStep === 0) this.attackReadyAt = now + COMBO_RECOVERY; // the chain is over
-      else if (this.comboQueued && this.grounded) this.strike(COMBO[this.comboStep], now);
+      else if (this.comboQueued && this.grounded) this.strike(combo[this.comboStep], now);
       else this.attackReadyAt = now + Config.PUNCH_COOLDOWN;
       this.comboQueued = false;
     }
@@ -361,35 +385,21 @@ export class Kubotz implements Damageable {
         const gun = this.weapon === 'laserGunMkI' ? Config.LASER_GUN_MK_I : Config.LASER_GUN_MK_II;
         if (now >= this.attackReadyAt) {
           this.attackReadyAt = now + gun.cooldown;
-          this.shootingUntil = now + gun.cooldown;
+          this.shootingUntil = now + Math.max(260, gun.cooldown);
           this.hooks.fireBullet(this, gun.damage, gun.speed);
           this.body.vx -= this.facing * gun.recoil * UNIT; // recoil
+          this.anim.play(ANIM.SHOOT, { restart: true, fade: 30 });
         }
       } else if (this.attack) {
-        // A press during a punch is kept for the next move of the combo.
-        if (this.weapon === 'none' && this.comboStep > 0) this.comboQueued = true;
+        // A press during a strike is kept for the next move of the combo.
+        if (this.inCombo && this.comboStep > 0) this.comboQueued = true;
       } else if (now >= this.attackReadyAt) {
-        if (this.weapon === 'laserSword') {
-          this.attack = {
-            circles: [],
-            // The blade is covered by circles from hilt to tip.
-            radius: 0.3 * UNIT,
-            points: bladePoints(),
-            striker: false,
-            damage: Config.LASER_SWORD_DAMAGE,
-            knockback: Config.PUNCH_KNOCKBACK * 1.5,
-            stun: 0,
-            hit: new Set(),
-          };
-          this.attackEndsAt = now + Config.LASER_SWORD_DURATION;
-          this.inCombo = false;
-          this.playOnce(ANIM.SWORD, Config.LASER_SWORD_DURATION);
-        } else if (!this.grounded) {
+        if (!this.grounded) {
           this.comboStep = 0;
-          this.strike(AIR_KICK, now);
+          this.strike(this.weapon === 'laserSword' ? AIR_SLASH : AIR_KICK, now);
         } else {
           if (now > this.comboUntil) this.comboStep = 0;
-          this.strike(COMBO[this.comboStep], now);
+          this.strike(combo[this.comboStep], now);
         }
       }
     }
@@ -397,40 +407,40 @@ export class Kubotz implements Damageable {
     if (pad.grab && now >= this.grabReadyAt && now >= this.grabEndsAt) {
       this.grabEndsAt = now + Config.GRAB_DURATION;
       this.grabReadyAt = this.grabEndsAt + Config.GRAB_COOLDOWN;
-      this.grabAnimUntil = now + 320;
+      this.grabAnimUntil = now + 300;
+      if (!this.attack) this.anim.play(ANIM.GRAB, { restart: true, fade: 40 });
     }
     if (now < this.grabEndsAt) {
       this.hooks.tryGrab(this, new Phaser.Geom.Circle(this.x, this.y, Config.GRAB_RADIUS * UNIT));
     }
   }
 
-  /** Starts a punch or kick; on the ground it advances the combo. */
+  /** Starts a strike; on the ground it advances the combo. */
   private strike(move: Move, now: number): void {
+    const sword = move.anim.startsWith('slash');
     this.attack = {
       circles: [],
-      radius: 0.35 * UNIT,
+      // The blade is covered by circles from hilt to tip; fists and feet by one on the striking one.
+      radius: (sword ? 0.3 : 0.35) * UNIT,
       points: move.points,
-      striker: true,
+      striker: !sword,
       damage: move.damage,
       knockback: move.knockback,
       stun: move.stun,
       hit: new Set(),
     };
+    this.attackStart = now;
     this.attackEndsAt = now + move.ms;
-    this.playOnce(move.anim, move.ms);
-    this.inCombo = move !== AIR_KICK;
+    this.attackActive = move.active;
+    this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 45 });
+    this.inCombo = move !== AIR_KICK && move !== AIR_SLASH;
     if (this.inCombo) {
       this.comboStep = (this.comboStep + 1) % COMBO.length;
       this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
-      // A small step into each hit keeps the target in reach.
-      this.body.vx += this.facing * (this.comboStep === 0 ? 5 : 3) * UNIT;
+    } else if (move === AIR_KICK) {
+      // The air kick dives forwards.
+      this.body.setVelocity(this.facing * Math.max(Math.abs(this.body.vx), 10 * UNIT), Math.max(this.body.vy, 6 * UNIT));
     }
-  }
-
-  /** Plays an animation once over `ms`, whatever its own length. */
-  private playOnce(name: string, ms: number): void {
-    this.anim.play(name, true);
-    this.anim.speed = (this.anim.lengthOf(name) || ms) / ms;
   }
 
   // --------------------------------------------------------------- power ups
@@ -474,16 +484,21 @@ export class Kubotz implements Damageable {
     this.health = Math.max(0, this.health - amount);
     // The more damage taken, the further hits send you (SSB-like).
     const growth = 1 + Config.KNOCKBACK_GROWTH * (1 - this.health / Config.KUBOTZ_HEALTH);
-    this.body.vx += pushX * growth * UNIT;
-    this.body.vy -= Math.abs(pushX) * 0.6 * growth * UNIT;
+    if (stun) {
+      // Light combo hits keep the target on the ground and in reach of the next one.
+      this.body.vx = pushX * UNIT;
+    } else {
+      this.body.vx += pushX * growth * UNIT;
+      this.body.vy -= Math.abs(pushX) * 0.6 * growth * UNIT;
+    }
     this.hitUntil = now + Math.max(250, stun);
-    this.flashUntil = now + 120;
+    this.flashUntil = now + 70;
     this.hitstunUntil = Math.max(this.hitstunUntil, now + stun);
     // Interrupted: a hit cancels the victim's own move and combo.
     this.attack = null;
     this.comboStep = 0;
     this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
-    this.anim.play(this.hitAnim, true);
+    this.anim.play(this.hitAnim, { restart: true, fade: 30 });
   }
 
   /** RespawnSystem DEAD state: hide and freeze until respawn. */
@@ -518,7 +533,7 @@ export class Kubotz implements Damageable {
     this.tag.setVisible(true);
     this.body.reset(x, y);
     this.model.visible = true;
-    this.anim.play(ANIM.IDLE, true);
+    this.anim.play(ANIM.IDLE, { restart: true, fade: 0 });
   }
 
   teleport(x: number, y: number): void {
@@ -526,7 +541,7 @@ export class Kubotz implements Damageable {
   }
 
   // --------------------------------------------------------------- rendering
-  /** Runs after physics so the sprite sits exactly on the body. */
+  /** Runs after physics so the drawing sits exactly on the body. */
   render(now: number, dtMs: number): void {
     if (this.dead) return;
     this.updateAnimationState(now);
@@ -536,27 +551,18 @@ export class Kubotz implements Damageable {
     if (this.look.head) maps.push(this.look.head);
     if (this.weapon === 'laserSword') maps.push('weapon_laserSword');
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
-    this.anim.setCharacterMaps(maps);
 
-    // Extra motion on top of the Spriter animations: turning round, leaning into
-    // runs, squash on landing, a spin when air-dodging, a wobble when stunned.
-    this.face += (this.facing - this.face) * Math.min(1, (dtMs / 1000) * 14);
+    // On top of the clips: turning round, leaning into runs, squash on landing,
+    // a wobble when the guard broke.
+    this.face += (this.facing - this.face) * Math.min(1, (dtMs / 1000) * 16);
     const vx = this.body.vx / (Config.MAX_SPEED * UNIT);
-    let lean = this.grounded ? -vx * 0.12 : -vx * 0.05;
+    let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
-    const spin = this.intangible ? -((this.dodgeUntil - now) / Config.AIR_DODGE_DURATION) * Math.PI * 2 * this.facing : 0;
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
-    if (this.model instanceof RobotGltf) {
-      this.model.setLoadout(this.look.head, this.weapon);
-      const name = this.guarding ? 'Guard' : this.anim.animationName;
-      // Quick blends into strikes and hits, softer ones between moves.
-      const fade = this.attack || now < this.hitUntil ? 0.05 : name === ANIM.LANDING ? 0.06 : 0.16;
-      this.model.animate(name, this.anim.progress, dtMs, fade);
-    }
-    this.model.update(this.anim.pose(), this.body.x, this.body.bottom, this.face, {
-      lean, spin, squash,
-      alpha: blink ? 0.45 : this.intangible ? 0.4 : 1,
+    this.model.update(this.anim.pose(), maps, this.body.x, this.body.bottom, this.face, {
+      lean, squash,
+      alpha: blink ? 0.45 : this.intangible ? 0.55 : 1,
       flash: now < this.flashUntil,
     });
     this.drawOverlay(now);
@@ -564,21 +570,25 @@ export class Kubotz implements Damageable {
 
   private updateAnimationState(now: number): void {
     const a = this.anim;
-    if (this.attack) return; // the move plays out
-    const vy = this.body.vy;
+    if (this.attack) return; // the strike plays out
+    if (now < this.dodgeUntil) return; // the dodge roll plays out
     const vx = this.body.vx;
-    a.speed = 1;
-    if (now < this.hitUntil || now < this.stunnedUntil) { a.play(this.hitAnim); return; }
-    if (this.guarding) { a.play(ANIM.IDLE); return; }
-    if (now < this.grabAnimUntil) { a.play(ANIM.GRAB); a.speed = 1.5; return; }
-    if (now < this.shootingUntil && this.weapon !== 'none') { a.play(ANIM.SHOOTING); return; }
-    if (!this.grounded) a.play(vy < 0 ? ANIM.JUMPING : ANIM.FALLING);
-    else if (Math.abs(vx) > 4) {
-      a.play(ANIM.RUNNING);
+    const vy = this.body.vy;
+    if (now < this.hitUntil || now < this.stunnedUntil || now < this.hitstunUntil) { a.play(this.hitAnim, { fade: 30 }); return; }
+    if (this.guarding) { a.play(ANIM.GUARD, { fade: 70 }); return; }
+    if (now < this.grabAnimUntil) return;
+    if (now < this.shootingUntil && this.weapon !== 'none') return;
+    if (!this.grounded) {
+      // The jump and the flip play out, then the fall.
+      if ((a.name === ANIM.JUMP || a.name === ANIM.FLIP) && !a.finished) return;
+      a.play(vy < 0 && a.name === ANIM.JUMP ? ANIM.JUMP : ANIM.FALL, { fade: 160 });
+    } else if (Math.abs(vx) > 4) {
+      a.play(ANIM.RUN, { fade: 90 });
       // The stride follows the speed.
-      a.speed = Phaser.Math.Clamp(Math.abs(vx) / (Config.MAX_SPEED * UNIT), 0.55, 1.15);
-    } else if (now < this.landUntil) { a.play(ANIM.LANDING); a.speed = 2.5; }
-    else a.play(ANIM.IDLE);
+      a.setRate(Phaser.Math.Clamp(Math.abs(vx) / (Config.MAX_SPEED * UNIT), 0.6, 1.2));
+    } else if (now < this.landUntil) a.play(ANIM.LAND, { fade: 40 });
+    else if (this.pad.down) a.play(ANIM.CROUCH, { fade: 90 });
+    else if (a.name !== ANIM.LAND || a.finished) a.play(ANIM.IDLE, { fade: 140 });
   }
 
   private drawOverlay(now: number): void {
@@ -605,7 +615,7 @@ export class Kubotz implements Damageable {
   }
 
   destroy(): void {
-    this.model.dispose();
+    this.model.destroy();
     this.healthBar.destroy();
     this.tag.destroy();
     this.body.destroy();
