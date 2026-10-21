@@ -561,7 +561,7 @@ The owner asked for the branch to hold only the web port.
 - **Fast-fall landing shake**: holding down while falling marks a fast
   fall; landing from one shakes the camera (0.2 + speed/90, at most 0.45
   trauma). Ordinary hard landings still shake above 22 U/s.
-- **Slot colours**: yellow, blue, green, purple, for humans and CPUs alike.
+- **Slot colours**: red, blue, green, purple (red asked again after a short yellow detour), for humans and CPUs alike.
   The P1, P2 and CPU labels take the robot's colour.
 - **Portals**: both the same cyan-blue, each with a strong light (radius
   11 U) that pulses with the rift and an additive halo, so they light the

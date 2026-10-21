@@ -152,8 +152,8 @@ export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff'
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
 export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
 
-/** Robot colours by slot (owner, phase 10d): yellow, blue, green, purple; humans and CPUs alike. */
-export const SLOT_COLORS = [0xffcc1a, 0x29abe2, 0x3ccf4e, 0xa155ff];
+/** Robot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
+export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
