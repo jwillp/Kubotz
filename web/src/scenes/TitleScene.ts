@@ -22,6 +22,8 @@ export class TitleScene extends Phaser.Scene {
   constructor() { super('Title'); }
 
   create(): void {
+    // The scene object is reused when the title comes back: drop the old (destroyed) texts.
+    this.items = [];
     const { width, height } = this.scale;
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.8);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.45);

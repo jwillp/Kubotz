@@ -908,7 +908,6 @@ export class Kubotz implements Damageable {
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
-    const blink = this.invincible && Math.floor(now / 80) % 2 === 0;
     const pose = this.anim.pose();
     // Footsteps land when the other foot touches down in the run.
     if (this.anim.name === ANIM.RUN && this.grounded) {
@@ -927,7 +926,7 @@ export class Kubotz implements Damageable {
     this.model.update(pose, maps, this.body.x + shake, this.body.bottom, yaw, {
       dtMs,
       lean, squash,
-      alpha: blink ? 0.45 : this.intangible ? 0.55 : 1,
+      alpha: this.intangible ? 0.55 : 1,
       flash: now < this.flashUntil || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
@@ -982,12 +981,6 @@ export class Kubotz implements Damageable {
       const r = UNIT * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX));
       g.fillStyle(this.look.color, 0.35).fillCircle(this.x, this.y, r);
       g.lineStyle(3, 0xffffff, 0.7).strokeCircle(this.x, this.y, r);
-    }
-    if (this.shield > 0) {
-      const pulse = 0.25 + 0.1 * Math.sin(now / 120);
-      g.lineStyle(3, 0x66ccff, 0.8).fillStyle(0x66ccff, pulse)
-        .fillEllipse(this.x, this.y, UNIT * 1.8, UNIT * 2.6)
-        .strokeEllipse(this.x, this.y, UNIT * 1.8, UNIT * 2.6);
     }
   }
 

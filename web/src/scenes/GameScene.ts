@@ -175,8 +175,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.setupScreenFx();
     this.setupLights();
     kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
+    // From the pause: Q quits to the title screen.
+    kb.on('keydown-Q', () => { if (this.paused) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 9) this.togglePause(); // Start
+      if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.music?.destroy();
@@ -347,10 +350,20 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void {
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
+      const hp = kubotz.health;
       kubotz.givePowerUp(orb.type, this.clock);
-      this.playSfx('orb-pickup', 0.5);
       this.fx('pickUp', orb.x, orb.y);
-      this.floatText(kubotz.x, kubotz.body.top - 40, POWER_UPS[orb.type].label, POWER_UPS[orb.type].color);
+      const def = POWER_UPS[orb.type];
+      if (orb.type === 'health') {
+        // Repair: its own sound, a longer twirl and the health regained.
+        this.playSfx('orb-heal', 0.55);
+        this.impact.twirl(kubotz, orb.color, 2100);
+        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)} HP`, def.color);
+      } else {
+        this.playSfx('orb-pickup', 0.5);
+        this.impact.twirl(kubotz, orb.color, 1500);
+        this.floatText(kubotz.x, kubotz.body.top - 40, def.label, def.color);
+      }
       orb.destroy();
       this.orbs = this.orbs.filter((o) => o !== orb);
     }
@@ -395,6 +408,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
       this.impact.swing(k, k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null, k.look.color);
+      // Invincibility and shield: the orb's motes keep circling the robot while they last.
+      if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
+      if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
       // A charging gun draws sparks into its barrel.
       if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
         const m = k.muzzle();

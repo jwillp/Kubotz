@@ -127,7 +127,7 @@ export class HudScene extends Phaser.Scene {
 
   private onPause(paused: boolean): void {
     this.bannerText.setText('PAUSED').setStroke('#29abe2', 8);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume');
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen');
     this.banner.setVisible(paused).setScale(1).setAlpha(1);
   }
 }

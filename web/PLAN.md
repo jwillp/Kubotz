@@ -431,3 +431,21 @@ film grain and scanlines; the robots moved like retro boxers.
 - **Power-up balls**: tiny twinkling motes rise off them.
 - **Portals**: everything that moves wraps (robots, bolts, balls, debris)
   through one list of movers.
+
+### Phase 9e — owner feedback (2026-10-21)
+
+- **Crash** on Enter after a win: the title scene object is reused and kept
+  its destroyed texts from the first visit; `TitleScene.create` now resets
+  them.
+- **Quit from the pause**: Q (or Select on a gamepad) goes back to the title.
+- **Orb sounds** (fx/Synth.ts): the bounce tink is about an octave higher; the
+  pick-up is a sci-fi rising FM sweep with digital blips; the health orb has
+  its own warm chord swell. Both pass through a small Schroeder reverb so
+  they sit in the room with the sampled sounds.
+- **Twirl** (`ImpactFx.twirl`): on pick-up the orb's motes spiral up round
+  the robot in two strands for 1.5 s (2.1 s for health), in the orb's colour,
+  bright in front and drawn under the robot behind. Health also shows
+  "+N HP" with the amount actually restored.
+- **Lasting effects** (`ImpactFx.aura`): invincibility (gold, its orb's
+  colour) and shield (blue) keep motes circling the robot until they run
+  out, replacing the blue ellipse and the invincibility blink.

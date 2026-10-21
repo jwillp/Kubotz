@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { UNIT } from '../config';
+import { Config, UNIT } from '../config';
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote';
 
@@ -20,6 +20,12 @@ interface Particle {
 interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
 
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
+
+/** Orb motes spiralling round a robot: once after a pick-up, or lasting while a power-up runs. */
+interface Twirl { owner: { x: number; y: number }; key: string; color: number; start: number; end: number; lasting: boolean; }
+
+const ROBOT_H = Config.KUBOTZ_HEIGHT * UNIT;
+const TWIRL_FADE = 300;
 
 const TRAIL_MS = 170;
 const FLASH_MS = 160;
@@ -44,9 +50,13 @@ export class ImpactFx {
   private particles: Particle[] = [];
   private readonly trails = new Map<object, Trail>();
   private flashes: Flash[] = [];
+  private twirls: Twirl[] = [];
+  private readonly behind: Phaser.GameObjects.Graphics;
   private now = 0;
 
   constructor(scene: Phaser.Scene) {
+    // Twirl motes passing behind a robot are drawn under it.
+    this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(Phaser.BlendModes.ADD);
     this.dust = scene.add.graphics().setDepth(14);
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
   }
@@ -163,6 +173,21 @@ export class ImpactFx {
     });
   }
 
+  /** A power-up taken: the orb's motes spiral up round the robot for `ms`. */
+  twirl(owner: { x: number; y: number }, color: number, ms: number): void {
+    this.twirls.push({ owner, key: 'pickup', color, start: this.now, end: this.now + ms, lasting: false });
+  }
+
+  /** Keeps motes circling the robot while an effect lasts (call every frame; fades out once not called). */
+  aura(owner: { x: number; y: number }, key: string, color: number): void {
+    const t = this.twirls.find((w) => w.owner === owner && w.key === key && w.lasting);
+    if (t) { t.end = this.now + TWIRL_FADE; t.color = color; return; }
+    this.twirls.push({ owner, key, color, start: this.now, end: this.now + TWIRL_FADE, lasting: true });
+  }
+
+  /** Stops a robot's twirls at once (when it is knocked out). */
+  clearTwirls(owner: object): void { this.twirls = this.twirls.filter((w) => w.owner !== owner); }
+
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
   swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number): void {
     let trail = this.trails.get(owner);
@@ -185,6 +210,7 @@ export class ImpactFx {
     this.now = now;
     const dt = dtMs / 1000;
     this.flashes = this.flashes.filter((f) => now - f.at < FLASH_MS);
+    this.twirls = this.twirls.filter((w) => now < w.end);
     this.particles = this.particles.filter((p) => (p.age += dtMs) < p.life);
     for (const p of this.particles) {
       const keep = Math.pow(p.drag, dt);
@@ -199,6 +225,8 @@ export class ImpactFx {
   private draw(): void {
     const g = this.glow.clear();
     const d = this.dust.clear();
+    this.behind.clear();
+    for (const w of this.twirls) this.drawTwirl(w, g);
     for (const p of this.particles) {
       const f = p.age / p.life;
       const fade = 1 - f;
@@ -274,6 +302,55 @@ export class ImpactFx {
     }
   }
 
+  /**
+   * Two strands of motes on a helix round the robot, seen in perspective (a
+   * flat ellipse): bright and larger in front, dim and under the robot behind,
+   * each with a short tail along its path. A pick-up rises from the feet to
+   * the head; a lasting one keeps climbing round the body.
+   */
+  private drawTwirl(w: Twirl, front: Phaser.GameObjects.Graphics): void {
+    const t = this.now - w.start;
+    const fade = Math.min(1, t / 150, (w.end - this.now) / (w.lasting ? TWIRL_FADE : 350));
+    const n = w.lasting ? 10 : 14;
+    const spin = (Math.PI * 2 * (w.lasting ? 1.1 : 1.7) * t) / 1000;
+    const dur = w.end - w.start;
+    const { x: cx, y: cy } = w.owner;
+    const bottom = cy + ROBOT_H / 2;
+    const light = mix(w.color, 0xffffff, 0.35);
+    for (let j = 0; j < n; j++) {
+      // Height up the body (0 feet, 1 head).
+      const hf = w.lasting
+        ? (j / n + t / 2200) % 1
+        : Phaser.Math.Clamp((t / dur) * 1.5 - (j / n) * 0.5, 0, 1);
+      // Fades at the very bottom and top of a lasting helix so motes wrap smoothly.
+      const edge = w.lasting ? Math.min(1, hf * 6, (1 - hf) * 6) : 1;
+      const r = UNIT * (w.lasting ? 0.8 : 0.95 - 0.35 * hf);
+      const base = spin + (j % 2) * Math.PI + j * 0.45;
+      const color = j % 3 === 0 ? mix(w.color, 0xffffff, 0.75) : light;
+      for (let k = 4; k >= 0; k--) {
+        const a = base - k * 0.16;
+        const depth = Math.sin(a); // > 0: in front of the robot
+        const x = cx + Math.cos(a) * r;
+        const y = bottom - hf * ROBOT_H + depth * r * 0.28;
+        const tail = 1 - k / 5;
+        const alpha = fade * edge * tail * (depth > 0 ? 1 : 0.4);
+        const size = (k === 0 ? 2.1 : 1.5) * (depth > 0 ? 1.15 : 0.8) * tail;
+        const gr = depth > 0 ? front : this.behind;
+        if (k === 0) gr.fillStyle(w.color, 0.25 * alpha).fillCircle(x, y, size * 3);
+        gr.fillStyle(color, alpha).fillCircle(x, y, Math.max(0.6, size));
+      }
+    }
+    // Now and then a mote breaks off and drifts away.
+    if (Math.random() < 0.25 * fade) {
+      const a = spin + Math.random() * Math.PI * 2;
+      this.add({
+        kind: 'mote', x: cx + Math.cos(a) * UNIT * 0.8, y: bottom - Math.random() * ROBOT_H,
+        vx: Math.cos(a) * rand(0.3, 0.8) * UNIT, vy: -rand(0.3, 0.9) * UNIT,
+        color: light, size: rand(1, 2), life: rand(400, 800), drag: 0.6,
+      });
+    }
+  }
+
   private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): void {
     this.particles.push({ vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p });
   }
@@ -281,5 +358,6 @@ export class ImpactFx {
   destroy(): void {
     this.glow.destroy();
     this.dust.destroy();
+    this.behind.destroy();
   }
 }

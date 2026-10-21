@@ -65,7 +65,7 @@ export const POWER_UPS: Record<PowerUpType, PowerUpDef> = {
     onFinish: (k) => { k.weapon = 'none'; },
   },
   invincibility: {
-    label: 'Invincible', image: 'bonus_shield', color: 0xffffff, timed: true,
+    label: 'Invincible', image: 'bonus_shield', color: 0xffd84d, timed: true,
     onStart: noop, onFinish: noop, // Kubotz.invincible reads it
   },
   shield: {
