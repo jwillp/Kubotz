@@ -24,6 +24,8 @@ export class ArenaScene extends Phaser.Scene {
   private arena = 0;
   private bonuses: BonusRate = 'normal';
   private preview!: Phaser.GameObjects.Image;
+  /** The preview is GameScene's live render of the arena, not the picture. */
+  private live = false;
   private frame!: Phaser.GameObjects.Graphics;
   private nameText!: Phaser.GameObjects.Text;
   private blurbText!: Phaser.GameObjects.Text;
@@ -41,7 +43,10 @@ export class ArenaScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    kubeBackdrop(this, 0.3);
+    // The preview is the arena itself, rendered by GameScene into the frame
+    // (WebGL: lit, with the backdrop behind it); the canvas renderer keeps the drawn picture.
+    this.live = this.sys.renderer.type === Phaser.WEBGL;
+    kubeBackdrop(this, this.live ? 0 : 0.3);
     heading(this, width / 2, 46, 'Choose the arena', 54);
 
     // Who is fighting: a chip per robot in its team colour.
@@ -65,6 +70,7 @@ export class ArenaScene extends Phaser.Scene {
     arrow(width / 2 - PREVIEW_W / 2 - 60, '◀', -1);
     arrow(width / 2 + PREVIEW_W / 2 + 60, '▶', 1);
     this.preview.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.go());
+    if (this.live) this.preview.setAlpha(0);
 
     const below = PREVIEW_Y + this.preview.height / 2;
     this.nameText = this.add.text(width / 2, below + 38, '', { ...font(36), stroke: '#0b1d33', strokeThickness: 6 }).setOrigin(0.5);
@@ -114,7 +120,8 @@ export class ArenaScene extends Phaser.Scene {
     this.registry.set('arena', this.arena);
     const { width } = this.scale;
     this.preview.setTexture(this.thumbnail(this.arena));
-    if (d !== 0) {
+    if (this.live) this.showArena();
+    else if (d !== 0) {
       this.preview.setX(width / 2 + d * 40).setAlpha(0.3);
       this.tweens.add({ targets: this.preview, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });
     }
@@ -123,7 +130,7 @@ export class ArenaScene extends Phaser.Scene {
     // The preview set in a Kube plate, lit top left and bottom right.
     const fx = width / 2 - w / 2 - 14;
     const fy = PREVIEW_Y - h / 2 - 14;
-    drawPlate(this.frame.clear(), fx, fy, w + 28, h + 28, { cut: 22, edge: 0x29abe2 });
+    drawPlate(this.frame.clear(), fx, fy, w + 28, h + 28, { cut: 22, edge: 0x29abe2, alpha: this.live ? 0 : 0.92 });
     drawStrip(this.frame, fx + 22, fy, fx + w * 0.5, fy, 0x29abe2, 3);
     drawStrip(this.frame, fx + w * 0.5, fy + h + 28, fx + w + 6, fy + h + 28, 0x29abe2, 3);
     this.nameText.setText(ARENA_INFO[this.arena].name);
@@ -140,11 +147,26 @@ export class ArenaScene extends Phaser.Scene {
   private go(): void {
     if (this.fighters.length < 2) { this.back(); return; }
     const setup: MatchSetup = { fighters: this.fighters, arena: this.arena, bonuses: this.bonuses };
-    shutter(this, () => this.scene.start('Game', setup));
+    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }
 
   private back(): void {
-    shutter(this, () => this.scene.start('Join'));
+    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Join'); });
+  }
+
+  /** Renders the chosen arena live in the frame (GameScene in preview mode, under this scene). */
+  private showArena(): void {
+    const { width } = this.scale;
+    const w = this.preview.width;
+    const h = this.preview.height;
+    const setup: MatchSetup = {
+      fighters: [], arena: this.arena, bonuses: this.bonuses,
+      preview: { x: width / 2 - w / 2, y: PREVIEW_Y - h / 2, width: w, height: h },
+    };
+    const game = this.scene.get('Game');
+    if (game.sys.isActive()) game.scene.restart(setup);
+    else this.scene.launch('Game', setup);
+    this.scene.bringToTop();
   }
 
   /**
