@@ -4,6 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
 import { addNormalMap } from '../fx/NormalMaps';
+import { body, buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
 import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
@@ -26,15 +27,14 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     this.drawLoadingBar();
+    this.load.image('logo', 'logo.png'); // the original logo (gh-pages, 2015)
     this.load.text('scml', KUBOTZ_SCML);
     this.load.text('tmx', MAIN_MAP);
     this.load.image('bg', 'maps/background.jpg');
     this.load.image('hud-badge', 'hud-multi-badge.png');
     this.load.image('hud-bars', 'hud-multi-bars.png');
     this.load.image('hud-timer', 'hud-multi-timer.png');
-    this.load.image('label-P1', 'hud/player1_label.png');
-    this.load.image('label-P2', 'hud/player2_label.png');
-    this.load.image('label-CPU', 'hud/cpu_label.png');
+    loadHeadingFont(this);
     this.load.image('dash-orb', 'dashOrb.png');
     this.load.image('p-star', 'particles/star.png');
     this.load.image('p-star2', 'particles/star2.png');
@@ -56,6 +56,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   async create(): Promise<void> {
+    buildHeadingFont(this);
+    const bodyFont = loadBodyFont();
     const spriter = new SpriterData(this.cache.text.get('scml'), 'Kubotz');
     const map: TmxMap = await parseTmx(this.cache.text.get('tmx'));
     this.registry.set('spriter', spriter);
@@ -76,7 +78,7 @@ export class BootScene extends Phaser.Scene {
         // Footsteps: soft metal boot steps, three variants (replacing step.mp3, too loud and scuffy).
         for (let v = 0; v < 3; v++) this.cache.audio.add(`step-${v}`, metalStepBuffer(this.sound.context, v));
       }
-      this.scene.start('Title');
+      void bodyFont.then(() => this.scene.start('Title'));
     });
     this.load.start();
   }
@@ -95,8 +97,8 @@ export class BootScene extends Phaser.Scene {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
       }
-      // P1 / P2 / CPU labels in each robot colour (the label shows the robot's colour).
-      for (const who of ['CPU', 'P1', 'P2']) this.recolor(`label-${who}`, `label-${who}:${hex(color)}`, color, false);
+      // P1 / P2 / CPU tags in each robot colour, drawn in the heading font.
+      for (const who of ['CPU', 'P1', 'P2']) makeTagTexture(this, `label-${who}:${hex(color)}`, who, color);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
       addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
@@ -188,13 +190,15 @@ export class BootScene extends Phaser.Scene {
   private drawLoadingBar(): void {
     const { width, height } = this.scale;
     const bar = this.add.graphics();
-    const text = this.add.text(width / 2, height / 2 - 40, 'KUBOTZ', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#29abe2',
-    }).setOrigin(0.5);
+    // The logo is the first file in the queue: show it as soon as it's in.
+    this.load.once('filecomplete-image-logo', () => {
+      this.add.image(width / 2, height / 2 - 80, 'logo').setScale(0.9);
+    });
+    const text = this.add.text(width / 2, height / 2 + 44, 'Loading', body(18, { color: '#9fe3ff' })).setOrigin(0.5);
     this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => {
       bar.clear().fillStyle(0x29abe2, 1).fillRect(width / 2 - 200, height / 2 + 10, 400 * p, 12);
       bar.lineStyle(2, 0x29abe2, 1).strokeRect(width / 2 - 200, height / 2 + 10, 400, 12);
     });
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => { text.setText('KUBOTZ'); });
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => { text.setText(''); });
   }
 }

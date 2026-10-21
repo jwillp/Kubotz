@@ -3,6 +3,7 @@ import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, type Kubotz } from '../game/Kubotz';
 import type { GameScene } from './GameScene';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 interface Panel {
   container: Phaser.GameObjects.Container;
@@ -18,7 +19,7 @@ export class HudScene extends Phaser.Scene {
   private panels = new Map<Kubotz, Panel>();
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
-  private bannerText!: Phaser.GameObjects.Text;
+  private bannerText!: HeadingText;
 
   constructor() { super('Hud'); }
 
@@ -28,9 +29,7 @@ export class HudScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add.image(width / 2, 0, 'hud-timer').setOrigin(0.5, 0).setScale(0.8);
-    this.timer = this.add.text(width / 2, 19, '0:00', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '22px', color: '#ffffff',
-    }).setOrigin(0.5);
+    this.timer = this.add.text(width / 2, 19, '0:00', body(22, { fontStyle: '800' })).setOrigin(0.5);
 
     const n = this.game_.fighters.length;
     this.game_.fighters.forEach((k, i) => {
@@ -44,12 +43,8 @@ export class HudScene extends Phaser.Scene {
 
     this.banner = this.add.container(width / 2, height / 2).setVisible(false).setDepth(10);
     const bg = this.add.rectangle(0, 0, width, 200, 0x050b18, 0.75);
-    this.bannerText = this.add.text(0, -20, '', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '64px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 8,
-    }).setOrigin(0.5);
-    const hint = this.add.text(0, 55, '', {
-      fontFamily: 'Arial, sans-serif', fontSize: '22px', color: '#cfe9ff',
-    }).setOrigin(0.5).setName('hint');
+    this.bannerText = heading(this, 0, -20, '', 72);
+    const hint = this.add.text(0, 55, '', body(22, { color: '#cfe9ff', fontStyle: '500' })).setOrigin(0.5).setName('hint');
     this.banner.add([bg, this.bannerText, hint]);
 
     this.game_.events.on('match-over', this.onMatchOver, this);
@@ -66,12 +61,10 @@ export class HudScene extends Phaser.Scene {
     const c = this.add.container(x, y);
     const badge = this.add.image(0, 0, 'hud-badge').setOrigin(0, 0).setScale(0.5);
     const label = this.add.image(40, 30, `label-${k.controller.label}:${hex(k.look.color)}`).setScale(0.42);
-    const name = this.add.text(92, 2, k.name, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 4,
-    });
+    const name = this.add.text(92, 2, k.name, body(18, { fontStyle: '800', stroke: '#0b1d33', strokeThickness: 4 }));
     const barsArt = this.add.image(88, 28, 'hud-bars').setOrigin(0, 0).setScale(0.85, 0.7);
     const bars = this.add.graphics();
-    const style = { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 3 };
+    const style = body(15, { fontStyle: '800', stroke: '#0b1d33', strokeThickness: 3 });
     const kills = this.add.text(26, 124, '0', style).setOrigin(0.5, 0);
     const lives = this.add.text(55, 124, '0', style).setOrigin(0.5, 0);
     const status = this.add.text(92, 80, '', { ...style, fontSize: '13px', color: '#9fe3ff' });
@@ -110,23 +103,22 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onCountdown(word: string): void {
-    const t = this.add.text(this.scale.width / 2, this.scale.height / 2 - 40, word, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '120px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 12,
-    }).setOrigin(0.5).setDepth(20).setScale(1.6).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }
 
   private onMatchOver(winner: Kubotz | null): void {
-    this.bannerText.setText(winner ? `${winner.name} WINS!` : 'DRAW');
-    if (winner) this.bannerText.setStroke('#' + hex(winner.look.color), 8);
+    this.bannerText.setText(winner ? `${winner.name} WINS` : 'DRAW');
+    this.bannerText.setGlow(winner ? winner.look.color : NEON);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
     this.banner.setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
   }
 
   private onPause(paused: boolean): void {
-    this.bannerText.setText('PAUSED').setStroke('#29abe2', 8);
+    this.bannerText.setText('PAUSED');
+    this.bannerText.setGlow(NEON);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen');
     this.banner.setVisible(paused).setScale(1).setAlpha(1);
   }
