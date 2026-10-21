@@ -54,7 +54,16 @@ export interface ReplayFrame {
   t: number;
   camX: number; camY: number; zoom: number; rotation: number;
   robots: RobotFrame[];
+  /** The lit lights, flat: x, y, radius, colour, intensity for each. */
+  lights: number[];
+  /** Sounds and impact effects started on this frame, replayed as the frame passes. */
+  events: ReplayEvent[];
 }
+
+/** A sound (key, volume, detune) or an impact effect (an ImpactFx method and its arguments). */
+export type ReplayEvent =
+  | { kind: 'sfx'; key: string; volume: number; detune: number }
+  | { kind: 'fx'; method: string; args: number[] };
 
 /** A K.O. and the frames around it: `blow` is the hit that sent the victim off (or the K.O. itself). */
 export interface KoReplay {
