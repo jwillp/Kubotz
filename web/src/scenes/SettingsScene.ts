@@ -22,7 +22,7 @@ const ROWS: { key: keyof Settings; label: string; hint: string }[] = [
   { key: 'vfx', label: 'Visual effects', hint: 'Particles, shake, flashes, glow, grade (0 = minimal)' },
 ];
 const STEP = 0.05;
-const TRACK_W = 420;
+const TRACK_W = 360;
 const BLUE = 0x29abe2;
 
 /**
@@ -48,15 +48,15 @@ export class SettingsScene extends Phaser.Scene {
     this.resume = data?.resume ?? [];
     const { width, height } = this.scale;
     this.add.rectangle(width / 2, height / 2, width, height, 0x02050c, 0.72).setInteractive(); // eats clicks meant for the scene behind
-    this.add.rectangle(width / 2, height / 2, 860, 520, 0x0b1d33, 0.92).setStrokeStyle(3, BLUE, 0.9);
+    this.add.rectangle(width / 2, height / 2, 980, 520, 0x0b1d33, 0.92).setStrokeStyle(3, BLUE, 0.9);
     this.add.text(width / 2, height / 2 - 210, 'SETTINGS', {
       fontFamily: 'Arial Black, sans-serif', fontSize: '52px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 7,
     }).setOrigin(0.5);
 
     ROWS.forEach((r, i) => {
       const y = height / 2 - 110 + i * 105;
-      const left = width / 2 - 380;
-      const tx = width / 2 + 10;
+      const left = width / 2 - 440;
+      const tx = width / 2 - 10;
       const name = this.add.text(left, y - 14, r.label, { fontFamily: 'Arial Black, sans-serif', fontSize: '26px', color: '#ffffff' }).setOrigin(0, 0.5);
       this.add.text(left, y + 20, r.hint, { fontFamily: 'Arial, sans-serif', fontSize: '15px', color: '#9fe3ff' }).setOrigin(0, 0.5);
       const track = this.add.rectangle(tx, y, TRACK_W, 12, 0x24415f).setOrigin(0, 0.5).setStrokeStyle(1, 0x5d86ad);
