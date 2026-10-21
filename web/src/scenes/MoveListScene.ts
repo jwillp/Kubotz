@@ -10,6 +10,7 @@ import {
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
 import { opaqueOutline } from './GameScene';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 /** Where the preview stage sits in the world, away from the list (its own camera shows it). */
 const STAGE_X = 6000;
@@ -615,6 +616,6 @@ export class MoveListScene extends Phaser.Scene {
     this.victimRobot.destroy();
     this.lights.disable();
     this.cameras.remove(this.cam);
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }

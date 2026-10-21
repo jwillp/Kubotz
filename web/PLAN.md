@@ -811,3 +811,52 @@ rapid and then a few frames before the kill slow motions."
   next K.O., Esc back to the stats; then Continue goes to the title (R
   replays the K.O.s again). Not redrawn in replays: sabre glow, bullets,
   particles, power-up balls.
+
+## Phase 12 — HUD and menus (`feat/hud-menus`, 2026-10-21)
+
+Goal: one visual language for the HUD and every menu, taken from the robots
+and the Kube instead of the 2015 mock-up badges, keeping the original logo and
+the Okuba Cloud / Exo 2 pairing.
+
+**Visual language ("Kube plate").**
+- Panels are hard-edged gunmetal plates like the Kube's walls: a dark blue-grey
+  vertical gradient, a 1 px lighter bevel on top, two opposite corners cut at
+  45° (the robots' helmet and armour cut), no rounded corners.
+- Light comes from cyan strips (the logo neon, `NEON` 0x29abe2) along one
+  edge, with a soft glow, like the arenas' lit block edges. Selection = the
+  strip lights up and the plate slides in a few pixels.
+- A fighter's helmet colour (slot colour = team) is the only other accent:
+  the edge strip and tag slab of its HUD card, its stock pips, its banner.
+- Okuba Cloud (heading helper) for titles, countdown, winner banner and the
+  font-drawn P1/P2/CPU tags; Exo 2 for everything people read.
+- One shared module, `ui/Plate.ts`, draws plates, strips and menu buttons so
+  every screen matches.
+
+**In-match HUD.**
+- Fighter cards move from the top corners (where they hid platforms) to a row
+  along the bottom edge, centred, one card per fighter in seat order, Smash
+  style. Card: P1/CPU tag on a helmet-colour slab, name + team, a segmented
+  health bar (red under 30%), a thin amber guard bar, the shield as a cyan
+  overlay, stock as small cube pips in the helmet colour, K.O. count.
+- Status line above each card: power-up chips with a draining bar, GUARD
+  BROKEN (red), respawn countdown, ELIMINATED (card dims).
+- Timer: a small chamfered plate top centre with a cyan underline.
+- Countdown and winner banner keep Okuba Cloud; the winner banner sits on a
+  plate strip lit in the winner's colour.
+- Pause: the arena dims, a vertical plate menu (Resume, Settings, Quit to
+  title) under a PAUSED heading, with a key hint footer.
+
+**Menus.**
+- A shared frame: Okuba heading top left (top centre on the title) with a
+  cyan rule under it, content in plates, a footer bar with key/pad hints.
+- Title: the original logo unchanged; menu entries become plate buttons.
+- Settings: one plate per slider, cyan track and square knob.
+- Join, arena select and results keep their layouts and adopt the frame and
+  plate panels in a follow-up step, once PR #8–#10 have landed, to avoid
+  conflicts.
+- Transitions: a short "shutter" (two plates closing from the sides with a
+  cyan seam, then opening) between menu scenes, about 350 ms, skipped when
+  visual effects are at 0.
+
+**Order.** HUD → pause → title + shared frame → settings → (follow-up) join,
+arena select, results.

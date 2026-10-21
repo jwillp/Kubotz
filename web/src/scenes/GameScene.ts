@@ -23,6 +23,7 @@ import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -1086,7 +1087,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   backToTitle(): void {
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }
 

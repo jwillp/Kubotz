@@ -5,6 +5,7 @@ import type { TmxMap } from '../map/TmxMap';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 const PREVIEW_W = 600;
 const PREVIEW_Y = 340;
@@ -137,11 +138,11 @@ export class ArenaScene extends Phaser.Scene {
   private go(): void {
     if (this.fighters.length < 2) { this.back(); return; }
     const setup: MatchSetup = { fighters: this.fighters, arena: this.arena, bonuses: this.bonuses };
-    this.scene.start('Game', setup);
+    shutter(this, () => this.scene.start('Game', setup));
   }
 
   private back(): void {
-    this.scene.start('Join');
+    shutter(this, () => this.scene.start('Join'));
   }
 
   /**

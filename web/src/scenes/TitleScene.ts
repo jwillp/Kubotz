@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { addMusic } from '../game/Settings';
-import { body, heading, HeadingText, NEON } from '../ui/Type';
+import { footer, PlateButton, shutter } from '../ui/Plate';
+import { body } from '../ui/Type';
 
 /** The title menu: each entry opens a scene. */
 const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
@@ -12,13 +13,16 @@ const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
 
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
-  private items: HeadingText[] = [];
+  private items: PlateButton[] = [];
+  /** Set once a scene change has started (the shutter is closing). */
+  private leaving = false;
 
   constructor() { super('Title'); }
 
   create(): void {
     // The scene object is reused when the title comes back: drop the old (destroyed) texts.
     this.items = [];
+    this.leaving = false;
     const { width, height } = this.scale;
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.8);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.45);
@@ -29,7 +33,7 @@ export class TitleScene extends Phaser.Scene {
     this.add.text(width / 2, 222, 'robot arena brawler', body(22, { color: '#9fe3ff', fontStyle: '500' })).setOrigin(0.5);
 
     ENTRIES.forEach((m, i) => {
-      const t = heading(this, width / 2, 340 + i * 64, m.label, 44, { glow: null }).setInteractive({ useHandCursor: true });
+      const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 40 });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.start(i));
       this.items.push(t);
@@ -42,10 +46,10 @@ export class TitleScene extends Phaser.Scene {
       addMusic(this, 'music-title', 0.5).play();
     }
 
-    this.add.text(width / 2, height - 36,
-      'P1: WASD move (W, Space: jump) · O attack · P special · I grab · Shift shield · U taunt      P2: Arrows · , attack · N special · . grab · / shield · M jump\n'
-      + 'Gamepads use the Smash Ultimate layout. Grab power-ups, knock rivals out, last team standing wins.',
-      body(17, { color: '#cfe9ff', fontStyle: '500', align: 'center', lineSpacing: 8 })).setOrigin(0.5);
+    footer(this, [
+      'P1  WASD move · Space jump · O attack · P special · I grab · Shift shield · U taunt      P2  Arrows · M jump · , attack · N special · . grab · / shield',
+      '↑↓ choose · Enter / A select · Gamepads use the Smash Ultimate layout · Grab power-ups, knock rivals out, last team standing wins',
+    ]);
 
     const kb = this.input.keyboard!;
     kb.on('keydown-UP', () => this.select((this.selected + ENTRIES.length - 1) % ENTRIES.length));
@@ -66,7 +70,7 @@ export class TitleScene extends Phaser.Scene {
 
   private select(i: number): void {
     this.selected = i;
-    this.items.forEach((t, j) => t.setGlow(j === i ? NEON : null).setScale(j === i ? 1.1 : 1));
+    this.items.forEach((t, j) => t.setSelected(j === i));
   }
 
   private start(i: number): void {
@@ -77,6 +81,8 @@ export class TitleScene extends Phaser.Scene {
       this.scene.bringToTop(e.scene);
       return;
     }
-    this.scene.start(e.scene);
+    if (this.leaving) return;
+    this.leaving = true;
+    shutter(this, () => this.scene.start(e.scene));
   }
 }

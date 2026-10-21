@@ -9,6 +9,7 @@ import { ImpactFx } from '../fx/Impact';
 import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 import { sfxVolume } from '../game/Settings';
 
 /** Light2D pool for the recorded lights (the match uses up to 36). */
@@ -230,7 +231,7 @@ export class ResultsScene extends Phaser.Scene {
     if (this.current >= 0) { this.nextReplay(); return; }
     if (this.time.now < this.statsReadyAt) return;
     if (!this.seenReplays) { this.startReplay(0); return; }
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 
   // ---------------------------------------------------------------- replays

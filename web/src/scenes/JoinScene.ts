@@ -6,6 +6,7 @@ import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import { TEAM_NAMES, type FighterSpec } from '../game/Match';
 import type { SpriterData } from '../spriter/Spriter';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 /** What drives a seat: keyboard set 1 or 2, a gamepad (its index), or the computer. */
 type Device = 'K1' | 'K2' | number | 'CPU';
@@ -317,10 +318,10 @@ export class JoinScene extends Phaser.Scene {
 
   private next(): void {
     if (this.problem()) return;
-    this.scene.start('Arena', { fighters: this.fighters() });
+    shutter(this, () => this.scene.start('Arena', { fighters: this.fighters() }));
   }
 
   private back(): void {
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }
