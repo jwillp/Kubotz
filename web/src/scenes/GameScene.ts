@@ -67,7 +67,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private particles!: ParticleFx;
   private impact!: ImpactFx;
   private effects!: Record<ParticleName, EffectDef>;
-  private nextSmokeAt = 0;
   private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
@@ -146,7 +145,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = Config.COUNTDOWN + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
 
     this.sound.stopByKey('music-title');
-    this.music = this.sound.add('music-game', { loop: true, volume: 0.45 });
+    this.music = this.sound.add('music-game', { loop: true, volume: 0.28 });
     this.music.play();
 
     this.scene.launch('Hud');
@@ -156,7 +155,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-ESC', () => this.togglePause());
     kb.on('keydown-P', () => this.togglePause());
     kb.on('keydown-F', () => {
-      const on = this.toggleBloom();
+      const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
     // Debug mode; the function keys are kept from the browser while the game has the keyboard.
@@ -173,7 +172,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F6', () => { if (d.on) d.frozen = !d.frozen; });
     kb.on('keydown-F7', () => { if (d.on) { d.frozen = true; d.steps++; } });
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
-    this.setupBloom();
+    this.setupScreenFx();
     this.setupLights();
     kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
@@ -318,10 +317,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return this.clock;
   }
 
-  playSfx(key: string, volume = 0.5): void {
+  playSfx(key: string, volume = 0.5, detune = 0): void {
     if (key === 'guard-break') { this.cameras.main.shake(160, 0.006); key = 'punch'; }
     if (key === 'dodge') key = 'step';
-    this.sound.play(key, { volume });
+    if (!this.cache.audio.exists(key)) return;
+    this.sound.play(key, { volume, detune });
   }
 
   dust(x: number, y: number): void {
@@ -348,6 +348,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
       kubotz.givePowerUp(orb.type, this.clock);
+      this.playSfx('orb-pickup', 0.5);
       this.fx('pickUp', orb.x, orb.y);
       this.floatText(kubotz.x, kubotz.body.top - 40, POWER_UPS[orb.type].label, POWER_UPS[orb.type].color);
       orb.destroy();
@@ -391,14 +392,33 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateBonusSpawns(now);
     for (const k of this.fighters) {
       k.render(now, dtMs);
-      // A trail behind the striking fist, foot or blade tip.
-      this.impact.swing(k, k.isAlive() ? k.swingArc() : null, k.look.color);
+      // A trail behind the striking fist or foot, and behind the laser blade
+      // whenever it swings fast (not only during strikes).
+      this.impact.swing(k, k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null, k.look.color);
+      // A charging gun draws sparks into its barrel.
+      if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
+        const m = k.muzzle();
+        this.impact.charge(m.x, m.y, k.look.color, k.charge);
+      }
     }
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
+  }
+
+  private lastTips = new Map<Kubotz, { x: number; y: number }>();
+
+  /** The blade's arc while its tip moves fast (6 units/s or more), else null. */
+  private bladeArc(k: Kubotz, dtMs: number): { ox: number; oy: number; ix: number; iy: number } | null {
+    const b = k.blade();
+    const last = this.lastTips.get(k);
+    if (!b) { this.lastTips.delete(k); return null; }
+    this.lastTips.set(k, { x: b.x2, y: b.y2 });
+    if (!last || dtMs <= 0) return null;
+    const speed = Math.hypot(b.x2 - last.x, b.y2 - last.y) / (dtMs / 1000) / UNIT;
+    return speed >= 6 ? { ox: b.x2, oy: b.y2, ix: b.x1, iy: b.y1 } : null;
   }
 
   private drawSabers(now: number): void {
@@ -451,30 +471,32 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
   }
 
-  // -------------------------------------------------------------- bloom
-  private bloom: Phaser.FX.Bloom | null = null;
+  // -------------------------------------------------------------- screen effects
+  private gradeOn = false;
 
-  /** A soft bloom on the whole view (WebGL only); off with ?lowfx, toggled with F. */
-  private setupBloom(): void {
+  /**
+   * The grade pass (vignette, split tone, grain, scanlines) on the whole view
+   * (WebGL only); off with ?lowfx, toggled with F. No bloom: the owner
+   * preferred the crisper look without it.
+   */
+  private setupScreenFx(): void {
     if (new URLSearchParams(location.search).has('lowfx')) return;
-    this.toggleBloom();
+    this.toggleScreenFx();
   }
 
-  /** Bloom then the grade pass; both on or both off. */
-  private toggleBloom(): boolean {
+  private toggleScreenFx(): boolean {
     const cam = this.cameras.main;
-    if (this.bloom) {
-      cam.postFX.remove(this.bloom);
-      cam.removePostPipeline('Grade');
-      this.bloom = null;
-      return false;
+    if (this.sys.renderer.type !== Phaser.WEBGL) return false;
+    // Remove the instances themselves: removing by the name 'Grade' missed
+    // (the instance is named after its class), so every toggle stacked another pass.
+    for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
+    this.gradeOn = !this.gradeOn;
+    if (this.gradeOn) {
+      const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
+      if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
+      cam.setPostPipeline(GradePipeline);
     }
-    if (!cam.postFX || this.sys.renderer.type !== Phaser.WEBGL) return false;
-    const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
-    if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
-    this.bloom = cam.postFX.addBloom(0xffffff, 1, 1, 0.9, 0.9, 4);
-    cam.setPostPipeline(GradePipeline);
-    return true;
+    return this.gradeOn;
   }
 
   // -------------------------------------------------------------- lights
@@ -603,12 +625,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private updateBullets(now: number, dt: number): void {
-    const smoke = now >= this.nextSmokeAt; // BulletGraphicsScript: a trail of laser smoke
-    if (smoke) this.nextSmokeAt = now + 60;
     for (const b of this.bullets) {
       if (b.dead) continue;
       b.update(dt);
-      if (smoke) this.fx('laserSmoke', b.x, b.y, b.shooter.look.color);
+      this.impact.laserTrail(b.x, b.y, Math.sign(b.pushX) || 1, b.shooter.look.color, b.size);
       if (now >= b.expiresAt) { b.destroy(); continue; }
       const box = b.hitbox();
       if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
@@ -631,6 +651,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private updateOrbs(now: number): void {
     for (const o of this.orbs) {
+      // A crystal tink when it bounces (a sudden change of velocity), louder the harder.
+      const dv = Math.hypot(o.body.vx - o.lastVx, o.body.vy - o.lastVy) / UNIT;
+      if (dv > 3.5 && now - o.lastTinkAt > 70) {
+        o.lastTinkAt = now;
+        this.playSfx('orb-bounce', Math.min(0.55, 0.1 + dv * 0.025), Phaser.Math.Between(-250, 350));
+      }
+      o.lastVx = o.body.vx; o.lastVy = o.body.vy;
+      this.impact.motes(o.x, o.y, o.color, o.radius, 16);
       if (now >= o.expiresAt || o.y > this.map.height * UNIT + 10 * UNIT) o.destroy();
       else o.update(now);
     }
@@ -642,7 +670,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (now < this.nextBonusAt || this.winner !== undefined) return;
     this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
     if (this.orbs.length >= Config.MAX_NB_BONUS || this.bonusSpawns.length === 0) return;
-    const p = Phaser.Utils.Array.GetRandom(this.bonusSpawns);
+    // Never on top of a ball already there.
+    const free = this.bonusSpawns.filter((q) => !this.orbs.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < 2 * UNIT));
+    if (free.length === 0) return;
+    const p = Phaser.Utils.Array.GetRandom(free);
     const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
     this.pickupFx.explode(12, orb.x, orb.y);
     this.orbs.push(orb);
@@ -664,9 +695,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
       this.warp(k.x, k.y, k.body.vx, (x, y) => k.teleport(x, y));
     }
-    for (const b of this.bullets) {
-      if (!b.dead) this.warp(b.x, b.y, b.vx, (x, y) => b.teleport(x, y));
-    }
+    // Everything else that moves goes through the portals too: laser bolts,
+    // power-up balls and debris (anything with a position, a velocity and a move).
+    const movers: { x: number; y: number; vx: number; teleport: (x: number, y: number) => void }[] = [
+      ...this.bullets.filter((b) => !b.dead),
+      ...this.orbs.map((o) => ({ x: o.x, y: o.y, vx: o.body.vx, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
+      ...this.debris.bodies.map((d) => ({ x: d.x, y: d.y, vx: d.vx, teleport: (x: number, y: number) => d.setPosition(x, y) })),
+    ];
+    for (const m of movers) this.warp(m.x, m.y, m.vx, (x, y) => m.teleport(x, y));
   }
 
   private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {

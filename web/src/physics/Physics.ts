@@ -35,12 +35,14 @@ export class PhysicsWorld {
       if (!plat) return;
       const other = (plat === a ? b : a).getBody();
       const top = (plat.getUserData() as PlatformTag).top;
-      const mover = other.getUserData() as { bottomUnits?: () => number; dropping?: boolean } | null;
+      const mover = other.getUserData() as { bottomUnits?: () => number; dropTop?: number | null } | null;
       const bottom = mover?.bottomUnits?.() ?? other.getPosition().y;
       // Falling fast, the feet can already be a little into the platform when
       // the contact starts: what counts is where they were a step before.
       const vy = other.getLinearVelocity().y;
-      if (mover?.dropping || vy < -0.1 || bottom - Math.max(vy, 0) * STEP * 1.5 > top + 0.08) c.setEnabled(false);
+      // Dropping goes through the platform it stood on only (and others level with it).
+      const dropping = mover?.dropTop != null && Math.abs(mover.dropTop - top) < 0.05;
+      if (dropping || vy < -0.1 || bottom - Math.max(vy, 0) * STEP * 1.5 > top + 0.08) c.setEnabled(false);
     });
   }
 
@@ -77,8 +79,8 @@ abstract class PxBody {
   get vy(): number { return this.body.getLinearVelocity().y * UNIT; }
   set vy(v: number) { this.body.setLinearVelocity(Vec2(this.body.getLinearVelocity().x, v / UNIT)); }
   setVelocity(vx: number, vy: number): void { this.body.setLinearVelocity(Vec2(vx / UNIT, vy / UNIT)); }
-  /** Moves the body (pixels), keeping its velocity. */
-  setPosition(x: number, y: number): void { this.body.setTransform(Vec2(x / UNIT, y / UNIT), 0); }
+  /** Moves the body (pixels), keeping its velocity and its rotation. */
+  setPosition(x: number, y: number): void { this.body.setTransform(Vec2(x / UNIT, y / UNIT), this.body.getAngle()); }
   set enable(on: boolean) { this.body.setActive(on); }
   get enable(): boolean { return this.body.isActive(); }
   destroy(): void { this.body.getWorld().destroyBody(this.body); }
@@ -91,8 +93,8 @@ abstract class PxBody {
  * robot the art and map of this port use.
  */
 export class KubotzBody extends PxBody {
-  /** Set while dropping through a soft platform. */
-  dropping = false;
+  /** The top (units) of the soft platform being dropped through, or null. */
+  dropTop: number | null = null;
   readonly width = Config.KUBOTZ_WIDTH * UNIT;
   readonly height = Config.KUBOTZ_HEIGHT * UNIT;
 
@@ -153,6 +155,8 @@ export class KubotzBody extends PxBody {
     }
     return false;
   }
+  /** The top (units) of the soft platform stood on, or null. */
+  get platformTop(): number | null { const g = this.ground(); return g && isPlatform(g) ? (g.getUserData() as PlatformTag).top : null; }
   /** Standing on a soft platform (so holding down drops through it). */
   get onPlatform(): boolean { const g = this.ground(); return !!g && isPlatform(g); }
   get top(): number { return this.y - this.height / 2; }

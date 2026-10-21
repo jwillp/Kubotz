@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UNIT } from '../config';
 
-type Kind = 'spark' | 'ring' | 'flash' | 'puff';
+type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote';
 
 interface Particle {
   kind: Kind;
@@ -13,6 +13,7 @@ interface Particle {
   gravity: number; // px/s²
   drag: number; // fraction of speed kept per second
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
+  len?: number; // beams: length behind the point (signed: the bolt's direction)
 }
 
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
@@ -122,6 +123,46 @@ export class ImpactFx {
     }
   }
 
+  /** Laser bolt wake: a fading beam line and flickering square data bits, no smoke. */
+  laserTrail(x: number, y: number, dir: number, color: number, size: number): void {
+    const hot = mix(color, 0xffffff, 0.55);
+    this.add({ kind: 'beam', x, y, color: hot, size: 0.05 * UNIT * size, life: 110, len: dir * 0.9 * UNIT });
+    if (Math.random() < 0.7) {
+      this.add({
+        kind: 'bit', x: x - dir * rand(0, 0.5) * UNIT, y: y + rand(-0.12, 0.12) * UNIT * size,
+        vx: -dir * rand(0.5, 2) * UNIT, vy: rand(-1.5, 1.5) * UNIT,
+        color: Math.random() < 0.4 ? 0xffffff : hot, size: rand(1.5, 3) * Math.min(1.6, size), life: rand(140, 280), drag: 0.2,
+      });
+    }
+  }
+
+  /** A gun charging: sparks drawn in from all round into the barrel, more as it fills. */
+  charge(x: number, y: number, color: number, c: number): void {
+    const n = 1 + Math.floor(c * 3);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2);
+      const r = rand(0.55, 1.2) * UNIT * (1 + c * 0.4);
+      const life = rand(140, 220);
+      this.add({
+        kind: 'spark', x: x + Math.cos(a) * r, y: y + Math.sin(a) * r,
+        vx: (-Math.cos(a) * r) / (life / 1000), vy: (-Math.sin(a) * r) / (life / 1000),
+        color: Math.random() < 0.3 ? 0xffffff : mix(color, 0xffffff, rand(0.2, 0.6)), size: rand(1.8, 3), life,
+      });
+    }
+    if (Math.random() < 0.5) this.add({ kind: 'flash', x, y, color: mix(color, 0xffffff, 0.5), size: (0.05 + 0.14 * c) * UNIT, grow: -0.03 * UNIT, life: 60 });
+  }
+
+  /** Tiny glowing motes rising off a power-up ball (call every frame). */
+  motes(x: number, y: number, color: number, radius: number, dtMs: number): void {
+    if (Math.random() > dtMs / 70) return;
+    const a = rand(0, Math.PI * 2);
+    this.add({
+      kind: 'mote', x: x + Math.cos(a) * radius * 1.05, y: y + Math.sin(a) * radius * 1.05,
+      vx: Math.cos(a) * rand(0.2, 0.7) * UNIT, vy: Math.sin(a) * rand(0.2, 0.7) * UNIT - rand(0.3, 0.8) * UNIT,
+      color: Math.random() < 0.35 ? 0xffffff : mix(color, 0xffffff, 0.3), size: rand(1.2, 2.4), life: rand(600, 1100), drag: 0.6,
+    });
+  }
+
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
   swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number): void {
     let trail = this.trails.get(owner);
@@ -183,6 +224,26 @@ export class ImpactFx {
           g.fillStyle(p.color, fade).fillCircle(p.x, p.y, Math.max(1, p.size + p.grow * f));
           g.fillStyle(p.color, 0.18 * fade).fillCircle(p.x, p.y, Math.max(1, (p.size + p.grow * f) * 1.7));
           break;
+        case 'beam': {
+          const len = (p.len ?? 0) * (0.4 + 0.6 * fade);
+          g.lineStyle(p.size * 3 * fade, p.color, 0.18 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
+          g.lineStyle(p.size * fade, p.color, 0.8 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
+          break;
+        }
+        case 'bit': {
+          // Square pixels that flicker out.
+          if (Math.random() < 0.25 * f) break;
+          const sz = p.size * (0.5 + 0.5 * fade);
+          g.fillStyle(p.color, fade).fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+          break;
+        }
+        case 'mote': {
+          const tw = 0.6 + 0.4 * Math.sin((p.age / 90) + p.x);
+          const a = Math.sin(Math.PI * f) * tw;
+          g.fillStyle(p.color, 0.25 * a).fillCircle(p.x, p.y, p.size * 2.6);
+          g.fillStyle(p.color, a).fillCircle(p.x, p.y, p.size);
+          break;
+        }
         case 'puff':
           d.fillStyle(p.color, 0.35 * fade).fillCircle(p.x, p.y, p.size + p.grow * f);
           break;

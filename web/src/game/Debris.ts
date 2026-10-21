@@ -32,6 +32,8 @@ export class DebrisField {
   constructor(private scene: Phaser.Scene, private physics: PhysicsWorld) {}
 
   get count(): number { return this.pieces.length; }
+  /** The pieces' bodies (for the portals). */
+  get bodies(): DebrisBody[] { return this.pieces.map((p) => p.body); }
 
   explode(k: Kubotz, now: number): void {
     const cx = k.x;

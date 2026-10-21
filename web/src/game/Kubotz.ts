@@ -219,6 +219,8 @@ export class Kubotz implements Damageable {
   stunnedUntil = 0;
   dodgeUntil = 0;
   private dropUntil = 0;
+  private prevDown = false;
+  private landedAt = 0;
   private dodgeReady = true;
   private guardHeld = false;
   /** The foot on the ground in the last drawn run frame (a change = a footfall). */
@@ -526,15 +528,24 @@ export class Kubotz implements Damageable {
       }
     } else if (pad.down) {
       // Holding down on a soft platform drops through it (SSB-style).
-      if (grounded && this.body.onPlatform) this.dropUntil = now + 300;
+      // Drops through the platform stood on, and only that one: after landing
+      // on the next, it takes a fresh press to drop again (the CPU, which holds
+      // down while following a path, drops again after a moment).
+      const fresh = !this.prevDown || (this.controller.label === 'CPU' && now - this.landedAt > 300);
+      if (grounded && fresh && now >= this.dropUntil && this.body.onPlatform) {
+        this.dropUntil = now + 400;
+        b.dropTop = b.platformTop;
+      }
       // fast fall: (RunningSystem.moveDown) never slows the fall down
       const step = Config.JUMP_VELOCITY * Config.FAST_FALL_FACTOR * 60 * dt;
       vy = Math.max(vy, Math.min(vy, Config.MAX_SPEED) + step);
     }
 
-    b.dropping = now < this.dropUntil;
+    if (now >= this.dropUntil) b.dropTop = null;
+    this.prevDown = pad.down;
     b.setVelocity(vx * UNIT, vy * UNIT);
     if (grounded && !this.wasGrounded) {
+      this.landedAt = now;
       this.hooks.dust(this.x, b.bottom);
       this.squashUntil = now + 160;
       this.landUntil = now + 200;

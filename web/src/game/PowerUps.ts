@@ -127,6 +127,10 @@ export class PowerUpOrb {
   readonly radius = Config.POWERUP_RADIUS * UNIT;
   /** No kicks again until then (a robot overlapping it pushes it once, not every frame). */
   kickedUntil = 0;
+  /** For the bounce sound: last velocity (pixels/s) and last tink. */
+  lastVx = 0;
+  lastVy = 0;
+  lastTinkAt = 0;
 
   constructor(scene: Phaser.Scene, physics: PhysicsWorld, x: number, y: number, readonly type: PowerUpType, now: number) {
     const def = POWER_UPS[type];

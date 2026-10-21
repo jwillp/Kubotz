@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { crystalBounceBuffer, pickupChimeBuffer } from '../fx/Synth';
 import { explosionBuffer } from '../game/Debris';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
@@ -50,8 +51,8 @@ export class BootScene extends Phaser.Scene {
     this.load.audio('music-title', 'audio/dashboard.mp3');
     this.load.audio('music-game', 'audio/TechnoTheme.mp3');
     this.load.audio('shot', 'audio/layzer.mp3');
-    this.load.audio('punch', 'audio/HeavyPunch2.mp3');
-    this.load.audio('step', 'audio/step.mp3');
+    this.load.audio('punch', 'audio/punch_tight.mp3'); // HeavyPunch2 without its lead-in
+    this.load.audio('step', 'audio/step_tight.mp3'); // step.mp3 without its silence and scuff
     for (const n of ['1', '2', '3', 'fight']) this.load.audio(`narrator-${n}`, `audio/narrator_${n}.mp3`);
   }
 
@@ -68,7 +69,11 @@ export class BootScene extends Phaser.Scene {
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.makeTextures();
-      if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) this.cache.audio.add('boom', explosionBuffer(this.sound.context));
+      if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
+        this.cache.audio.add('boom', explosionBuffer(this.sound.context));
+        this.cache.audio.add('orb-bounce', crystalBounceBuffer(this.sound.context));
+        this.cache.audio.add('orb-pickup', pickupChimeBuffer(this.sound.context));
+      }
       this.scene.start('Title');
     });
     this.load.start();

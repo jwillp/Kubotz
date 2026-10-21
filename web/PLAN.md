@@ -407,3 +407,27 @@ film grain and scanlines; the robots moved like retro boxers.
   bouncy, bump each other). Robots running into one kick it along, strikes
   knock it away along the move's launch angle, laser bolts push it. The art
   rolls with the ball under a fixed shading and highlight. Grab picks it up.
+
+### Phase 9d — owner feedback (2026-10-21)
+
+- **Screen effects**: F stacked a new grade pass on every press (removing it
+  by name missed), which is why the image got more saturated each time. The
+  bloom is gone: the owner preferred the grade alone (vignette, split tone,
+  grain, scanlines), which is now the default; F toggles it cleanly.
+- **Sounds**: step.mp3 had a third of a second of silence and a scuff before
+  the step (heard late and doubled); punch had a lead-in. Both are trimmed
+  copies (audio/step_tight.mp3, punch_tight.mp3). Music 0.45 → 0.28.
+  Crystal sounds synthesised in fx/Synth.ts: a glassy tink when a ball
+  bounces (louder the harder, pitch varied), a rising chime on pick-up.
+- **Drop-through**: only the platform stood on (`KubotzBody.dropTop`); a
+  fresh press of down is needed to drop again (CPUs drop again after a
+  moment while holding down along a path).
+- **Bonus spawns**: never on a ball already there.
+- **Sword trail**: the swoosh follows the blade whenever its tip moves fast,
+  not only during strikes.
+- **Laser**: the smoke is gone; a bolt leaves a fading beam line and
+  flickering square bits. Charging draws sparks in from all round into the
+  barrel, more as it fills.
+- **Power-up balls**: tiny twinkling motes rise off them.
+- **Portals**: everything that moves wraps (robots, bolts, balls, debris)
+  through one list of movers.
