@@ -1,4 +1,4 @@
-import { Body, Box, Circle, Contact, Fixture, Vec2, World } from 'planck';
+import { AABB, Body, Box, Circle, Contact, Fixture, Vec2, World } from 'planck';
 import { Config, UNIT } from '../config';
 
 /**
@@ -120,6 +120,22 @@ export class KubotzBody extends PxBody {
   /** Passes through other robots (while held and thrown), still blocked by the map. */
   set ghost(on: boolean) {
     for (let f = this.body.getFixtureList(); f; f = f.getNext()) f.setFilterData({ groupIndex: 0, categoryBits: CAT_KUBOTZ, maskBits: on ? CAT_STATIC : CAT_STATIC | CAT_KUBOTZ });
+  }
+
+  /** Overlapping another robot's body (so passing through it must go on a little longer). */
+  overlapsRobot(): boolean {
+    // A little inside the body: robots merely standing side by side are clear
+    // (the broad phase's boxes are padded).
+    const p = this.body.getPosition();
+    const hw = Config.KUBOTZ_WIDTH * 0.3;
+    const hh = Config.KUBOTZ_HEIGHT * 0.45;
+    let hit = false;
+    this.body.getWorld().queryAABB(new AABB(Vec2(p.x - hw, p.y - hh), Vec2(p.x + hw, p.y + hh)), (f: Fixture) => {
+      if (f.getBody() === this.body || f.isSensor() || f.getUserData() !== 'kubotz' || !f.getBody().isActive()) return true;
+      hit = true;
+      return false;
+    });
+    return hit;
   }
 
   bottomUnits(): number { return this.body.getPosition().y + Config.KUBOTZ_HEIGHT / 2; }

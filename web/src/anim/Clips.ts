@@ -538,6 +538,27 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ], { planted: false }),
 
+  /**
+   * Dodge roll (guard + forwards): a ninja forward roll. Ducks into a crouch,
+   * tucks and rolls over low along the floor, then comes up in a crouch.
+   */
+  roll: clip('roll', 440, [
+    { t: 0, pose: { ...CROUCH, tilt: 10 } },
+    { t: 0.12, pose: { ...TUCK, y: -40, spin: 30, shoulderF: -10, armF: 70, shoulderB: 0, armB: 80 }, ease: 'out' },
+    { t: 0.72, pose: { ...TUCK, y: -55, spin: 340 }, ease: 'inOut' },
+    { t: 0.85, pose: { ...CROUCH, spin: 360 }, ease: 'out' },
+    { t: 1, pose: { ...FIGHT, spin: 360 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Dodge roll backwards: the same tuck rolled over the back. */
+  rollBack: clip('rollBack', 440, [
+    { t: 0, pose: { ...CROUCH, tilt: -8 } },
+    { t: 0.12, pose: { ...TUCK, y: -40, spin: -30, shoulderF: -10, armF: 70, shoulderB: 0, armB: 80 }, ease: 'out' },
+    { t: 0.72, pose: { ...TUCK, y: -55, spin: -340 }, ease: 'inOut' },
+    { t: 0.85, pose: { ...CROUCH, spin: -360 }, ease: 'out' },
+    { t: 1, pose: { ...FIGHT, spin: -360 }, ease: 'inOut' },
+  ], { planted: false }),
+
   /** Ledge roll: pulled up into a tucked roll along the floor. */
   ledgeRoll: clip('ledgeRoll', 700, [
     { t: 0, pose: { torso: 94, head: 100, shoulderF: 44, armF: 50, shoulderB: 38, armB: 46, thighF: -82, legF: -98, thighB: -100, legB: -108 } },

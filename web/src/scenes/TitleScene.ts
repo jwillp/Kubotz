@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ARENA_INFO } from '../map/Arenas';
 import { addMusic } from '../game/Settings';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 export type Slot = 'P1' | 'P2' | 'CPU';
 export interface MatchSetup { slots: Slot[]; arena?: number; bonuses?: BonusRate; }
@@ -25,7 +26,7 @@ const MODES: { label: string; slots: Slot[] }[] = [
 
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
-  private items: Phaser.GameObjects.Text[] = [];
+  private items: HeadingText[] = [];
   private arena = 0;
   private arenaText!: Phaser.GameObjects.Text;
   private arenaBlurb!: Phaser.GameObjects.Text;
@@ -41,28 +42,19 @@ export class TitleScene extends Phaser.Scene {
     this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.8);
     this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.45);
 
-    const title = this.add.text(width / 2, 120, 'KUBOTZ', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '110px', color: '#ffffff',
-      stroke: '#29abe2', strokeThickness: 10,
-    }).setOrigin(0.5);
-    title.setShadow(0, 8, '#0b1d33', 0, true, true);
-    this.tweens.add({ targets: title, y: 132, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    this.add.text(width / 2, 210, 'robot arena brawler', {
-      fontFamily: 'Arial, sans-serif', fontSize: '22px', color: '#9fe3ff',
-    }).setOrigin(0.5);
+    // The original Kubotz logo (logo_SD.png from the 2015 gh-pages site).
+    const logo = this.add.image(width / 2, 118, 'logo').setScale(1.3);
+    this.tweens.add({ targets: logo, y: 128, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    this.add.text(width / 2, 222, 'robot arena brawler', body(22, { color: '#9fe3ff', fontStyle: '500' })).setOrigin(0.5);
 
     MODES.forEach((m, i) => {
-      const t = this.add.text(width / 2, 300 + i * 56, m.label, {
-        fontFamily: 'Arial Black, sans-serif', fontSize: '32px', color: '#ffffff',
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      const t = heading(this, width / 2, 300 + i * 56, m.label, 36, { glow: null }).setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.start(i));
       this.items.push(t);
     });
     // Settings (volumes, visual effects): the last entry of the menu, in the top corner.
-    const gear = this.add.text(width - 28, 28, '⚙ Settings', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '24px', color: '#ffffff',
-    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    const gear = heading(this, width - 110, 44, 'Settings', 24, { glow: null }).setInteractive({ useHandCursor: true });
     gear.on('pointerover', () => this.select(MODES.length));
     gear.on('pointerdown', () => this.start(MODES.length));
     this.items.push(gear);
@@ -70,24 +62,16 @@ export class TitleScene extends Phaser.Scene {
 
     // Arena picker: the original cube, or one of the arenas built from its tiles.
     this.arena = (this.registry.get('arena') as number | undefined) ?? 0;
-    const arrow = (x: number, label: string, delta: number) => this.add.text(x, 600, label, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '30px', color: '#29abe2',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickArena(delta));
-    this.arenaText = this.add.text(width / 2, 600, '', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '26px', color: '#ffffff',
-    }).setOrigin(0.5);
-    this.arenaBlurb = this.add.text(width / 2, 634, '', {
-      fontFamily: 'Arial, sans-serif', fontSize: '16px', color: '#9fe3ff',
-    }).setOrigin(0.5);
+    const arrow = (x: number, label: string, delta: number) => this.add.text(x, 600, label, body(30, { color: '#29abe2' })).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickArena(delta));
+    this.arenaText = this.add.text(width / 2, 600, '', body(26, { fontStyle: '800' })).setOrigin(0.5);
+    this.arenaBlurb = this.add.text(width / 2, 634, '', body(16, { color: '#9fe3ff', fontStyle: '500' })).setOrigin(0.5);
     arrow(width / 2 - 250, '◀', -1);
     arrow(width / 2 + 250, '▶', 1);
     this.pickArena(0);
 
     // Game setting: how often power-up balls appear (B or click to change).
     this.bonuses = (this.registry.get('bonuses') as BonusRate | undefined) ?? 'normal';
-    this.bonusText = this.add.text(width / 2, 672, '', {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#ffffff',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
+    this.bonusText = this.add.text(width / 2, 672, '', body(20)).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
     this.pickBonuses(0);
 
     // Title music (dashboard.ogg); browsers start it after the first click or key.
@@ -98,9 +82,8 @@ export class TitleScene extends Phaser.Scene {
 
     this.add.text(width / 2, height - 36,
       'P1: WASD move (W, Space: jump) · O attack · P special · I grab · Shift shield · U taunt      P2: Arrows · , attack · N special · . grab · / shield · M jump\n'
-      + 'Gamepads use the Smash Ultimate layout. Grab power-ups, knock rivals out, last robot standing wins.', {
-        fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
-      }).setOrigin(0.5);
+      + 'Gamepads use the Smash Ultimate layout. Grab power-ups, knock rivals out, last robot standing wins.',
+      body(17, { color: '#cfe9ff', fontStyle: '500', align: 'center', lineSpacing: 8 })).setOrigin(0.5);
 
     const kb = this.input.keyboard!;
     const n = this.items.length;
@@ -123,7 +106,7 @@ export class TitleScene extends Phaser.Scene {
 
   private select(i: number): void {
     this.selected = i;
-    this.items.forEach((t, j) => t.setColor(j === i ? '#29abe2' : '#ffffff').setScale(j === i ? 1.1 : 1));
+    this.items.forEach((t, j) => t.setGlow(j === i ? NEON : null).setScale(j === i ? 1.1 : 1));
   }
 
   private pickArena(delta: number): void {
