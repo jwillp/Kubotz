@@ -181,12 +181,15 @@ export class MoveListScene extends Phaser.Scene {
   private nextGhostAt = 0;
   private bolts: Bolt[] = [];
   private padPrev = { up: false, down: false, back: false };
+  /** Set by back(): the scene stops at the next step, so nothing may draw the destroyed robot meanwhile. */
+  private leaving = false;
   private padRepeatAt = 0;
 
   constructor() { super('MoveList'); }
 
   create(): void {
     this.rows = [];
+    this.leaving = false;
     this.bolts = [];
     this.scroll = 0;
     const { width, height } = this.scale;
@@ -331,7 +334,9 @@ export class MoveListScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
+    if (this.leaving) return;
     this.pollPad(time);
+    if (this.leaving) return;
     const dt = Math.min(delta, 50);
     if (this.run.done) {
       if (!this.pauseUntil) this.pauseUntil = time + PAUSE_MS;
@@ -461,6 +466,8 @@ export class MoveListScene extends Phaser.Scene {
   }
 
   private back(): void {
+    if (this.leaving) return;
+    this.leaving = true;
     for (const b of this.bolts) b.img.destroy();
     this.robot.destroy();
     this.lights.disable();
