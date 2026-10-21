@@ -831,6 +831,13 @@ original art and the rig, need no Blender round trip, and react to the camera
 and the turns, which is what sells 2.5D. Blender pre-renders (A) stay an option
 later for hero props or backgrounds.
 
-**Prototype scope**: The Foundry gets the perspective blocks and a parallax
-back layer; player 1's robot gets the volumetric parts (the CPUs keep the flat
-parts, for comparison). `V` toggles the 2.5D look on and off in a match.
+**Prototype scope**: The Foundry and a second copy of the original arena,
+"The Kube 2.5D", get the perspective blocks and a parallax back layer. `V`
+toggles the 2.5D look on and off in a match.
+
+**Owner feedback (2026-10-21)**: the volumetric robot parts (C) were tried and
+dropped: the owner prefers the normal 2D characters, and scaling the art
+layers in front of the play plane moved the robots off their platforms. The
+arena perspective stays, made much shallower (the front faces sit exactly on
+the play plane, the back edges only 2.5% in), with "The Kube 2.5D" beside
+"The Kube" for a side-by-side comparison.

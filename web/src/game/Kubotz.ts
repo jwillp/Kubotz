@@ -421,8 +421,7 @@ export class Kubotz implements Damageable, Teamed {
     this.anim = new Animator(rig);
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
-    // 2.5D exploration: player 1 is drawn with volumetric parts, the others stay flat.
-    this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color), index === 0);
+    this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;

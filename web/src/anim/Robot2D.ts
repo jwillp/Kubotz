@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { lit } from '../fx/NormalMaps';
 import { type PosedPart, type Pose, type Rig } from './Rig';
-import { look25, partViews, REST_YAW, VIEW_STEP } from './Volume';
 
 /** Spriter pixels to world pixels. */
 export const ART_SCALE = Config.SPRITER_SCALE * UNIT;
@@ -45,8 +44,6 @@ export class Robot2D {
   private readonly yaws = new Map<string, number>();
   private readonly ghosts: Ghost[] = [];
   private parts: PosedPart[] = [];
-  /** Columns each volumetric view adds on each side of its part image, by part. */
-  private readonly pads = new Map<string, number>();
   /** What update() drew last, for the kill replays (game/Replay.ts). */
   lastDraw: DrawState | null = null;
 
@@ -55,8 +52,6 @@ export class Robot2D {
     private readonly rig: Rig,
     /** Texture key for a part image (recoloured helmets and blades per player). */
     private readonly textureFor: (file: string) => string,
-    /** Draw the parts as turned volumes (the 2.5D exploration) instead of flat images. */
-    private readonly volume = false,
   ) {
     this.view = scene.add.container(0, 0).setDepth(10);
   }
@@ -74,12 +69,16 @@ export class Robot2D {
     this.view.setPosition(x, bottom).setScale(-ART_SCALE, fx.squash * ART_SCALE).setRotation(fx.lean).setAlpha(fx.alpha);
     for (const img of this.images.values()) img.setVisible(false);
     const dt = fx.dtMs / 1000;
-    const vol = this.volume && look25.on;
-    // Volumetric robots stand a little turned towards the viewer, like a 3/4 view.
-    if (vol) yaw += REST_YAW * Math.cos((yaw * Math.PI) / 180);
     this.parts.forEach((p, depth) => {
-      const flat = this.textureFor(p.file.name);
-      let key = flat;
+      const key = this.textureFor(p.file.name);
+      let img = this.images.get(p.name);
+      if (!img) {
+        img = lit(this.scene.add.image(0, 0, key));
+        this.images.set(p.name, img);
+        this.view.add(img);
+      } else if (img.texture.key !== key) {
+        img.setTexture(key);
+      }
       // Each part follows the yaw at its own pace.
       const d = depthOf(p.file.name);
       let py = this.yaws.get(p.name);
@@ -89,33 +88,15 @@ export class Robot2D {
       const rad = (py * Math.PI) / 180;
       const c = Math.cos(rad);
       const s = Math.sin(rad);
-      let pad = 0;
-      if (vol) {
-        // The view nearest the part's yaw, folded into 0..90 (past 90 the mirror shows it).
-        const views = partViews(this.scene.textures, flat);
-        const deg = (Math.acos(Math.min(1, Math.abs(c))) * 180) / Math.PI;
-        key = views.keys[Math.round(deg / VIEW_STEP)];
-        pad = views.pad;
-      }
-      this.pads.set(p.name, pad);
-      let img = this.images.get(p.name);
-      if (!img) {
-        img = lit(this.scene.add.image(0, 0, key));
-        this.images.set(p.name, img);
-        this.view.add(img);
-      } else if (img.texture.key !== key) {
-        img.setTexture(key);
-      }
       // Width as seen: round parts keep some of it edge-on; the sign mirrors.
-      // A volumetric view is already turned: it only mirrors.
-      const w = (c < 0 ? -1 : 1) * (vol ? 1 : Math.max(Math.abs(c), d.round * (1 - Math.abs(c)) + Math.abs(c) * Math.abs(c)));
+      const w = (c < 0 ? -1 : 1) * Math.max(Math.abs(c), d.round * (1 - Math.abs(c)) + Math.abs(c) * Math.abs(c));
       // The part's main axis, squeezed across the view; its thickness keeps the area.
       const a = (p.tr.angle * Math.PI) / 180;
       const ux = Math.cos(a) * w;
       const uy = Math.sin(a);
       const len = Math.hypot(ux, uy) || 1e-3;
       img.setVisible(true)
-        .setOrigin((pad + p.pivotX * p.file.width) / (p.file.width + 2 * pad), 1 - p.pivotY)
+        .setOrigin(p.pivotX, 1 - p.pivotY)
         .setPosition(p.tr.x * c + d.z * s, -p.tr.y)
         .setAngle(-(Math.atan2(uy, ux) * 180) / Math.PI)
         .setScale(p.tr.scaleX * len, p.tr.scaleY * (Math.abs(w) / len) * Math.sign(w));
@@ -168,7 +149,7 @@ export class Robot2D {
       const img = this.images.get(p.name);
       if (!img) continue;
       const m = img.getWorldTransformMatrix();
-      const lx = px + (this.pads.get(p.name) ?? 0) - img.originX * img.width;
+      const lx = px - img.originX * img.width;
       const ly = (img.height - py) - img.originY * img.height;
       out.push({ x: m.getX(lx, ly), y: m.getY(lx, ly) });
     }

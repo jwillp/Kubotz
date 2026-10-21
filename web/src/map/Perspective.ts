@@ -1,13 +1,19 @@
 import Phaser from 'phaser';
-import { look25 } from '../anim/Volume';
 
 interface Block { x: number; y: number; width: number; height: number }
 
-/** Scale of the blocks' front faces and of their back edges round the camera centre: the robots walk halfway between. */
-const FRONT = 1.08;
-const BACK = 0.9;
+/** The 2.5D look is on (V toggles it in a match, for comparing with the flat one). */
+export const look25 = { on: true };
+
+/**
+ * Scale round the camera centre of the blocks' front faces (the tile art,
+ * where the robots stand, so it never moves) and of their back edges: a
+ * shallow depth, just enough to read.
+ */
+const FRONT = 1;
+const BACK = 0.975;
 /** The dim copy of the arena further back. */
-const FAR = 0.8;
+const FAR = 0.9;
 
 const TOP = [0x7d8aa2, 0x5a6680, 0x3e485c, 0x283041];
 const SIDE = [0x46516a, 0x353e52, 0x262d3c, 0x1a1f2a];
@@ -15,8 +21,8 @@ const UNDER = [0x1a1f29, 0x161b24, 0x12161e, 0x0e1118];
 
 /**
  * 2.5D arena (exploration): every block keeps its original tile art as its
- * front face, slightly in front of the plane the robots fight on, and gets a
- * top, underside and side faces going back towards the camera centre, so the
+ * front face, on the plane the robots fight on, and gets shallow top,
+ * underside and side faces going back towards the camera centre, so the
  * blocks show their depth and shift as the camera moves. A dim copy of the
  * arena further back moves slower (parallax). Redrawn each frame from the
  * camera midpoint; V (look25) switches back to the flat arena.
@@ -35,7 +41,7 @@ export class ArenaPerspective {
   ) {
     this.front = front.map((obj) => ({ obj, x: obj.x, y: obj.y, scale: obj.scaleX }));
     this.faces = scene.add.graphics().setDepth(1.95);
-    this.far = scene.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(1.5).setTint(0x6c7c96).setAlpha(0.22);
+    this.far = scene.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(1.5).setTint(0x6c7c96).setAlpha(0.12);
   }
 
   update(mid: { x: number; y: number }): void {
