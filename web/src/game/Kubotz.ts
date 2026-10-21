@@ -133,7 +133,7 @@ const SWORD_DIR_MOVES: DirMoves = {
 const SMASH_CHARGE_MS = 1000;
 const SMASH_CHARGE_BONUS = 0.6;
 /** A direction pressed this close to the attack press makes it a smash (a flick + attack, like SSB). */
-const SMASH_INPUT_MS = 100;
+const SMASH_INPUT_MS = 120;
 /** Laser gun: a tap fires a light shot; holding charges a bigger one (up to GUN_CHARGE_MS). */
 const GUN_TAP_MS = 160;
 const GUN_CHARGE_MS = 1200;
@@ -294,6 +294,14 @@ export class Kubotz implements Damageable {
   get attacking(): boolean { return this.attack !== null; }
 
   /** The middle of the laser blade (world pixels), for its light. */
+  /** The laser blade's emitter and tip (world pixels), while the sword is out. */
+  blade(): { x1: number; y1: number; x2: number; y2: number } | null {
+    if (this.weapon !== 'laserSword' || !this.isAlive()) return null;
+    const a = this.model.pointOn(SWORD_FILE, 96, 68);
+    const b = this.model.pointOn(SWORD_FILE, 298, 216);
+    return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
+  }
+
   bladeMiddle(): { x: number; y: number } {
     const { sword: t, swordBase: b } = PART_TIPS;
     return this.model.pointOn(SWORD_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
@@ -621,7 +629,7 @@ export class Kubotz implements Damageable {
           // A press during a strike is kept for the next move of the combo.
           this.comboQueued = true;
         }
-      } else if (now >= this.attackReadyAt && (attackPressed || !this.grounded || this.inComboWindow(now))) {
+      } else if (now >= this.attackReadyAt && (attackPressed || this.inComboWindow(now))) {
         if (!this.grounded) {
           this.comboStep = 0;
           this.facing = this.facingBefore;

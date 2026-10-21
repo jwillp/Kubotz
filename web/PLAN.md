@@ -379,3 +379,17 @@ film grain and scanlines; the robots moved like retro boxers.
   with the bloom.
 - **CPU**: smashes now and then (more when the enemy is weak), sometimes
   charged; quick laser shots with the occasional charged bolt.
+
+### Phase 9b — owner feedback (2026-10-21)
+
+- **Players can smash and charge**: the keyboard attack was a one-frame
+  press, so holding it did nothing. Attack is now a held button (grab stays a
+  press); holding attack also chains the ground combo. The smash window is
+  120 ms; a tilt needs the direction held a little longer first.
+- **Run**: rebuilt from the original game's Running animation (converted
+  from kubotz.scml to rig poses, resampled to 20 keys and smoothed), leaning
+  slightly into it, 640 ms per stride at full speed.
+- **Feet on the ground**: planted clips grounded the feet's image corners,
+  which are transparent; they now ground the feet's opaque outline.
+- **Lightsabers**: a white-hot core inside a coloured blade and a wide soft
+  halo, drawn additively over the blade art with a slight flicker.

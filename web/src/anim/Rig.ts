@@ -87,6 +87,10 @@ function compose(parent: Xf, child: Xf): Xf {
 export class Rig {
   private readonly bones: RigBone[] = [];
   private readonly parts: RigPart[] = [];
+  private readonly outlines = new Map<string, number[][]>();
+
+  /** The opaque outline of a part image (pixels from its bottom-left), used to ground the feet exactly. */
+  setOutline(file: string, points: number[][]): void { this.outlines.set(file, points); }
 
   constructor(private readonly spriter: SpriterData) {
     const idle = spriter.animations.get('Idle')!;
@@ -146,7 +150,10 @@ export class Rig {
     for (const p of this.solve({ ...pose, y: 0 })) {
       if (p.name !== 'foot' && p.name !== 'foot_sha') continue;
       const { width: w, height: h } = p.file;
-      for (const [cx, cy] of [[0, 0], [w, 0], [0, h], [w, h]]) low = Math.min(low, pointOnPart(p, cx, cy).y);
+      // The foot's visible outline when known (the image corners are transparent,
+      // so a tilted foot would hover above the floor by them).
+      const pts = this.outlines.get(p.file.name) ?? [[0, 0], [w, 0], [0, h], [w, h]];
+      for (const [cx, cy] of pts) low = Math.min(low, pointOnPart(p, cx, cy).y);
     }
     return low === Infinity ? 0 : -low;
   }

@@ -21,6 +21,23 @@ import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
+/** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
+function opaqueOutline(scene: Phaser.Scene, key: string): number[][] {
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(src, 0, 0);
+  const { data, width: w, height: h } = ctx.getImageData(0, 0, src.width, src.height);
+  const pts: number[][] = [];
+  for (let x = 0; x < w; x += 2) {
+    let top = -1; let bottom = -1;
+    for (let y = 0; y < h; y++) if (data[(y * w + x) * 4 + 3] > 100) { if (top < 0) top = y; bottom = y; }
+    if (top >= 0) pts.push([x, h - top], [x, h - 1 - bottom]);
+  }
+  return pts;
+}
+
 /** Fixed blue lights over the platforms (main.ts maxLights must cover these + 2 + the pool). */
 const PLATFORM_LIGHTS = 20;
 
@@ -31,6 +48,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Debug mode and its time controls (F3, see DebugScene). */
   readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
   private glows: Phaser.GameObjects.Image[] = [];
+  /** Lightsaber blades: a white-hot core in a coloured glow, drawn over the blade art. */
+  private sabers!: Phaser.GameObjects.Graphics;
   /** Light2D: a key light and a rim light that follow the camera, and a pool for lasers, hits and pick-ups. */
   private keyLight: Phaser.GameObjects.Light | null = null;
   private rimLight: Phaser.GameObjects.Light | null = null;
@@ -84,6 +103,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.map = arena ? buildArenaMap(arena, original) : original;
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
+    for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
 
@@ -377,6 +397,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.impact.update(now, dtMs);
     this.updateCamera(dt);
     this.drawGlows();
+    this.drawSabers(now);
+  }
+
+  private drawSabers(now: number): void {
+    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    const g = this.sabers.clear();
+    for (const k of this.fighters) {
+      const b = k.blade();
+      if (!b) continue;
+      const c = k.look.color;
+      const flicker = 0.9 + 0.1 * Math.sin(now * 0.09 + k.x);
+      const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
+      // Wide soft halo, the coloured blade, then the white core.
+      const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
+      for (const [w, col, a] of strokes) {
+        g.lineStyle(w, col, a).lineBetween(b.x1, b.y1, b.x2, b.y2);
+        g.fillStyle(col, a).fillCircle(b.x2, b.y2, w / 2);
+      }
+    }
   }
 
   /** Soft additive glow and a Light2D point light around lasers, blades, pick-ups, explosions and hits. */

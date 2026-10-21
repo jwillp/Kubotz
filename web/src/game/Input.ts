@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 
 /**
  * Virtual game pad, like GoatEngine's VirtualGamePad: directions are held
- * buttons (and so is guard), the other actions are "just pressed" for one frame (prevents button bashing).
+ * buttons (and so are attack, for charging smashes and laser bolts, and
+ * guard); grab is "just pressed" for one frame.
  *   attack = BUTTON_A (punch / shoot / slash)
  *   grab   = BUTTON_B (pick up power-ups)
  *   guard  = shield bubble, held (like Super Smash Bros.)
@@ -58,7 +59,7 @@ export class HumanController implements Controller {
     const s: PadState = {
       up: held(this.keys.up), down: held(this.keys.down),
       left: held(this.keys.left), right: held(this.keys.right),
-      attack: just(this.keys.attack), grab: just(this.keys.grab), guard: held(this.keys.guard),
+      attack: held(this.keys.attack), grab: just(this.keys.grab), guard: held(this.keys.guard),
     };
 
     const pad = this.scene.input.gamepad?.getPad(this.padIndex);
@@ -70,7 +71,7 @@ export class HumanController implements Controller {
       s.up ||= pad.up || ay < -0.6 || pad.A;
       s.down ||= pad.down || ay > 0.6;
       const now = { attack: pad.X, grab: pad.B };
-      s.attack ||= now.attack && !this.prevPad.attack;
+      s.attack ||= now.attack;
       s.grab ||= now.grab && !this.prevPad.grab;
       s.guard ||= pad.Y || pad.L1 > 0 || pad.R1 > 0;
       this.prevPad = now;
