@@ -159,13 +159,54 @@ export const CPU_COLORS = [0x8cc63f, 0xffd166, 0xb36bff, 0xff8a1f];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
+/** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
+export interface Ledge { x: number; y: number; dir: 1 | -1; }
+
+type ThrowKind = 'forward' | 'back' | 'up' | 'down';
+
+/**
+ * Melee-style throws: clip, length, when the robot is let go (0..1), damage
+ * and launch (angle from the horizontal, towards `dir` relative to facing).
+ */
+const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
+  forward: { anim: 'throwF', ms: 440, release: 0.45, damage: 7, launch: { knockback: 13, angle: 40 }, dir: 1 },
+  back: { anim: 'throwB', ms: 520, release: 0.55, damage: 8, launch: { knockback: 14, angle: 40 }, dir: -1 },
+  up: { anim: 'throwU', ms: 480, release: 0.45, damage: 7, launch: { knockback: 14, angle: 90 }, dir: 1 },
+  down: { anim: 'throwD', ms: 480, release: 0.48, damage: 6, launch: { knockback: 10, angle: 75, growth: 0.8 }, dir: 1 },
+};
+
+/** Melee frame data, at 60 frames a second. */
+const FRAME = 1000 / 60;
+const GRAB_HOLD_FRAMES = 76; // a grab at 0 %...
+const GRAB_HOLD_PER_DAMAGE = 1.6; // ...plus 1.6 frames per % (read in 5 % steps)
+const GRAB_MASH_FRAMES = 6; // each mash takes 6 frames off
+const GRAB_RELEASE_LAG = 29 * FRAME; // both stuck after a grab release
+const GRAB_WHIFF_LAG = 480; // a missed grab
+const PUMMEL_MS = 380;
+const PUMMEL_DAMAGE = 3;
+const LEDGE_CATCH = 7 * FRAME; // options open after the catch
+const LEDGE_INTANGIBLE = 37 * FRAME; // the catch plus 30 frames
+const LEDGE_REGRAB = 480; // after letting go
+/** Damage from which the ledge get-ups are slower (Melee: 100 %, but our robots die at 100). */
+const LEDGE_SLOW_DAMAGE = 60;
+/** Where the body hangs below a ledge, so the raised hands are on its top. */
+const HANG_DY = 1.32 * UNIT;
+const HANG_DX = 0.52 * UNIT;
+
 /** Callbacks into the arena, so the actor stays free of scene plumbing. */
 export interface ArenaHooks {
   /** @param size bolt scale (1 = normal), @param power its push. */
   fireBullet(shooter: Kubotz, damage: number, speed: number, size?: number, power?: number): void;
   now(): number; // the match clock: stops while paused
   playSfx(key: string, volume?: number): void;
-  tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void;
+  /** Picks up a power-up ball in the area; true if one was taken. */
+  tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean;
+  /** An opponent in grab reach in front of this robot, or null. */
+  grabTarget(kubotz: Kubotz): Kubotz | null;
+  /** A free ledge the robot's hands can catch right now, or null. */
+  ledgeNear(kubotz: Kubotz): Ledge | null;
+  /** A grab, pummel or throw landing: sparks and a sound. */
+  grabFx(x: number, y: number, color: number, power: number): void;
   dust(x: number, y: number): void;
   runDust(x: number, y: number, dir: number): void;
   airJump(x: number, y: number, color: number): void;
@@ -265,6 +306,26 @@ export class Kubotz implements Damageable {
   respawnAt = 0;
   eliminated = false;
   pad: PadState = emptyPad();
+  /** Melee grabs: the robot this one holds, or the one holding it. */
+  holding: Kubotz | null = null;
+  heldBy: Kubotz | null = null;
+  /** While held: time left before breaking out (ms). */
+  private holdLeft = 0;
+  private ghosted = false;
+  private mashPrev: PadState = emptyPad();
+  private pummelUntil = 0;
+  private pummelStunUntil = 0;
+  private throwing: { kind: ThrowKind; start: number; releaseAt: number } | null = null;
+  /** After a grab release, a whiffed grab or a throw: no actions until then. */
+  private lockUntil = 0;
+  /** Ledges: the one hung from, when it was caught, when it was let go. */
+  ledge: Ledge | null = null;
+  private ledgeAt = 0;
+  private ledgeLetGoAt = -1e9;
+  private ledgeSafeUntil = 0;
+  private ledgePrev: PadState = emptyPad();
+  /** Climbing up from a ledge (normal, roll or attack get-up) along a path. */
+  private climb: { kind: 'climb' | 'roll' | 'attack'; ledge: Ledge; start: number; ms: number; x0: number; y0: number; x1: number; y1: number } | null = null;
 
   constructor(
     private scene: Phaser.Scene,
@@ -321,7 +382,13 @@ export class Kubotz implements Damageable {
   get grounded(): boolean { return this.body.grounded; }
   get invincible(): boolean { return this.powerUps.some((p) => p.type === 'invincibility'); }
   /** Air-dodging: attacks and bullets pass through. */
-  get intangible(): boolean { return this.hooks.now() < this.dodgeUntil; }
+  get intangible(): boolean { const now = this.hooks.now(); return now < this.dodgeUntil || now < this.ledgeSafeUntil; }
+  /** On a ledge or climbing up from one. */
+  get onLedge(): boolean { return this.ledge !== null || this.climb !== null; }
+  /** The ledge hung from or being climbed (for edge hogging). */
+  get ledgeHeld(): Ledge | null { return this.ledge ?? this.climb?.ledge ?? null; }
+  /** Grabbing, held or throwing: CPUs read it. */
+  get grabbing(): boolean { return this.holding !== null || this.throwing !== null; }
   isAlive(): boolean { return !this.dead; }
 
   /** The physics body plus the head and shoulders drawn above it, so blows that look like they land do. */
@@ -394,6 +461,18 @@ export class Kubotz implements Damageable {
     const read = this.controller.read();
     const pad = this.pad = controls && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
+    // Grabs and ledges take over the controls while they last.
+    if (!this.heldBy && this.ghosted) { this.body.ghost = false; this.ghosted = false; }
+    if (this.heldBy) { this.updateHeld(now, dt, controls ? read : emptyPad()); this.updatePowerUps(now); return; }
+    if (this.holding || this.throwing) { this.updateHolding(now, pad); this.updatePowerUps(now); return; }
+    if (this.onLedge) { this.updateLedge(now, pad); this.updatePowerUps(now); return; }
+    if (now < this.lockUntil) {
+      // Grab release or a missed grab: sliding to a stop, no actions (the grab still reaches out).
+      this.move(emptyPad(), now, dt);
+      this.grabWindow(now);
+      this.updatePowerUps(now);
+      return;
+    }
     this.updateGuard(pad, now, dt);
     if (this.guarding) {
       // Guarding roots the robot: no running, jumping or attacking.
@@ -408,6 +487,14 @@ export class Kubotz implements Damageable {
     } else {
       this.move(pad, now, dt);
       this.handleActions(pad, now);
+    }
+    // A touch heavier on the way down: the apex comes sooner.
+    if (!this.grounded && this.body.vy > 0 && now >= this.dodgeUntil) this.body.vy += Config.GRAVITY * Config.FALL_GRAVITY_BONUS * UNIT * dt;
+    // Falling past a ledge catches it (not while holding down, attacking or tumbling).
+    if (!this.grounded && this.body.vy >= 0 && !pad.down && !this.attack && !this.charging && !this.tumbling
+      && now >= this.hitstunUntil && now >= this.dodgeUntil && now - this.ledgeLetGoAt > LEDGE_REGRAB) {
+      const ledge = this.hooks.ledgeNear(this);
+      if (ledge) { this.grabLedge(ledge, now); return; }
     }
     // Strikes carry the robot forwards with their motion (root motion).
     const travel = this.anim.takeRootMotion() * ART_SCALE * ROOT_MOTION_GAIN;
@@ -666,15 +753,23 @@ export class Kubotz implements Damageable {
       }
     }
 
-    if (pad.grab && now >= this.grabReadyAt && now >= this.grabEndsAt) {
+    if (pad.grab && now >= this.grabReadyAt && now >= this.grabEndsAt && !this.attack) {
       this.grabEndsAt = now + Config.GRAB_DURATION;
       this.grabReadyAt = this.grabEndsAt + Config.GRAB_COOLDOWN;
       this.grabAnimUntil = now + 300;
-      if (!this.attack) this.anim.play(ANIM.GRAB, { restart: true, fade: 40 });
+      this.anim.play(ANIM.GRAB, { restart: true, fade: 40 });
+      // On the ground a grab can miss: end lag, unless a robot or a ball is caught.
+      if (this.grounded) this.lockUntil = now + GRAB_WHIFF_LAG;
     }
-    if (now < this.grabEndsAt) {
-      this.hooks.tryGrab(this, new Phaser.Geom.Circle(this.x, this.y, Config.GRAB_RADIUS * UNIT));
-    }
+    this.grabWindow(now);
+  }
+
+  /** While the grab reaches out: an opponent in front is caught, else a power-up ball. */
+  private grabWindow(now: number): void {
+    if (now >= this.grabEndsAt) return;
+    const target = this.grounded ? this.hooks.grabTarget(this) : null;
+    if (target) this.startHold(target, now);
+    else if (this.hooks.tryGrab(this, new Phaser.Geom.Circle(this.x, this.y, Config.GRAB_RADIUS * UNIT))) { this.lockUntil = 0; this.grabEndsAt = 0; }
   }
 
   /**
@@ -756,6 +851,244 @@ export class Kubotz implements Damageable {
     }
   }
 
+  // ------------------------------------------------------- grabs (Melee-style)
+  /** Catches `victim`: it is lifted in front and can only mash to break out. */
+  private startHold(victim: Kubotz, now: number): void {
+    this.grabEndsAt = 0;
+    this.lockUntil = 0;
+    this.holding = victim;
+    this.pummelUntil = 0;
+    this.body.setVelocity(0, this.body.vy);
+    this.anim.play('grabHold', { restart: true, fade: 50 });
+    victim.caught(this, now);
+    this.hooks.grabFx(victim.x, victim.y, this.look.color, 0.5);
+  }
+
+  /** Grabbed by `by`: drops whatever it was doing. */
+  private caught(by: Kubotz, now: number): void {
+    this.cancelActions();
+    this.releaseLedge(now);
+    if (this.holding) this.holding.heldBy = null;
+    this.holding = null;
+    this.throwing = null;
+    this.heldBy = by;
+    this.body.ghost = true;
+    this.ghosted = true;
+    this.facing = by.facing === 1 ? -1 : 1;
+    this.mashPrev = { ...this.controller.read() };
+    const damage = Config.KUBOTZ_HEALTH - this.health;
+    this.holdLeft = (GRAB_HOLD_FRAMES + GRAB_HOLD_PER_DAMAGE * Math.floor(damage / 5) * 5) * FRAME;
+    this.anim.play('held', { restart: true, fade: 40 });
+  }
+
+  /** Stops attacks, charges, guarding, dodges and stuns (grabbed, or catching a ledge). */
+  private cancelActions(): void {
+    this.attack = null;
+    this.currentMove = null;
+    if (this.charging) { this.charging = null; this.anim.freeze(null); }
+    this.gunChargeStart = -1;
+    this.comboStep = 0;
+    this.guarding = false;
+    this.dodgeUntil = 0;
+    this.hitstunUntil = 0;
+    this.tumbleUntil = 0;
+    this.knockdownUntil = 0;
+    this.hitUntil = 0;
+  }
+
+  /** Held: the timer runs down, faster for every mash (a new button or direction). */
+  private updateHeld(now: number, dt: number, raw: PadState): void {
+    const by = this.heldBy!;
+    if (!by.isAlive() || by.holding !== this) { this.heldBy = null; return; }
+    const p = this.mashPrev;
+    const mashes = (['attack', 'grab', 'guard', 'up', 'down', 'left', 'right'] as const).filter((k) => raw[k] && !p[k]).length;
+    this.mashPrev = { ...raw };
+    if (now >= this.pummelStunUntil) this.holdLeft -= mashes * GRAB_MASH_FRAMES * FRAME;
+    this.holdLeft -= dt * 1000;
+    if (this.holdLeft <= 0) by.grabRelease(now);
+  }
+
+  /** Holding: pummel with attack, throw with a direction; the throw lets go part-way. */
+  private updateHolding(now: number, pad: PadState): void {
+    const b = this.body;
+    b.setVelocity(0, this.grounded ? 0 : b.vy);
+    const v = this.holding;
+    if (this.throwing) {
+      const t = THROWS[this.throwing.kind];
+      if (v) {
+        this.placeHeld(v, Math.min(1, (now - this.throwing.start) / (this.throwing.releaseAt - this.throwing.start)), this.throwing.kind);
+        if (now >= this.throwing.releaseAt) {
+          this.holding = null;
+          v.heldBy = null;
+          v.lockUntil = 0;
+          v.takeDamage(t.damage, this, t.launch, (this.facing * t.dir) as 1 | -1);
+          this.hooks.grabFx(v.x, v.y, this.look.color, 1);
+        }
+      }
+      if (now >= this.throwing.start + t.ms) this.throwing = null;
+      return;
+    }
+    if (!v || !v.isAlive() || v.heldBy !== this) { this.holding = null; return; }
+    // The held robot can't fall: carried along when the grabber walks off an edge.
+    this.placeHeld(v, 0, null);
+    if (!this.grounded) { this.grabRelease(now); return; }
+    if (now < this.pummelUntil) return;
+    const p = this.prevPad;
+    this.prevPad = { ...pad };
+    const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
+    const kind: ThrowKind | null = pad.up ? 'up' : pad.down ? 'down' : dx === 0 ? null : dx === this.facing ? 'forward' : 'back';
+    if (kind) {
+      this.throwing = { kind, start: now, releaseAt: now + THROWS[kind].ms * THROWS[kind].release };
+      this.anim.play(THROWS[kind].anim, { restart: true, fade: 40 });
+      this.hooks.playSfx('dodge', 0.35);
+      return;
+    }
+    if (pad.attack && !p.attack) {
+      // Pummel: a knee. The held robot can't mash out through its hitstun.
+      this.pummelUntil = now + PUMMEL_MS;
+      this.anim.play('pummel', { restart: true, ms: PUMMEL_MS, fade: 30 });
+      v.health = Math.max(1, v.health - PUMMEL_DAMAGE);
+      v.flashUntil = now + 70;
+      v.pummelStunUntil = now + PUMMEL_MS * 0.6;
+      v.lastAttacker = { by: this, at: now };
+      this.hooks.grabFx(v.x, v.y, this.look.color, 0.6);
+    }
+  }
+
+  /**
+   * Where the held robot is: in front of the grabber's hands; during a throw
+   * it follows the swing (`u`, 0..1 up to the release).
+   */
+  private placeHeld(v: Kubotz, u: number, kind: ThrowKind | null): void {
+    let dx = 1.05;
+    let dy = -0.15;
+    switch (kind) {
+      case 'forward': dx = u < 0.66 ? 1.05 - 0.4 * (u / 0.66) : 0.65 + 1.0 * ((u - 0.66) / 0.34); break;
+      case 'back': { const a = (u * 250 * Math.PI) / 180; dx = 1.05 * Math.cos(a); dy = -0.15 - 0.25 * Math.sin(a); break; }
+      case 'up': dx = 1.05 - 0.85 * u; dy = -0.15 - 1.1 * u; break;
+      case 'down': dx = 1.05 - 0.2 * u; dy = u < 0.6 ? -0.15 - 0.9 * (u / 0.6) : -1.05 + 1.1 * ((u - 0.6) / 0.4); break;
+    }
+    v.body.reset(this.x + this.facing * dx * UNIT, this.y + dy * UNIT);
+    v.facing = this.facing === 1 ? -1 : 1;
+  }
+
+  /** The hold timed out: both pushed apart and stuck for a moment (Melee's grab release). */
+  grabRelease(now: number): void {
+    const v = this.holding;
+    this.holding = null;
+    if (!v) return;
+    v.heldBy = null;
+    const air = !this.grounded;
+    v.body.setVelocity(this.facing * 7 * UNIT, air ? -9 * UNIT : -2 * UNIT);
+    this.body.setVelocity(-this.facing * 3 * UNIT, this.body.vy);
+    this.lockUntil = now + GRAB_RELEASE_LAG;
+    v.lockUntil = air ? 0 : now + GRAB_RELEASE_LAG;
+    this.anim.play(ANIM.HIT_2, { restart: true, ms: GRAB_RELEASE_LAG, fade: 40 });
+    v.anim.play(ANIM.HIT, { restart: true, ms: GRAB_RELEASE_LAG, fade: 40 });
+    this.hooks.playSfx('dodge', 0.3);
+  }
+
+  /** Ends a grab from either side (a hit, a knock-out). */
+  private breakGrab(): void {
+    if (this.holding) { this.holding.heldBy = null; this.holding = null; }
+    if (this.heldBy) { this.heldBy.holding = null; this.heldBy = null; }
+    this.throwing = null;
+  }
+
+  // ---------------------------------------------------- ledges (Melee-style)
+  private hangPos(l: Ledge): { x: number; y: number } {
+    return { x: l.x + l.dir * HANG_DX, y: l.y + HANG_DY };
+  }
+
+  private grabLedge(l: Ledge, now: number): void {
+    this.cancelActions();
+    this.ledge = l;
+    this.ledgeAt = now;
+    this.ledgeSafeUntil = now + LEDGE_INTANGIBLE;
+    this.ledgePrev = { ...this.pad };
+    // The air jumps and the air dodge come back.
+    this.jumps = 1;
+    this.dodgeReady = true;
+    this.facing = l.dir === 1 ? -1 : 1;
+    const p = this.hangPos(l);
+    this.body.reset(p.x, p.y);
+    this.anim.play('ledge', { restart: true, fade: 60 });
+    this.hooks.playSfx('step', 0.35);
+    this.hooks.dust(l.x, l.y);
+  }
+
+  private releaseLedge(now: number): void {
+    if (!this.ledge && !this.climb) return;
+    this.ledge = null;
+    this.climb = null;
+    this.ledgeLetGoAt = now;
+  }
+
+  /** Hanging: get up (toward), jump (up), attack, roll (guard) or let go (down / away). */
+  private updateLedge(now: number, pad: PadState): void {
+    if (this.climb) { this.updateClimb(now); return; }
+    const l = this.ledge!;
+    const p = this.hangPos(l);
+    this.body.reset(p.x, p.y);
+    const prev = this.ledgePrev;
+    this.ledgePrev = { ...pad };
+    if (now - this.ledgeAt < LEDGE_CATCH) return;
+    const fresh = (k: keyof PadState) => !!pad[k] && !prev[k];
+    const toward = l.dir === 1 ? 'left' : 'right';
+    const away = l.dir === 1 ? 'right' : 'left';
+    if (fresh('up')) {
+      this.releaseLedge(now);
+      this.body.setVelocity(-l.dir * 2 * UNIT, -Config.JUMP_VELOCITY * 1.05 * UNIT);
+      this.lastJumpAt = now;
+      this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
+      this.ledgeSafeUntil = Math.min(this.ledgeSafeUntil, now + 150);
+      this.anim.play(ANIM.JUMP, { restart: true, fade: 40 });
+      this.hooks.airJump(this.x, this.body.bottom, this.look.color);
+    } else if (fresh(toward)) this.startClimb('climb', now);
+    else if (fresh('attack')) this.startClimb('attack', now);
+    else if (fresh('guard')) this.startClimb('roll', now);
+    else if (fresh('down') || fresh(away)) {
+      this.releaseLedge(now);
+      this.ledgeSafeUntil = Math.min(this.ledgeSafeUntil, now);
+      this.body.setVelocity(l.dir * UNIT, 2 * UNIT);
+      this.anim.play(ANIM.FALL, { fade: 80 });
+    }
+  }
+
+  private startClimb(kind: 'climb' | 'roll' | 'attack', now: number): void {
+    const l = this.ledge!;
+    const slow = Config.KUBOTZ_HEALTH - this.health >= LEDGE_SLOW_DAMAGE;
+    const ms = kind === 'climb' ? (slow ? 900 : 550) : kind === 'roll' ? (slow ? 1100 : 700) : (slow ? 1100 : 750);
+    const inward = kind === 'roll' ? 2.6 : 0.7;
+    this.climb = { kind, ledge: l, start: now, ms, x0: this.x, y0: this.y, x1: l.x - l.dir * inward * UNIT, y1: l.y - this.body.height / 2 - 2 };
+    this.ledge = null;
+    // Intangible through most of the get-up (less for the attack, which strikes).
+    this.ledgeSafeUntil = Math.max(this.ledgeSafeUntil, now + ms * (kind === 'attack' ? 0.5 : kind === 'roll' ? 0.9 : 0.8));
+    const climbMs = kind === 'attack' ? ms * 0.55 : ms;
+    this.anim.play(kind === 'roll' ? 'ledgeRoll' : 'climb', { restart: true, ms: climbMs, fade: 40 });
+  }
+
+  /** Up the wall first, then in over the top (so the body never cuts the corner). */
+  private updateClimb(now: number): void {
+    const c = this.climb!;
+    const len = c.kind === 'attack' ? c.ms * 0.55 : c.ms;
+    const u = Math.min(1, (now - c.start) / len);
+    const rise = Math.min(1, u / 0.45);
+    const across = Math.max(0, (u - 0.45) / 0.55);
+    const ease = (t: number) => t * t * (3 - 2 * t);
+    this.body.reset(c.x0 + (c.x1 - c.x0) * ease(across), c.y0 + (c.y1 - c.y0) * ease(rise));
+    if (u < 1) return;
+    this.climb = null;
+    this.ledgeLetGoAt = now;
+    this.wasGrounded = true;
+    if (c.kind === 'attack') {
+      // The get-up attack: a sweeping kick across the ledge.
+      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      this.comboStep = 0;
+      this.strike({ ...moves.ftilt, damage: 6, launch: { knockback: 10, angle: 25 }, ms: c.ms * 0.45 }, now);
+    }
+  }
+
   // --------------------------------------------------------------- power ups
   givePowerUp(type: PowerUpType, now: number): void {
     const def = POWER_UPS[type];
@@ -782,6 +1115,10 @@ export class Kubotz implements Damageable {
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
     if (this.dead || this.invincible || this.intangible) return;
     const now = this.hooks.now();
+    // A hit breaks a grab (on either robot) and knocks a robot off its ledge.
+    if (this.holding || this.heldBy) this.breakGrab();
+    this.releaseLedge(now);
+    this.lockUntil = 0;
     this.lastAttacker = { by: attacker, at: now };
     const pushX = dirX * launch.knockback;
     if (this.guarding) {
@@ -834,6 +1171,9 @@ export class Kubotz implements Damageable {
 
   /** RespawnSystem DEAD state: hide and freeze until respawn. */
   kill(now: number): void {
+    this.breakGrab();
+    this.releaseLedge(now);
+    this.lockUntil = 0;
     this.dead = true;
     this.deaths++;
     this.lives--;
@@ -942,6 +1282,11 @@ export class Kubotz implements Damageable {
 
   private updateAnimationState(now: number): void {
     const a = this.anim;
+    if (this.heldBy) { a.play('held', { fade: 60 }); return; }
+    if (this.throwing || this.climb) return; // the throw or the get-up plays out
+    if (this.holding) { if (now >= this.pummelUntil) a.play('grabHold', { fade: 80 }); return; }
+    if (this.ledge) { a.play('ledge', { fade: 60 }); return; }
+    if (now < this.lockUntil) return; // a grab release or a missed grab plays out
     if (this.attack || this.charging) return; // the strike (or its held wind-up) plays out
     if (now < this.dodgeUntil) return; // the dodge roll plays out
     const vx = this.body.vx;

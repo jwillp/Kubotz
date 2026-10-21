@@ -6,7 +6,9 @@
 export const UNIT = 64;
 
 export const Config = {
-  GRAVITY: 40, // PhysicsSystem: new World(new Vector2(0, -40f))
+  GRAVITY: 44, // PhysicsSystem had 40; a touch heavier (owner, phase 10)
+  /** Extra gravity on robots once they fall (fraction of GRAVITY): the apex comes sooner. */
+  FALL_GRAVITY_BONUS: 0.1,
 
   // Kubotz body (KubotzFactory.withHeight(2.0f))
   KUBOTZ_WIDTH: 1,
@@ -17,7 +19,7 @@ export const Config = {
   // Running / jumping (PhysicsComponent + KubotzFactory acceleration (0.5, 20))
   RUN_ACCELERATION: 0.5 * 60, // 0.5 u/s added every 60 Hz frame
   MAX_SPEED: 18,
-  JUMP_VELOCITY: 20,
+  JUMP_VELOCITY: 20.5, // was 20; keeps the jump near its old height under the heavier gravity
   JUMP_COOLDOWN: 500,
   NB_JUMPS: 3, // new JumpComponent(3)
   FAST_FALL_FACTOR: 0.2,

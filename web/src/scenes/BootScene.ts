@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import { crystalBounceBuffer, pickupChimeBuffer, healChimeBuffer } from '../fx/Synth';
-import { explosionBuffer } from '../game/Debris';
+import { crystalBounceBuffer, pickupChimeBuffer, healChimeBuffer, sciFiExplosionBuffer } from '../fx/Synth';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
@@ -70,7 +69,7 @@ export class BootScene extends Phaser.Scene {
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.makeTextures();
       if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
-        this.cache.audio.add('boom', explosionBuffer(this.sound.context));
+        this.cache.audio.add('boom', sciFiExplosionBuffer(this.sound.context));
         this.cache.audio.add('orb-bounce', crystalBounceBuffer(this.sound.context));
         this.cache.audio.add('orb-pickup', pickupChimeBuffer(this.sound.context));
         this.cache.audio.add('orb-heal', healChimeBuffer(this.sound.context));

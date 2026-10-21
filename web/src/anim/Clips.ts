@@ -359,6 +359,81 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...CROUCH, torso: 70, head: 80, tilt: 8 }, ease: 'inOut' },
   ]),
 
+  // ------------------------------------------------ grabs (Melee-style)
+  /** Holding a grabbed robot out in front, both hands clamped on it. */
+  grabHold: clip('grabHold', 700, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, head: 88, shoulderF: -2, armF: 6, handF: 10, shoulderB: 8, armB: 14, handB: 18, thighF: -40, legF: -100 } },
+    { t: 0.5, pose: { ...READY, tilt: 7, x: 14, y: -3, torso: 80, head: 86, shoulderF: 2, armF: 8, handF: 12, shoulderB: 12, armB: 16, handB: 20, thighF: -38, legF: -104 }, ease: 'inOut' },
+  ], { loop: true }),
+
+  /** Grabbed: lifted, kicking and struggling. */
+  held: clip('held', 360, [
+    { t: 0, pose: { torso: 104, head: 112, tilt: -8, thighF: -70, legF: -95, footF: -70, thighB: -112, legB: -128, footB: -96, shoulderF: -150, armF: -120, shoulderB: 150, armB: 130 } },
+    { t: 0.5, pose: { torso: 100, head: 106, tilt: -4, thighF: -95, legF: -120, footF: -92, thighB: -88, legB: -100, footB: -76, shoulderF: -130, armF: -100, shoulderB: 170, armB: 150 }, ease: 'inOut' },
+  ], { loop: true, planted: false }),
+
+  /** Pummel: a knee into the held robot. */
+  pummel: clip('pummel', 320, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
+    { t: 0.35, pose: { ...READY, tilt: 10, x: 24, torso: 78, shoulderF: 4, armF: 10, shoulderB: 14, armB: 18, thighF: 30, legF: -70, footF: -40 }, ease: 'snap' },
+    { t: 1, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 }, ease: 'inOut' },
+  ]),
+
+  /** Forward throw: a heave out with both arms. */
+  throwF: clip('throwF', 440, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
+    { t: 0.3, pose: { ...READY, tilt: -8, x: -10, torso: 104, head: 100, shoulderF: -40, armF: -20, shoulderB: -30, armB: -10, thighF: -30, legF: -110 }, ease: 'out' },
+    { t: 0.45, pose: { ...READY, tilt: 16, x: 60, torso: 62, head: 74, shoulderF: 24, armF: 30, handF: 34, shoulderB: 30, armB: 36, thighF: -20, legF: -76, thighB: -150, legB: -160 }, ease: 'snap' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Back throw: a full spin, slinging the robot out behind. */
+  throwB: clip('throwB', 520, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14, yaw: 0 } },
+    { t: 0.4, pose: { ...READY, torso: 92, shoulderF: 6, armF: 8, shoulderB: 12, armB: 16, thighF: -60, legF: -100, thighB: -110, legB: -120, yaw: 150 }, ease: 'in' },
+    { t: 0.55, pose: { ...READY, tilt: 10, torso: 70, head: 80, shoulderF: 20, armF: 26, shoulderB: 26, armB: 32, thighF: -30, legF: -90, thighB: -140, legB: -150, yaw: 250 }, ease: 'linear' },
+    { t: 1, pose: { ...FIGHT, yaw: 360 }, ease: 'out' },
+  ]),
+
+  /** Up throw: dips, then hurls the robot straight overhead. */
+  throwU: clip('throwU', 480, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
+    { t: 0.3, pose: { ...CROUCH, torso: 84, head: 90, shoulderF: -40, armF: -10, shoulderB: -30, armB: 0 }, ease: 'out' },
+    { t: 0.45, pose: { ...READY, torso: 96, head: 104, tilt: -4, y: 10, thighF: -70, legF: -95, thighB: -105, legB: -100, shoulderF: 92, armF: 95, handF: 100, shoulderB: 86, armB: 92, handB: 96 }, ease: 'snap' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Down throw: raises the robot, then slams it into the floor. */
+  throwD: clip('throwD', 480, [
+    { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
+    { t: 0.3, pose: { ...READY, torso: 100, head: 104, tilt: -6, shoulderF: 80, armF: 90, shoulderB: 74, armB: 86 }, ease: 'out' },
+    { t: 0.48, pose: { ...CROUCH, torso: 48, head: 60, tilt: 22, x: 30, shoulderF: -50, armF: -60, handF: -60, shoulderB: -44, armB: -56 }, ease: 'snap' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  // ------------------------------------------------ ledges (Melee-style)
+  /** Hanging from a ledge by both hands, facing it, legs swaying below. */
+  ledge: clip('ledge', 1400, [
+    { t: 0, pose: { torso: 94, head: 100, shoulderF: 44, armF: 50, handF: 60, shoulderB: 38, armB: 46, handB: 54, thighF: -82, legF: -98, footF: -64, thighB: -100, legB: -108, footB: -72 } },
+    { t: 0.5, pose: { torso: 92, head: 98, shoulderF: 45, armF: 51, handF: 61, shoulderB: 39, armB: 47, handB: 55, thighF: -90, legF: -104, footF: -70, thighB: -94, legB: -100, footB: -66 }, ease: 'inOut' },
+  ], { loop: true, planted: false }),
+
+  /** Climbing up from the ledge: pull up, a knee onto the top, stand. */
+  climb: clip('climb', 550, [
+    { t: 0, pose: { torso: 94, head: 100, shoulderF: 44, armF: 50, handF: 60, shoulderB: 38, armB: 46, handB: 54, thighF: -82, legF: -98, footF: -64, thighB: -100, legB: -108, footB: -72 } },
+    { t: 0.4, pose: { torso: 72, head: 80, tilt: 18, shoulderF: -70, armF: -40, handF: -20, shoulderB: -60, armB: -30, thighF: 20, legF: -110, footF: -90, thighB: -110, legB: -125, footB: -90 }, ease: 'out' },
+    { t: 0.75, pose: CROUCH, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Ledge roll: pulled up into a tucked roll along the floor. */
+  ledgeRoll: clip('ledgeRoll', 700, [
+    { t: 0, pose: { torso: 94, head: 100, shoulderF: 44, armF: 50, shoulderB: 38, armB: 46, thighF: -82, legF: -98, thighB: -100, legB: -108 } },
+    { t: 0.3, pose: { ...TUCK, spin: 0 }, ease: 'out' },
+    { t: 0.8, pose: { ...TUCK, spin: 360 }, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'out' },
+  ], { planted: false }),
+
   /** Turning round on the spot: a pivot step with the shoulders swinging through. */
   turn: clip('turn', 180, [
     { t: 0, pose: FIGHT },

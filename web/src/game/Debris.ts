@@ -100,23 +100,3 @@ export class DebrisField {
     this.pieces = [];
   }
 }
-
-/** A short explosion, synthesised (the original had no sound for it). */
-export function explosionBuffer(ctx: BaseAudioContext): AudioBuffer {
-  const rate = ctx.sampleRate;
-  const len = Math.floor(rate * 1.1);
-  const buf = ctx.createBuffer(1, len, rate);
-  const d = buf.getChannelData(0);
-  let low = 0;
-  for (let i = 0; i < len; i++) {
-    const t = i / rate;
-    const noise = Math.random() * 2 - 1;
-    // Low-pass noise whose cutoff falls: a crack, then a rumble.
-    const k = 0.04 + 0.5 * Math.exp(-t * 9);
-    low += (noise - low) * k;
-    const thump = Math.sin(2 * Math.PI * (55 + 90 * Math.exp(-t * 14)) * t) * Math.exp(-t * 7);
-    d[i] = (low * 1.6 + thump * 0.8) * Math.exp(-t * 3.2) * Math.min(1, t * 400);
-  }
-  return buf;
-}
-

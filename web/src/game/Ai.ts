@@ -36,6 +36,11 @@ export class CpuController implements Controller {
   private linkSince = 0;
   /** Keep the attack held until then: a charged smash or laser bolt. */
   private holdAttackUntil = 0;
+  /** Grabs and ledges: when the hold or the hang began, and how long to pummel / wait. */
+  private holdSince = 0;
+  private pummelFor = 0;
+  private ledgeSince = 0;
+  private ledgeWait = 0;
 
   constructor(private world: AiWorld, private reactionMs = 140) {}
 
@@ -58,6 +63,17 @@ export class CpuController implements Controller {
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
     this.debug.dest = null;
+    if (me.heldBy) {
+      // Mash out: a fresh button press every think, and a stick wiggle now and then.
+      this.debug.mode = 'mash';
+      pad.attack = true;
+      if (Math.random() < 0.5) pad[Math.random() < 0.5 ? 'left' : 'right'] = true;
+      return pad;
+    }
+    if (me.holding) { this.debug.mode = 'throw'; return this.grabbing(pad, now); }
+    if (me.ledge) { this.debug.mode = 'ledge'; return this.onLedge(pad, now); }
+    this.holdSince = 0;
+    this.ledgeSince = 0;
     if (this.recover(pad)) { this.debug.mode = 'recover'; return pad; }
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
@@ -112,6 +128,12 @@ export class CpuController implements Controller {
         if (Math.random() < (Math.abs(dx) > 6 * UNIT ? 0.25 : 0.1)) this.holdAttackUntil = now + 400 + Math.random() * 900;
       }
       else if (Math.abs(dx) < reach * UNIT && Math.abs(dy) < 1.5 * UNIT) {
+        // A grab beats a raised guard (and mixes things up now and then).
+        if (me.grounded && enemy.grounded && Math.abs(dx) < 1.6 * UNIT && Math.abs(dy) < 0.8 * UNIT && Math.sign(dx) === me.facing
+          && Math.random() < (enemy.guarding ? 0.6 : 0.12)) {
+          pad.grab = true;
+          return pad;
+        }
         pad.attack = true;
         if (!me.grounded) {
           // Aerials by where the enemy is: above, below, behind.
@@ -278,6 +300,44 @@ export class CpuController implements Controller {
    * Knocked out over the void: steer back towards the nearest surface and
    * jump when falling below it.
    */
+  /** Holding a robot: pummel for a moment, then throw it, mostly towards the nearer edge. */
+  private grabbing(pad: PadState, now: number): PadState {
+    const me = this.agent;
+    if (!this.holdSince) { this.holdSince = now; this.pummelFor = Math.random() < 0.4 ? 0 : 300 + Math.random() * 700; }
+    if (now - this.holdSince < this.pummelFor) { pad.attack = true; return pad; }
+    const victim = me.holding!;
+    const r = Math.random();
+    if (victim.health < 40 && r < 0.4) pad.up = true; // straight up towards the top blast zone
+    else if (r < 0.15) pad.down = true;
+    else {
+      // Towards the nearer end of the surface stood on (or the map's middle when unknown).
+      const s = this.world.nav.surfaceAt(me.x, me.body.bottom, UNIT);
+      const mid = s ? (s.x1 + s.x2) / 2 : me.x;
+      const edge = me.x < mid ? -1 : 1;
+      pad[edge < 0 ? 'left' : 'right'] = true;
+    }
+    return pad;
+  }
+
+  /** Hanging from a ledge: wait a moment, then get up, jump, attack or roll in. */
+  private onLedge(pad: PadState, now: number): PadState {
+    const me = this.agent;
+    const l = me.ledge!;
+    if (!this.ledgeSince) { this.ledgeSince = now; this.ledgeWait = 150 + Math.random() * 500; }
+    if (now - this.ledgeSince < this.ledgeWait) return pad; // hands off first, so the next press is fresh
+    const guarded = this.world.enemiesOf(me).some((e) => e.isAlive() && Math.abs(e.x - l.x) < 2.5 * UNIT && Math.abs(e.body.bottom - l.y) < UNIT);
+    const r = Math.random();
+    const toward = l.dir === 1 ? 'left' : 'right';
+    if (guarded) {
+      if (r < 0.5) pad.guard = true; else if (r < 0.8) pad.attack = true; else pad.up = true;
+    } else if (r < 0.45) pad[toward] = true;
+    else if (r < 0.7) pad.up = true;
+    else if (r < 0.85) pad.attack = true;
+    else pad.guard = true;
+    this.ledgeSince = 0;
+    return pad;
+  }
+
   private recover(pad: PadState): boolean {
     const me = this.agent;
     const nav = this.world.nav;

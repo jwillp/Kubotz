@@ -449,3 +449,65 @@ film grain and scanlines; the robots moved like retro boxers.
 - **Lasting effects** (`ImpactFx.aura`): invincibility (gold, its orb's
   colour) and shield (blue) keep motes circling the robot until they run
   out, replacing the blue ellipse and the invincibility blink.
+
+## Phase 10 — Weight, sci-fi explosion, Melee grabs and ledges (2026-10-21)
+
+Owner asks: robots very slightly heavier (gravity catches up earlier), a
+sci-fi explosion when a robot blows up, grabbing opponents and grabbing
+ledges like Super Smash Bros. Melee.
+
+Melee references (community frame data, SmashWiki / Smashboards; Melee runs
+at 60 frames a second, so 1 frame = 16.7 ms; Melee "%" is our damage taken,
+100 - health):
+
+- Grab hold: about 76 frames at 0 %, plus 1.6 frames per % (read in 5 %
+  steps). Each mash (a new button press or a new direction) takes off about
+  6 frames. No mashing during a pummel's hitstun.
+- Pummel: 3 % per hit.
+- Grab release (time out): both robots stuck 29 frames, pushed apart.
+- Ledge grab: intangible for the 7-frame catch plus 30 frames. Options open
+  after the catch. One robot per ledge (edge hogging). Get-ups are slower at
+  high damage (Melee: 100 %; here 60 damage, as our robots die at 100).
+
+Plan:
+
+1. **Weight**: gravity 40 → 44 u/s², and +10 % more for robots once they
+   start falling (the apex comes sooner and the drop is quicker). Jump
+   speed 20 → 20.5 u/s keeps the jump nearly as high (5.0 → 4.8 units),
+   with air time about 1.0 s → 0.9 s.
+2. **Explosion**: synthesised (fx/Synth.ts): a sub thump, a falling laser
+   zap, a filtered noise blast, a metallic ring and crackling bits, in reverb.
+3. **Grabs** (I / `.` on the ground; balls are picked up when no robot is in
+   reach):
+   - The grab reaches just in front (about 1 unit), works through the guard
+     bubble and misses intangible or invincible robots. A miss has 480 ms of
+     end lag.
+   - Holding: the victim is lifted in front and can't act. They mash out in
+     (76 + 1.6 × damage, in steps of 5) frames, minus 6 frames per mash.
+   - Grabber options: attack = pummel (3 damage, about 400 ms). A direction
+     = a throw (forward, back with a spin, up, down) using the SSB launch
+     system: damage 7 / 8 / 7 / 6, angles 40° / 140° / 90° / 75°.
+   - Time out: grab release. The victim is pushed away and the grabber back
+     a little, and both are stuck 29 frames. If someone else hits the
+     grabber, the victim drops free.
+4. **Ledges**: the top corners of solid blocks with room above and beside
+   them (soft platforms have none, as in Melee).
+   - Grabbed automatically while falling past the corner with the hands
+     near it, unless holding down, in hitstun, or within 480 ms of letting
+     go. One robot per ledge.
+   - Hanging: jumps and air dodge restored, intangible for 37 frames
+     (620 ms). After 7 frames:
+     - toward = climb up (550 ms, 900 ms at 60+ damage);
+     - up = ledge jump;
+     - attack = get-up attack (climb then a sweep kick, 6 damage);
+     - guard = roll in (intangible);
+     - down or away = let go.
+   - Hit after the intangibility ends: knocked off.
+5. **CPUs**:
+   - grab guarding robots and sometimes close ones;
+   - pummel once or twice, then throw towards the nearest edge or blast zone;
+   - mash when held (about 8 a second);
+   - pick a ledge option after a short random wait (roll or attack when
+     someone stands over the ledge).
+6. **Animation clips**: grab hold, held, pummel, four throws, ledge hang,
+   climb.

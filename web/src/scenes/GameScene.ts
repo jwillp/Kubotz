@@ -4,7 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
-import { Kubotz, Damageable, ArenaHooks, Launch, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
@@ -56,6 +56,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private pointLights: Phaser.GameObjects.Light[] = [];
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
+  /** Ledges robots can hang from (top corners of solid blocks). */
+  ledges: Ledge[] = [];
   private nav!: Nav;
   private debris!: DebrisField;
   private playerSpawns: Phaser.Math.Vector2[] = [];
@@ -250,6 +252,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.nav = new Nav(this.blocks);
+    this.ledges = findLedges(this.blocks);
     // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
     // at (8, 7)): add mirrored and central spawns so up to four robots start apart.
     if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
@@ -347,7 +350,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.bullets.push(b);
   }
 
-  tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): void {
+  tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean {
+    let took = false;
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
       const hp = kubotz.health;
@@ -366,7 +370,40 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
       orb.destroy();
       this.orbs = this.orbs.filter((o) => o !== orb);
+      took = true;
     }
+    return took;
+  }
+
+  /** Melee grab reach: an opponent just in front, level with the grabber, that can be caught. */
+  grabTarget(k: Kubotz): Kubotz | null {
+    let best: Kubotz | null = null;
+    let bestD = Infinity;
+    for (const o of this.fighters) {
+      if (o === k || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge) continue;
+      const ahead = (o.x - k.x) * k.facing;
+      if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
+      if (ahead < bestD) { bestD = ahead; best = o; }
+    }
+    if (best) this.playSfx('punch', 0.25, -600);
+    return best;
+  }
+
+  /** A free ledge whose top is level with the robot's hands, on the side the robot is (edge hogging: one robot per ledge). */
+  ledgeNear(k: Kubotz): Ledge | null {
+    for (const l of this.ledges) {
+      const out = (k.x - l.x) * l.dir;
+      const below = l.y - k.body.top;
+      if (out < 0.1 * UNIT || out > 1.0 * UNIT || below < -0.45 * UNIT || below > 0.85 * UNIT) continue;
+      if (this.fighters.some((o) => o !== k && o.ledgeHeld === l)) continue;
+      return l;
+    }
+    return null;
+  }
+
+  grabFx(x: number, y: number, color: number, power: number): void {
+    this.impact.hit(x, y, 0, color, power);
+    this.playSfx('punch', 0.2 + 0.25 * power, power >= 1 ? -300 : 200);
   }
 
   // ------------------------------------------------------------------ update
@@ -829,4 +866,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   backToTitle(): void {
     this.scene.start('Title');
   }
+}
+
+/**
+ * Ledges, Melee-style: the top corners of solid blocks with room to stand on
+ * just inside the corner and room to hang just outside it. Soft platforms
+ * have none.
+ */
+export function findLedges(blocks: NavBlock[]): Ledge[] {
+  const solid = blocks.filter((b) => !b.soft);
+  const free = (x1: number, y1: number, x2: number, y2: number) =>
+    !solid.some((o) => o.x < Math.max(x1, x2) - 1 && o.x + o.width > Math.min(x1, x2) + 1 && o.y < Math.max(y1, y2) - 1 && o.y + o.height > Math.min(y1, y2) + 1);
+  const out: Ledge[] = [];
+  for (const b of solid) {
+    for (const dir of [-1, 1] as const) {
+      const x = dir < 0 ? b.x : b.x + b.width;
+      const y = b.y;
+      if (free(x, y - 2 * UNIT, x - dir * UNIT, y) && free(x, y - 0.5 * UNIT, x + dir * 1.2 * UNIT, y + 2.2 * UNIT)) out.push({ x, y, dir });
+    }
+  }
+  return out;
 }

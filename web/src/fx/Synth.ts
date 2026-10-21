@@ -107,3 +107,43 @@ export function healChimeBuffer(ctx: BaseAudioContext): AudioBuffer {
   reverb(d, rate, 0.4);
   return buf;
 }
+
+/**
+ * A robot blowing up, sci-fi style: a sub-bass thump, a laser zap diving
+ * down, a filtered blast of noise with a ring-modulated metallic edge,
+ * crackling sparks and a shimmering power-down whine, in a larger reverb.
+ */
+export function sciFiExplosionBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 2.2), rate);
+  const d = buf.getChannelData(0);
+  // Sub thump: a sine dropping from 120 to 35 Hz.
+  glide(d, rate, 0, 0.7, (u) => 35 + 85 * Math.exp(-u * 6), (u) => 0.55 * Math.exp(-u * 4) * Math.min(1, u * 300));
+  // Laser zap diving from 2.4 kHz with a fast FM wobble.
+  glide(d, rate, 0, 0.45, (u) => 2400 * Math.pow(0.03, u) * (1 + 0.25 * Math.sin(u * 2 * Math.PI * 38)),
+    (u) => 0.16 * Math.exp(-u * 3) * Math.min(1, u * 200));
+  // Blast: noise through a falling low-pass, ring-modulated for a metallic, synthetic grit.
+  let low = 0; let band = 0;
+  for (let i = 0; i < d.length; i++) {
+    const t = i / rate;
+    const noise = Math.random() * 2 - 1;
+    const k = 0.03 + 0.45 * Math.exp(-t * 7);
+    low += (noise - low) * k;
+    band += (low - band) * 0.2; // takes the hiss off
+    const ring = 0.6 + 0.4 * Math.sin(2 * Math.PI * (180 + 60 * Math.exp(-t * 3)) * t);
+    d[i] += band * 1.4 * ring * Math.exp(-t * 2.6) * Math.min(1, t * 500);
+  }
+  // Crackle: bright little sparks scattered through the first second.
+  for (let n = 0; n < 34; n++) {
+    const at = Math.pow(Math.random(), 1.6) * 1.0;
+    ping(d, rate, at, 1800 + Math.random() * 3200, 0.05 * (1 - at * 0.7));
+  }
+  // Power-down whine: a thin tone sliding down as the core dies.
+  glide(d, rate, 0.15, 1.2, (u) => 900 * Math.pow(0.12, u), (u) => 0.05 * Math.sin(Math.PI * Math.min(1, u * 1.4)) * (1 - u));
+  reverb(d, rate, 0.45);
+  // Keep it below clipping.
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak > 0.95) for (let i = 0; i < d.length; i++) d[i] *= 0.95 / peak;
+  return buf;
+}

@@ -117,6 +117,11 @@ export class KubotzBody extends PxBody {
     this.body.createFixture({ shape: new Box(0.05, 0.05, Vec2(0, hh)), isSensor: true, userData: 'foot' as FixtureTag, ...filter });
   }
 
+  /** Passes through other robots (while held and thrown), still blocked by the map. */
+  set ghost(on: boolean) {
+    for (let f = this.body.getFixtureList(); f; f = f.getNext()) f.setFilterData({ groupIndex: 0, categoryBits: CAT_KUBOTZ, maskBits: on ? CAT_STATIC : CAT_STATIC | CAT_KUBOTZ });
+  }
+
   bottomUnits(): number { return this.body.getPosition().y + Config.KUBOTZ_HEIGHT / 2; }
 
   /** What the robot stands on: a touching, enabled contact pushing it up. */
