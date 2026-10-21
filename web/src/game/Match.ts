@@ -34,3 +34,46 @@ export interface MatchResult {
 }
 
 export const emptyStats = (): FighterStats => ({ kos: 0, falls: 0, damageDealt: 0, damageTaken: 0, hits: 0, longestCombo: 0 });
+
+/** How often power-up balls appear: seconds between spawns, and how many can be out at once. */
+export type BonusRate = 'off' | 'rare' | 'normal' | 'frequent';
+export const BONUS_RATES: Record<BonusRate, { label: string; min: number; max: number; most: number }> = {
+  off: { label: 'Off', min: 0, max: 0, most: 0 },
+  rare: { label: 'Rare', min: 22000, max: 35000, most: 2 },
+  normal: { label: 'Normal', min: 12000, max: 20000, most: 3 },
+  frequent: { label: 'Frequent', min: 5000, max: 10000, most: 5 }, // the original game's rate
+};
+export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
+
+/** What the menus (join, arena select) hand to GameScene. */
+export interface MatchSetup {
+  /** One per robot, in slot order (at most 4). */
+  fighters: FighterSpec[];
+  /** Index into ARENA_INFO / ARENAS. */
+  arena: number;
+  bonuses: BonusRate;
+}
+
+/** Faction names, by team (same order as SLOT_COLORS). */
+export const TEAM_NAMES = ['Red', 'Blue', 'Green', 'Purple'];
+
+/** Anything on a team: robots (Kubotz.team), and what they own. */
+export interface Teamed { readonly team: number }
+
+/**
+ * The one friendly-fire rule: `a` can hurt `b` (hit, shoot, grab, debris)
+ * only if they are on different teams. A robot never hurts itself.
+ */
+export const canHurt = (a: Teamed, b: Teamed): boolean => a !== b && a.team !== b.team;
+
+/** The teams with at least one robot still in the match (not eliminated). */
+export function teamsLeft(fighters: { team: number; eliminated: boolean }[]): number[] {
+  return [...new Set(fighters.filter((f) => !f.eliminated).map((f) => f.team))];
+}
+
+/** The default match: P1 against a CPU on the original arena. */
+export const defaultSetup = (): MatchSetup => ({
+  fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }],
+  arena: 0,
+  bonuses: 'normal',
+});

@@ -35,6 +35,8 @@ export const emptyPad = (): PadState => ({
 
 export interface Controller {
   readonly label: 'P1' | 'P2' | 'CPU';
+  /** Shown name (P3, P4 for extra pad players); the label otherwise. */
+  readonly name?: string;
   read(): PadState;
 }
 
@@ -77,9 +79,15 @@ export class HumanController implements Controller {
   private centredAt = { x: 0, y: 0 };
   private dashing = false;
 
-  constructor(private scene: Phaser.Scene, binding: KeyBinding, readonly label: 'P1' | 'P2', private padIndex: number) {
+  /**
+   * @param binding keyboard keys, or null for a gamepad-only player
+   * @param padIndex the gamepad merged in (-1: none)
+   */
+  constructor(private scene: Phaser.Scene, binding: KeyBinding | null, readonly label: 'P1' | 'P2', private padIndex: number, readonly name?: string) {
     const kb = scene.input.keyboard!;
-    const make = (names: string[]) => names.map((n) => kb.addKey(n, true));
+    const keyboard = binding !== null;
+    const make = (names: string[]) => (keyboard ? names.map((n) => kb.addKey(n, true)) : []);
+    binding ??= PLAYER_1_KEYS; // only the key names: no keys are made
     this.keys = {
       up: make(binding.up), down: make(binding.down), left: make(binding.left), right: make(binding.right),
       attack: make(binding.attack), grab: make(binding.grab), guard: make(binding.guard),

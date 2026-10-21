@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
-import { hex, type Kubotz } from '../game/Kubotz';
+import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
+import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
 
 interface Panel {
@@ -32,11 +33,15 @@ export class HudScene extends Phaser.Scene {
       fontFamily: 'Arial Black, sans-serif', fontSize: '22px', color: '#ffffff',
     }).setOrigin(0.5);
 
-    const n = this.game_.fighters.length;
-    this.game_.fighters.forEach((k, i) => {
+    const fighters = this.game_.fighters;
+    const n = fighters.length;
+    // Two teams of up to two: each team on its own side.
+    const teams = [...new Set(fighters.map((f) => f.team))];
+    const sided = teams.length === 2 && teams.every((t) => fighters.filter((f) => f.team === t).length <= 2);
+    fighters.forEach((k, i) => {
       // Two panels per side, like a versus HUD.
-      const right = n > 1 && i % 2 === 1;
-      const slot = Math.floor(i / 2);
+      const right = sided ? k.team === teams[1] : n > 1 && i % 2 === 1;
+      const slot = sided ? fighters.filter((f) => f.team === k.team).indexOf(k) : Math.floor(i / 2);
       const x = right ? width - 330 - slot * 0 : 16;
       const y = 14 + slot * 132;
       this.panels.set(k, this.makePanel(k, right ? width - 16 - 300 : x, y));
@@ -69,13 +74,17 @@ export class HudScene extends Phaser.Scene {
     const name = this.add.text(92, 2, k.name, {
       fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 4,
     });
+    // The robot's team (its colour): a coloured tag after the name.
+    const team = this.add.text(92 + name.width + 10, 6, `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(), {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: '#' + hex(k.look.color), stroke: '#0b1d33', strokeThickness: 3,
+    });
     const barsArt = this.add.image(88, 28, 'hud-bars').setOrigin(0, 0).setScale(0.85, 0.7);
     const bars = this.add.graphics();
     const style = { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 3 };
     const kills = this.add.text(26, 124, '0', style).setOrigin(0.5, 0);
     const lives = this.add.text(55, 124, '0', style).setOrigin(0.5, 0);
     const status = this.add.text(92, 80, '', { ...style, fontSize: '13px', color: '#9fe3ff' });
-    c.add([badge, label, name, barsArt, bars, kills, lives, status]);
+    c.add([badge, label, name, team, barsArt, bars, kills, lives, status]);
     return { container: c, bars, kills, lives, status };
   }
 
@@ -84,7 +93,7 @@ export class HudScene extends Phaser.Scene {
     if (!g?.fighters) return;
     const time = g.clock; // the match clock stands still while paused
     const elapsed = Math.max(0, Math.floor((time - g.startedAt) / 1000));
-    if (g.winner === undefined && !g.paused) {
+    if (g.winnerTeam === undefined && !g.paused) {
       this.timer.setText(`${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`);
     }
 
@@ -117,9 +126,12 @@ export class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }
 
-  private onMatchOver(winner: Kubotz | null): void {
-    this.bannerText.setText(winner ? `${winner.name} WINS!` : 'DRAW');
-    if (winner) this.bannerText.setStroke('#' + hex(winner.look.color), 8);
+  private onMatchOver(winnerTeam: number | null): void {
+    // One robot: its name; a team of several: the team.
+    const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
+    const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
+    this.bannerText.setText(winnerTeam === null ? 'DRAW' : `${title} WINS!`);
+    if (winnerTeam !== null) this.bannerText.setStroke('#' + hex(SLOT_COLORS[winnerTeam]), 8);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
     this.banner.setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
