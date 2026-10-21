@@ -555,3 +555,24 @@ The owner asked for the branch to hold only the web port.
   reference sheets, the .psd, BasicCube.tmx, unused particle files, and the
   untrimmed step and punch sounds.
 - The Java game is still on the `AI2` and `master` branches.
+
+### Phase 10d — owner feedback (2026-10-21)
+
+- **Fast-fall landing shake**: holding down while falling marks a fast
+  fall; landing from one shakes the camera (0.2 + speed/90, at most 0.45
+  trauma). Ordinary hard landings still shake above 22 U/s.
+- **Slot colours**: yellow, blue, green, purple, for humans and CPUs alike.
+  The P1, P2 and CPU labels take the robot's colour.
+- **Portals**: both the same cyan-blue, each with a strong light (radius
+  11 U) that pulses with the rift and an additive halo, so they light the
+  walls and robots around them.
+- **Outer hull** (GameScene.buildHull, cube arenas): dark plating carries on
+  past the frame into the non-playable area and fades out over ~9 cells.
+  Outside cells are the ones a flood fill from the spawns cannot reach
+  (portals stop it); the fade follows the distance to the frame or the
+  map's own art. Half resolution, blurred mask, under the arena art.
+  The arena glow now uses plain additive blending (ONE, ONE): Phaser's ADD
+  showed the glow layer's rectangle over the translucent hull.
+- **Bokeh**: 40% of the discs take accent colours (teal, violet, magenta,
+  amber, pink, pale blue); the disc has a wider soft edge and a fainter rim,
+  and the discs are ~15% larger.

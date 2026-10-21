@@ -254,6 +254,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         }
       }
     }
+    if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
     // A lit edge along the top of every block, like the 3D version's glowing rims.
     const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
     for (const b of this.blocks) {
@@ -272,6 +273,119 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       new Phaser.Math.Vector2(mapW / 2 + 3 * UNIT, 21.5 * UNIT),
     );
   }
+
+  /**
+   * The cube's outer hull: dark plating that carries on past the frame into the
+   * non-playable area and fades out, so the walls do not stop short. Cells
+   * outside the play space are the ones a flood fill from the spawns cannot
+   * reach (portals stop it); the fade follows each cell's distance to the frame.
+   * Half resolution and blurred, under the arena art.
+   */
+  private buildHull(mapArt: HTMLCanvasElement, mapW: number, mapH: number): void {
+    const M = 12; // margin around the map, in units
+    const gw = mapW / UNIT + 2 * M;
+    const gh = mapH / UNIT + 2 * M;
+    const solid = new Uint8Array(gw * gh);
+    const cellsOf = (r: { x: number; y: number; width: number; height: number }, mark: (i: number) => void) => {
+      for (let y = Math.round(r.y / UNIT); y < Math.round((r.y + r.height) / UNIT); y++)
+        for (let x = Math.round(r.x / UNIT); x < Math.round((r.x + r.width) / UNIT); x++) mark((y + M) * gw + x + M);
+    };
+    for (const b of this.blocks) if (!b.soft) cellsOf(b, (i) => { solid[i] = 1; });
+    // Cells the map's own art already covers (the frame and its dark fades) count as frame too.
+    const cover = document.createElement('canvas');
+    cover.width = mapW / UNIT; cover.height = mapH / UNIT;
+    const cctx = cover.getContext('2d')!;
+    cctx.drawImage(mapArt, 0, 0, cover.width, cover.height);
+    const cd = cctx.getImageData(0, 0, cover.width, cover.height).data;
+    const covered = new Uint8Array(gw * gh);
+    for (let y = 0; y < cover.height; y++) for (let x = 0; x < cover.width; x++) {
+      if (cd[(y * cover.width + x) * 4 + 3] > 215) covered[(y + M) * gw + x + M] = 1;
+    }
+    // The play space: flood from the spawns inside the frame's bounding box.
+    const frame = this.blocks.filter((b) => !b.soft);
+    const x0 = Math.min(...frame.map((b) => b.x)) / UNIT + M;
+    const x1 = Math.max(...frame.map((b) => b.x + b.width)) / UNIT + M;
+    const y0 = Math.min(...frame.map((b) => b.y)) / UNIT + M;
+    const y1 = Math.max(...frame.map((b) => b.y + b.height)) / UNIT + M;
+    const inside = new Uint8Array(gw * gh);
+    for (const z of this.warpZones) cellsOf(z, (i) => { inside[i] = 2; }); // portals: stop the flood
+    const queue: number[] = [];
+    for (const p of this.playerSpawns) {
+      const i = (Math.floor(p.y / UNIT - 0.5) + M) * gw + Math.floor(p.x / UNIT) + M;
+      if (!solid[i] && !inside[i]) { inside[i] = 1; queue.push(i); }
+    }
+    while (queue.length > 0) {
+      const i = queue.pop()!;
+      const x = i % gw; const y = (i - x) / gw;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+        const n = ny * gw + nx;
+        if (solid[n] || inside[n]) continue;
+        inside[n] = 1; queue.push(n);
+      }
+    }
+    // Distance (in cells) from each outside cell to the frame.
+    const dist = new Float32Array(gw * gh).fill(1e9);
+    const bfs: number[] = [];
+    for (let i = 0; i < solid.length; i++) if (solid[i] || (covered[i] && inside[i] !== 1)) { dist[i] = 0; bfs.push(i); }
+    for (let h = 0; h < bfs.length; h++) {
+      const i = bfs[h];
+      const x = i % gw; const y = (i - x) / gw;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < 0 || nx >= gw || ny < 0 || ny >= gh) continue;
+        const n = ny * gw + nx;
+        if (inside[n] === 1 || dist[n] <= dist[i] + 1) continue;
+        dist[n] = dist[i] + 1; bfs.push(n);
+      }
+    }
+    const S = UNIT / 2; // half resolution
+    const art = document.createElement('canvas');
+    art.width = gw * S; art.height = gh * S;
+    const ctx = art.getContext('2d')!;
+    // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
+    const tile = (name: string) => this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement;
+    const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner_top_left.png'), tile('corner_bottom_left.png')];
+    let seed = 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) {
+      const r = rnd();
+      ctx.drawImage(r < 0.12 ? lines[Math.floor(r / 0.12 * 3)] : plain, x * S, y * S, 2 * S, 2 * S);
+    }
+    // Alpha: solid near the frame, gone some 9 cells out; never over the play space.
+    const mask = document.createElement('canvas');
+    mask.width = gw; mask.height = gh;
+    const mctx = mask.getContext('2d')!;
+    const md = mctx.createImageData(gw, gh);
+    for (let i = 0; i < dist.length; i++) {
+      const a = inside[i] === 1 ? 0 : Math.max(0, Math.min(1, 1.15 - (dist[i] - 1) / 8));
+      md.data[i * 4 + 3] = 255 * a * a;
+    }
+    mctx.putImageData(md, 0, 0);
+    const soft = document.createElement('canvas');
+    soft.width = art.width; soft.height = art.height;
+    const sctx = soft.getContext('2d')!;
+    sctx.filter = `blur(${S * 1.2}px)`;
+    sctx.drawImage(mask, 0, 0, soft.width, soft.height);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(soft, 0, 0);
+    if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
+    this.textures.addCanvas('arena-hull', art);
+    lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9));
+  }
+
+  /**
+   * Plain additive blending (ONE, ONE). Phaser's ADD scales what is below by
+   * its alpha, which lifts translucent layers under a full-arena glow (the
+   * outer hull showed the glow's rectangle).
+   */
+  private pureAdd(): number {
+    const r = this.sys.renderer;
+    if (!(r instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return Phaser.BlendModes.ADD;
+    const gl = r.gl;
+    return (GameScene.pureAddMode ??= r.addBlendMode([gl.ONE, gl.ONE], gl.FUNC_ADD));
+  }
+
+  private static pureAddMode?: number;
 
   /**
    * The emissive layer: the saturated blue pixels of the arena art, sharp and
@@ -304,7 +418,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     g.globalAlpha = 0.8;
     g.drawImage(mask, 0, 0);
     glow.refresh();
-    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.85);
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 

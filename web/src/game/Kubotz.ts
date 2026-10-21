@@ -152,8 +152,8 @@ export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff'
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
 export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
 
-/** Robot colours by slot (owner, phase 10b): red, blue, green, then yellow; humans and CPUs alike. */
-export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xffd23f];
+/** Robot colours by slot (owner, phase 10d): yellow, blue, green, purple; humans and CPUs alike. */
+export const SLOT_COLORS = [0xffcc1a, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
@@ -261,6 +261,7 @@ export class Kubotz implements Damageable {
   dodgeUntil = 0;
   private dropUntil = 0;
   private prevDown = false;
+  private fastFalling = false;
   private landedAt = 0;
   private dodgeReady = true;
   private guardHeld = false;
@@ -351,7 +352,7 @@ export class Kubotz implements Damageable {
     });
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
-    const label = controller.label === 'CPU' ? `label-CPU:${hex(color)}` : `label-${controller.label}`;
+    const label = `label-${controller.label}:${hex(color)}`;
     this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
   }
 
@@ -630,13 +631,17 @@ export class Kubotz implements Damageable {
     }
 
     if (now >= this.dropUntil) b.dropTop = null;
+    // Fast-falling: holding down on the way down (reset once landed).
+    if (grounded) this.fastFalling = false;
+    else if (pad.down && vy > 0) this.fastFalling = true;
     this.prevDown = pad.down;
     b.setVelocity(vx * UNIT, vy * UNIT);
     if (grounded && !this.wasGrounded) {
       this.landedAt = now;
-      // A hard landing (a long fall) thumps the camera.
+      // A hard landing thumps the camera: a fast fall (down held), or a long fall.
       const fall = this.prevVy / UNIT;
-      if (fall > 22) this.hooks.shake(Math.min(0.4, (fall - 18) / 40));
+      if (this.fastFalling && fall > 8) this.hooks.shake(Math.min(0.45, 0.2 + fall / 90));
+      else if (fall > 22) this.hooks.shake(Math.min(0.4, (fall - 18) / 40));
       this.hooks.dust(this.x, b.bottom);
       this.squashUntil = now + 160;
       this.landUntil = now + 200;

@@ -95,7 +95,8 @@ export class BootScene extends Phaser.Scene {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
       }
-      this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
+      // P1 / P2 / CPU labels in each robot colour (the label shows the robot's colour).
+      for (const who of ['CPU', 'P1', 'P2']) this.recolor(`label-${who}`, `label-${who}:${hex(color)}`, color, false);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
       addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);

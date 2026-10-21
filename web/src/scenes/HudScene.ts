@@ -65,7 +65,7 @@ export class HudScene extends Phaser.Scene {
   private makePanel(k: Kubotz, x: number, y: number): Panel {
     const c = this.add.container(x, y);
     const badge = this.add.image(0, 0, 'hud-badge').setOrigin(0, 0).setScale(0.5);
-    const label = this.add.image(40, 30, k.controller.label === 'CPU' ? `label-CPU:${hex(k.look.color)}` : `label-${k.controller.label}`).setScale(0.42);
+    const label = this.add.image(40, 30, `label-${k.controller.label}:${hex(k.look.color)}`).setScale(0.42);
     const name = this.add.text(92, 2, k.name, {
       fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#ffffff', stroke: '#0b1d33', strokeThickness: 4,
     });

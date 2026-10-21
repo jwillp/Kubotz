@@ -30,11 +30,13 @@ export class BackdropScene extends Phaser.Scene {
 
     // Bokeh: soft discs of out-of-focus lights; the far ones small and faint, the near ones big.
     this.bokeh = [];
-    const colors = [0x3ab8ff, 0x29abe2, 0x7fdcff, 0x3a6dff, 0xffb46b];
+    // Mostly the arena's blues, with some teal, violet, magenta, amber and pale lights mixed in.
+    const blues = [0x3ab8ff, 0x29abe2, 0x7fdcff, 0x3a6dff];
+    const accents = [0x2ee6c8, 0x8a6bff, 0xd46bff, 0xffb46b, 0xff7fae, 0xcfe8ff];
     for (let i = 0; i < 34; i++) {
       const depth = i < 16 ? 0.25 : i < 28 ? 0.5 : 0.85;
-      const size = (depth === 0.25 ? 14 : depth === 0.5 ? 30 : 64) * Phaser.Math.FloatBetween(0.7, 1.4);
-      const color = colors[i % 13 === 4 ? 4 : Phaser.Math.Between(0, 3)];
+      const size = (depth === 0.25 ? 16 : depth === 0.5 ? 35 : 74) * Phaser.Math.FloatBetween(0.7, 1.4);
+      const color = Math.random() < 0.4 ? Phaser.Utils.Array.GetRandom(accents) : Phaser.Utils.Array.GetRandom(blues);
       const img = this.add.image(0, 0, 'bokeh').setBlendMode(Phaser.BlendModes.ADD).setTint(color).setDisplaySize(size, size);
       this.bokeh.push({
         img, depth, x: Math.random() * width * 1.3 - width * 0.15, y: Math.random() * height * 1.2 - height * 0.1,
@@ -88,11 +90,12 @@ export class BackdropScene extends Phaser.Scene {
     if (!tex.exists('bokeh')) {
       const c = tex.createCanvas('bokeh', 128, 128)!;
       const ctx = c.getContext();
-      // A lens's out-of-focus highlight: an even disc with a slightly brighter rim and soft edge.
-      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 62);
+      // A lens's out-of-focus highlight: an even disc with a faint rim and a wide, soft edge.
+      const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 63);
       g.addColorStop(0, 'rgba(255,255,255,0.55)');
-      g.addColorStop(0.78, 'rgba(255,255,255,0.7)');
-      g.addColorStop(0.9, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.55, 'rgba(255,255,255,0.62)');
+      g.addColorStop(0.72, 'rgba(255,255,255,0.68)');
+      g.addColorStop(0.86, 'rgba(255,255,255,0.32)');
       g.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 128, 128);

@@ -4,30 +4,35 @@ import { UNIT } from '../config';
 interface Mote { x: number; y: number; a: number; r: number; age: number; life: number; size: number; out: boolean; }
 interface Portal { zone: Phaser.Geom.Rectangle; color: number; core: number; motes: Mote[]; light: Phaser.GameObjects.Light; burstAt: number; burstY: number; }
 
-/** The two portals' colours, Portal-style: blue on the left, orange on the right. */
-const COLORS: [number, number][] = [[0x3ab8ff, 0x0b2a66], [0xff9a2e, 0x5a2006]];
+/** Both portals in one colour (owner), with a deep core. */
+const COLOR = 0x3ec8ff;
+const CORE = 0x0a2a5e;
 
 /**
  * The portals at the arena's sides, drawn as energy rifts: a dark oval
  * with a glowing rim, spiral arms turning into it, motes drawn in towards
- * the middle and sparks thrown off the rim, and a light on the walls round
- * it. A robot or a bolt going through makes the exit portal flare.
+ * the middle and sparks thrown off the rim, a bright halo and a strong
+ * light on the walls round it. Both portals share one colour. A robot or a bolt going through makes the exit portal flare.
  */
 export class PortalFx {
   private readonly back: Phaser.GameObjects.Graphics;
   private readonly glow: Phaser.GameObjects.Graphics;
   private readonly portals: Portal[];
+  private readonly halos: Phaser.GameObjects.Image[];
 
   constructor(scene: Phaser.Scene, zones: Phaser.Geom.Rectangle[]) {
     // Behind the robots, so they step out of the rift.
     this.back = scene.add.graphics().setDepth(9.3);
     this.glow = scene.add.graphics().setDepth(9.4).setBlendMode(Phaser.BlendModes.ADD);
     const sorted = [...zones].sort((p, q) => p.x - q.x);
-    this.portals = sorted.map((zone, i) => {
-      const [color, core] = COLORS[i % 2];
-      const light = scene.lights.addLight(zone.centerX, zone.centerY, UNIT * 7, color, 2.2);
-      return { zone, color, core, motes: [], light, burstAt: -1e9, burstY: zone.centerY };
+    this.portals = sorted.map((zone) => {
+      // A strong light: it washes the walls, floor and robots round the portal.
+      const light = scene.lights.addLight(zone.centerX, zone.centerY, UNIT * 11, COLOR, 4);
+      return { zone, color: COLOR, core: CORE, motes: [], light, burstAt: -1e9, burstY: zone.centerY };
     });
+    // A bright halo round each rift, over the scenery.
+    this.halos = this.portals.map((p) => scene.add.image(p.zone.centerX, p.zone.centerY, 'glow').setDepth(9.45)
+      .setBlendMode(Phaser.BlendModes.ADD).setTint(COLOR).setDisplaySize(UNIT * 5, p.zone.height * 1.9));
   }
 
   /** A body came out of the portal nearest x, at height y: a flare. */
@@ -50,7 +55,8 @@ export class PortalFx {
       const ry = p.zone.height * 0.5;
       const flare = Math.max(0, 1 - (now - p.burstAt) / 400);
       const pulse = 0.85 + 0.15 * Math.sin(t * 3.1) + 0.6 * flare;
-      p.light.setIntensity(1.8 * pulse);
+      p.light.setIntensity(3.6 * pulse);
+      this.halos[this.portals.indexOf(p)].setAlpha(Math.min(1, 0.55 * pulse));
       // The dark inside of the rift, and its coloured haze.
       b.fillStyle(p.core, 0.85).fillEllipse(cx, cy, rx * 2, ry * 2);
       b.fillStyle(0x000000, 0.5).fillEllipse(cx, cy, rx * 1.2, ry * 1.5);
@@ -72,7 +78,9 @@ export class PortalFx {
       // The rim: a wide soft glow, then a bright edge.
       g.lineStyle(10, p.color, 0.22 * pulse).strokeEllipse(cx, cy, rx * 2, ry * 2);
       g.lineStyle(3, p.color, 0.9).strokeEllipse(cx, cy, rx * 2, ry * 2);
-      g.lineStyle(1.5, 0xffffff, 0.7 * pulse).strokeEllipse(cx, cy, rx * 1.9, ry * 1.96);
+      g.lineStyle(1.5, 0xffffff, 0.85 * pulse).strokeEllipse(cx, cy, rx * 1.9, ry * 1.96);
+      // A hot white-blue glow inside the rim.
+      g.lineStyle(6, 0xbfefff, 0.25 * pulse).strokeEllipse(cx, cy, rx * 1.75, ry * 1.9);
       // A flare where something came through.
       if (flare > 0) {
         g.fillStyle(0xffffff, 0.5 * flare).fillEllipse(cx, p.burstY, rx * 2.4 * (1.4 - flare * 0.4), UNIT * 1.6 * flare);
@@ -116,5 +124,6 @@ export class PortalFx {
   destroy(): void {
     this.back.destroy();
     this.glow.destroy();
+    this.halos.forEach((h) => h.destroy());
   }
 }
