@@ -429,7 +429,7 @@ export class Kubotz implements Damageable, Teamed {
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
-    this.model.view.postFX?.addGlow(color, 2, 0, false, 0.1, 10);
+    this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
