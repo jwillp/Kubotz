@@ -513,7 +513,7 @@ export class MoveListScene extends Phaser.Scene {
     if (v) {
       const vp = v.anim.pose();
       this.victimRobot.update(vp, HEADS[2] ? [HEADS[2]] : [], STAGE_X + this.offsetX + v.x, STAGE_Y + v.y, 180 + (vp.yaw ?? 0), {
-        dtMs, lean: 0, squash: 1, snap, alpha: 1, flash: v.flash,
+        dtMs, lean: 0, squash: 1, snap, alpha: 1, flash: v.flash, glitch: v.flash,
       });
     }
     const m = s?.move;

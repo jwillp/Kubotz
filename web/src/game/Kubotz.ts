@@ -1560,6 +1560,7 @@ export class Kubotz implements Damageable, Teamed {
       lean, squash,
       alpha: this.intangible && now >= this.materializeUntil ? 0.55 : 1,
       flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
+      glitch: now < this.flashUntil && vfx() > 0,
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
     const fast = Math.hypot(this.body.vx, this.body.vy) > 17 * UNIT;

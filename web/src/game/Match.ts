@@ -48,7 +48,7 @@ export interface MatchResult {
 export interface RobotFrame {
   visible: boolean;
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
-  lean: number; squash: number; alpha: number; flash: boolean;
+  lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
 }
