@@ -3,6 +3,7 @@ import { UNIT } from '../config';
 import { SpriterData } from '../spriter/Spriter';
 import { Rig } from '../anim/Rig';
 import { Robot2D } from '../anim/Robot2D';
+import { ArenaPerspective, look25 } from '../map/Perspective';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx } from '../fx/Impact';
@@ -59,6 +60,8 @@ interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: n
 export class ResultsScene extends Phaser.Scene {
   private result!: MatchResult;
   private worldCam!: Phaser.Cameras.Scene2D.Camera;
+  /** The arena's perspective faces (2.5D exploration), following the replay camera. */
+  private perspective: ArenaPerspective | null = null;
   private uiCam!: Phaser.Cameras.Scene2D.Camera;
   private backCam!: Phaser.Cameras.Scene2D.Camera;
   private robots: Robot2D[] = [];
@@ -130,6 +133,14 @@ export class ResultsScene extends Phaser.Scene {
     if (r.hull && this.textures.exists('arena-hull')) this.only(this.worldCam, lit(this.add.image(-12 * UNIT, -12 * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9)));
     if (this.textures.exists('arena')) this.only(this.worldCam, lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2)));
     if (this.textures.exists('arena-glow')) this.only(this.worldCam, this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7));
+    // The blocks' depth faces and lit rims, as the match drew them.
+    if (r.blocks?.length) {
+      const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+      this.only(this.worldCam, rims);
+      this.perspective = new ArenaPerspective(this, r.blocks, [], rims);
+      this.only(this.worldCam, this.perspective.faces);
+      this.perspective.update(this.worldCam.midPoint);
+    }
 
     const rig = new Rig(this.registry.get('spriter') as SpriterData);
     r.colors.forEach((color, i) => {
@@ -162,6 +173,7 @@ export class ResultsScene extends Phaser.Scene {
     for (const key of ['ENTER', 'SPACE', 'O', 'J', 'COMMA', 'NUMPAD_ONE']) kb.on(`keydown-${key}`, () => this.press());
     kb.on('keydown-ESC', () => { if (this.current >= 0) this.showStats(); });
     kb.on('keydown-R', () => { if (this.current < 0 && this.result.replays.length > 0) this.startReplay(0); });
+    kb.on('keydown-V', () => { look25.on = !look25.on; this.perspective?.update(this.worldCam.midPoint); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 0 || button.index === 1 || button.index === 9) this.press();
     });
@@ -321,6 +333,7 @@ export class ResultsScene extends Phaser.Scene {
     const cam = this.worldCam;
     cam.setZoom(L(a.zoom, b.zoom, f)).setRotation(L(a.rotation, b.rotation, f));
     cam.centerOn(L(a.camX, b.camX, f), L(a.camY, b.camY, f));
+    this.perspective?.update(cam.midPoint);
     this.setLights(a);
     // The K.O.: the victim bursts apart (before it disappears from the frames).
     if (!this.burst && this.tau >= ko.at) {

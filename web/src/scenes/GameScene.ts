@@ -19,6 +19,7 @@ import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaMap, eachTile } from '../map/ArenaArt';
+import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
@@ -62,6 +63,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private pointLights: Phaser.GameObjects.Light[] = [];
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
+  /** 2.5D exploration: the arena's art layers and its perspective blocks (V toggles them). */
+  private arenaLayers: Phaser.GameObjects.Image[] = [];
+  private perspective: ArenaPerspective | null = null;
   /** Ledges robots can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
   private nav!: Nav;
@@ -127,6 +131,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.specs = setup.fighters.slice(0, 4);
     this.map = arenaMap(setup.arena, this.registry.get('map'));
+    this.arenaLayers = [];
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
@@ -192,6 +197,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const kb = this.input.keyboard!;
     kb.on('keydown-ESC', () => this.togglePause());
     kb.on('keydown-P', () => this.togglePause());
+    kb.on('keydown-V', () => {
+      look25.on = !look25.on;
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, look25.on ? '2.5D on' : '2.5D off', 0xffffff);
+    });
     kb.on('keydown-F', () => {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
@@ -224,6 +233,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The settings screen (opened from the pause) applies its VFX level live.
     const offSettings = onSettingsChange(() => this.setScreenFx(this.wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.perspective?.destroy();
+      this.perspective = null;
       offSettings();
       this.scene.stop('Settings');
       this.music?.destroy();
@@ -288,7 +299,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
-    lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
+    this.arenaLayers.push(lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2)));
     // The tiles' blue light strips glow on their own, whatever the lights do.
     this.buildArenaGlow(actx.canvas, mapW, mapH);
 
@@ -317,6 +328,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
       rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
+    this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
     this.ledges = findLedges(this.blocks);
     // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
@@ -426,7 +438,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     ctx.drawImage(soft, 0, 0);
     if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
     this.textures.addCanvas('arena-hull', art);
-    lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9));
+    this.arenaLayers.push(lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9)));
   }
 
   /**
@@ -475,6 +487,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     g.drawImage(mask, 0, 0);
     glow.refresh();
     const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
+    this.arenaLayers.push(layer);
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
@@ -1038,6 +1051,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       tags: this.fighters.map((k) => k.tagKey),
       replays: [],
       hull: this.warpZones.length > 0,
+      blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
     };
   }
 
@@ -1097,6 +1111,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     cam.centerOn(mid.x + SHAKE_MAX * s * wob(47, 0), mid.y + SHAKE_MAX * s * wob(53, 2));
     cam.setRotation(0.012 * s * wob(31, 4));
     this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
+    this.perspective?.update(mid);
     this.placeFixedLights();
   }
 
