@@ -11,8 +11,8 @@ export const METAL_TOP = 0x2a3a50;
 export const METAL = 0x0d1520;
 export const METAL_EDGE = 0x4a6584;
 export const BEVEL = 0x9cc4e8;
-/** Bands of the top-to-bottom shading. */
-const BANDS = 10;
+/** Height of one band of the top-to-bottom shading, at most. */
+const BAND = 8;
 
 export interface PlateStyle {
   /** Size of the cut corners (top left and bottom right). */
@@ -36,11 +36,12 @@ export function drawPlate(g: Phaser.GameObjects.Graphics, x: number, y: number, 
   const bottom = Phaser.Display.Color.IntegerToColor(METAL);
   const left = (yy: number) => x + Math.max(0, cut - (yy - y));
   const right = (yy: number) => x + w - Math.max(0, yy - (y + h - cut));
-  for (let i = 0; i < BANDS; i++) {
-    const ya = y + (h * i) / BANDS;
-    const yb = y + (h * (i + 1)) / BANDS;
+  const bands = Math.max(6, Math.ceil(h / BAND));
+  for (let i = 0; i < bands; i++) {
+    const ya = y + (h * i) / bands;
+    const yb = y + (h * (i + 1)) / bands;
     const ys = [...new Set([ya, y + cut, y + h - cut, yb])].filter((v) => v >= ya && v <= yb).sort((a, b) => a - b);
-    const c = Phaser.Display.Color.Interpolate.ColorWithColor(top, bottom, BANDS - 1, i);
+    const c = Phaser.Display.Color.Interpolate.ColorWithColor(top, bottom, bands - 1, i);
     g.fillStyle(Phaser.Display.Color.GetColor(c.r, c.g, c.b), alpha).fillPoints([
       ...ys.map((v) => new Phaser.Math.Vector2(left(v), v)),
       ...ys.reverse().map((v) => new Phaser.Math.Vector2(right(v), v)),

@@ -54,13 +54,15 @@ export class BackdropScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    const cam = this.scene.get('Game').cameras.main;
+    const game = this.scene.get('Game');
     const { width, height } = this.scale;
-    // Map is about 3300 x 2400 px; drift the backdrop a little with the camera.
-    const px = cam.midPoint.x / 3328 - 0.5;
-    const py = cam.midPoint.y / 2432 - 0.5;
-    this.bg.setPosition(width / 2 - px * 80, height / 2 - py * 50);
     const t = time / 1000;
+    // Map is about 3300 x 2400 px; drift the backdrop a little with the camera.
+    // Without a match (behind the title), a slow idle sway instead.
+    const cam = game.sys.isActive() ? game.cameras.main : undefined;
+    const px = cam ? cam.midPoint.x / 3328 - 0.5 : Math.sin(t * 0.07) * 0.25;
+    const py = cam ? cam.midPoint.y / 2432 - 0.5 : Math.sin(t * 0.05 + 1) * 0.15;
+    this.bg.setPosition(width / 2 - px * 80, height / 2 - py * 50);
     this.shafts.forEach((s, i) => s.setAngle(18 + Math.sin(t * 0.17 + i * 2) * 4).setAlpha(0.06 + 0.025 * Math.sin(t * 0.3 + i)));
     for (const b of this.bokeh) {
       b.x += (b.drift * delta) / 1000;
