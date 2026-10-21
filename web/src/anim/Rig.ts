@@ -47,9 +47,10 @@ export interface Xf { x: number; y: number; angle: number; scaleX: number; scale
  * A pose: bone directions (degrees, facing right: 0 forwards, 90 up), and the
  * whole body's offset (Spriter pixels, x forwards, y up), tilt (degrees,
  * positive = leaning forwards, round the feet) and spin (degrees, positive =
- * a forward flip, round the middle of the body).
+ * a forward flip, round the middle of the body) and yaw (degrees round the
+ * vertical axis, for spins; drawn by Robot2D, not the skeleton).
  */
-export type Pose = Partial<Record<Bone, number>> & { x?: number; y?: number; tilt?: number; spin?: number };
+export type Pose = Partial<Record<Bone, number>> & { x?: number; y?: number; tilt?: number; spin?: number; yaw?: number };
 
 interface RigBone { name: Bone; parent: number; rest: Xf; }
 interface RigPart { name: string; parent: number; local: Xf; z: number; folder: number; file: number; pivotX?: number; pivotY?: number; }

@@ -24,6 +24,9 @@ export class Bullet {
     vx: number, vy: number,
     readonly damage: number,
     now: number,
+    /** Bolt scale (a charged shot is bigger) and push. */
+    readonly size = 1,
+    readonly power = 1,
   ) {
     this.x = x; this.y = y;
     this.vx = vx * UNIT; this.vy = vy * UNIT;
@@ -31,13 +34,13 @@ export class Bullet {
     // Recoloured per player in BootScene: the laser takes the shooter's colour.
     const key = `bullet:${shooter.look.color.toString(16).padStart(6, '0')}`;
     this.sprite = scene.add.image(x, y, scene.textures.exists(key) ? key : 'bullet').setDepth(12);
-    this.sprite.setDisplaySize(1.1 * UNIT, 0.6 * UNIT);
+    this.sprite.setDisplaySize(1.1 * UNIT * (0.6 + 0.4 * size), 0.6 * UNIT * size);
     this.sprite.setFlipX(vx > 0);
     this.sprite.setBlendMode(Phaser.BlendModes.ADD);
     this.expiresAt = now + Config.BULLET_LIFESPAN;
   }
 
-  get pushX(): number { return Math.sign(this.vx) * Config.PUNCH_KNOCKBACK * 0.5; }
+  get pushX(): number { return Math.sign(this.vx) * Config.PUNCH_KNOCKBACK * 0.5 * this.power; }
 
   update(dt: number): void {
     this.x += this.vx * dt;
@@ -46,7 +49,9 @@ export class Bullet {
   }
 
   hitbox(): Phaser.Geom.Rectangle {
-    return new Phaser.Geom.Rectangle(this.x - Bullet.W / 2, this.y - Bullet.H / 2, Bullet.W, Bullet.H);
+    const w = Bullet.W * (0.6 + 0.4 * this.size);
+    const h = Bullet.H * this.size;
+    return new Phaser.Geom.Rectangle(this.x - w / 2, this.y - h / 2, w, h);
   }
 
   /** Carries the bullet to the other side of a warp zone, keeping its speed. */

@@ -15,7 +15,7 @@ const game = new Phaser.Game({
   backgroundColor: '#05080f',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
-  render: { antialias: true, maxLights: 14 },
+  render: { antialias: true, maxLights: 36 },
   scene: [BootScene, TitleScene, BackdropScene, GameScene, HudScene, DebugScene],
 });
 

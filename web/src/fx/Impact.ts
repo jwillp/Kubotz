@@ -15,11 +15,12 @@ interface Particle {
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
 }
 
-interface Trail { points: { x: number; y: number; t: number }[]; color: number; }
+/** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
+interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
 
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
 
-const TRAIL_MS = 110;
+const TRAIL_MS = 170;
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -121,16 +122,16 @@ export class ImpactFx {
     }
   }
 
-  /** Follows a swing: call every frame with the striking point, or null when not swinging. */
-  swing(owner: object, at: { x: number; y: number } | null, color: number): void {
+  /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
+  swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number): void {
     let trail = this.trails.get(owner);
     if (!trail) this.trails.set(owner, trail = { points: [], color });
     trail.color = color;
     if (at) {
       const last = trail.points[trail.points.length - 1];
-      // A new swing starting far from the last one starts a new trail.
-      if (last && Math.hypot(at.x - last.x, at.y - last.y) > UNIT * 1.5) trail.points = [];
-      trail.points.push({ x: at.x, y: at.y, t: this.now });
+      // A new swing starting far from the last one starts a new smear.
+      if (last && Math.hypot(at.ox - last.ox, at.oy - last.oy) > UNIT * 2.5) trail.points = [];
+      trail.points.push({ ...at, t: this.now });
     }
   }
 
@@ -190,12 +191,24 @@ export class ImpactFx {
     for (const [owner, trail] of this.trails) {
       trail.points = trail.points.filter((q) => this.now - q.t < TRAIL_MS);
       if (trail.points.length === 0) { this.trails.delete(owner); continue; }
+      // A swoosh: a crescent filled between the inner and outer paths, brightest at
+      // its leading edge, with a white-hot rim along the striking point's path.
       const pts = trail.points;
       for (let i = 1; i < pts.length; i++) {
-        const k = 1 - (this.now - pts[i].t) / TRAIL_MS; // 1 at the head
-        const w = 0.32 * UNIT * k;
-        g.lineStyle(w, trail.color, 0.35 * k).lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
-        g.lineStyle(w * 0.35, 0xffffff, 0.8 * k).lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
+        const a = pts[i - 1];
+        const b = pts[i];
+        const k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
+        const tail = i / pts.length;
+        // The inner edge sits part-way out, so the smear thins towards the body.
+        const inA = { x: a.ix + (a.ox - a.ix) * 0.35, y: a.iy + (a.oy - a.iy) * 0.35 };
+        const inB = { x: b.ix + (b.ox - b.ix) * 0.35, y: b.iy + (b.oy - b.iy) * 0.35 };
+        g.fillStyle(trail.color, 0.32 * k * tail);
+        g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
+        g.fillStyle(0xffffff, 0.12 * k * tail);
+        const midA = { x: (a.ox + inA.x) / 2, y: (a.oy + inA.y) / 2 };
+        const midB = { x: (b.ox + inB.x) / 2, y: (b.oy + inB.y) / 2 };
+        g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, midB, midA], true);
+        g.lineStyle(0.1 * UNIT * k, 0xffffff, 0.85 * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
       }
     }
   }

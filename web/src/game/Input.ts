@@ -10,6 +10,8 @@ import Phaser from 'phaser';
 export interface PadState {
   up: boolean; down: boolean; left: boolean; right: boolean;
   attack: boolean; grab: boolean; guard: boolean;
+  /** CPU only: this attack is a smash (people flick a direction with the press instead). */
+  smash?: boolean;
 }
 
 export const emptyPad = (): PadState => ({

@@ -10,6 +10,8 @@ export class BackdropScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.bg = this.add.image(width / 2, height / 2, 'bg');
     this.bg.setScale(Math.max(width / this.bg.width, height / this.bg.height) * 1.15);
+    // A dim room, so the lights, lasers and glowing platforms carry the scene.
+    this.bg.setTint(0x6878a0, 0x6878a0, 0x26304a, 0x26304a);
   }
 
   update(): void {

@@ -34,6 +34,8 @@ export class CpuController implements Controller {
   /** What it is doing, where to, and the path planned (for the debug view). */
   readonly debug: { mode: string; dest: { x: number; y: number } | null; path: Link[] } = { mode: '', dest: null, path: [] };
   private linkSince = 0;
+  /** Keep the attack held until then: a charged smash or laser bolt. */
+  private holdAttackUntil = 0;
 
   constructor(private world: AiWorld, private reactionMs = 140) {}
 
@@ -43,8 +45,10 @@ export class CpuController implements Controller {
       this.nextThink = now + this.reactionMs;
       this.state = this.think(now);
     } else {
-      // actions are one-frame presses
-      this.state.attack = this.state.grab = false;
+      // actions are one-frame presses, unless charging
+      this.state.attack = this.state.attack && now < this.holdAttackUntil;
+      this.state.grab = false;
+      this.state.smash = false;
     }
     return { ...this.state };
   }
@@ -102,7 +106,11 @@ export class CpuController implements Controller {
       const facingEnemy = Math.sign(dx) === me.facing || Math.abs(dx) < 4;
       const ranged = me.weapon === 'laserGunMkI' || me.weapon === 'laserGunMkII';
       const reach = me.weapon === 'laserSword' ? 1.8 : 1.3;
-      if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) pad.attack = true;
+      if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) {
+        pad.attack = true;
+        // Mostly quick shots; now and then a charged bolt, more often from afar.
+        if (Math.random() < (Math.abs(dx) > 6 * UNIT ? 0.25 : 0.1)) this.holdAttackUntil = now + 400 + Math.random() * 900;
+      }
       else if (Math.abs(dx) < reach * UNIT && Math.abs(dy) < 1.5 * UNIT) {
         pad.attack = true;
         if (!me.grounded) {
@@ -112,6 +120,11 @@ export class CpuController implements Controller {
           else if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx > 0 ? 'left' : 'right'] = true; // back air
         } else if (dy < -1.2 * UNIT) {
           pad.up = true; // the backflip kick reaches up
+        } else if (Math.random() < (enemy.health < 40 ? 0.4 : 0.18)) {
+          // A smash (forward, or down to hit both sides), finishing off a weak enemy, sometimes charged.
+          pad.smash = true;
+          if (Math.random() < 0.3) pad.down = true; else pad[dx < 0 ? 'left' : 'right'] = true;
+          if (Math.random() < 0.5) this.holdAttackUntil = now + Math.random() * 700;
         } else if (Math.random() < 0.25) {
           pad.down = true; // a low sweep now and then
         }

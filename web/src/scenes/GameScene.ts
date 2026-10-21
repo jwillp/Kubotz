@@ -21,6 +21,9 @@ import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
+/** Fixed blue lights over the platforms (main.ts maxLights must cover these + 2 + the pool). */
+const PLATFORM_LIGHTS = 20;
+
 export class GameScene extends Phaser.Scene implements ArenaHooks {
   fighters: Kubotz[] = [];
   private map!: TmxMap;
@@ -197,8 +200,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
     lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
-    // The tiles' light strips glow on their own (added over the lit art, so they bloom).
-    this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.5);
+    // The tiles' blue light strips glow on their own, whatever the lights do.
+    this.buildArenaGlow(actx.canvas, mapW, mapH);
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -234,6 +237,41 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       new Phaser.Math.Vector2(mapW / 2 - 3 * UNIT, 21.5 * UNIT),
       new Phaser.Math.Vector2(mapW / 2 + 3 * UNIT, 21.5 * UNIT),
     );
+  }
+
+  /**
+   * The emissive layer: the saturated blue pixels of the arena art, sharp and
+   * blurred twice, drawn additively over the lit arena and breathing slowly,
+   * like the 3D version's glowing platforms.
+   */
+  private buildArenaGlow(art: HTMLCanvasElement, w: number, h: number): void {
+    const mask = document.createElement('canvas');
+    mask.width = w; mask.height = h;
+    const mctx = mask.getContext('2d')!;
+    const src = art.getContext('2d')!.getImageData(0, 0, w, h);
+    const d = src.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const blue = b - Math.max(r, g * 0.55);
+      if (d[i + 3] < 40 || b < 120 || blue < 50) { d[i + 3] = 0; continue; }
+      const k = Math.min(1, (blue - 50) / 90);
+      d[i] = Math.min(255, r * 0.6 + 40 * k); d[i + 1] = Math.min(255, g + 40 * k); d[i + 2] = 255; d[i + 3] = 255 * k;
+    }
+    mctx.putImageData(src, 0, 0);
+    if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
+    const glow = this.textures.createCanvas('arena-glow', w, h)!;
+    const g = glow.getContext();
+    g.filter = 'blur(18px)';
+    g.drawImage(mask, 0, 0);
+    g.drawImage(mask, 0, 0);
+    g.filter = 'blur(5px)';
+    g.drawImage(mask, 0, 0);
+    g.filter = 'none';
+    g.globalAlpha = 0.8;
+    g.drawImage(mask, 0, 0);
+    glow.refresh();
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.85);
+    this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
   private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
@@ -278,10 +316,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.impact.airJump(x, y, color);
   }
 
-  fireBullet(shooter: Kubotz, damage: number, speed: number): void {
+  fireBullet(shooter: Kubotz, damage: number, speed: number, size = 1, power = 1): void {
     const { x, y } = shooter.muzzle();
-    const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock);
-    this.playSfx('shot', 0.3);
+    const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock, size, power);
+    this.playSfx('shot', 0.3 * Math.min(2, size));
+    if (size > 1.2) this.impact.hit(x, y, shooter.facing, shooter.look.color, size * 0.6); // muzzle burst
     this.bullets.push(b);
   }
 
@@ -332,8 +371,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const k of this.fighters) {
       k.render(now, dtMs);
       // A trail behind the striking fist, foot or blade tip.
-      const box = k.isAlive() ? k.currentAttack() : null;
-      this.impact.swing(k, box ? box.circles[box.circles.length - 1] : null, k.look.color);
+      this.impact.swing(k, k.isAlive() ? k.swingArc() : null, k.look.color);
     }
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
@@ -344,7 +382,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Soft additive glow and a Light2D point light around lasers, blades, pick-ups, explosions and hits. */
   private drawGlows(): void {
     const lights = [
-      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 4 })),
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 4 * b.size })),
+      ...this.fighters.filter((k) => k.isAlive() && k.charge > 0).map((k) => ({ ...(k.weapon.startsWith('laserGun') ? k.muzzle() : { x: k.x, y: k.y }), color: k.look.color, intensity: 1 + 5 * k.charge })),
       ...this.fighters.filter((k) => k.isAlive() && k.weapon === 'laserSword').map((k) => {
         const p = k.bladeMiddle();
         return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
@@ -406,10 +445,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    */
   private setupLights(): void {
     if (this.sys.renderer.type !== Phaser.WEBGL) return;
-    this.lights.enable().setAmbientColor(0x9ca8bc);
-    this.keyLight = this.lights.addLight(0, 0, 100, 0xfff1e0, 2.2);
-    this.rimLight = this.lights.addLight(0, 0, 100, 0x4fb8ff, 1.4);
+    // A dim room: the key light shapes, the rim light outlines, and the
+    // glowing platforms, lasers and blades light what is near them.
+    this.lights.enable().setAmbientColor(0x64709a);
+    this.keyLight = this.lights.addLight(0, 0, 100, 0xffe8cc, 3.2);
+    this.rimLight = this.lights.addLight(0, 0, 100, 0x3aa8ff, 2.0);
     for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
+    // Blue light rising off the top of every block (wide ones get several).
+    let fixed = 0;
+    for (const b of this.blocks) {
+      const n = Math.max(1, Math.round(b.width / (UNIT * 9)));
+      for (let i = 0; i < n && fixed < PLATFORM_LIGHTS; i++, fixed++) {
+        const x = b.x + (b.width * (i + 0.5)) / n;
+        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), 0x29abe2, 2.4);
+      }
+    }
     this.placeFixedLights();
   }
 
@@ -461,7 +511,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.impact.clash((at.x + meet.x) / 2, at.y);
           continue;
         }
-        this.hit(target, attacker, box.damage, box.launch, box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
+        this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
       }
     }
   }

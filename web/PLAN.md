@@ -335,3 +335,47 @@ forward, back, up and down airs).
 - **CPU** uses the aerials by where the enemy is (above, below, behind), the
   backflip for enemies above, dash attacks when running in, and the sweep now
   and then.
+
+## Phase 9 — Smash attacks, charged laser, real turns, lighting, ninja moves (2026-10-21)
+
+Owner feedback: ground attacks directional like Smash with sword versions;
+the laser gun taps light shots and charges a heavy bolt with a longer
+cooldown and more recoil; turns looked like a flipped sheet of paper; the
+lights did nothing in a bright room; blue platforms should glow; a little
+film grain and scanlines; the robots moved like retro boxers.
+
+- **Smash inputs** (`Kubotz.handleActions`): a direction pressed within
+  100 ms of the attack is a *smash*; holding the attack charges it (wind-up
+  frozen, the robot shakes and flashes at full charge) for up to 1 s, +60%
+  damage and knockback. Forward smash = a lunging fire-gauntlet punch (sword:
+  leaping overhead cleave); down smash = a split kick hitting both sides
+  (sword: crouched spin slash). A direction already held, then attack, is a
+  *tilt*: forward tilt = side kick (sword: spinning slash), down tilt = low
+  sweep. Running fast + attack stays the dash attack, up + attack the
+  backflip kick (so no separate up tilt / up smash).
+- **Laser gun**: a tap (≤ 160 ms) fires a light shot (60% damage); holding
+  charges up to 1.2 s: damage ×(1 + 2c), a bigger bolt, more push, recoil
+  ×(1 + 2.5c), cooldown + 0.8 × held time × c. The muzzle glows while
+  charging.
+- **Real turns** (`anim/Robot2D.ts`): the robot is a layered 2.5D puppet.
+  Every part has a depth (near limbs in front, far limbs behind, head and
+  torso in the middle) and a roundness; yaw swings each part round by its
+  depth, narrows flat parts edge-on and mirrors them past 90°, so a turn
+  shows the robot from the front or back mid-way. The head leads and the
+  legs follow. Clips can carry a yaw track, used for spinning moves (spin
+  back fist, spin hook kick, tornado kick, spinning slashes).
+- **Ninja animation set** (`anim/Clips.ts`): a low wide ready stance, a
+  leaning sprint with the arms swept back, palm strike / spin back fist /
+  jumping spin hook kick combo, and the new tilts and smashes.
+- **Swooshes and afterimages**: fast moves leave a crescent smear (colour
+  with a white core) behind the striking limb or blade, and coloured
+  afterimages of the whole robot during spins, dodges and tumbles.
+- **Lighting**: the backdrop is dimmed and the ambient lowered; key and rim
+  lights are stronger; blue lights rise off every platform; the tiles' blue
+  strips glow on their own (an emissive layer extracted from the art,
+  blurred and breathing). `maxLights` is 36.
+- **Grade** (`fx/Grade.ts`): film grain (stronger in shadows) and faint
+  drifting scanlines on top of the vignette and split tone. F toggles it
+  with the bloom.
+- **CPU**: smashes now and then (more when the enemy is weak), sometimes
+  charged; quick laser shots with the occasional charged bolt.

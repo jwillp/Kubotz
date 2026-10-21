@@ -2,7 +2,7 @@ import { CLIPS, mixPoses, sampleClip, type Clip } from './Clips';
 import type { Pose, Rig } from './Rig';
 
 /** Clips whose forward motion moves the robot itself (root motion) instead of only its drawing. */
-const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt']);
+const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt', 'ftilt', 'sftilt', 'fsmash', 'sfsmash']);
 
 /**
  * Plays the clips of one robot: time, the blend from the previous pose on each
@@ -19,6 +19,7 @@ export class Animator {
   private last: Pose = {};
   private rootX = 0;
   private rootTravel = 0;
+  private frozen: number | null = null;
   /** Set when a non-looping clip reached its end. */
   finished = false;
 
@@ -38,7 +39,8 @@ export class Animator {
     if (!clip || (clip === this.clip && !opts.restart)) return;
     // Blend from the pose drawn last; a full spin ends where it started, so
     // it is not unwound through the blend.
-    this.from = Object.keys(this.last).length ? { ...this.last, spin: ((this.last.spin ?? 0) % 360 + 540) % 360 - 180 } : null;
+    const wrap = (v: number | undefined) => (((v ?? 0) % 360) + 540) % 360 - 180;
+    this.from = Object.keys(this.last).length ? { ...this.last, spin: wrap(this.last.spin), yaw: wrap(this.last.yaw) } : null;
     this.blend = 0;
     this.blendMs = opts.fade ?? 110;
     this.clip = clip;
@@ -48,11 +50,18 @@ export class Animator {
     this.rootX = sampleClip(clip, 0).x ?? 0;
   }
 
+  /** Holds the clip at a point (0..1), e.g. a smash's wind-up while it charges; null lets it run on from there. */
+  freeze(at: number | null): void {
+    if (at === null) { this.frozen = null; return; }
+    this.frozen = at;
+  }
+
   /** Plays the current clip faster or slower (looping clips: run cycle). */
   setRate(rate: number): void { this.speed = rate; }
 
   tick(dtMs: number): void {
-    this.time += dtMs * this.speed;
+    if (this.frozen !== null) this.time = this.frozen * this.clip.ms;
+    else this.time += dtMs * this.speed;
     if (this.time >= this.clip.ms) {
       if (this.clip.loop) this.time %= this.clip.ms;
       else { this.time = this.clip.ms; this.finished = true; }
