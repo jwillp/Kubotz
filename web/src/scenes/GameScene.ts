@@ -7,7 +7,7 @@ import { CpuController } from '../game/Ai';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, type MatchSetup } from './TitleScene';
+import { BONUS_RATES, canHurt, defaultSetup, emptyStats, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline } from '../fx/Grade';
@@ -17,9 +17,11 @@ import { PortalFx } from '../fx/Portals';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
-import { ARENAS, buildArenaMap } from '../map/Arenas';
+import { arenaMap, eachTile } from '../map/ArenaArt';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
+import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
+import { body } from '../ui/Type';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -79,7 +81,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
-  winner: Kubotz | null | undefined; // undefined while the match runs
+  /** The robots' specs from the join screen, by fighter index. */
+  specs: FighterSpec[] = [];
+  /** The winning team, null for a draw; undefined while the match runs. */
+  winnerTeam: number | null | undefined;
   /** Match clock in ms: only advances while the game is not paused. */
   clock = 0;
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
@@ -99,16 +104,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.warpZones = [];
     this.solids = [];
     this.blocks = [];
-    this.winner = undefined;
+    this.winnerTeam = undefined;
     this.paused = false;
     this.clock = 0;
     this.countdownStep = -1;
   }
 
-  create(setup: MatchSetup): void {
-    const original: TmxMap = this.registry.get('map');
-    const arena = ARENAS[setup.arena ?? 0];
-    this.map = arena ? buildArenaMap(arena, original) : original;
+  create(data?: Partial<MatchSetup>): void {
+    const setup: MatchSetup = { ...defaultSetup(), ...data };
+    this.specs = setup.fighters.slice(0, 4);
+    this.map = arenaMap(setup.arena, this.registry.get('map'));
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
@@ -122,23 +127,28 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.createEffects();
     this.portals = new PortalFx(this, this.warpZones);
 
-    const humans = { P1: 0, P2: 0 };
-    setup.slots.forEach((slot, i) => {
+    let humans = 0;
+    this.specs.forEach((spec, i) => {
       let controller: Controller;
-      const color = SLOT_COLORS[i % SLOT_COLORS.length];
-      if (slot === 'CPU') {
+      const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
+      if (spec.input === 'CPU') {
         controller = new CpuController({
-          enemiesOf: (k) => this.fighters.filter((f) => f !== k && !f.eliminated),
+          // Teammates are friends: a CPU only goes after the other teams.
+          enemiesOf: (k) => this.fighters.filter((f) => canHurt(k, f) && !f.eliminated),
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
           now: () => this.clock,
           nav: this.nav,
         });
       } else {
-        controller = new HumanController(this, slot === 'P1' ? PLAYER_1_KEYS : PLAYER_2_KEYS, slot, humans.P1 + humans.P2);
-        humans[slot]++;
+        // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
+        humans++;
+        const keys = spec.input === 'P1' ? PLAYER_1_KEYS : PLAYER_2_KEYS;
+        controller = spec.pad !== undefined
+          ? new HumanController(this, null, spec.input, spec.pad, `P${humans}`)
+          : new HumanController(this, keys, spec.input, -1, `P${humans}`);
       }
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
-      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld);
+      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
@@ -151,11 +161,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.camMid.set(c.x, c.y);
     this.trauma = 0;
     this.applyZoom();
-    this.bonusRate = BONUS_RATES[setup.bonuses ?? 'normal'];
+    this.bonusRate = BONUS_RATES[setup.bonuses] ?? BONUS_RATES.normal;
     this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : Config.COUNTDOWN + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
-    this.music = this.sound.add('music-game', { loop: true, volume: 0.28 });
+    this.music = addMusic(this, 'music-game', 0.28);
     this.music.play();
 
     this.scene.launch('Hud');
@@ -184,14 +194,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupScreenFx();
     this.setupLights();
-    kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
+    kb.on('keydown-ENTER', () => { if (this.winnerTeam !== undefined) this.backToTitle(); });
     // From the pause: Q quits to the title screen.
     kb.on('keydown-Q', () => { if (this.paused) this.backToTitle(); });
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === 9) this.togglePause(); // Start
       if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
     });
+    // The settings screen (opened from the pause) applies its VFX level live.
+    const offSettings = onSettingsChange(() => this.setScreenFx(this.wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      offSettings();
+      this.scene.stop('Settings');
       this.music?.destroy();
       this.scene.stop('Hud');
       this.scene.stop('Debug');
@@ -218,18 +232,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     nctx.fillStyle = 'rgb(128,128,255)';
     nctx.fillRect(0, 0, mapW, mapH);
     const actx = art.getContext();
-    for (const layer of m.layers) {
-      layer.gids.forEach((gid, i) => {
-        const img = m.tileImages.get(gid);
-        if (!img) return;
-        const source = this.textures.get(`tile:${img.source}`).getSourceImage() as HTMLImageElement;
-        // Tiled anchors image tiles at the cell's bottom-left corner.
-        const x = (i % m.width) * m.tileWidth;
-        const y = (Math.floor(i / m.width) + 1) * m.tileHeight - source.height;
-        actx.drawImage(source, x, y);
-        nctx.drawImage(normalMapFor(`tile:${img.source}`, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
-      });
-    }
+    eachTile(this.textures, m, (source, key, x, y) => {
+      actx.drawImage(source, x, y);
+      nctx.drawImage(normalMapFor(key, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
+    });
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
     lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
@@ -455,7 +461,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       detune += Phaser.Math.Between(-80, 80);
     }
     if (!this.cache.audio.exists(key)) return;
-    this.sound.play(key, { volume, detune });
+    this.sound.play(key, { volume: sfxVolume(volume), detune });
   }
 
   dust(x: number, y: number): void {
@@ -507,7 +513,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     let best: Kubotz | null = null;
     let bestD = Infinity;
     for (const o of this.fighters) {
-      if (o === k || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge) continue;
+      if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge) continue;
       const ahead = (o.x - k.x) * k.facing;
       if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
       if (ahead < bestD) { bestD = ahead; best = o; }
@@ -552,7 +558,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const fighting = now >= this.startedAt;
 
     for (const k of this.fighters) {
-      if (!k.isAlive() && !k.eliminated && this.winner === undefined && now >= k.respawnAt) this.respawn(k);
+      if (!k.isAlive() && !k.eliminated && this.winnerTeam === undefined && now >= k.respawnAt) this.respawn(k);
       k.update(now, dt, fighting);
     }
     this.physicsWorld.step(dt);
@@ -630,9 +636,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
       }),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
-      ...this.debris.lights(this.clock),
-      ...this.impact.lights(),
-    ];
+      // Explosion and hit flashes dim with the VFX setting.
+      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: l.intensity * vfx() })),
+    ].filter((l) => l.intensity > 0);
     // The brightest first, so the pool keeps the hits and lasers when there are many.
     lights.sort((a, b) => b.intensity - a.intensity);
     this.pointLights.forEach((light, i) => {
@@ -657,21 +663,29 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /**
    * The grade pass (vignette, split tone, grain, scanlines) on the whole view
-   * (WebGL only); off with ?lowfx, toggled with F. No bloom: the owner
-   * preferred the crisper look without it.
+   * (WebGL only); off with ?lowfx or a VFX setting under half, toggled with F.
+   * No bloom: the owner preferred the crisper look without it.
    */
   private setupScreenFx(): void {
-    if (new URLSearchParams(location.search).has('lowfx')) return;
-    this.toggleScreenFx();
+    this.gradeOn = false;
+    this.setScreenFx(this.wantScreenFx());
+  }
+
+  private wantScreenFx(): boolean {
+    return vfx() >= 0.5 && !new URLSearchParams(location.search).has('lowfx');
   }
 
   private toggleScreenFx(): boolean {
+    return this.setScreenFx(!this.gradeOn);
+  }
+
+  private setScreenFx(on: boolean): boolean {
     const cam = this.cameras.main;
     if (this.sys.renderer.type !== Phaser.WEBGL) return false;
     // Remove the instances themselves: removing by the name 'Grade' missed
     // (the instance is named after its class), so every toggle stacked another pass.
     for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
-    this.gradeOn = !this.gradeOn;
+    this.gradeOn = on;
     if (this.gradeOn) {
       const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
       if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
@@ -727,12 +741,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (step === this.countdownStep) return;
     this.countdownStep = step;
     const word = ['3', '2', '1', 'fight'][step];
-    this.sound.play(`narrator-${word}`, { volume: 0.8 });
+    this.sound.play(`narrator-${word}`, { volume: sfxVolume(0.8) });
     this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
   }
 
+  /** What the attacker's hits and bolts can land on: robots of the other teams (teammates are passed through). */
   private damageablesFor(attacker: Kubotz): Damageable[] {
-    return this.fighters.filter((f) => f !== attacker && f.isAlive() && !f.intangible);
+    return this.fighters.filter((f) => canHurt(attacker, f) && f.isAlive() && !f.intangible);
   }
 
   /** MeleeSystem / LaserSwordSystem hitboxes + DamageSystem (with clashes). */
@@ -847,7 +862,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** PowerUpsSystem.updateSpawns: every 5-10 s, at most 5 on the map. */
   private updateBonusSpawns(now: number): void {
-    if (now < this.nextBonusAt || this.winner !== undefined) return;
+    if (now < this.nextBonusAt || this.winnerTeam !== undefined) return;
     this.nextBonusAt = now + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
     if (this.orbs.length >= this.bonusRate.most || this.bonusSpawns.length === 0) return;
     // Never on top of a ball already there.
@@ -855,7 +870,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (free.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(free);
     const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
-    this.pickupFx.explode(12, orb.x, orb.y);
+    this.pickupFx.explode(vfxCount(12), orb.x, orb.y);
     this.orbs.push(orb);
   }
 
@@ -913,13 +928,29 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.kill(now);
       this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
     }
-    if (this.winner === undefined) {
-      const alive = this.fighters.filter((f) => !f.eliminated);
-      if (alive.length <= 1) {
-        this.winner = alive[0] ?? null;
-        this.events.emit('match-over', this.winner);
+    // Last team standing: the match ends when one team (or nobody) is left.
+    if (this.winnerTeam === undefined) {
+      const left = teamsLeft(this.fighters);
+      if (left.length <= 1) {
+        this.winnerTeam = left[0] ?? null;
+        this.events.emit('match-over', this.winnerTeam);
       }
     }
+  }
+
+  /** The robots of a team. */
+  teamOf(team: number): Kubotz[] {
+    return this.fighters.filter((f) => f.team === team);
+  }
+
+  /** The match as it ended, for the post-match screens (stats are filled in by the stats tracking). */
+  result(): MatchResult {
+    return {
+      fighters: this.specs,
+      stats: this.fighters.map(() => emptyStats()),
+      winnerTeam: this.winnerTeam ?? null,
+      duration: Math.max(0, this.clock - this.startedAt),
+    };
   }
 
   private respawn(k: Kubotz): void {
@@ -979,7 +1010,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    this.trauma = Math.min(1, this.trauma + amount);
+    this.trauma = Math.min(1, this.trauma + amount * vfx());
   }
 
   private applyZoom(): void {
@@ -988,18 +1019,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   // ---------------------------------------------------------------- helpers
   floatText(x: number, y: number, text: string, color: number): void {
-    const t = this.add.text(x, y, text, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '26px',
-      color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(30);
+    const t = this.add.text(x, y, text, body(26, {
+      fontStyle: '800', color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000000', strokeThickness: 5,
+    })).setOrigin(0.5).setDepth(30);
     this.tweens.add({ targets: t, y: y - 70, alpha: 0, duration: 1200, ease: 'Cubic.out', onComplete: () => t.destroy() });
   }
 
   togglePause(): void {
-    if (this.winner !== undefined) return;
+    if (this.winnerTeam !== undefined) return;
     this.paused = !this.paused;
     if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
     this.events.emit('pause', this.paused);
+  }
+
+  /** From the pause menu: the settings screen over the paused match; back to the pause after. */
+  openSettings(): void {
+    if (!this.paused) return;
+    this.scene.pause('Hud');
+    this.scene.pause();
+    this.scene.launch('Settings', { resume: ['Game', 'Hud'] });
+    this.scene.bringToTop('Settings');
   }
 
   backToTitle(): void {

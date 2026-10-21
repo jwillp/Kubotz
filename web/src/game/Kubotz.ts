@@ -6,6 +6,9 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
+import { canHurt, type Teamed } from './Match';
+import { vfx } from './Settings';
+import { makeTagTexture } from '../ui/Type';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -187,6 +190,14 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
+/** The texture of a robot part in a colour: helmets and the laser blade are recoloured (BootScene). */
+export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
+  let key = `kubotz:${file}`;
+  if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
+  else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+  return textures.exists(key) ? key : `kubotz:${file}`;
+}
+
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
@@ -251,8 +262,10 @@ export interface ArenaHooks {
  * The playable robot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
  * PowerUps/Respawn components and systems, folded into one class).
  */
-export class Kubotz implements Damageable {
+export class Kubotz implements Damageable, Teamed {
   readonly owner = this;
+  /** Faction (index into SLOT_COLORS): robots on the same team can't hurt each other (see canHurt). */
+  readonly team: number;
   readonly body: KubotzBody;
   readonly anim: Animator;
   readonly model: Robot2D;
@@ -296,7 +309,15 @@ export class Kubotz implements Damageable {
   guard: number = Config.GUARD_MAX;
   guarding = false;
   stunnedUntil = 0;
-  dodgeUntil = 0;
+  /**
+   * A dodge under way: the air dodge, or the roll on the ground (guard + left /
+   * right). Intangible from `safeFrom` to `safeUntil`, no other actions until
+   * `ends`; a roll travels in `dir` and passes through robots.
+   */
+  private dodge: { kind: 'air' | 'roll'; dir: -1 | 0 | 1; start: number; safeFrom: number; safeUntil: number; ends: number; turned?: boolean } | null = null;
+  private rollReadyAt = 0;
+  /** The left / right held last frame (a newly pressed one, with the guard, rolls). */
+  private guardDir = 0;
   private dropUntil = 0;
   private prevDown = false;
   private fastFalling = false;
@@ -382,22 +403,21 @@ export class Kubotz implements Damageable {
     y: number,
     private hooks: ArenaHooks,
     physics: PhysicsWorld,
+    /** Faction (same team = no damage; defaults to its own slot) and helmet (index into HEADS; defaults by slot). */
+    opts: { team?: number; helmet?: number } = {},
   ) {
     this.body = new KubotzBody(physics, x, y);
+    this.team = opts.team ?? index;
 
     this.anim = new Animator(rig);
-    this.look = { head: HEADS[index % HEADS.length], color };
+    this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Robot2D(scene, rig, (file) => {
-      let key = `kubotz:${file}`;
-      if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
-      else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
-      return scene.textures.exists(key) ? key : `kubotz:${file}`;
-    });
+    this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = `label-${controller.label}:${hex(color)}`;
-    this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
+    if (!scene.textures.exists(label)) makeTagTexture(scene, label, controller.label, color);
+    this.tag = scene.add.image(x, y, label).setOrigin(0.5, 1).setDepth(21);
   }
 
   /** Winding up, striking or recovering (a CPU can see it coming). */
@@ -421,13 +441,21 @@ export class Kubotz implements Damageable {
   get hitstun(): number { return this.hitstunUntil; }
   get comboInfo(): string { return this.inCombo ? `${this.comboStep || 3}/3${this.comboQueued ? '+' : ''}` : '-'; }
 
-  get name(): string { return this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label; }
+  get name(): string { return this.controller.name ?? (this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label); }
   get x(): number { return this.body.x; }
   get y(): number { return this.body.y; }
   get grounded(): boolean { return this.body.grounded; }
   get invincible(): boolean { return this.powerUps.some((p) => p.type === 'invincibility'); }
-  /** Air-dodging: attacks and bullets pass through. */
-  get intangible(): boolean { const now = this.hooks.now(); return now < this.dodgeUntil || now < this.ledgeSafeUntil; }
+  /** Dodging (air dodge, roll) or catching a ledge: attacks and bullets pass through. */
+  get intangible(): boolean {
+    const now = this.hooks.now();
+    const d = this.dodge;
+    return (!!d && now >= d.safeFrom && now < d.safeUntil) || now < this.ledgeSafeUntil;
+  }
+  /** In an air dodge or a roll (including its end lag). */
+  get dodging(): boolean { return !!this.dodge && this.hooks.now() < this.dodge.ends; }
+  /** Rolling on the ground (CPUs read it). */
+  get rolling(): boolean { return this.dodging && this.dodge!.kind === 'roll'; }
   /** On a ledge or climbing up from one. */
   get onLedge(): boolean { return this.ledge !== null || this.climb !== null; }
   /** The ledge hung from or being climbed (for edge hogging). */
@@ -507,7 +535,9 @@ export class Kubotz implements Damageable {
     const pad = this.pad = controls && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
     // Grabs and ledges take over the controls while they last.
-    if (!this.heldBy && this.ghosted) { this.body.ghost = false; this.ghosted = false; }
+    if (this.dodge && now >= this.dodge.ends) this.dodge = null;
+    // Passing through robots (held, thrown, rolling) lasts until clear of them.
+    if (!this.heldBy && this.ghosted && !this.rolling && !this.body.overlapsRobot()) { this.body.ghost = false; this.ghosted = false; }
     if (this.heldBy) { this.updateHeld(now, dt, controls ? read : emptyPad()); this.updatePowerUps(now); return; }
     if (this.holding || this.throwing) { this.updateHolding(now, pad); this.updatePowerUps(now); return; }
     if (this.onLedge) { this.updateLedge(now, pad); this.updatePowerUps(now); return; }
@@ -526,19 +556,26 @@ export class Kubotz implements Damageable {
       // Charging a smash: rooted, sliding to a stop.
       this.move(emptyPad(), now, dt);
       this.handleActions(pad, now);
-    } else if (now < this.dodgeUntil) {
-      // Air dodge: keep the burst, hover against gravity, no actions.
-      this.body.vy -= Config.GRAVITY * UNIT * dt * 0.8;
+    } else if (this.dodging) {
+      this.updateDodge(now, dt);
     } else {
       this.move(pad, now, dt);
       this.handleActions(pad, now);
     }
     this.updateSpecial(now);
-    // A touch heavier on the way down: the apex comes sooner.
-    if (!this.grounded && this.body.vy > 0 && now >= this.dodgeUntil) this.body.vy += Config.GRAVITY * Config.FALL_GRAVITY_BONUS * UNIT * dt;
+    // Heavy on the way down: past the apex gravity pulls much harder, up to a
+    // terminal speed (the fast-fall speed when fast-falling). Hitstun and the
+    // specials' bursts keep their speed (spikes, dive kicks), easing back after.
+    if (!this.grounded && this.body.vy > 0 && !this.dodging) {
+      this.body.vy += Config.GRAVITY * Config.FALL_GRAVITY_BONUS * UNIT * dt;
+      const cap = (this.fastFalling ? Config.FAST_FALL_SPEED : Config.MAX_FALL_SPEED) * UNIT;
+      if (this.body.vy > cap && now >= this.hitstunUntil && !this.currentMove?.burst) {
+        this.body.vy = Math.max(cap, this.body.vy - 90 * UNIT * dt);
+      }
+    }
     // Falling past a ledge catches it (not while holding down, attacking or tumbling).
     if (!this.grounded && this.body.vy >= 0 && !pad.down && !this.attack && !this.charging && !this.tumbling
-      && now >= this.hitstunUntil && now >= this.dodgeUntil && now - this.ledgeLetGoAt > LEDGE_REGRAB) {
+      && now >= this.hitstunUntil && !this.dodging && now - this.ledgeLetGoAt > LEDGE_REGRAB) {
       const ledge = this.hooks.ledgeNear(this);
       if (ledge) { this.grabLedge(ledge, now); return; }
     }
@@ -598,12 +635,27 @@ export class Kubotz implements Damageable {
     const pressed = pad.guard && !this.guardHeld;
     this.guardHeld = pad.guard;
     if (this.grounded) this.dodgeReady = true;
+    const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
+    const newDir = dx !== 0 && dx !== this.guardDir;
+    this.guardDir = dx;
+    if (this.dodging) {
+      // Mid-dodge: the guard comes back up after it if still held.
+      this.guarding = false;
+      this.guard = Math.min(Config.GUARD_MAX, this.guard + Config.GUARD_REGEN * dt);
+      return;
+    }
+    // Guard + left / right on the ground (a direction pressed with the guard up,
+    // or both at once; running into a guard just guards): the dodge roll, the
+    // ground version of the air dodge.
+    if (pad.guard && newDir && this.grounded && now >= this.rollReadyAt && !this.helpless && (this.guarding || pressed)) {
+      this.startRoll(dx > 0 ? 1 : -1, now);
+      return;
+    }
     // Guard in the air: air dodge in the held direction, intangible for a moment.
     if (pressed && !this.grounded && this.dodgeReady && !this.guarding && !this.helpless) {
       this.dodgeReady = false;
-      this.dodgeUntil = now + Config.AIR_DODGE_DURATION;
+      this.dodge = { kind: 'air', dir: dx as -1 | 0 | 1, start: now, safeFrom: now, safeUntil: now + Config.AIR_DODGE_DURATION, ends: now + Config.AIR_DODGE_DURATION };
       this.attack = null;
-      const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
       const dy = (pad.down ? 1 : 0) - (pad.up ? 1 : 0);
       const len = Math.hypot(dx, dy) || 1;
       this.body.setVelocity((dx / len) * Config.AIR_DODGE_SPEED * UNIT, (dy / len) * Config.AIR_DODGE_SPEED * UNIT);
@@ -618,6 +670,48 @@ export class Kubotz implements Damageable {
     } else {
       this.guarding = false;
       this.guard = Math.min(Config.GUARD_MAX, this.guard + Config.GUARD_REGEN * dt);
+    }
+  }
+
+  /** The dodge roll: a quick tucked roll a fixed distance, intangible and through robots, then a short end lag. */
+  private startRoll(dir: 1 | -1, now: number): void {
+    this.guarding = false;
+    this.attack = null;
+    this.currentMove = null;
+    this.comboStep = 0;
+    this.jumpSquatUntil = 0;
+    const ends = now + Config.ROLL_DURATION + Config.ROLL_END_LAG;
+    this.dodge = { kind: 'roll', dir, start: now, safeFrom: now + Config.ROLL_SAFE_FROM, safeUntil: now + Config.ROLL_SAFE_UNTIL, ends };
+    this.rollReadyAt = ends + Config.ROLL_COOLDOWN;
+    this.body.ghost = true;
+    this.ghosted = true;
+    // Rolling forwards tucks into a forward roll, backwards into a back roll.
+    this.anim.play(dir === this.facing ? 'roll' : 'rollBack', { restart: true, ms: Config.ROLL_DURATION + Config.ROLL_END_LAG * 0.5, fade: 30 });
+    this.hooks.playSfx('dodge', 0.3);
+    this.hooks.runDust(this.x, this.body.bottom, -dir);
+  }
+
+  /** Air dodge: keep the burst, hover against gravity. Roll: travel, then the end lag. */
+  private updateDodge(now: number, dt: number): void {
+    const d = this.dodge!;
+    if (d.kind === 'air') { this.body.vy -= Config.GRAVITY * UNIT * dt * 0.8; return; }
+    const t = (now - d.start) / Config.ROLL_DURATION;
+    if (t < 1) {
+      // Fast off the mark, slowing to a stop: x = D (1 - (1 - t)²).
+      if (!this.grounded && now - d.start > 50) {
+        // Rolled off an edge: falls from there.
+        this.dodge = null;
+        return;
+      }
+      const speed = (2 * Config.ROLL_DISTANCE * (1 - t)) / (Config.ROLL_DURATION / 1000);
+      this.body.setVelocity(d.dir * speed * UNIT, this.body.vy);
+      return;
+    }
+    this.body.vx = 0;
+    if (!d.turned) {
+      // Ends facing back the way it came, towards whoever it rolled past (Melee).
+      d.turned = true;
+      this.facing = d.dir === 1 ? -1 : 1;
     }
   }
 
@@ -683,9 +777,8 @@ export class Kubotz implements Damageable {
         this.dropUntil = now + 400;
         b.dropTop = b.platformTop;
       }
-      // fast fall: (RunningSystem.moveDown) never slows the fall down
-      const step = Config.JUMP_VELOCITY * Config.FAST_FALL_FACTOR * 60 * dt;
-      vy = Math.max(vy, Math.min(vy, Config.MAX_SPEED) + step);
+      // Fast fall (Melee): down past the apex drops straight to the fast-fall speed.
+      if (!grounded && vy > 0) vy = Math.max(vy, Config.FAST_FALL_SPEED);
     }
 
     if (now >= this.dropUntil) b.dropTop = null;
@@ -1054,7 +1147,7 @@ export class Kubotz implements Damageable {
     this.gunChargeStart = -1;
     this.comboStep = 0;
     this.guarding = false;
-    this.dodgeUntil = 0;
+    this.dodge = null;
     this.hitstunUntil = 0;
     this.tumbleUntil = 0;
     this.knockdownUntil = 0;
@@ -1281,7 +1374,7 @@ export class Kubotz implements Damageable {
 
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
-    if (this.dead || this.invincible || this.intangible) return;
+    if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return;
     const now = this.hooks.now();
     // A hit breaks a grab (on either robot) and knocks a robot off its ledge.
     if (this.holding || this.heldBy) this.breakGrab();
@@ -1331,6 +1424,7 @@ export class Kubotz implements Damageable {
     if (this.charging) { this.charging = null; this.anim.freeze(null); }
     this.gunChargeStart = -1;
     this.comboStep = 0;
+    this.dodge = null; // (hit in a roll's end lag)
     if (tumble) {
       this.anim.play('tumble', { restart: true, fade: 40 });
     } else {
@@ -1357,6 +1451,7 @@ export class Kubotz implements Damageable {
     this.weapon = 'none';
     this.shield = 0;
     this.guarding = false;
+    this.dodge = null;
     this.tag.setVisible(false);
     this.body.setVelocity(0, 0);
     this.body.enable = false;
@@ -1437,11 +1532,11 @@ export class Kubotz implements Damageable {
       dtMs,
       lean, squash,
       alpha: this.intangible ? 0.55 : 1,
-      flash: now < this.flashUntil || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
+      flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
     const fast = Math.hypot(this.body.vx, this.body.vy) > 17 * UNIT;
-    if ((this.attack && this.currentMove?.ghosts) || now < this.dodgeUntil || this.tumbling || fast) {
+    if ((this.attack && this.currentMove?.ghosts) || this.dodging || this.tumbling || fast) {
       if (now >= this.nextGhostAt) {
         this.nextGhostAt = now + 38;
         this.model.ghost(this.look.color, this.tumbling ? 160 : 210);
@@ -1458,7 +1553,7 @@ export class Kubotz implements Damageable {
     if (this.ledge) { a.play('ledge', { fade: 60 }); return; }
     if (now < this.lockUntil) return; // a grab release or a missed grab plays out
     if (this.attack || this.charging) return; // the strike (or its held wind-up) plays out
-    if (now < this.dodgeUntil) return; // the dodge roll plays out
+    if (this.dodging) return; // the air dodge or the roll plays out
     const vx = this.body.vx;
     const vy = this.body.vy;
     if (now < this.knockdownUntil) return; // the knockdown plays out
