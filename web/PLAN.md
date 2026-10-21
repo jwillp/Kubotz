@@ -692,6 +692,7 @@ PRs B to E each build on the previous one where they touch the same scenes
   the next update called `setText` on a destroyed text (null canvas).
   `DebugScene.create` now resets the labels and the frame times. The panel
   also shows the falling gravity.
+
 ### Phase 11 B — Settings screen (`feat/settings`)
 
 - `game/Settings.ts` (the store, saved in `localStorage`) gains a change
@@ -719,6 +720,7 @@ PRs B to E each build on the previous one where they touch the same scenes
 - Title: a "⚙ Settings" entry in the top corner, the last item of the menu
   (Up from the first mode wraps to it). Pause: the PAUSED banner is now a
   menu, Resume · Settings · Quit to title (Esc / Q / Start / Select still work).
+
 ### Phase 11 C — Join screen, teams, arena select
 
 - **Title**: one menu entry, Play, opens the join screen (other entries,
@@ -748,3 +750,27 @@ PRs B to E each build on the previous one where they touch the same scenes
   if it is alone).
 - Humans who join with a gamepad drive with that pad only, keyboard players
   with their keys only.
+
+### Phase 11 E — Move list (`feat/move-list`)
+
+- **Moves** on the title screen opens `MoveListScene`: a scrollable list
+  grouped as ground, smash attacks, aerials, specials (ground and air),
+  laser sword, laser gun (tap and charged shot), grab and throws, defence
+  and ledges (guard, air dodge, ledge climb / jump / roll / attack, taunt),
+  and combos (jab chain, sword chain, up tilt → up air, down tilt →
+  forward air, short hop nair → jab combo, down throw → Raptor Dash).
+- Each entry: P1 keyboard and Smash Ultimate gamepad inputs and a line
+  with damage and launch read from the move tables of `Kubotz.ts`
+  (`COMBO`, `DIR_MOVES`, `SPECIALS`, `THROWS`... now exported; the ledge
+  get-up times and attack moved into `LEDGE_GETUP_MS` / `LEDGE_ATTACK`).
+- One data table, `game/MoveList.ts`: each entry is a list of steps (a clip
+  and its length, the strike it plays, a held smash charge, a jump, a set
+  velocity, a ledge get-up path, until-landing...). No per-move code.
+- The preview plays the steps on a `Robot2D` in a loop with a 650 ms pause:
+  real clips, weapon maps (sword, gun, fire gauntlet), root motion and
+  bursts as body travel, gravity and landing on a floor line (a ledge block
+  for the ledge entries), afterimages, a glow on the striking points during
+  the active frames, the guard bubble, laser bolts. Each entry is played
+  once off-screen first to centre and zoom its own camera on the motion.
+- Navigation: W/S, arrows, Page Up/Down, D-pad or stick (repeats while
+  held), mouse wheel and click; Esc, Backspace or B back to the title.

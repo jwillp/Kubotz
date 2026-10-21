@@ -61,14 +61,14 @@ const ANIM = {
 
 /** Strikes carry the robot this many times further than their clip's own forward travel. */
 const ANIM_TURN = 'turn';
-const ROOT_MOTION_GAIN = 3;
+export const ROOT_MOTION_GAIN = 3;
 /** Walking (a tilted stick) tops out at this share of the run. */
 const WALK_FACTOR = 0.45;
 /** Smash-style jump squat before a grounded jump; let go of jump within it for a short hop of this height. */
 const JUMP_SQUAT_MS = 50;
-const SHORT_HOP = 0.68;
+export const SHORT_HOP = 0.68;
 /** A taunt's length. */
-const TAUNT_MS = 1000;
+export const TAUNT_MS = 1000;
 /** People jump on the press, so they only need a short guard between jumps. */
 const HUMAN_JUMP_COOLDOWN = 140;
 
@@ -89,7 +89,7 @@ export interface Launch { knockback: number; angle: number; growth?: number; stu
  * away on either side; `maps` swaps parts while it plays (the fire fist);
  * `ghosts` leaves afterimages.
  */
-interface Move {
+export interface Move {
   anim: string; ms: number; points: PartPoint[]; damage: number; launch: Launch; active: [number, number];
   behind?: boolean; all?: boolean; both?: boolean; maps?: string[]; ghosts?: boolean;
   /** Specials: a velocity (units/s, x forwards; null keeps that axis) held for the first `sustain` share of the move. */
@@ -98,7 +98,7 @@ interface Move {
 
 /** Attack + direction, Super Smash Bros. style. */
 type Dir = 'neutral' | 'forward' | 'back' | 'up' | 'down';
-type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'utilt' | 'fsmash' | 'dsmash' | 'usmash' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
+export type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'utilt' | 'fsmash' | 'dsmash' | 'usmash' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
 
 const LIMBS = [...FISTS, ...FEET];
 
@@ -107,18 +107,18 @@ const LIMBS = [...FISTS, ...FEET];
  * back fist and a jumping spin kick. The first two push lightly and stun
  * briefly so the next hit connects; the kick launches.
  */
-const COMBO: Move[] = [
+export const COMBO: Move[] = [
   { anim: 'jab', ms: 260, points: FISTS, damage: 3, launch: { knockback: 3, angle: 15, stun: 280 }, active: [0.3, 0.72] },
   { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [0.4, 0.8], all: true },
   { anim: 'kick', ms: 460, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.34, 0.76], all: true, ghosts: true },
 ];
-const SWORD_COMBO: Move[] = [
+export const SWORD_COMBO: Move[] = [
   { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.36, 0.78] },
   { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.28, 0.66] },
   { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.35, 0.8], ghosts: true },
 ];
 /** Directional moves (SSB): dash attack, tilts, smashes (charged) and the five aerials. */
-const DIR_MOVES: DirMoves = {
+export const DIR_MOVES: DirMoves = {
   dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72], ghosts: true },
   ftilt: { anim: 'ftilt', ms: 380, points: FEET, damage: 6, launch: { knockback: 10, angle: 30 }, active: [0.32, 0.7] },
   dtilt: { anim: 'dtilt', ms: 340, points: FEET, damage: 5, launch: { knockback: 9, angle: 80 }, active: [0.3, 0.72] },
@@ -132,7 +132,7 @@ const DIR_MOVES: DirMoves = {
   uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62], ghosts: true },
   dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true },
 };
-const SWORD_DIR_MOVES: DirMoves = {
+export const SWORD_DIR_MOVES: DirMoves = {
   dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8], ghosts: true },
   ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
   dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
@@ -151,7 +151,7 @@ const SWORD_DIR_MOVES: DirMoves = {
  * ninja moves. The up special leaves the robot helpless until it lands or
  * catches a ledge; the side and up specials work once per trip in the air.
  */
-const SPECIALS = {
+export const SPECIALS = {
   ion: { anim: 'ionPunch', ms: 900, points: FIRE_FISTS, damage: 22, launch: { knockback: 19, angle: 35 }, active: [0.6, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true },
   raptor: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 9, launch: { knockback: 13, angle: 80 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [22, null], sustain: 0.5 },
   raptorAir: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 10, launch: { knockback: 12, angle: -55 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [18, 1], sustain: 0.5 },
@@ -162,13 +162,13 @@ const SPECIALS = {
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
 
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
-const SMASH_CHARGE_MS = 1000;
-const SMASH_CHARGE_BONUS = 0.6;
+export const SMASH_CHARGE_MS = 1000;
+export const SMASH_CHARGE_BONUS = 0.6;
 /** A direction pressed this close to the attack press makes it a smash (a flick + attack, like SSB). */
 const SMASH_INPUT_MS = 120;
 /** Laser gun: a tap fires a light shot; holding charges a bigger one (up to GUN_CHARGE_MS). */
-const GUN_TAP_MS = 160;
-const GUN_CHARGE_MS = 1200;
+export const GUN_TAP_MS = 160;
+export const GUN_CHARGE_MS = 1200;
 /** Turning round (ms) on the ground and in the air. */
 const TURN_MS = 210;
 const AIR_TURN_MS = 140;
@@ -200,13 +200,13 @@ export function partTexture(textures: Phaser.Textures.TextureManager, file: stri
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
-type ThrowKind = 'forward' | 'back' | 'up' | 'down';
+export type ThrowKind = 'forward' | 'back' | 'up' | 'down';
 
 /**
  * Melee-style throws: clip, length, when the robot is let go (0..1), damage
  * and launch (angle from the horizontal, towards `dir` relative to facing).
  */
-const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
+export const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
   forward: { anim: 'throwF', ms: 440, release: 0.45, damage: 7, launch: { knockback: 13, angle: 40 }, dir: 1 },
   back: { anim: 'throwB', ms: 520, release: 0.55, damage: 8, launch: { knockback: 14, angle: 40 }, dir: -1 },
   up: { anim: 'throwU', ms: 480, release: 0.45, damage: 7, launch: { knockback: 14, angle: 90 }, dir: 1 },
@@ -220,16 +220,21 @@ const GRAB_HOLD_PER_DAMAGE = 1.6; // ...plus 1.6 frames per % (read in 5 % steps
 const GRAB_MASH_FRAMES = 6; // each mash takes 6 frames off
 const GRAB_RELEASE_LAG = 29 * FRAME; // both stuck after a grab release
 const GRAB_WHIFF_LAG = 480; // a missed grab
-const PUMMEL_MS = 380;
-const PUMMEL_DAMAGE = 3;
+export const PUMMEL_MS = 380;
+export const PUMMEL_DAMAGE = 3;
 const LEDGE_CATCH = 7 * FRAME; // options open after the catch
-const LEDGE_INTANGIBLE = 37 * FRAME; // the catch plus 30 frames
+export const LEDGE_INTANGIBLE = 37 * FRAME; // the catch plus 30 frames
 const LEDGE_REGRAB = 480; // after letting go
 /** Damage from which the ledge get-ups are slower (Melee: 100 %, but our robots die at 100). */
 const LEDGE_SLOW_DAMAGE = 60;
 /** Where the body hangs below a ledge, so the raised hands are on its top. */
-const HANG_DY = 1.32 * UNIT;
-const HANG_DX = 0.52 * UNIT;
+export const HANG_DY = 1.32 * UNIT;
+export const HANG_DX = 0.52 * UNIT;
+/** Ledge get-ups (ms, below LEDGE_SLOW_DAMAGE): climb, roll in, and the attack (the climb is 55% of it, then the kick); how far in they end (units). */
+export const LEDGE_GETUP_MS = { climb: 550, roll: 700, attack: 750 } as const;
+export const LEDGE_INWARD = { climb: 0.7, roll: 2.6, attack: 0.7 } as const;
+/** The get-up attack: the forward tilt's kick with its own damage and launch. */
+export const LEDGE_ATTACK = { damage: 6, launch: { knockback: 10, angle: 25 } as Launch };
 
 /** Callbacks into the arena, so the actor stays free of scene plumbing. */
 export interface ArenaHooks {
@@ -1312,8 +1317,8 @@ export class Kubotz implements Damageable, Teamed {
   private startClimb(kind: 'climb' | 'roll' | 'attack', now: number): void {
     const l = this.ledge!;
     const slow = Config.KUBOTZ_HEALTH - this.health >= LEDGE_SLOW_DAMAGE;
-    const ms = kind === 'climb' ? (slow ? 900 : 550) : kind === 'roll' ? (slow ? 1100 : 700) : (slow ? 1100 : 750);
-    const inward = kind === 'roll' ? 2.6 : 0.7;
+    const ms = slow ? (kind === 'climb' ? 900 : 1100) : LEDGE_GETUP_MS[kind];
+    const inward = LEDGE_INWARD[kind];
     this.climb = { kind, ledge: l, start: now, ms, x0: this.x, y0: this.y, x1: l.x - l.dir * inward * UNIT, y1: l.y - this.body.height / 2 - 2 };
     this.ledge = null;
     // Intangible through most of the get-up (less for the attack, which strikes).
@@ -1339,7 +1344,7 @@ export class Kubotz implements Damageable, Teamed {
       // The get-up attack: a sweeping kick across the ledge.
       const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
       this.comboStep = 0;
-      this.strike({ ...moves.ftilt, damage: 6, launch: { knockback: 10, angle: 25 }, ms: c.ms * 0.45 }, now);
+      this.strike({ ...moves.ftilt, ...LEDGE_ATTACK, ms: c.ms * 0.45 }, now);
     }
   }
 
