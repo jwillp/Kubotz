@@ -80,7 +80,9 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
     this.game_.events.on('countdown', this.onCountdown, this);
+    this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
       this.game_.events.off('pause', this.onPause, this);
@@ -153,10 +155,11 @@ export class HudScene extends Phaser.Scene {
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
     this.bannerText.setText(winnerTeam === null ? 'DRAW' : `${title} WINS!`);
     if (winnerTeam !== null) this.bannerText.setStroke('#' + hex(SLOT_COLORS[winnerTeam]), 8);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu').setY(55).setFontSize(22);
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('').setY(55).setFontSize(22);
     this.bannerText.setY(-20);
     for (const t of this.pauseItems) t.setVisible(false);
-    this.banner.setVisible(true).setScale(0.6).setAlpha(0);
+    // High up, so the camera's close-up of the winners' dance stays clear.
+    this.banner.setY(150).setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
   }
 
@@ -165,7 +168,7 @@ export class HudScene extends Phaser.Scene {
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen').setY(-82).setFontSize(16);
     for (const t of this.pauseItems) t.setVisible(true);
     this.bannerText.setY(-28);
-    this.banner.setVisible(paused).setScale(1).setAlpha(1);
+    this.banner.setY(this.scale.height / 2).setVisible(paused).setScale(1).setAlpha(1);
     this.pauseMenu.reset();
     this.selectPause(0);
   }
@@ -180,5 +183,12 @@ export class HudScene extends Phaser.Scene {
     if (i === 0) this.game_.togglePause();
     else if (i === 1) this.game_.openSettings();
     else this.game_.backToTitle();
+  }
+
+  /** After the winners have danced a little: what continues to the results. */
+  private onContinuePrompt(): void {
+    const hint = (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press attack / Enter / A to continue').setAlpha(0);
+    this.tweens.add({ targets: hint, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: hint, scale: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: 300 });
   }
 }
