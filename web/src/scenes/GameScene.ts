@@ -18,6 +18,7 @@ import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaMap, eachTile } from '../map/ArenaArt';
+import { arenaStyle, drawIceCap, retroTile, RETRO, type ArenaStyle } from '../fx/Retro';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
@@ -99,6 +100,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private promptShown = false;
   private attackWasDown = new Set<Kubotz>();
 
+  /** The arena's look: the current one, or the Retro recolour (chosen on the arena select). */
+  private style: ArenaStyle = 'modern';
+
   constructor() { super('Game'); }
 
   init(): void {
@@ -123,6 +127,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.specs = setup.fighters.slice(0, 4);
     this.map = arenaMap(setup.arena, this.registry.get('map'));
+    this.style = arenaStyle();
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
@@ -246,7 +251,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     eachTile(this.textures, m, (source, key, x, y) => {
       actx.drawImage(source, x, y);
       nctx.drawImage(normalMapFor(key, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
-    });
+    }, this.style);
+    // Retro: an ice-glow cap along the top of every wall and platform.
+    if (this.style === 'retro') {
+      m.objects.filter((o) => o.type === 'WALL' || o.type === 'STATIC_PLATFORM')
+        .forEach((o, i) => drawIceCap(actx, o.x, o.y, o.width, i + 1));
+    }
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
     lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
@@ -274,9 +284,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
     // A lit edge along the top of every block, like the 3D version's glowing rims.
     const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+    const retro = this.style === 'retro';
     for (const b of this.blocks) {
-      rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
-      rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(7, retro ? RETRO.rim : 0x29abe2, retro ? 0.1 : 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(2, retro ? 0xe0fdff : 0x9fe6ff, retro ? 0.5 : 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.nav = new Nav(this.blocks);
     this.ledges = findLedges(this.blocks);
@@ -360,7 +371,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     art.width = gw * S; art.height = gh * S;
     const ctx = art.getContext('2d')!;
     // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
-    const tile = (name: string) => this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement;
+    const tile = (name: string) => {
+      const key = this.style === 'retro' ? retroTile(this.textures, `tile:${name}`) : `tile:${name}`;
+      return this.textures.get(key).getSourceImage() as HTMLImageElement;
+    };
     const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner_top_left.png'), tile('corner_bottom_left.png')];
     let seed = 11;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -407,7 +421,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /**
    * The emissive layer: the saturated blue pixels of the arena art, sharp and
    * blurred twice, drawn additively over the lit arena and breathing slowly,
-   * like the 3D version's glowing platforms.
+   * like the 3D version's glowing platforms. Retro: tighter and steady, a soft
+   * cyan bleed rather than a haze.
    */
   private buildArenaGlow(art: HTMLCanvasElement, w: number, h: number): void {
     const mask = document.createElement('canvas');
@@ -426,17 +441,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
     const glow = this.textures.createCanvas('arena-glow', w, h)!;
     const g = glow.getContext();
-    g.filter = 'blur(18px)';
+    const retro = this.style === 'retro';
+    g.filter = `blur(${retro ? 12 : 18}px)`;
     g.drawImage(mask, 0, 0);
-    g.drawImage(mask, 0, 0);
-    g.filter = 'blur(5px)';
+    if (!retro) g.drawImage(mask, 0, 0);
+    g.filter = `blur(${retro ? 3 : 5}px)`;
     g.drawImage(mask, 0, 0);
     g.filter = 'none';
-    g.globalAlpha = 0.8;
+    g.globalAlpha = retro ? 0.35 : 0.8;
     g.drawImage(mask, 0, 0);
     glow.refresh();
-    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
-    this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(retro ? 0.45 : 0.85);
+    if (!retro) this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
   private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
@@ -742,9 +758,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.sys.renderer.type !== Phaser.WEBGL) return;
     // A dim room: the key light shapes, the rim light outlines, and the
     // glowing platforms, lasers and blades light what is near them.
-    this.lights.enable().setAmbientColor(0x64709a);
-    this.keyLight = this.lights.addLight(0, 0, 100, 0xffe8cc, 3.2);
-    this.rimLight = this.lights.addLight(0, 0, 100, 0x3aa8ff, 2.0);
+    // Retro: a flatter, neutral light, so the slabs read grey and the ice reads cyan.
+    const retro = this.style === 'retro';
+    this.lights.enable().setAmbientColor(retro ? RETRO.ambient : 0x64709a);
+    this.keyLight = this.lights.addLight(0, 0, 100, retro ? RETRO.key : 0xffe8cc, retro ? 1.4 : 3.2);
+    this.rimLight = this.lights.addLight(0, 0, 100, retro ? RETRO.rimLight : 0x3aa8ff, retro ? 0.4 : 2.0);
     for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
     // Blue light rising off the top of every block (wide ones get several).
     let fixed = 0;
@@ -752,7 +770,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const n = Math.max(1, Math.round(b.width / (UNIT * 9)));
       for (let i = 0; i < n && fixed < PLATFORM_LIGHTS; i++, fixed++) {
         const x = b.x + (b.width * (i + 0.5)) / n;
-        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), 0x29abe2, 2.4);
+        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), retro ? RETRO.blockLight : 0x29abe2, retro ? 0.9 : 2.4);
       }
     }
     this.placeFixedLights();

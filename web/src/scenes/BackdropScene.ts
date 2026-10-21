@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { arenaStyle, retroBackdrop } from '../fx/Retro';
 
 interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: number; phase: number; drift: number; base: number; }
 
@@ -7,6 +8,7 @@ interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: nu
  * art softened by a lens blur (made once into its own texture), out-of-focus
  * lights drifting as bokeh discs on three depths, slow light shafts and a
  * haze towards the floor. Everything drifts a little with the camera.
+ * The Retro style is the plain, sharp room recoloured: red grid, olive walls.
  */
 export class BackdropScene extends Phaser.Scene {
   private bg!: Phaser.GameObjects.Image;
@@ -18,6 +20,13 @@ export class BackdropScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
     this.makeTextures();
+    this.bokeh = [];
+    this.shafts = [];
+    if (arenaStyle() === 'retro') {
+      this.bg = this.add.image(width / 2, height / 2, retroBackdrop(this.textures));
+      this.bg.setScale(Math.max(width / this.bg.width, height / this.bg.height) * 1.15);
+      return;
+    }
     this.bg = this.add.image(width / 2, height / 2, this.textures.exists('bg-blur') ? 'bg-blur' : 'bg');
     this.bg.setScale(Math.max(width / this.bg.width, height / this.bg.height) * 1.15);
     // A dim room, so the lights, lasers and glowing platforms carry the scene.
