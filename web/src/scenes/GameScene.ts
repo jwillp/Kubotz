@@ -20,6 +20,7 @@ import { DebrisField } from '../game/Debris';
 import { ARENAS, buildArenaMap } from '../map/Arenas';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
+import { body } from '../ui/Type';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -988,10 +989,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   // ---------------------------------------------------------------- helpers
   floatText(x: number, y: number, text: string, color: number): void {
-    const t = this.add.text(x, y, text, {
-      fontFamily: 'Arial Black, sans-serif', fontSize: '26px',
-      color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(30);
+    const t = this.add.text(x, y, text, body(26, {
+      fontStyle: '800', color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000000', strokeThickness: 5,
+    })).setOrigin(0.5).setDepth(30);
     this.tweens.add({ targets: t, y: y - 70, alpha: 0, duration: 1200, ease: 'Cubic.out', onComplete: () => t.destroy() });
   }
 
