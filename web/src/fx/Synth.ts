@@ -147,3 +147,35 @@ export function sciFiExplosionBuffer(ctx: BaseAudioContext): AudioBuffer {
   if (peak > 0.95) for (let i = 0; i < d.length; i++) d[i] *= 0.95 / peak;
   return buf;
 }
+
+/**
+ * A boot step on a metal floor, kept soft: a dull heel thud, a short damped
+ * ring of the plate (inharmonic partials) and a faint scuff, in a little
+ * reverb. `variant` shifts the plate's pitch so repeated steps differ.
+ */
+export function metalStepBuffer(ctx: BaseAudioContext, variant: number): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 0.35), rate);
+  const d = buf.getChannelData(0);
+  const shift = [1, 1.07, 0.94][variant % 3];
+  // Heel thud: a low sine dropping in pitch, gone in a few tens of ms.
+  glide(d, rate, 0, 0.09, (u) => 70 + 50 * Math.exp(-u * 8), (u) => 0.42 * Math.exp(-u * 9) * Math.min(1, u * 120));
+  // The plate: damped inharmonic partials (a grate, not a bell).
+  const plate = [[430, 0.13, 55], [1160, 0.07, 70], [1890, 0.045, 90], [3020, 0.025, 120]];
+  for (let i = 0; i < d.length; i++) {
+    const t = i / rate - 0.004;
+    if (t < 0) continue;
+    let v = 0;
+    for (const [f, a, k] of plate) v += a * Math.sin(2 * Math.PI * f * shift * t) * Math.exp(-t * k);
+    d[i] += v * Math.min(1, t * 3000);
+  }
+  // Scuff: a short, soft burst of smoothed noise as the sole meets the floor.
+  let lp = 0;
+  for (let i = 0; i < Math.floor(rate * 0.03); i++) {
+    const t = i / rate;
+    lp += ((Math.random() * 2 - 1) - lp) * 0.35;
+    d[i] += lp * 0.09 * Math.exp(-t * 120);
+  }
+  reverb(d, rate, 0.18);
+  return buf;
+}

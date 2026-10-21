@@ -511,3 +511,33 @@ Plan:
      someone stands over the ledge).
 6. **Animation clips**: grab hold, held, pummel, four throws, ledge hang,
    climb.
+
+### Phase 10b — owner feedback (2026-10-21)
+
+- **Stars gone**: the respawn star burst and the pick-up star burst are removed.
+  The orb twirl marks pick-ups.
+- **Camera and orbs**: a new power-up ball stays in the camera's framing for
+  its first 2 seconds only.
+- **Power-up rate**: a title-screen setting (B):
+  - Off;
+  - Rare: every 22-35 s, at most 2 out;
+  - Normal (the default): every 12-20 s, at most 3;
+  - Frequent: the original 5-10 s, at most 5.
+- **Colours by slot**: red, blue, green, then yellow, for humans and CPUs
+  alike.
+- **Camera shake** (trauma model: offset and a slight roll from trauma²,
+  wearing off): strong launches (by launch speed), tumble bounces, hard
+  landings from long falls, guard breaks, K.O.s. It replaces the old
+  fixed shakes.
+- **Footsteps**: synthesised soft metal boot steps: a heel thud, a damped
+  plate ring and a scuff, in 3 pitch variants with some detune. The old
+  step sample now only plays for dodges and throws.
+- **Portals** (fx/Portals.ts):
+  - blue (left) and orange (right) energy rifts with a dark core and a
+    glowing rim;
+  - spiral arms, motes drawn in and sparks thrown off;
+  - a coloured light;
+  - a flare at the exit portal when something comes through.
+- **Backdrop** (BackdropScene): the room art lens-blurred once into its own
+  texture, drifting bokeh discs on three depths with parallax, slow light
+  shafts, and haze towards the floor.

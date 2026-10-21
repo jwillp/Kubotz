@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { crystalBounceBuffer, pickupChimeBuffer, healChimeBuffer, sciFiExplosionBuffer } from '../fx/Synth';
+import { crystalBounceBuffer, pickupChimeBuffer, healChimeBuffer, sciFiExplosionBuffer, metalStepBuffer } from '../fx/Synth';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
 import { addNormalMap } from '../fx/NormalMaps';
-import { CPU_COLORS, GUN_FILE, HEAD_FILES, P1_COLOR, P2_COLOR, PART_TIPS, SWORD_FILE, hex } from '../game/Kubotz';
+import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/DebugMap.tmx';
@@ -73,6 +73,8 @@ export class BootScene extends Phaser.Scene {
         this.cache.audio.add('orb-bounce', crystalBounceBuffer(this.sound.context));
         this.cache.audio.add('orb-pickup', pickupChimeBuffer(this.sound.context));
         this.cache.audio.add('orb-heal', healChimeBuffer(this.sound.context));
+        // Footsteps: soft metal boot steps, three variants (replacing step.mp3, too loud and scuffy).
+        for (let v = 0; v < 3; v++) this.cache.audio.add(`step-${v}`, metalStepBuffer(this.sound.context, v));
       }
       this.scene.start('Title');
     });
@@ -88,7 +90,7 @@ export class BootScene extends Phaser.Scene {
     for (const file of spriter.allFiles()) addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 });
     for (const tile of map.tileImages.values()) addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 });
     for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) addNormalMap(this.textures, `bonus_${b}`, { bevel: 4, detail: 0.3 });
-    for (const color of [P1_COLOR, P2_COLOR, ...CPU_COLORS]) {
+    for (const color of SLOT_COLORS) {
       for (const file of HEAD_FILES) {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);

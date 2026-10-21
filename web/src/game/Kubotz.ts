@@ -152,10 +152,8 @@ export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff'
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
 export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
 
-/** Player colours: P1 red and P2 blue like their HUD labels; CPUs green, yellow, purple, orange. */
-export const P1_COLOR = 0xed1c24;
-export const P2_COLOR = 0x29abe2;
-export const CPU_COLORS = [0x8cc63f, 0xffd166, 0xb36bff, 0xff8a1f];
+/** Robot colours by slot (owner, phase 10b): red, blue, green, then yellow; humans and CPUs alike. */
+export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xffd23f];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
@@ -207,6 +205,8 @@ export interface ArenaHooks {
   ledgeNear(kubotz: Kubotz): Ledge | null;
   /** A grab, pummel or throw landing: sparks and a sound. */
   grabFx(x: number, y: number, color: number, power: number): void;
+  /** Camera shake (0..1). */
+  shake(amount: number): void;
   dust(x: number, y: number): void;
   runDust(x: number, y: number, dir: number): void;
   airJump(x: number, y: number, color: number): void;
@@ -533,6 +533,7 @@ export class Kubotz implements Damageable {
 
   private bounce(now: number, x: number, y: number): void {
     this.hooks.dust(x, y);
+    this.hooks.shake(0.18);
     this.hooks.playSfx('punch', 0.3);
     this.hitstunUntil += 120;
     this.tumbleUntil = this.hitstunUntil;
@@ -633,6 +634,9 @@ export class Kubotz implements Damageable {
     b.setVelocity(vx * UNIT, vy * UNIT);
     if (grounded && !this.wasGrounded) {
       this.landedAt = now;
+      // A hard landing (a long fall) thumps the camera.
+      const fall = this.prevVy / UNIT;
+      if (fall > 22) this.hooks.shake(Math.min(0.4, (fall - 18) / 40));
       this.hooks.dust(this.x, b.bottom);
       this.squashUntil = now + 160;
       this.landUntil = now + 200;
@@ -1148,6 +1152,8 @@ export class Kubotz implements Damageable {
       this.body.setVelocity(dirX * Math.cos(a) * speed * UNIT, -Math.sin(a) * speed * UNIT);
       hitstun = Math.min(Config.HITSTUN_MAX, Config.HITSTUN_BASE + speed * Config.HITSTUN_PER_UNIT);
       tumble = hitstun >= Config.TUMBLE_HITSTUN;
+      // Strong launches shake the camera, harder the faster they fly.
+      if (speed > 12) this.hooks.shake(Math.min(0.75, (speed - 10) / 22));
     }
     this.hitUntil = now + Math.max(250, hitstun);
     this.flashUntil = now + 70;

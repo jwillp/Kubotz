@@ -2,7 +2,17 @@ import Phaser from 'phaser';
 import { ARENA_INFO } from '../map/Arenas';
 
 export type Slot = 'P1' | 'P2' | 'CPU';
-export interface MatchSetup { slots: Slot[]; arena?: number; }
+export interface MatchSetup { slots: Slot[]; arena?: number; bonuses?: BonusRate; }
+
+/** How often power-up balls appear: seconds between spawns, and how many can be out at once. */
+export type BonusRate = 'off' | 'rare' | 'normal' | 'frequent';
+export const BONUS_RATES: Record<BonusRate, { label: string; min: number; max: number; most: number }> = {
+  off: { label: 'Off', min: 0, max: 0, most: 0 },
+  rare: { label: 'Rare', min: 22000, max: 35000, most: 2 },
+  normal: { label: 'Normal', min: 12000, max: 20000, most: 3 },
+  frequent: { label: 'Frequent', min: 5000, max: 10000, most: 5 }, // the original game's rate
+};
+const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
 const MODES: { label: string; slots: Slot[] }[] = [
   { label: '1 Player vs CPU', slots: ['P1', 'CPU'] },
@@ -18,6 +28,8 @@ export class TitleScene extends Phaser.Scene {
   private arena = 0;
   private arenaText!: Phaser.GameObjects.Text;
   private arenaBlurb!: Phaser.GameObjects.Text;
+  private bonuses: BonusRate = 'normal';
+  private bonusText!: Phaser.GameObjects.Text;
 
   constructor() { super('Title'); }
 
@@ -63,13 +75,20 @@ export class TitleScene extends Phaser.Scene {
     arrow(width / 2 + 250, '▶', 1);
     this.pickArena(0);
 
+    // Game setting: how often power-up balls appear (B or click to change).
+    this.bonuses = (this.registry.get('bonuses') as BonusRate | undefined) ?? 'normal';
+    this.bonusText = this.add.text(width / 2, 672, '', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#ffffff',
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
+    this.pickBonuses(0);
+
     // Title music (dashboard.ogg); browsers start it after the first click or key.
     if (!this.sound.get('music-title')?.isPlaying) {
       this.sound.removeByKey('music-title');
       this.sound.add('music-title', { loop: true, volume: 0.5 }).play();
     }
 
-    this.add.text(width / 2, height - 70,
+    this.add.text(width / 2, height - 36,
       'P1: WASD move/jump (S: drop down) · O attack (x3 combo) · I grab · Shift guard      P2: Arrows · , attack · . grab · / guard\n'
       + 'Gamepads work too. Grab power-ups, knock rivals out, last robot standing wins.', {
         fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
@@ -84,6 +103,7 @@ export class TitleScene extends Phaser.Scene {
     kb.on('keydown-A', () => this.pickArena(-1));
     kb.on('keydown-RIGHT', () => this.pickArena(1));
     kb.on('keydown-D', () => this.pickArena(1));
+    kb.on('keydown-B', () => this.pickBonuses());
     kb.on('keydown-ENTER', () => this.start(this.selected));
     kb.on('keydown-SPACE', () => this.start(this.selected));
     kb.on('keydown', (e: KeyboardEvent) => {
@@ -104,8 +124,14 @@ export class TitleScene extends Phaser.Scene {
     this.arenaBlurb.setText(`${ARENA_INFO[this.arena].blurb}  ·  ◀ ▶ to change`);
   }
 
+  private pickBonuses(delta = 1): void {
+    this.bonuses = RATE_ORDER[(RATE_ORDER.indexOf(this.bonuses) + delta) % RATE_ORDER.length];
+    this.registry.set('bonuses', this.bonuses);
+    this.bonusText.setText(`Power-ups: ${BONUS_RATES[this.bonuses].label}  ·  B to change`);
+  }
+
   private start(i: number): void {
-    const setup: MatchSetup = { slots: MODES[i].slots, arena: this.arena };
+    const setup: MatchSetup = { slots: MODES[i].slots, arena: this.arena, bonuses: this.bonuses };
     this.scene.start('Game', setup);
   }
 }

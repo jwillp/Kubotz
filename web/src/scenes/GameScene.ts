@@ -4,15 +4,16 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import type { MatchSetup } from './TitleScene';
+import { BONUS_RATES, type MatchSetup } from './TitleScene';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { ImpactFx } from '../fx/Impact';
+import { PortalFx } from '../fx/Portals';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -63,9 +64,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
+  private portals!: PortalFx;
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
   private nextBonusAt = 0;
+  /** The title screen's power-up setting. */
+  private bonusRate = BONUS_RATES.normal;
+  /** The camera's centre before shake, and the shake's trauma (0..1). */
+  private camMid = new Phaser.Math.Vector2();
+  private trauma = 0;
   private particles!: ParticleFx;
   private impact!: ImpactFx;
   private effects!: Record<ParticleName, EffectDef>;
@@ -113,14 +120,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.buildMap();
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
+    this.portals = new PortalFx(this, this.warpZones);
 
     const humans = { P1: 0, P2: 0 };
-    let cpus = 0;
     setup.slots.forEach((slot, i) => {
       let controller: Controller;
-      let color: number;
+      const color = SLOT_COLORS[i % SLOT_COLORS.length];
       if (slot === 'CPU') {
-        color = CPU_COLORS[cpus++ % CPU_COLORS.length];
         controller = new CpuController({
           enemiesOf: (k) => this.fighters.filter((f) => f !== k && !f.eliminated),
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
@@ -128,7 +134,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           nav: this.nav,
         });
       } else {
-        color = slot === 'P1' ? P1_COLOR : P2_COLOR;
         controller = new HumanController(this, slot === 'P1' ? PLAYER_1_KEYS : PLAYER_2_KEYS, slot, humans.P1 + humans.P2);
         humans[slot]++;
       }
@@ -143,8 +148,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const c = this.centerOfFighters();
     this.camTarget.copy(c);
     cam.centerOn(c.x, c.y);
+    this.camMid.set(c.x, c.y);
+    this.trauma = 0;
     this.applyZoom();
-    this.nextBonusAt = Config.COUNTDOWN + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
+    this.bonusRate = BONUS_RATES[setup.bonuses ?? 'normal'];
+    this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : Config.COUNTDOWN + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
     this.music = this.sound.add('music-game', { loop: true, volume: 0.28 });
@@ -189,6 +197,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.scene.stop('Debug');
       this.scene.stop('Backdrop');
       this.debris.destroy();
+      this.portals.destroy();
       for (const k of this.fighters) k.destroy();
     });
   }
@@ -324,8 +333,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   playSfx(key: string, volume = 0.5, detune = 0): void {
-    if (key === 'guard-break') { this.cameras.main.shake(160, 0.006); key = 'punch'; }
-    if (key === 'dodge') key = 'step';
+    if (key === 'guard-break') { this.shake(0.35); key = 'punch'; }
+    if (key === 'dodge') key = 'step'; // the old step sample, as a quick shuffle
+    else if (key === 'step' && this.cache.audio.exists('step-0')) {
+      // Footsteps: one of the soft metal boot steps, pitch varied a little.
+      key = `step-${Phaser.Math.Between(0, 2)}`;
+      detune += Phaser.Math.Between(-80, 80);
+    }
     if (!this.cache.audio.exists(key)) return;
     this.sound.play(key, { volume, detune });
   }
@@ -356,7 +370,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
       const hp = kubotz.health;
       kubotz.givePowerUp(orb.type, this.clock);
-      this.fx('pickUp', orb.x, orb.y);
       const def = POWER_UPS[orb.type];
       if (orb.type === 'health') {
         // Repair: its own sound, a longer twirl and the health regained.
@@ -456,6 +469,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
+    this.portals.update(now, dtMs);
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
@@ -668,7 +682,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const blocked = target instanceof Kubotz && (target.guarding || target.shield > 0);
     this.playSfx('punch', blocked ? 0.2 : 0.45);
     this.impact.hit(x, y, Math.sign(pushX) || 1, blocked ? 0x9fdcff : attacker.look.color, (damage / 4) * (blocked ? 0.5 : 1));
-    if (damage >= 5) this.cameras.main.shake(90, 0.004);
   }
 
   private popBullet(b: Bullet): void {
@@ -721,8 +734,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** PowerUpsSystem.updateSpawns: every 5-10 s, at most 5 on the map. */
   private updateBonusSpawns(now: number): void {
     if (now < this.nextBonusAt || this.winner !== undefined) return;
-    this.nextBonusAt = now + Phaser.Math.Between(Config.MIN_DELAY_BONUS_SPAWN, Config.MAX_DELAY_BONUS_SPAWN);
-    if (this.orbs.length >= Config.MAX_NB_BONUS || this.bonusSpawns.length === 0) return;
+    this.nextBonusAt = now + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
+    if (this.orbs.length >= this.bonusRate.most || this.bonusSpawns.length === 0) return;
     // Never on top of a ball already there.
     const free = this.bonusSpawns.filter((q) => !this.orbs.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < 2 * UNIT));
     if (free.length === 0) return;
@@ -766,10 +779,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const inLane = (z: Phaser.Geom.Rectangle) => y >= z.top && y <= z.bottom;
     if (vx < 0 && x < a.right && inLane(a)) {
       teleport(b.x - UNIT, y);
-      this.pickupFx.explode(10, b.x, y);
+      this.portals.burst(b.centerX, y, this.clock);
     } else if (vx > 0 && x > b.x && inLane(b)) {
       teleport(a.right + UNIT, y);
-      this.pickupFx.explode(10, a.right, y);
+      this.portals.burst(a.centerX, y, this.clock);
     }
   }
 
@@ -778,7 +791,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const k of this.fighters) {
       if (!k.isAlive() || k.health > 0) continue;
       this.fx('deathDust', k.x, k.body.bottom);
-      this.cameras.main.shake(220, 0.01);
+      this.shake(0.7);
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) killer.kills++;
       this.debris.explode(k, now);
@@ -803,14 +816,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       return d(q) - d(p);
     })[0];
     k.respawn(spawn.x + Phaser.Math.Between(-6, 6), spawn.y);
-    this.fx('stars', spawn.x, spawn.y);
   }
 
   // ------------------------------------------------------------------ camera
   /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
   private focusPoints(): { x: number; y: number }[] {
     const alive = this.fighters.filter((f) => f.isAlive());
-    return alive.length === 0 ? [] : [...alive, ...this.orbs];
+    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the robots.
+    const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
+    return alive.length === 0 ? [] : [...alive, ...fresh];
   }
 
   private centerOfFighters(): Phaser.Math.Vector2 {
@@ -821,7 +835,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
-  /** CameraSystem: lerp to the centre of all robots and power-ups, zoom to fit them. */
+  /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
   private updateCamera(dt: number): void {
     const pts = this.focusPoints();
     if (pts.length > 0) {
@@ -836,11 +850,22 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     const cam = this.cameras.main;
     const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * dt);
-    const cx = Phaser.Math.Linear(cam.midPoint.x, this.camTarget.x, t);
-    const cy = Phaser.Math.Linear(cam.midPoint.y, this.camTarget.y - UNIT, t);
+    const mid = this.camMid;
+    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y - UNIT, t));
     this.applyZoom();
-    cam.centerOn(cx, cy);
+    // Shake: trauma squared drives a smooth wobble of position and roll, and wears off.
+    const s = this.trauma * this.trauma;
+    const k = this.clock / 1000;
+    const wob = (f: number, p: number) => Math.sin(k * f + p) * 0.6 + Math.sin(k * f * 2.3 + p * 1.7) * 0.4;
+    cam.centerOn(mid.x + SHAKE_MAX * s * wob(47, 0), mid.y + SHAKE_MAX * s * wob(53, 2));
+    cam.setRotation(0.012 * s * wob(31, 4));
+    this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
     this.placeFixedLights();
+  }
+
+  /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
+  shake(amount: number): void {
+    this.trauma = Math.min(1, this.trauma + amount);
   }
 
   private applyZoom(): void {
@@ -867,6 +892,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.scene.start('Title');
   }
 }
+
+/** Camera shake: the largest offset (world px) and how fast trauma wears off (per second). */
+const SHAKE_MAX = 0.45 * UNIT;
+const SHAKE_DECAY = 1.8;
+
+/** How long the camera keeps a newly spawned power-up ball in view. */
+const ORB_FOCUS_MS = 2000;
 
 /**
  * Ledges, Melee-style: the top corners of solid blocks with room to stand on
