@@ -5,6 +5,7 @@ import type { TmxMap } from '../map/TmxMap';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { arenaStyle, retroBackdrop, setArenaStyle, STYLE_NAMES } from '../fx/Retro';
 
 const PREVIEW_W = 600;
 const PREVIEW_Y = 340;
@@ -16,7 +17,8 @@ const font = (size: number, color = '#ffffff') => ({ fontFamily: BODY_FAMILY, fo
  * The arena select: a picture of each arena (its tile art drawn small, the
  * way GameScene bakes it, with the platform rims and the portals), its name
  * and blurb; left / right to change, attack / Enter to fight, special / Esc
- * back to the join screen. The power-up rate is set here too.
+ * back to the join screen. The power-up rate and the arena style (Modern or
+ * Retro) are set here too.
  */
 export class ArenaScene extends Phaser.Scene {
   private fighters: FighterSpec[] = [];
@@ -27,6 +29,7 @@ export class ArenaScene extends Phaser.Scene {
   private nameText!: Phaser.GameObjects.Text;
   private blurbText!: Phaser.GameObjects.Text;
   private bonusText!: Phaser.GameObjects.Text;
+  private styleText!: Phaser.GameObjects.Text;
   private dots: Phaser.GameObjects.Arc[] = [];
   private padDir = new Map<number, number>();
 
@@ -76,7 +79,9 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.bonusText = this.add.text(width / 2, below + 132, '', font(20)).setOrigin(0.5)
       .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
-    this.add.text(width / 2 - 20, height - 22, '◀ ▶ change   ·   attack / Enter / A: fight!   ·   special / Esc / B: back   ·   B key / gamepad X: power-ups', {
+    this.styleText = this.add.text(width / 2, below + 162, '', font(20)).setOrigin(0.5)
+      .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.toggleStyle());
+    this.add.text(width / 2 - 20, height - 22, '◀ ▶ change   ·   attack / Enter / A: fight!   ·   special / Esc / B: back   ·   B key / gamepad X: power-ups   ·   T / Y: style', {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff',
     }).setOrigin(0.5);
     const back = this.add.text(70, height - 22, '◀ Back', font(20, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -90,13 +95,16 @@ export class ArenaScene extends Phaser.Scene {
     for (const k of ['ENTER', 'SPACE', 'O', 'J', 'COMMA', 'NUMPAD_ONE']) kb.on(`keydown-${k}`, () => this.go());
     for (const k of ['ESC', 'P', 'N', 'BACKSPACE']) kb.on(`keydown-${k}`, () => this.back());
     kb.on('keydown-B', () => this.pickBonuses());
+    kb.on('keydown-T', () => this.toggleStyle());
     this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
       if (button.index === PAD.A || button.index === PAD.START) this.go();
       else if (button.index === PAD.B) this.back();
-      else if (button.index === PAD.X || button.index === PAD.Y) this.pickBonuses();
+      else if (button.index === PAD.X) this.pickBonuses();
+      else if (button.index === PAD.Y) this.toggleStyle();
     });
     this.pick(0);
     this.pickBonuses(0);
+    this.toggleStyle(false);
   }
 
   update(): void {
@@ -134,6 +142,12 @@ export class ArenaScene extends Phaser.Scene {
     this.bonusText.setText(`Power-ups: ${BONUS_RATES[this.bonuses].label}  ·  click to change`);
   }
 
+  private toggleStyle(change = true): void {
+    if (change) setArenaStyle(arenaStyle() === 'retro' ? 'modern' : 'retro');
+    this.styleText.setText(`Style: ${STYLE_NAMES[arenaStyle()]}  ·  click to change`);
+    if (change) this.pick(0);
+  }
+
   private go(): void {
     if (this.fighters.length < 2) { this.back(); return; }
     const setup: MatchSetup = { fighters: this.fighters, arena: this.arena, bonuses: this.bonuses };
@@ -149,7 +163,8 @@ export class ArenaScene extends Phaser.Scene {
    * drawn small, a lit rim along every block like the game's, and the portals.
    */
   private thumbnail(index: number): string {
-    const key = `arena-thumb:${index}`;
+    const style = arenaStyle();
+    const key = `arena-thumb:${style}:${index}`;
     if (this.textures.exists(key)) return key;
     const m: TmxMap = arenaMap(index, this.registry.get('map'));
     const mapW = m.width * m.tileWidth;
@@ -157,15 +172,16 @@ export class ArenaScene extends Phaser.Scene {
     const s = PREVIEW_W / mapW;
     const tex = this.textures.createCanvas(key, PREVIEW_W, Math.round(mapH * s))!;
     const ctx = tex.getContext();
-    const bg = this.textures.get('bg').getSourceImage() as HTMLImageElement;
+    const retro = style === 'retro';
+    const bg = this.textures.get(retro ? retroBackdrop(this.textures) : 'bg').getSourceImage() as HTMLImageElement;
     ctx.drawImage(bg, 0, 0, tex.width, tex.height);
-    ctx.fillStyle = 'rgba(5, 11, 24, 0.35)';
+    ctx.fillStyle = retro ? 'rgba(10, 10, 8, 0.2)' : 'rgba(5, 11, 24, 0.35)';
     ctx.fillRect(0, 0, tex.width, tex.height);
-    eachTile(this.textures, m, (source, _key, x, y) => ctx.drawImage(source, x * s, y * s, source.width * s, source.height * s));
+    eachTile(this.textures, m, (source, _key, x, y) => ctx.drawImage(source, x * s, y * s, source.width * s, source.height * s), style);
     ctx.globalCompositeOperation = 'lighter';
     for (const o of m.objects) {
       if (o.type === 'WALL' || o.type === 'STATIC_PLATFORM') {
-        ctx.strokeStyle = 'rgba(41, 171, 226, 0.35)';
+        ctx.strokeStyle = retro ? 'rgba(118, 226, 240, 0.8)' : 'rgba(41, 171, 226, 0.35)';
         ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(o.x * s, o.y * s + 1); ctx.lineTo((o.x + o.width) * s, o.y * s + 1); ctx.stroke();
         ctx.strokeStyle = 'rgba(159, 230, 255, 0.9)';
