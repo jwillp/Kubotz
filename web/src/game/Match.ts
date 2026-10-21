@@ -36,6 +36,8 @@ export interface MatchResult {
   /** Per fighter, as shown in the match: name ("P1", "CPU 3") and colour. */
   names: string[];
   colors: number[];
+  /** Per fighter, the texture of its player tag (see Kubotz.tagKey). */
+  tags?: string[];
   /** The K.O.s in order, each with the seconds before it (see game/Replay.ts). */
   replays: KoReplay[];
   /** The arena had an outer hull texture (cube arenas), for drawing the replays. */

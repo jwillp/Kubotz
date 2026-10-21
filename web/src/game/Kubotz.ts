@@ -9,6 +9,7 @@ import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { vfx } from './Settings';
 import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
+import { makeTagTexture } from '../ui/Type';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -272,6 +273,8 @@ export class Kubotz implements Damageable, Teamed {
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
   private readonly tag: Phaser.GameObjects.Image;
+  /** Texture of the player tag (P1, P2... or CPU, in the robot's colour), for the HUD and results. */
+  readonly tagKey: string;
   readonly look: KubotzLook;
 
   facing: 1 | -1 = -1; // PhysicsComponent default direction is LEFT
@@ -420,9 +423,11 @@ export class Kubotz implements Damageable, Teamed {
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     this.healthBar = scene.add.graphics().setDepth(20);
-    // The P1 / P2 / CPU arrow label floats above the robot.
-    const label = `label-${controller.label}:${hex(color)}`;
-    this.tag = scene.add.image(x, y, scene.textures.exists(label) ? label : 'label-CPU').setOrigin(0.5, 1).setDepth(21);
+    // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
+    const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
+    this.tagKey = `label-${who}:${hex(color)}`;
+    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, color);
+    this.tag = scene.add.image(x, y, this.tagKey).setOrigin(0.5, 1).setDepth(21);
   }
 
   /** Winding up, striking or recovering (a CPU can see it coming). */

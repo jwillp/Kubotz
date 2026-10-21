@@ -6,6 +6,7 @@ import { Robot2D } from '../anim/Robot2D';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import type { FighterStats, KoReplay, MatchResult, RobotFrame } from '../game/Match';
+import { BODY_FAMILY, heading, headingText } from '../ui/Type';
 
 /** The stats table's columns; `good` ones light up their best value. */
 const COLUMNS: { label: string; good: boolean; get: (s: FighterStats) => number }[] = [
@@ -34,7 +35,7 @@ export function replayRate(d: number): number {
 const FAST = 2.4;
 const SLOW = 0.2;
 
-const FONT = 'Arial Black, sans-serif';
+const FONT = BODY_FAMILY;
 const css = (c: number) => '#' + hex(c);
 
 interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: number; age: number }
@@ -112,7 +113,7 @@ export class ResultsScene extends Phaser.Scene {
       robot.visible = false;
       this.only(this.worldCam, robot.view);
       this.robots.push(robot);
-      const tag = this.add.text(0, 0, r.names[i], { fontFamily: FONT, fontSize: '20px', color: css(color), stroke: '#000000', strokeThickness: 5 })
+      const tag = this.add.text(0, 0, r.names[i], { fontFamily: FONT, fontStyle: '800', fontSize: '20px', color: css(color), stroke: '#000000', strokeThickness: 5 })
         .setOrigin(0.5, 1).setDepth(21).setVisible(false);
       this.only(this.worldCam, tag);
       this.tags.push(tag);
@@ -149,10 +150,10 @@ export class ResultsScene extends Phaser.Scene {
     const winners = r.winnerTeam === null ? [] : r.fighters.map((f, i) => (f.team === r.winnerTeam ? i : -1)).filter((i) => i >= 0);
     const winColor = winners.length ? r.colors[winners[0]] : 0x29abe2;
     const title = winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
-    c.add(this.add.text(width / 2, 70, title, { fontFamily: FONT, fontSize: '60px', color: '#ffffff', stroke: css(winColor), strokeThickness: 8 }).setOrigin(0.5));
+    c.add(heading(this, width / 2, 70, headingText(title.replace(/&/g, 'and')), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
     c.add(this.add.text(width / 2, 130, `Match time ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}  ·  ${r.replays.length} K.O.${r.replays.length === 1 ? '' : 's'}`, {
-      fontFamily: 'Arial, sans-serif', fontSize: '20px', color: '#9fe3ff',
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '20px', color: '#9fe3ff',
     }).setOrigin(0.5));
 
     // One row per robot, the numbers in its colour; the best of each column is lit.
@@ -160,7 +161,7 @@ export class ResultsScene extends Phaser.Scene {
     const top = 200;
     const rowH = Math.min(84, 380 / Math.max(1, r.names.length));
     COLUMNS.forEach((col, j) => c.add(this.add.text(x0 + nameW + colW * (j + 0.5), top, col.label, {
-      fontFamily: FONT, fontSize: '15px', color: '#8fb4d8',
+      fontFamily: FONT, fontStyle: '800', fontSize: '15px', color: '#8fb4d8',
     }).setOrigin(0.5)));
     const best = COLUMNS.map((col) => Math.max(...r.stats.map((s) => col.get(s))));
     r.names.forEach((name, i) => {
@@ -169,22 +170,22 @@ export class ResultsScene extends Phaser.Scene {
       const row = this.add.container(0, y);
       const won = winners.includes(i);
       row.add(this.add.rectangle(width / 2, 0, width - 2 * x0 + 40, rowH - 10, color, won ? 0.28 : 0.14).setStrokeStyle(2, color, won ? 0.9 : 0.4));
-      const label = `label-${r.fighters[i].input}:${hex(color)}`;
+      const label = r.tags?.[i] ?? `label-${r.fighters[i].input}:${hex(color)}`;
       if (this.textures.exists(label)) row.add(this.add.image(x0 + 22, 0, label).setScale(0.34));
-      row.add(this.add.text(x0 + 52, 0, name, { fontFamily: FONT, fontSize: '28px', color: css(color), stroke: '#000000', strokeThickness: 5 }).setOrigin(0, 0.5));
-      if (won) row.add(this.add.text(x0 + 52 + 12 + name.length * 19, 0, 'WINNER', { fontFamily: FONT, fontSize: '13px', color: '#ffe066' }).setOrigin(0, 0.5));
+      row.add(this.add.text(x0 + 52, 0, name, { fontFamily: FONT, fontStyle: '800', fontSize: '28px', color: css(color), stroke: '#000000', strokeThickness: 5 }).setOrigin(0, 0.5));
+      if (won) row.add(this.add.text(x0 + 52 + 12 + name.length * 19, 0, 'WINNER', { fontFamily: FONT, fontStyle: '800', fontSize: '13px', color: '#ffe066' }).setOrigin(0, 0.5));
       COLUMNS.forEach((col, j) => {
         const v = col.get(r.stats[i]);
         const top1 = col.good && v > 0 && v === best[j];
         row.add(this.add.text(x0 + nameW + colW * (j + 0.5), 0, String(v), {
-          fontFamily: FONT, fontSize: top1 ? '30px' : '26px', color: top1 ? '#ffffff' : '#c8d8ea', stroke: css(color), strokeThickness: top1 ? 4 : 0,
+          fontFamily: FONT, fontStyle: '800', fontSize: top1 ? '30px' : '26px', color: top1 ? '#ffffff' : '#c8d8ea', stroke: css(color), strokeThickness: top1 ? 4 : 0,
         }).setOrigin(0.5));
       });
       row.setAlpha(0).setX(-60);
       this.tweens.add({ targets: row, x: 0, alpha: 1, duration: 380, delay: 250 + i * 140, ease: 'Cubic.out' });
       c.add(row);
     });
-    this.footer = this.add.text(width / 2, height - 70, '', { fontFamily: FONT, fontSize: '26px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 6 })
+    this.footer = this.add.text(width / 2, height - 70, '', { fontFamily: FONT, fontStyle: '800', fontSize: '26px', color: '#ffffff', stroke: '#29abe2', strokeThickness: 6 })
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.press());
     this.tweens.add({ targets: this.footer, scale: 1.05, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     c.add(this.footer);
@@ -219,11 +220,11 @@ export class ResultsScene extends Phaser.Scene {
     // Letterbox bars, the K.O. line and a REPLAY mark.
     c.add(this.add.rectangle(width / 2, 34, width, 68, 0x000000, 0.72));
     c.add(this.add.rectangle(width / 2, height - 26, width, 52, 0x000000, 0.72));
-    this.replayTitle = this.add.text(width / 2, 34, '', { fontFamily: FONT, fontSize: '30px', color: '#ffffff', stroke: '#000000', strokeThickness: 5 }).setOrigin(0.5);
-    const rec = this.add.text(28, height - 26, '● REPLAY', { fontFamily: FONT, fontSize: '20px', color: '#ff5252' }).setOrigin(0, 0.5);
+    this.replayTitle = this.add.text(width / 2, 34, '', { fontFamily: FONT, fontStyle: '800', fontSize: '30px', color: '#ffffff', stroke: '#000000', strokeThickness: 5 }).setOrigin(0.5);
+    const rec = this.add.text(28, height - 26, '● REPLAY', { fontFamily: FONT, fontStyle: '800', fontSize: '20px', color: '#ff5252' }).setOrigin(0, 0.5);
     this.tweens.add({ targets: rec, alpha: 0.35, duration: 520, yoyo: true, repeat: -1 });
-    this.replaySpeed = this.add.text(width - 28, height - 26, '', { fontFamily: FONT, fontSize: '20px', color: '#9fe3ff' }).setOrigin(1, 0.5);
-    const skip = this.add.text(width / 2, height - 26, 'Attack / Enter: next  ·  Esc: back to the stats', { fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff' }).setOrigin(0.5);
+    this.replaySpeed = this.add.text(width - 28, height - 26, '', { fontFamily: FONT, fontStyle: '800', fontSize: '20px', color: '#9fe3ff' }).setOrigin(1, 0.5);
+    const skip = this.add.text(width / 2, height - 26, 'Attack / Enter: next  ·  Esc: back to the stats', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '17px', color: '#cfe9ff' }).setOrigin(0.5);
     c.add([this.replayTitle, rec, this.replaySpeed, skip]);
   }
 
