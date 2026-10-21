@@ -205,7 +205,7 @@ export function makeTagTexture(scene: Phaser.Scene, key: string, text: string, c
   const l = layout(scene, text, 150 * 0.45);
   const arrow = 18;
   /** Space between the letters and the pointer. */
-  const gap = 14;
+  const gap = 26;
   const w = Math.ceil(l.width + outline * 2 + 4);
   const h = Math.ceil(l.height + gap + arrow + outline * 2 + 4);
   if (scene.textures.exists(key)) scene.textures.remove(key);
