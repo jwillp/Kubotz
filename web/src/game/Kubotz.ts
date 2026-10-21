@@ -10,6 +10,7 @@ import { vfx } from './Settings';
 import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
+import { WORN, surface } from '../fx/Surface';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -191,12 +192,13 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
-/** The texture of a robot part in a colour: helmets and the laser blade are recoloured (BootScene). */
+/** The texture of a robot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
 export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
   let key = `kubotz:${file}`;
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
   else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
-  return textures.exists(key) ? key : `kubotz:${file}`;
+  if (!textures.exists(key)) key = `kubotz:${file}`;
+  return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
 }
 
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */

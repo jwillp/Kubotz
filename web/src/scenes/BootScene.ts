@@ -4,6 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
 import { addNormalMap } from '../fx/NormalMaps';
+import { WORN, weather } from '../fx/Surface';
 import { body, buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
 import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 
@@ -102,6 +103,17 @@ export class BootScene extends Phaser.Scene {
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
       addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
+    }
+    // Worn copies of every robot part, helmets and blades in every colour
+    // (fx/Surface.ts): the look in play, G switches back to the clean art.
+    const parts: [string, string][] = spriter.allFiles().map((f) => [`kubotz:${f}`, f]);
+    for (const color of SLOT_COLORS) {
+      for (const file of HEAD_FILES) parts.push([`head:${hex(color)}:${file}`, file]);
+      parts.push([`sword:${hex(color)}`, SWORD_FILE]);
+    }
+    for (const [key, file] of parts) {
+      this.textures.addCanvas(WORN + key, weather(this.textures.get(key).getSourceImage() as HTMLImageElement, file));
+      addNormalMap(this.textures, WORN + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {});
     }
     this.measureWeapons();
     const g = this.make.graphics({}, false);

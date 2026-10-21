@@ -85,7 +85,7 @@ export function addNormalMap(textures: Phaser.Textures.TextureManager, key: stri
 }
 
 /** A two-pass box blur (radius r) of a field. */
-function boxBlur(src: Float32Array, w: number, h: number, r: number): Float32Array {
+export function boxBlur(src: Float32Array, w: number, h: number, r: number): Float32Array {
   if (r <= 0) return Float32Array.from(src);
   const tmp = new Float32Array(w * h);
   const out = new Float32Array(w * h);
