@@ -112,6 +112,18 @@ export class PlateButton extends Phaser.GameObjects.Container {
   }
 }
 
+/**
+ * The Kube's backdrop behind a menu, as in a match (the blurred room, bokeh,
+ * light shafts, haze), under a dim of `dim`. Stops with the scene.
+ */
+export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
+  const { width, height } = scene.scale;
+  scene.scene.launch('Backdrop');
+  scene.scene.sendToBack('Backdrop');
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scene.stop('Backdrop'));
+  scene.add.rectangle(width / 2, height / 2, width, height, 0x050b18, dim);
+}
+
 /** A key-hint bar along the bottom edge: a dark band under a cyan line, one or two lines of Exo 2. */
 export function footer(scene: Phaser.Scene, lines: string[]): Phaser.GameObjects.Container {
   const { width, height } = scene.scale;

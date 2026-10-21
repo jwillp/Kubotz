@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { addMusic } from '../game/Settings';
-import { footer, PlateButton, shutter } from '../ui/Plate';
-import { body } from '../ui/Type';
+import { footer, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
+import { heading } from '../ui/Type';
 
 /** The title menu: each entry opens a scene. */
 const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
@@ -23,17 +23,15 @@ export class TitleScene extends Phaser.Scene {
     // The scene object is reused when the title comes back: drop the old (destroyed) texts.
     this.items = [];
     this.leaving = false;
-    const { width, height } = this.scale;
-    // The Kube's backdrop as in a match: the blurred room, bokeh, light shafts and haze.
-    this.scene.launch('Backdrop');
-    this.scene.sendToBack('Backdrop');
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scene.stop('Backdrop'));
-    this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.15);
+    const { width } = this.scale;
+    kubeBackdrop(this);
 
     // The original Kubotz logo (logo_SD.png from the 2015 gh-pages site).
     const logo = this.add.image(width / 2, 118, 'logo').setScale(1.3);
     this.tweens.add({ targets: logo, y: 128, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    this.add.text(width / 2, 222, 'robot arena brawler', body(22, { color: '#9fe3ff', fontStyle: '500' })).setOrigin(0.5);
+    // KUBOTZ ARENA: the subtitle in the logo's font and neon, spaced out under it.
+    const arena = heading(this, width / 2, 226, 'A R E N A', 34);
+    this.tweens.add({ targets: arena, y: 236, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 
     ENTRIES.forEach((m, i) => {
       const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 40 });

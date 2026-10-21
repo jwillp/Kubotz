@@ -5,7 +5,7 @@ import type { TmxMap } from '../map/TmxMap';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
-import { shutter } from '../ui/Plate';
+import { drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
 
 const PREVIEW_W = 600;
 const PREVIEW_Y = 340;
@@ -41,8 +41,7 @@ export class ArenaScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.7);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.55);
+    kubeBackdrop(this, 0.3);
     heading(this, width / 2, 46, 'Choose the arena', 54);
 
     // Who is fighting: a chip per robot in its team colour.
@@ -77,12 +76,10 @@ export class ArenaScene extends Phaser.Scene {
     });
     this.bonusText = this.add.text(width / 2, below + 132, '', font(20)).setOrigin(0.5)
       .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickBonuses());
-    this.add.text(width / 2 - 20, height - 22, '◀ ▶ change   ·   attack / Enter / A: fight!   ·   special / Esc / B: back   ·   B key / gamepad X: power-ups', {
-      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff',
-    }).setOrigin(0.5);
-    const back = this.add.text(70, height - 22, '◀ Back', font(20, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    footer(this, ['◀ ▶ change   ·   attack / Enter / A: fight!   ·   special / Esc / B: back   ·   B key / gamepad X: power-ups']);
+    const back = this.add.text(70, height - 20, '◀ Back', font(20, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
     back.on('pointerdown', () => this.back());
-    const fight = this.add.text(width - 80, height - 22, 'FIGHT!', font(26, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const fight = this.add.text(width - 80, height - 20, 'FIGHT!', font(26, '#29abe2')).setOrigin(0.5).setInteractive({ useHandCursor: true });
     fight.on('pointerdown', () => this.go());
 
     const kb = this.input.keyboard!;
@@ -123,7 +120,12 @@ export class ArenaScene extends Phaser.Scene {
     }
     const w = this.preview.width;
     const h = this.preview.height;
-    this.frame.clear().lineStyle(4, 0x29abe2, 1).strokeRoundedRect(width / 2 - w / 2 - 6, PREVIEW_Y - h / 2 - 6, w + 12, h + 12, 10);
+    // The preview set in a Kube plate, lit top left and bottom right.
+    const fx = width / 2 - w / 2 - 14;
+    const fy = PREVIEW_Y - h / 2 - 14;
+    drawPlate(this.frame.clear(), fx, fy, w + 28, h + 28, { cut: 22, edge: 0x29abe2 });
+    drawStrip(this.frame, fx + 22, fy, fx + w * 0.5, fy, 0x29abe2, 3);
+    drawStrip(this.frame, fx + w * 0.5, fy + h + 28, fx + w + 6, fy + h + 28, 0x29abe2, 3);
     this.nameText.setText(ARENA_INFO[this.arena].name);
     this.blurbText.setText(ARENA_INFO[this.arena].blurb);
     this.dots.forEach((dot, i) => dot.setFillStyle(i === this.arena ? 0x29abe2 : 0xffffff, i === this.arena ? 1 : 0.4));

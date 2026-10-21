@@ -851,12 +851,16 @@ the Okuba Cloud / Exo 2 pairing.
   cyan rule under it, content in plates, a footer bar with key/pad hints.
 - Title: the original logo unchanged; menu entries become plate buttons.
 - Settings: one plate per slider, cyan track and square knob.
-- Join, arena select and results keep their layouts and adopt the frame and
-  plate panels in a follow-up step, once PR #8–#10 have landed, to avoid
-  conflicts.
+- Title subtitle: "ARENA" in Okuba Cloud with the logo's neon, spaced out
+  under the logo (KUBOTZ ARENA), replacing "robot arena brawler".
+- Title, join, arena select and move list sit on the Kube's blurred backdrop
+  (`kubeBackdrop`: the match's BackdropScene with bokeh, shafts and haze).
+- Join, arena select, move list and results keep their layouts with plate
+  panels: seat plates lit in the seat colour, the arena preview set in a lit
+  plate, the move list panels as plates, a plate per robot on the results.
 - Transitions: a short "shutter" (two plates closing from the sides with a
   cyan seam, then opening) between menu scenes, about 350 ms, skipped when
   visual effects are at 0.
 
-**Order.** HUD → pause → title + shared frame → settings → (follow-up) join,
-arena select, results.
+**Order.** HUD → pause → title + shared frame → settings → join, arena
+select, move list, results.

@@ -6,7 +6,7 @@ import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import { TEAM_NAMES, type FighterSpec } from '../game/Match';
 import type { SpriterData } from '../spriter/Spriter';
 import { BODY_FAMILY, heading } from '../ui/Type';
-import { shutter } from '../ui/Plate';
+import { drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
 
 /** What drives a seat: keyboard set 1 or 2, a gamepad (its index), or the computer. */
 type Device = 'K1' | 'K2' | number | 'CPU';
@@ -81,8 +81,7 @@ export class JoinScene extends Phaser.Scene {
     this.state.humans = this.state.humans.filter((h) => typeof h.device !== 'number' || this.input.gamepad?.getPad(h.device));
 
     const { width, height } = this.scale;
-    this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.7);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.55);
+    kubeBackdrop(this, 0.3);
     heading(this, width / 2, 46, 'Choose your Kubot', 54);
     this.add.text(width / 2, 92, 'Attack to join (O · , · gamepad A), special to leave (P · N · B)   ·   up / down: helmet   ·   left / right: colour (same colour = same team)', {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#9fe3ff',
@@ -106,10 +105,8 @@ export class JoinScene extends Phaser.Scene {
     this.add.text(width / 2 - 470, cy + 32, '+ / - · gamepad L / R', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '13px', color: '#9fe3ff' }).setOrigin(0, 0.5);
     this.status = this.add.text(width / 2 + 40, cy, '', { fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '18px', color: '#cfe9ff' }).setOrigin(0.5);
     this.fight = this.button(width / 2 + 440, cy, 'ARENA ▶', () => this.next(), 30);
-    this.button(70, height - 30, '◀ Back', () => this.back(), 20);
-    this.add.text(width - 20, height - 30, 'Enter / Start: choose the arena   ·   Esc: back   ·   1-4: change a slot\'s colour', {
-      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '14px', color: '#9fe3ff',
-    }).setOrigin(1, 0.5);
+    footer(this, ['Enter / Start: choose the arena   ·   Esc: back   ·   1-4: change a slot\'s colour']);
+    this.button(70, height - 20, '◀ Back', () => this.back(), 20);
 
     const kb = this.input.keyboard!;
     for (const set of ['K1', 'K2'] as const) {
@@ -244,10 +241,15 @@ export class JoinScene extends Phaser.Scene {
       const seat = seats[i];
       const x = this.panelX(i);
       const color = seat ? SLOT_COLORS[seat.team] : 0x3a4a66;
-      p.frame.clear()
-        .fillStyle(0x08132a, seat ? 0.85 : 0.5).fillRoundedRect(x - PANEL_W / 2, PANEL_Y - PANEL_H / 2, PANEL_W, PANEL_H, 18)
-        .lineStyle(seat ? 5 : 2, color, seat ? 1 : 0.6).strokeRoundedRect(x - PANEL_W / 2, PANEL_Y - PANEL_H / 2, PANEL_W, PANEL_H, 18);
-      if (seat) p.frame.fillStyle(color, 0.22).fillRoundedRect(x - PANEL_W / 2 + 8, PANEL_Y + PANEL_H / 2 - 64, PANEL_W - 16, 48, 12);
+      // A Kube plate per seat, lit along its top in the seat's colour.
+      const left = x - PANEL_W / 2;
+      const top = PANEL_Y - PANEL_H / 2;
+      drawPlate(p.frame.clear(), left, top, PANEL_W, PANEL_H, { cut: 24, alpha: seat ? 0.92 : 0.55, edge: seat ? color : undefined });
+      if (seat) {
+        drawStrip(p.frame, left + 24, top, left + PANEL_W, top, color, 3);
+        p.frame.fillStyle(color, 0.22).fillRect(left + 8, top + PANEL_H - 64, PANEL_W - 16, 48);
+        drawStrip(p.frame, left + 8, top + PANEL_H - 16, left + PANEL_W - 30, top + PANEL_H - 16, color, 2);
+      }
       const shown = !!seat;
       for (const o of [p.title, p.device, p.team, p.helmet, ...p.arrows]) o.setVisible(shown);
       p.empty.setVisible(!shown);
