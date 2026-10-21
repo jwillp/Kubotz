@@ -322,7 +322,7 @@ export const CLIPS: Record<string, Clip> = {
 
   /**
    * Victory dance (phase 11 D), a ninja's few beats, looping: a hand seal and
-   * a bow, a high front kick, then one knee dips low with the fist drawn in,
+   * a bow, then one knee dips low with the fist drawn in,
    * and the robot springs up into a "yes!": the elbow pulled down, the fist
    * up and back, pumped once.
    */
@@ -330,16 +330,11 @@ export const CLIPS: Record<string, Clip> = {
     { t: 0, pose: FIGHT },
     { t: 0.1, pose: { ...S, torso: 90, head: 74, y: -6, shoulderF: -15, armF: 82, handF: 95, shoulderB: -28, armB: 74, handB: 90 }, ease: 'out' },
     { t: 0.2, pose: { ...S, torso: 92, head: 96, y: -2, shoulderF: -15, armF: 82, handF: 95, shoulderB: -28, armB: 74, handB: 90 }, ease: 'inOut' },
-    { t: 0.3, pose: {
-      ...S, torso: 104, head: 100, tilt: -6, thighF: 55, legF: 68, footF: 75, thighB: -96, legB: -102, footB: -86,
-      shoulderF: -135, armF: -115, handF: -110, shoulderB: -40, armB: 10, handB: 20,
-    }, ease: 'snap' },
-    { t: 0.38, pose: { ...READY }, ease: 'inOut' },
-    { t: 0.48, pose: { ...KNEE_DIP }, ease: 'inOut' },
-    { t: 0.6, pose: { ...KNEE_DIP, torso: 80, head: 80, thighF: -2, legF: -90, shoulderF: -115, armF: 5, handF: 15 }, ease: 'inOut' },
-    { t: 0.7, pose: { ...YAY }, ease: 'back' },
-    { t: 0.77, pose: { ...YAY, y: 2, shoulderF: 68, armF: 100, handF: 104, head: 96 }, ease: 'inOut' },
-    { t: 0.84, pose: { ...YAY }, ease: 'back' },
+    { t: 0.4, pose: { ...KNEE_DIP }, ease: 'inOut' },
+    { t: 0.54, pose: { ...KNEE_DIP, torso: 80, head: 80, thighF: -2, legF: -90, shoulderF: -115, armF: 5, handF: 15 }, ease: 'inOut' },
+    { t: 0.66, pose: { ...YAY }, ease: 'back' },
+    { t: 0.75, pose: { ...YAY, y: 2, shoulderF: 68, armF: 100, handF: 104, head: 96 }, ease: 'inOut' },
+    { t: 0.83, pose: { ...YAY }, ease: 'back' },
     { t: 0.92, pose: { ...YAY, y: 3, shoulderF: 85, armF: 98, handF: 100, head: 98 }, ease: 'inOut' },
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ], { loop: true }),
