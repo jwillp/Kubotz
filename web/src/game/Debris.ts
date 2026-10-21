@@ -3,6 +3,7 @@ import { lit } from '../fx/NormalMaps';
 import { UNIT } from '../config';
 import { DebrisBody, PhysicsWorld } from '../physics/Physics';
 import type { Kubotz } from './Kubotz';
+import { canHurt } from './Match';
 
 const LIFETIME = 3200; // ms
 const FADE = 900;
@@ -65,7 +66,7 @@ export class DebrisField {
 
       if (Math.hypot(p.body.vx, p.body.vy) < HARMFUL_SPEED) continue;
       for (const f of fighters) {
-        if (f === p.owner || !f.isAlive() || f.intangible || p.hit.has(f)) continue;
+        if (!canHurt(p.owner, f) || !f.isAlive() || f.intangible || p.hit.has(f)) continue;
         const circle = new Phaser.Geom.Circle(x, y, p.radius);
         if (!Phaser.Geom.Intersects.CircleToRectangle(circle, f.hurtbox())) continue;
         p.hit.add(f);

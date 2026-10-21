@@ -661,6 +661,35 @@ every feature branch starts from `dev`.
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
 
+### Phase 11 C — Join screen, teams, arena select
+
+- **Title**: one menu entry, Play, opens the join screen (other entries,
+  Settings and the move list, join the same `ENTRIES` list).
+- **JoinScene** (Smash character select): four slots. Keyboard 1 (O), keyboard
+  2 (,) or a gamepad (A) joins, special (P / N / B) leaves (with nobody in,
+  back to the title); up / down cycles the helmet, left / right the colour.
+  The colour is the faction. A live preview of each robot (the rig in its
+  colour and helmet, idling, a taunt on a change). CPUs 0-3 (max 4 robots;
+  + / -, gamepad L / R, or the mouse), each CPU's colour and helmet set with
+  the mouse (or keys 1-4 for a slot's colour). Goes on with two robots on at
+  least two teams. The choices stay in the registry (`join`).
+- **ArenaScene**: a picture of each arena (its tile art drawn small with the
+  same `eachTile` GameScene bakes from, the rims and portals), name, blurb,
+  left / right to change, attack / Enter to fight, special / Esc back. The
+  power-up rate moved here.
+- **Match types** (`game/Match.ts`): `MatchSetup = { fighters: FighterSpec[];
+  arena; bonuses }`, `BONUS_RATES`, `TEAM_NAMES`, and the one friendly-fire
+  rule `canHurt(a, b)` (different teams). `Kubotz.team` is checked in
+  `takeDamage` and by every targeting query: melee and bullets
+  (`damageablesFor`), grabs (`grabTarget`), K.O. debris and the CPUs' enemy
+  list, so teammates are passed through. The match ends when one team (or
+  nobody) is left: `GameScene.winnerTeam`, `'match-over'` carries the team,
+  `GameScene.result()` gives the `MatchResult` (stats left empty for D).
+- **HUD**: a team tag in the team colour on each panel; with two teams each
+  side of the screen is one team; the banner names the team (or the robot
+  if it is alone).
+- Humans who join with a gamepad drive with that pad only, keyboard players
+  with their keys only.
 ### Phase 11 B — Settings screen (`feat/settings`)
 
 - `game/Settings.ts` (the store, saved in `localStorage`) gains a change

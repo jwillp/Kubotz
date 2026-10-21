@@ -6,6 +6,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
+import { canHurt, type Teamed } from './Match';
 import { vfx } from './Settings';
 import { makeTagTexture } from '../ui/Type';
 
@@ -189,6 +190,14 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
+/** The texture of a robot part in a colour: helmets and the laser blade are recoloured (BootScene). */
+export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
+  let key = `kubotz:${file}`;
+  if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
+  else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+  return textures.exists(key) ? key : `kubotz:${file}`;
+}
+
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
@@ -248,8 +257,10 @@ export interface ArenaHooks {
  * The playable robot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
  * PowerUps/Respawn components and systems, folded into one class).
  */
-export class Kubotz implements Damageable {
+export class Kubotz implements Damageable, Teamed {
   readonly owner = this;
+  /** Faction (index into SLOT_COLORS): robots on the same team can't hurt each other (see canHurt). */
+  readonly team: number;
   readonly body: KubotzBody;
   readonly anim: Animator;
   readonly model: Robot2D;
@@ -387,18 +398,16 @@ export class Kubotz implements Damageable {
     y: number,
     private hooks: ArenaHooks,
     physics: PhysicsWorld,
+    /** Faction (same team = no damage; defaults to its own slot) and helmet (index into HEADS; defaults by slot). */
+    opts: { team?: number; helmet?: number } = {},
   ) {
     this.body = new KubotzBody(physics, x, y);
+    this.team = opts.team ?? index;
 
     this.anim = new Animator(rig);
-    this.look = { head: HEADS[index % HEADS.length], color };
+    this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Robot2D(scene, rig, (file) => {
-      let key = `kubotz:${file}`;
-      if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
-      else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
-      return scene.textures.exists(key) ? key : `kubotz:${file}`;
-    });
+    this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / CPU arrow label floats above the robot.
     const label = `label-${controller.label}:${hex(color)}`;
@@ -427,7 +436,7 @@ export class Kubotz implements Damageable {
   get hitstun(): number { return this.hitstunUntil; }
   get comboInfo(): string { return this.inCombo ? `${this.comboStep || 3}/3${this.comboQueued ? '+' : ''}` : '-'; }
 
-  get name(): string { return this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label; }
+  get name(): string { return this.controller.name ?? (this.controller.label === 'CPU' ? `CPU ${this.index + 1}` : this.controller.label); }
   get x(): number { return this.body.x; }
   get y(): number { return this.body.y; }
   get grounded(): boolean { return this.body.grounded; }
@@ -1360,7 +1369,7 @@ export class Kubotz implements Damageable {
 
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
-    if (this.dead || this.invincible || this.intangible) return;
+    if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return;
     const now = this.hooks.now();
     // A hit breaks a grab (on either robot) and knocks a robot off its ledge.
     if (this.holding || this.heldBy) this.breakGrab();

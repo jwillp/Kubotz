@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
+import { JoinScene } from './scenes/JoinScene';
+import { ArenaScene } from './scenes/ArenaScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
 import { BackdropScene } from './scenes/BackdropScene';
@@ -17,7 +19,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
   render: { antialias: true, maxLights: 36 },
-  scene: [BootScene, TitleScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene],
+  scene: [BootScene, TitleScene, JoinScene, ArenaScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene],
 });
 
 // Handy for debugging from the browser console.
