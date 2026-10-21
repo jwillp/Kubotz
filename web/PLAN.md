@@ -864,3 +864,34 @@ the Okuba Cloud / Exo 2 pairing.
 
 **Order.** HUD → pause → title + shared frame → settings → join, arena
 select, move list, results.
+
+### Hologram spawns (`feat/hologram-spawn`)
+
+Owner: robots appear on a floating hologram projector at the match start
+and on every respawn, materialize out of scan lines, then the beam recedes
+and they drop; on a K.O. the parts scan out one by one instead of fading.
+
+- **fx/Hologram.ts** holds all of it. `spawnLook(age)` is the sequence
+  (2.3 s): the projector floats in (0–0.3 s), the beam opens (0.2–0.5 s),
+  a scan line draws the robot from the feet up (0.42–1.3 s), the cyan
+  hologram turns solid (1.3–1.72 s), the robot is let go at 1.75 s and
+  drops (it hangs `HOVER` = 1.1 units over its spawn), the beam recedes and
+  the projector flies off and powers down.
+- `HologramPipeline`: a per-object post pass on the robot's container (and
+  on debris pieces): cyan tint from the lit colours, 3 px scan lines
+  drifting up, flicker, rows slipping sideways, a bright edge at the line,
+  a faint scan-line outline ahead of it. Without WebGL it just fades.
+- The projector (a brushed-metal disc with the Kube's cyan strip and lens,
+  an antigravity glow) and the beam (layered cones, rising scan lines) are
+  drawn with two Graphics; a cyan point light joins the glow pool.
+  `holo-spawn` is a synth sound made in the module.
+- While a robot materializes the invincibility motes swirl round it in the
+  hologram's cyan (`ImpactFx.aura(k, 'hologram', HOLO_COLOR)`, also in replays).
+- Kubotz: `materializeUntil`: held in the beam (body off, no controls,
+  idle pose), intangible, full alpha. GameScene: `HoloSpawns.start` at the
+  match start (during the countdown) and in `respawn`.
+- Debris: each piece gets its own end time over the last 1.1 s of its 3.2 s
+  and scans out from the top for 0.65 s (`holoPiece`).
+- Replays: `RobotFrame.holo` = [age, projector x, feet y]; ResultsScene
+  redraws the hologram and projector from it, and its own K.O. pieces scan
+  out before the replay moves on.

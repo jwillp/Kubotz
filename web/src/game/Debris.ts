@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
+import { DISSOLVE_MS, holoPiece } from '../fx/Hologram';
 import { lit } from '../fx/NormalMaps';
 import { UNIT } from '../config';
 import { DebrisBody, PhysicsWorld } from '../physics/Physics';
 import type { Kubotz } from './Kubotz';
 import { canHurt } from './Match';
 
-const LIFETIME = 3200; // ms
-const FADE = 900;
+const LIFETIME = 3200; // ms, the longest a piece lasts
+const SPREAD = 1100; // the pieces scan out one by one over the last this long
 const DAMAGE = 2;
 const PUSH = 5; // units/s, before the knockback growth
 const HARMFUL_SPEED = 5 * UNIT; // pieces lying around do not hurt
@@ -19,12 +20,15 @@ interface Piece {
   owner: Kubotz;
   hit: Set<Kubotz>;
   born: number;
+  /** When it is gone: it scans out (a hologram dissolving from the top) for DISSOLVE_MS before. */
+  end: number;
 }
 
 /**
  * K.O.: the robot blows apart. Every body part (helmet, arms, legs, weapon...)
  * flies off as a spinning piece that bounces around the arena, and knocks the
- * robots it hits a little.
+ * robots it hits a little. Then each piece, one by one, scans out like a
+ * hologram switching off (fx/Hologram.ts).
  */
 export class DebrisField {
   private pieces: Piece[] = [];
@@ -53,16 +57,18 @@ export class DebrisField {
       body.spin = Phaser.Math.FloatBetween(-14, 14);
       const image = lit(this.scene.add.image(part.x, part.y, part.key))
         .setOrigin(part.originX, part.originY).setScale(part.scaleX, part.scaleY).setAngle(part.angle).setDepth(11);
-      this.pieces.push({ body, image, angle0: part.angle - Phaser.Math.RadToDeg(body.angle), radius, owner: k, hit: new Set(), born: now });
+      this.pieces.push({ body, image, angle0: part.angle - Phaser.Math.RadToDeg(body.angle), radius, owner: k, hit: new Set(), born: now,
+        end: now + LIFETIME - Math.random() * SPREAD });
     }
   }
 
   /** Moves the pieces with their bodies (after the physics step), hurts robots, clears old ones. */
   update(now: number, fighters: Kubotz[], onHit: (victim: Kubotz, x: number, y: number) => void): void {
     for (const p of this.pieces) {
-      const age = now - p.born;
       const { x, y } = p.body;
-      p.image.setPosition(x, y).setAngle(p.angle0 + Phaser.Math.RadToDeg(p.body.angle)).setAlpha(Math.min(1, (LIFETIME - age) / FADE));
+      p.image.setPosition(x, y).setAngle(p.angle0 + Phaser.Math.RadToDeg(p.body.angle));
+      const t = 1 - (p.end - now) / DISSOLVE_MS;
+      if (t > 0) holoPiece(p.image, Math.min(1, t));
 
       if (Math.hypot(p.body.vx, p.body.vy) < HARMFUL_SPEED) continue;
       for (const f of fighters) {
@@ -76,8 +82,8 @@ export class DebrisField {
         onHit(f, x, y);
       }
     }
-    for (const p of this.pieces.filter((q) => now - q.born >= LIFETIME)) this.remove(p);
-    this.pieces = this.pieces.filter((q) => now - q.born < LIFETIME);
+    for (const p of this.pieces.filter((q) => now >= q.end)) this.remove(p);
+    this.pieces = this.pieces.filter((q) => now < q.end);
     this.flashes = this.flashes.filter((f) => now - f.born < 600);
   }
 

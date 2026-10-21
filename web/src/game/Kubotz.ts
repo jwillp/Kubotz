@@ -379,6 +379,8 @@ export class Kubotz implements Damageable, Teamed {
   private wasGrounded = false;
   private dead = false;
   respawnAt = 0;
+  /** Materializing in the spawn hologram (fx/Hologram.ts): held in the beam, no controls, intangible, until then. */
+  materializeUntil = 0;
   eliminated = false;
   pad: PadState = emptyPad();
   /** Melee grabs: the robot this one holds, or the one holding it. */
@@ -462,7 +464,7 @@ export class Kubotz implements Damageable, Teamed {
   get intangible(): boolean {
     const now = this.hooks.now();
     const d = this.dodge;
-    return (!!d && now >= d.safeFrom && now < d.safeUntil) || now < this.ledgeSafeUntil;
+    return (!!d && now >= d.safeFrom && now < d.safeUntil) || now < this.ledgeSafeUntil || now < this.materializeUntil;
   }
   /** In an air dodge or a roll (including its end lag). */
   get dodging(): boolean { return !!this.dodge && this.hooks.now() < this.dodge.ends; }
@@ -543,6 +545,8 @@ export class Kubotz implements Damageable, Teamed {
   /** @param controls false during the countdown and while stunned. */
   update(now: number, dt: number, controls = true): void {
     if (this.dead) { this.healthBar.clear(); return; }
+    if (now < this.materializeUntil) { this.pad = emptyPad(); this.body.enable = false; return; }
+    if (!this.body.enable) this.body.enable = true; // let go by the spawn hologram: it drops
     const read = this.controller.read();
     const pad = this.pad = controls && !this.celebrating && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
@@ -1554,7 +1558,7 @@ export class Kubotz implements Damageable, Teamed {
     this.model.update(pose, maps, this.body.x + shake, this.body.bottom, yaw, {
       dtMs,
       lean, squash,
-      alpha: this.intangible ? 0.55 : 1,
+      alpha: this.intangible && now >= this.materializeUntil ? 0.55 : 1,
       flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
@@ -1570,6 +1574,7 @@ export class Kubotz implements Damageable, Teamed {
 
   private updateAnimationState(now: number): void {
     const a = this.anim;
+    if (now < this.materializeUntil) { a.play(ANIM.IDLE, { fade: 0 }); return; } // standing in the spawn beam
     if (this.heldBy) { a.play('held', { fade: 60 }); return; }
     if (this.throwing || this.climb) return; // the throw or the get-up plays out
     if (this.holding) { if (now >= this.pummelUntil) a.play('grabHold', { fade: 80 }); return; }

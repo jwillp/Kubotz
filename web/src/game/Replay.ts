@@ -41,10 +41,13 @@ export class ReplayRecorder {
     }
   }
 
-  record(now: number, fighters: readonly Kubotz[], cam: Phaser.Cameras.Scene2D.Camera, lights?: Phaser.GameObjects.LightsManager): void {
+  /** @param spawn a robot's spawn hologram, if it is in one (age, projector x, feet y; fx/Hologram.ts) */
+  record(now: number, fighters: readonly Kubotz[], cam: Phaser.Cameras.Scene2D.Camera, lights?: Phaser.GameObjects.LightsManager,
+    spawn?: (k: Kubotz) => [number, number, number] | undefined): void {
     const robots = fighters.map((k): RobotFrame => {
       const d = k.model.lastDraw;
-      return k.isAlive() && d ? { visible: true, ...d } : HIDDEN;
+      const holo = spawn?.(k);
+      return k.isAlive() && d ? { visible: true, ...d, ...(holo ? { holo } : {}) } : HIDDEN;
     });
     this.frames.push({
       t: now,
