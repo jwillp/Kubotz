@@ -187,9 +187,6 @@ export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff'
 export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
 
 /** Robot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
-/** How long the overhead health bar shows after the health changes. */
-const OVERLAY_SHOW_MS = 1800;
-
 export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
@@ -275,9 +272,6 @@ export class Kubotz implements Damageable, Teamed {
   readonly model: Robot2D;
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
-  /** The health the overhead bar last saw, and until when it shows after a change. */
-  private overlayHealth: number = Config.KUBOTZ_HEALTH;
-  private overlayUntil = 0;
   private readonly tag: Phaser.GameObjects.Image;
   /** Texture of the player tag (P1, P2... or CPU, in the robot's colour), for the HUD and results. */
   readonly tagKey: string;
@@ -1613,12 +1607,10 @@ export class Kubotz implements Damageable, Teamed {
     const zoom = this.scene.cameras.main.zoom;
     const y = this.body.top - UNIT * 0.75;
     this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom);
-    // The HUD cards carry health; over the robot it shows only for a moment
-    // after a change (and while low), so close fights stay readable.
-    if (this.health !== this.overlayHealth) { this.overlayHealth = this.health; this.overlayUntil = now + OVERLAY_SHOW_MS; }
+    // The HUD cards carry health; over the robot it shows only while low (red),
+    // so close fights stay readable.
     const low = this.health <= 30;
-    const shown = low ? 1 : Phaser.Math.Clamp((this.overlayUntil - now) / 400, 0, 1);
-    if (shown > 0) {
+    if (low) {
       // A small Kube plate: segments like the HUD's, underlined in the helmet colour.
       const px = 1 / zoom;
       const w = 64 * px;
@@ -1628,12 +1620,12 @@ export class Kubotz implements Damageable, Teamed {
       const segs = 8;
       const seg = w / segs;
       const hp = Phaser.Math.Clamp(this.health / Config.KUBOTZ_HEALTH, 0, 1);
-      g.fillStyle(0x0d1520, 0.8 * shown).fillRect(x - 2 * px, by - 2 * px, w + 2 * px, h + 4 * px);
+      g.fillStyle(0x0d1520, 0.8).fillRect(x - 2 * px, by - 2 * px, w + 2 * px, h + 4 * px);
       for (let s = 0; s < segs; s++) {
         const fill = Phaser.Math.Clamp(hp * segs - s, 0, 1);
-        if (fill > 0) g.fillStyle(low ? 0xff4a4a : 0xe9f6ff, shown).fillRect(x + s * seg, by, (seg - px) * fill, h);
+        if (fill > 0) g.fillStyle(0xff4a4a, 1).fillRect(x + s * seg, by, (seg - px) * fill, h);
       }
-      g.fillStyle(this.look.color, shown).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
+      g.fillStyle(this.look.color, 1).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
     }
     if (this.guarding) {
       const r = UNIT * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX));
