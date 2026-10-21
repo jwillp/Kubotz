@@ -14,7 +14,7 @@ import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
-import { HoloSpawns } from '../fx/Hologram';
+import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -634,6 +634,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // Invincibility and shield: the orb's motes keep circling the robot while they last.
       if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
       if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
+      // Materializing: the same motes swirl round it in the hologram's cyan.
+      if (k.isAlive() && this.holo.state(k, now)) this.impact.aura(k, 'hologram', HOLO_COLOR);
       // A charging gun draws sparks into its barrel.
       if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
         const m = k.muzzle();

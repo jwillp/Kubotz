@@ -7,7 +7,7 @@ import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx } from '../fx/Impact';
 import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
-import { DISSOLVE_MS, clearHolo, drawSpawn, holoPiece, holoRobot } from '../fx/Hologram';
+import { DISSOLVE_MS, HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoRobot } from '../fx/Hologram';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
 import { drawPlate, drawStrip, shutter } from '../ui/Plate';
@@ -75,6 +75,8 @@ export class ResultsScene extends Phaser.Scene {
   private flash!: Phaser.GameObjects.Graphics;
   private holoG!: Phaser.GameObjects.Graphics;
   private holoAdd!: Phaser.GameObjects.Graphics;
+  /** Per robot, where its spawn motes swirl (the middle of the robot as replayed). */
+  private holoMotes: { x: number; y: number }[] = [];
   private pieces: Piece[] = [];
   /** Which replay plays (-1: the stats are up), its clock, its frame cursor, and whether its K.O. burst went off. */
   private current = -1;
@@ -92,6 +94,7 @@ export class ResultsScene extends Phaser.Scene {
   init(result: MatchResult): void {
     this.result = result;
     this.robots = [];
+    this.holoMotes = [];
     this.tags = [];
     this.pieces = [];
     this.current = -1;
@@ -367,6 +370,9 @@ export class ResultsScene extends Phaser.Scene {
       const [age, hx, feet] = ra.holo;
       holoRobot(robot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
       drawSpawn(this.holoG, this.holoAdd, hx, feet, age + since, this.tau);
+      const m = this.holoMotes[i] ??= { x: 0, y: 0 };
+      m.x = L(ra.x, rb.x); m.y = bottom - UNIT;
+      this.impact.aura(m, 'hologram', HOLO_COLOR);
     } else clearHolo(robot.view);
   }
 

@@ -884,6 +884,8 @@ and they drop; on a K.O. the parts scan out one by one instead of fading.
   an antigravity glow) and the beam (layered cones, rising scan lines) are
   drawn with two Graphics; a cyan point light joins the glow pool.
   `holo-spawn` is a synth sound made in the module.
+- While a robot materializes the invincibility motes swirl round it in the
+  hologram's cyan (`ImpactFx.aura(k, 'hologram', HOLO_COLOR)`, also in replays).
 - Kubotz: `materializeUntil`: held in the beam (body off, no controls,
   idle pose), intangible, full alpha. GameScene: `HoloSpawns.start` at the
   match start (during the countdown) and in `respawn`.
