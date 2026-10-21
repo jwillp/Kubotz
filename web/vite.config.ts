@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite';
 
-// The original LibGDX assets are served untouched from core/assets.
+// The game's assets (art, maps, sounds, the Spriter rig) are served from public/.
 export default defineConfig({
   base: './',
-  publicDir: '../core/assets',
   build: { outDir: 'dist', chunkSizeWarningLimit: 2000 },
 });

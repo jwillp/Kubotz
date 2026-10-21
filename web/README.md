@@ -1,9 +1,10 @@
 # Kubotz — web version
 
-A browser port of Kubotz (the LibGDX game in `core/`), written with
-[Phaser 3](https://phaser.io), TypeScript and Vite. It reuses the original
-assets in `core/assets` untouched: the Spriter animation (`kubotz.scml`), the
-Tiled map (`DebugMap.tmx`), the HUD art and the particles.
+A browser port of Kubotz (originally a LibGDX game; its Java code lives on
+the `AI2` and `master` branches), written with [Phaser 3](https://phaser.io),
+TypeScript and Vite. It reuses the original assets, now in `public/`: the
+Spriter animation (`kubotz.scml`), the Tiled map (`DebugMap.tmx`), the HUD art
+and the particles.
 
 See [PLAN.md](PLAN.md) for the port plan, what maps to what, and the known
 differences from the original.

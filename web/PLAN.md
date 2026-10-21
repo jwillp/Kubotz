@@ -13,7 +13,7 @@ LibGDX version on the `AI2` branch. Graphical improvements come after parity.
 | Physics    | Box2D (fixtures, sensors)          | Phaser Arcade (AABB) + manual hitbox overlaps   |
 | Animation  | Spriter SCML (brashmonkey runtime) | Small TS Spriter player reading the same `.scml` |
 | Map        | Tiled TMX (gzip/base64)            | Same TMX parsed at runtime (DOMParser + DecompressionStream) |
-| Assets     | `core/assets`                      | Served as-is (Vite `publicDir` = `../core/assets`) |
+| Assets     | `core/assets`                      | Served as-is from `web/public` (moved there in phase 10c) |
 
 Why not keep the ECS: the original ECS is ~3k lines of plumbing for ~10 features.
 The port uses plain classes (a `Kubotz` actor with small feature modules) so each
@@ -541,3 +541,17 @@ Plan:
 - **Backdrop** (BackdropScene): the room art lens-blurred once into its own
   texture, drifting bokeh discs on three depths with parallax, slow light
   shafts, and haze towards the floor.
+
+### Phase 10c — web port only (2026-10-21)
+
+The owner asked for the branch to hold only the web port.
+- The original assets moved from `core/assets` to `web/public` (Vite's
+  default public folder), so `vite.config.ts` no longer points outside `web/`.
+- Removed: the Java/LibGDX modules (`core/src`, `desktop/`), the Gradle
+  build, the root config and the todo list.
+- Also removed: assets the web port never loads (checked by recording
+  every request across the title and all four arenas). That covers the
+  glTF models from the 3D detour, the bitmap font, the Spriter autosave and
+  reference sheets, the .psd, BasicCube.tmx, unused particle files, and the
+  untrimmed step and punch sounds.
+- The Java game is still on the `AI2` and `master` branches.

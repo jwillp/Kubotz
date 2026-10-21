@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { UNIT } from '../config';
 
 /**
- * A small runtime for LibGDX ParticleEditor files (`core/assets/particles/*.pe`),
+ * A small runtime for LibGDX ParticleEditor files (`public/particles/*.pe`),
  * as used by the full-on-scripting branch (landing dust, hit stars, laser smoke,
  * death dust). It follows com.badlogic.gdx.graphics.g2d.ParticleEmitter:
  * values are in world units (1 unit = 1 tile), times in ms, angles in degrees,
