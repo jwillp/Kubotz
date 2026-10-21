@@ -845,3 +845,7 @@ Later the same day: the faces' shading became a smooth gradient (12 thin
 bands interpolated between a lit front colour and a shadowed back one) and
 the dim parallax copy of the arena went, since the blurred backdrop reads as
 far away and platform shadows on it made no sense.
+Then the owner asked for it on every arena, kept optional with `V`, so "The
+Kube 2.5D" went again and every arena gets the perspective blocks. The faces
+are drawn through Light2D (flat normal), so lasers, blades, hits and pick-up
+lights wash over them like over the tile art.

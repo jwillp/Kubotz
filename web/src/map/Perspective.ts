@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { lit } from '../fx/NormalMaps';
 
 interface Block { x: number; y: number; width: number; height: number }
 
@@ -45,7 +46,8 @@ export class ArenaPerspective {
     private readonly rims: Phaser.GameObjects.Graphics,
   ) {
     this.front = front.map((obj) => ({ obj, x: obj.x, y: obj.y, scale: obj.scaleX }));
-    this.faces = scene.add.graphics().setDepth(1.95);
+    // Through Light2D (with a flat normal), so lasers, blades and hits wash over the faces too.
+    this.faces = lit(scene.add.graphics().setDepth(1.95));
   }
 
   update(mid: { x: number; y: number }): void {

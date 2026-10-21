@@ -19,7 +19,6 @@ import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
-import { ARENA_INFO } from '../map/Arenas';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
@@ -62,8 +61,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private pointLights: Phaser.GameObjects.Light[] = [];
   private solids: Phaser.Geom.Rectangle[] = [];
   private blocks: NavBlock[] = [];
-  /** 2.5D exploration: the arena index, its art layers and the perspective blocks (arenas marked perspective). */
-  private arenaIndex = 0;
+  /** 2.5D exploration: the arena's art layers and its perspective blocks (V toggles them). */
   private arenaLayers: Phaser.GameObjects.Image[] = [];
   private perspective: ArenaPerspective | null = null;
   /** Ledges robots can hang from (top corners of solid blocks). */
@@ -129,7 +127,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.specs = setup.fighters.slice(0, 4);
     this.map = arenaMap(setup.arena, this.registry.get('map'));
-    this.arenaIndex = setup.arena;
     this.arenaLayers = [];
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
@@ -292,7 +289,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
       rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
-    this.perspective = ARENA_INFO[this.arenaIndex]?.perspective ? new ArenaPerspective(this, this.blocks, this.arenaLayers, rims) : null;
+    this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
     this.ledges = findLedges(this.blocks);
     // The original map has a single PLAYER_SPAWN (the second robot was hard-coded

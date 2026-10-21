@@ -40,7 +40,6 @@ function kube(floor: Rect[] = [[6, 34, 40, 3]]): Pick<ArenaDef, 'walls' | 'warps
 
 export const ARENAS: (ArenaDef | null)[] = [
   null, // the original map (DebugMap.tmx)
-  null, // the original map again, drawn in 2.5D (ARENA_INFO)
   {
     name: 'The Foundry',
     blurb: 'Two pillars and a block in the middle',
@@ -68,11 +67,9 @@ export const ARENAS: (ArenaDef | null)[] = [
   },
 ];
 
-/** Name, blurb and whether the blocks are drawn with a little perspective (2.5D exploration). */
-export const ARENA_INFO: { name: string; blurb: string; perspective?: boolean }[] = [
+export const ARENA_INFO = [
   { name: 'The Kube', blurb: 'The original arena' },
-  { name: 'The Kube 2.5D', blurb: 'The original arena, with a little depth', perspective: true },
-  ...ARENAS.slice(2).map((a, i) => ({ name: a!.name, blurb: a!.blurb, perspective: i === 0 })),
+  ...ARENAS.slice(1).map((a) => ({ name: a!.name, blurb: a!.blurb })),
 ];
 
 /** A map like the TMX one, for an arena: same tiles, generated layers and objects. */
