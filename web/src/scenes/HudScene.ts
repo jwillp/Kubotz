@@ -5,9 +5,9 @@ import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 const PAUSE_ITEMS = ['Resume', 'Settings', 'Quit to title'];
-import { body, heading, headingText, NEON } from '../ui/Type';
 
 interface Panel {
   container: Phaser.GameObjects.Container;
@@ -23,7 +23,7 @@ export class HudScene extends Phaser.Scene {
   private panels = new Map<Kubotz, Panel>();
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
-  private bannerText!: Phaser.GameObjects.BitmapText;
+  private bannerText!: HeadingText;
   /** The pause menu under the PAUSED banner. */
   private pauseItems: Phaser.GameObjects.Text[] = [];
   private pauseSelected = 0;
@@ -131,7 +131,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onCountdown(word: string): void {
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140, { glowStrength: 4 }).setDepth(20).setScale(1.6).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }
@@ -140,8 +140,8 @@ export class HudScene extends Phaser.Scene {
     // One robot: its name; a team of several: the team.
     const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
-    this.bannerText.setText(headingText(winnerTeam === null ? 'DRAW' : `${title} WINS`));
-    this.glowBanner(winnerTeam === null ? NEON : SLOT_COLORS[winnerTeam]);
+    this.bannerText.setText(winnerTeam === null ? 'DRAW' : `${title} WINS`);
+    this.bannerText.setGlow(winnerTeam === null ? NEON : SLOT_COLORS[winnerTeam]);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('').setY(55).setFontSize(22);
     this.bannerText.setY(-20);
     for (const t of this.pauseItems) t.setVisible(false);
@@ -152,7 +152,7 @@ export class HudScene extends Phaser.Scene {
 
   private onPause(paused: boolean): void {
     this.bannerText.setText('PAUSED');
-    this.glowBanner(NEON);
+    this.bannerText.setGlow(NEON);
     (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen').setY(-82).setFontSize(16);
     for (const t of this.pauseItems) t.setVisible(true);
     this.bannerText.setY(-28);
@@ -178,10 +178,5 @@ export class HudScene extends Phaser.Scene {
     const hint = (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press attack / Enter / A to continue').setAlpha(0);
     this.tweens.add({ targets: hint, alpha: 1, duration: 300 });
     this.tweens.add({ targets: hint, scale: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: 300 });
-  }
-
-  private glowBanner(color: number): void {
-    this.bannerText.postFX?.clear();
-    this.bannerText.postFX?.addGlow(color, 3, 0, false, 0.1, 12);
   }
 }

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { addMusic } from '../game/Settings';
-import { body, heading, NEON } from '../ui/Type';
+import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 /** The title menu: each entry opens a scene. */
 const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
@@ -12,7 +12,7 @@ const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
 
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
-  private items: Phaser.GameObjects.BitmapText[] = [];
+  private items: HeadingText[] = [];
 
   constructor() { super('Title'); }
 
@@ -66,11 +66,7 @@ export class TitleScene extends Phaser.Scene {
 
   private select(i: number): void {
     this.selected = i;
-    this.items.forEach((t, j) => {
-      t.postFX?.clear();
-      if (j === i) t.postFX?.addGlow(NEON, 3, 0, false, 0.1, 12);
-      t.setScale(j === i ? 1.1 : 1);
-    });
+    this.items.forEach((t, j) => t.setGlow(j === i ? NEON : null).setScale(j === i ? 1.1 : 1));
   }
 
   private start(i: number): void {

@@ -6,7 +6,7 @@ import { Robot2D } from '../anim/Robot2D';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import type { FighterStats, KoReplay, MatchResult, RobotFrame } from '../game/Match';
-import { BODY_FAMILY, heading, headingText } from '../ui/Type';
+import { BODY_FAMILY, heading } from '../ui/Type';
 
 /** The stats table's columns; `good` ones light up their best value. */
 const COLUMNS: { label: string; good: boolean; get: (s: FighterStats) => number }[] = [
@@ -150,7 +150,7 @@ export class ResultsScene extends Phaser.Scene {
     const winners = r.winnerTeam === null ? [] : r.fighters.map((f, i) => (f.team === r.winnerTeam ? i : -1)).filter((i) => i >= 0);
     const winColor = winners.length ? r.colors[winners[0]] : 0x29abe2;
     const title = winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
-    c.add(heading(this, width / 2, 70, headingText(title.replace(/&/g, 'and')), 72, { glow: winColor }));
+    c.add(heading(this, width / 2, 70, title.replace(/&/g, 'and'), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
     c.add(this.add.text(width / 2, 130, `Match time ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}  ·  ${r.replays.length} K.O.${r.replays.length === 1 ? '' : 's'}`, {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '20px', color: '#9fe3ff',
