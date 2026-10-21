@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { GrainPipeline, setPass } from '../fx/Grade';
-import { BACKDROPS, backdropOf, paintBolt, seeded, type BackdropTheme } from '../fx/Backdrops';
+import { BACKDROPS, ROOM_H, ROOM_W, backdropOf, paintBolt, seeded, type BackdropTheme, type Room } from '../fx/Backdrops';
 
 interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: number; phase: number; drift: number; base: number; }
+interface Pulse { img: Phaser.GameObjects.Image; axis: 'x' | 'y'; line: number; pos: number; speed: number; len: number; }
 interface Mote { img: Phaser.GameObjects.Image; x: number; y: number; vx: number; vy: number; depth: number; phase: number; life: number; age: number; }
 
 /**
@@ -16,6 +17,10 @@ interface Mote { img: Phaser.GameObjects.Image; x: number; y: number; vx: number
 export class BackdropScene extends Phaser.Scene {
   private theme: BackdropTheme = BACKDROPS[0];
   private bg!: Phaser.GameObjects.Image;
+  /** The silhouettes of a painted room, a little nearer than its wall. */
+  private front?: Phaser.GameObjects.Image;
+  private room?: Room;
+  private pulses: Pulse[] = [];
   private bokeh: Bokeh[] = [];
   private shafts: Phaser.GameObjects.Image[] = [];
   private motes: Mote[] = [];
@@ -36,13 +41,45 @@ export class BackdropScene extends Phaser.Scene {
     this.motes = [];
     this.bolt = this.flashRect = undefined;
     this.flash = 0;
-    // The Kube's own blue room as it is; other palettes tint a grey copy of it.
-    const kube = th === BACKDROPS[0];
-    const key = !this.textures.exists('bg-blur') ? 'bg' : kube || !this.textures.exists('bg-blur-grey') ? 'bg-blur' : 'bg-blur-grey';
+    // The Kube's own picture, or a room painted in its language (fx/Backdrops.ts).
+    this.front = undefined;
+    this.room = undefined;
+    this.pulses = [];
+    const n = BACKDROPS.indexOf(th);
+    if (th.paint) {
+      if (!this.textures.exists(`room-${n}`)) {
+        const wall = document.createElement('canvas');
+        const front = document.createElement('canvas');
+        wall.width = front.width = ROOM_W; wall.height = front.height = ROOM_H;
+        const room = th.paint(wall.getContext('2d')!, front.getContext('2d')!, ROOM_W, ROOM_H, seeded(31 + n * 1013));
+        this.registry.set(`room-${n}`, room);
+        // Softened by the same lens blur as the picture, the silhouettes a little less (nearer).
+        for (const [key, src, blur] of [[`room-${n}`, wall, 7], [`room-${n}-front`, front, 5]] as const) {
+          const c = this.textures.createCanvas(key, ROOM_W, ROOM_H)!;
+          const ctx = c.getContext();
+          ctx.filter = `blur(${blur}px)`;
+          ctx.drawImage(src, -ROOM_W * 0.02, -ROOM_H * 0.02, ROOM_W * 1.04, ROOM_H * 1.04);
+          c.refresh();
+        }
+      }
+      this.room = this.registry.get(`room-${n}`) as Room;
+    }
+    const key = th.paint ? `room-${n}` : this.textures.exists('bg-blur') ? 'bg-blur' : 'bg';
     this.bg = this.add.image(width / 2, height / 2, key);
     this.bg.setScale(Math.max(width / this.bg.width, height / this.bg.height) * 1.15);
     // A dim room, so the lights, lasers and glowing platforms carry the scene.
     this.bg.setTint(th.room[0], th.room[0], th.room[1], th.room[1]);
+    if (th.paint) {
+      // Light running along the panel seams.
+      const room = this.room!;
+      for (let i = 0; i < 14; i++) {
+        const axis = i % 3 === 0 ? 'y' : 'x';
+        const img = this.add.image(0, 0, 'pulse').setBlendMode(Phaser.BlendModes.ADD).setTint(th.rimLine).setAlpha(0.5);
+        this.pulses.push(this.newPulse({ img, axis, line: 0, pos: 0, speed: 0, len: 0 }, room, true));
+      }
+      this.front = this.add.image(width / 2, height / 2, `room-${n}-front`).setScale(this.bg.scaleX);
+      this.front.setTint(th.room[0], th.room[0], th.room[1], th.room[1]);
+    }
     if (th.lightning) {
       // Flashes far back, behind the shafts and bokeh.
       this.bolt = this.add.image(width / 2, 0, '__DEFAULT').setOrigin(0.5, 0).setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
@@ -98,6 +135,8 @@ export class BackdropScene extends Phaser.Scene {
     const px = cam ? cam.midPoint.x / 3328 - 0.5 : Math.sin(t * 0.07) * 0.25;
     const py = cam ? cam.midPoint.y / 2432 - 0.5 : Math.sin(t * 0.05 + 1) * 0.15;
     this.bg.setPosition(width / 2 - px * 80, height / 2 - py * 50);
+    this.front?.setPosition(width / 2 - px * 130, height / 2 - py * 80);
+    if (this.room) this.updatePulses(dt);
     this.shafts.forEach((s, i) => s.setAngle(18 + Math.sin(t * 0.17 + i * 2) * 4).setAlpha(0.06 + 0.025 * Math.sin(t * 0.3 + i)));
     for (const b of this.bokeh) {
       b.x += b.drift * dt;
@@ -119,6 +158,39 @@ export class BackdropScene extends Phaser.Scene {
       m.img.setPosition(m.x - px * 260 * m.depth, m.y - py * 150 * m.depth).setAlpha(a);
     }
     if (this.theme.lightning) this.updateLightning(time, dt);
+  }
+
+  /** A pulse on a random seam: the Foundry's run up and across, the Pit's fall, Sky Deck's rise. */
+  private newPulse(p: Pulse, room: Room, anywhere: boolean): Pulse {
+    const down = this.theme.particles === 'motes' && this.theme.lightning;
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    p.len = 90 + Math.random() * 160;
+    p.speed = (120 + Math.random() * 180);
+    if (p.axis === 'x') {
+      p.line = Phaser.Utils.Array.GetRandom(room.rows);
+      p.speed *= dir;
+      p.pos = anywhere ? Math.random() * ROOM_W : dir > 0 ? -p.len : ROOM_W + p.len;
+    } else {
+      p.line = Phaser.Utils.Array.GetRandom(room.cols);
+      p.speed *= down ? 1 : -1;
+      p.pos = anywhere ? Math.random() * ROOM_H : down ? -p.len : ROOM_H + p.len;
+    }
+    p.img.setAngle(p.axis === 'x' ? 0 : 90).setDisplaySize(p.len, 10);
+    return p;
+  }
+
+  private updatePulses(dt: number): void {
+    const room = this.room!;
+    const s = this.bg.scaleX;
+    for (const p of this.pulses) {
+      p.pos += p.speed * dt;
+      const span = p.axis === 'x' ? ROOM_W : ROOM_H;
+      if (p.pos < -p.len - 10 || p.pos > span + p.len + 10) this.newPulse(p, room, false);
+      // Picture pixels to screen, following the wall.
+      const x = p.axis === 'x' ? p.pos : p.line;
+      const y = p.axis === 'x' ? p.line : p.pos;
+      p.img.setPosition(this.bg.x + (x - ROOM_W / 2) * s, this.bg.y + (y - ROOM_H / 2) * s).setScale(p.len * s / 128, 10 * s / 16);
+    }
   }
 
   private spawnMote(m: Mote, anywhere: boolean): void {
@@ -210,13 +282,23 @@ export class BackdropScene extends Phaser.Scene {
         tex.remove('bg-blur');
       }
     }
-    if (tex.exists('bg-blur') && !tex.exists('bg-blur-grey')) {
-      // A grey copy of the room for the other palettes to tint.
-      const src = tex.get('bg-blur').getSourceImage() as HTMLCanvasElement;
-      const c = tex.createCanvas('bg-blur-grey', src.width, src.height)!;
+    if (!tex.exists('pulse')) {
+      // A soft bar of light, bright in the middle, for the seam pulses.
+      const c = tex.createCanvas('pulse', 128, 16)!;
       const ctx = c.getContext();
-      ctx.filter = 'grayscale(1) brightness(1.25) contrast(1.1)';
-      ctx.drawImage(src, 0, 0);
+      const along = ctx.createLinearGradient(0, 0, 128, 0);
+      along.addColorStop(0, 'rgba(255,255,255,0)');
+      along.addColorStop(0.5, 'rgba(255,255,255,1)');
+      along.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = along;
+      ctx.fillRect(0, 0, 128, 16);
+      ctx.globalCompositeOperation = 'destination-in';
+      const across = ctx.createLinearGradient(0, 0, 0, 16);
+      across.addColorStop(0, 'rgba(0,0,0,0)');
+      across.addColorStop(0.5, 'rgba(0,0,0,1)');
+      across.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = across;
+      ctx.fillRect(0, 0, 128, 16);
       c.refresh();
     }
     if (!tex.exists('bokeh')) {
