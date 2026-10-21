@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { UNIT } from '../config';
+import { vfx, vfxCount } from '../game/Settings';
 
 /**
  * A small runtime for LibGDX ParticleEditor files (`public/particles/*.pe`),
@@ -134,6 +135,10 @@ class RunningEmitter {
   private lifeDiff: number;
   private readonly duration: number;
   private readonly delay: number;
+  /** The file's particle counts and emission, scaled by the VFX setting. */
+  private readonly countMin: number;
+  private readonly countMax: number;
+  private readonly amount = vfx();
   readonly particles: Particle[] = [];
 
   constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number) {
@@ -141,7 +146,9 @@ class RunningEmitter {
     [this.lifeLow, this.lifeDiff] = def.life.pair();
     this.duration = def.duration.newLow();
     this.delay = def.delay.active ? def.delay.newLow() : 0;
-    if (this.delay === 0) this.add(def.countMin);
+    this.countMin = vfxCount(def.countMin);
+    this.countMax = Math.ceil(def.countMax * this.amount);
+    if (this.delay === 0) this.add(this.countMin);
   }
 
   get done(): boolean { return this.time >= this.delay + this.duration && this.particles.length === 0; }
@@ -151,13 +158,13 @@ class RunningEmitter {
     const t = this.time - this.delay;
     if (t >= 0 && t < this.duration) {
       const percent = t / this.duration;
-      if (this.particles.length < this.def.countMin) this.add(this.def.countMin - this.particles.length);
-      const perSecond = this.emissionLow + this.emissionDiff * this.def.emission.scale(percent);
+      if (this.particles.length < this.countMin) this.add(this.countMin - this.particles.length);
+      const perSecond = (this.emissionLow + this.emissionDiff * this.def.emission.scale(percent)) * this.amount;
       if (perSecond > 0) {
         const every = 1000 / perSecond;
         this.emissionDelta += dtMs;
         if (this.emissionDelta >= every) {
-          const n = Math.min(Math.floor(this.emissionDelta / every), this.def.countMax - this.particles.length);
+          const n = Math.min(Math.floor(this.emissionDelta / every), this.countMax - this.particles.length);
           this.emissionDelta %= every;
           this.add(n, percent);
         }

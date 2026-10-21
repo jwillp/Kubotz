@@ -690,3 +690,61 @@ PRs B to E each build on the previous one where they touch the same scenes
   if it is alone).
 - Humans who join with a gamepad drive with that pad only, keyboard players
   with their keys only.
+### Phase 11 B — Settings screen (`feat/settings`)
+
+- `game/Settings.ts` (the store, saved in `localStorage`) gains a change
+  listener (`onSettingsChange`) and the helpers everything reads it through:
+  `sfxVolume(base)` for every sound effect (`GameScene.playSfx`, the
+  narrator), `addMusic(scene, key, base)` for the title and arena music (the
+  volume follows the setting live), and the VFX multiplier `vfx()` /
+  `vfxCount(n)` / `vfxChance()`.
+- VFX (0..1, 0 = minimal like `?lowfx`) scales: the .pe particle counts and
+  emission (`ParticleFx`), the impact sparks, bits, motes and dust
+  (`ImpactFx.add`; single flashes, rings and beams stay until 0), portal
+  motes, the power-up sparkle burst, screen shake trauma, the hit and K.O.
+  glows/lights, the robots' white hit flash (off at 0) and the grade pass
+  (on from 0.5; F still toggles it for the match).
+- `scenes/SettingsScene.ts`: three sliders (music, sound effects, visual
+  effects) and Back; arrows / WASD, D-pad or stick (held keys repeat),
+  Enter / Esc / pad A / B back, mouse click and drag. A test sound plays when
+  the sound effects level changes. It is drawn over the scene that opened it,
+  which is paused (Phaser pause) until Back.
+- `scenes/MenuInput.ts`: menu navigation shared by menus. It polls its own
+  window key listeners and `navigator.getGamepads()` instead of a scene's
+  input plugins, and a button only counts once seen up, so the press that
+  opens a menu (or closes it: the settings act on release) never leaks into
+  the scene behind.
+- Title: a "⚙ Settings" entry in the top corner, the last item of the menu
+  (Up from the first mode wraps to it). Pause: the PAUSED banner is now a
+  menu, Resume · Settings · Quit to title (Esc / Q / Start / Select still work).
+### Phase 11 A — heavier fall, dodge roll, debug fix (2026-10-21)
+
+- **Heavier fall**: the jump is unchanged (20.5 u/s under 44 u/s², about
+  4.6 units, 433 ms up), but past the apex robots fall under 132 u/s²
+  (`FALL_GRAVITY_BONUS` 0.1 → 2) up to a terminal 32 u/s (none before).
+  The fall from a full jump takes 283 ms instead of 450 ms (air time
+  883 → 717 ms). Fast fall (down held past the apex, no longer while rising)
+  goes straight to 44 u/s as in Melee, instead of adding 4 u/s a frame up to
+  about 22. Hitstun and the specials' bursts keep their speed (spikes, dive
+  kicks), easing back to the cap after. Nav's jump reach is unchanged (it
+  comes from the rise), and the CPUs still double jump near each apex.
+- **Dodge roll** (guard + left / right on the ground, a direction pressed
+  with the guard up or both at once; running into a guard just guards):
+  - 3.4 units in 330 ms (fast off the mark, slowing to a stop), then 110 ms
+    of end lag; intangible from 30 to 300 ms; 150 ms before the next one.
+  - Passes through robots (the body's `ghost`, kept until it no longer
+    overlaps one: `KubotzBody.overlapsRobot`); stops at walls; rolling off
+    an edge ends it and the robot falls.
+  - Ends facing back the way it came (Melee). Clips `roll` (forward ninja
+    roll from a crouch into a low tuck) and `rollBack`; afterimages like the
+    air dodge.
+  - The air dodge and the roll share one `dodge` record (kind, direction,
+    intangible window, end), so `intangible`, the afterimages and the
+    animation hold work the same for both.
+  - CPUs roll now and then instead of guarding a swing (mostly through the
+    attacker), and when cornered while low on health.
+- **Debug crash** (F3 on, off, on): the Debug scene object is reused on
+  every launch and kept its robot labels, destroyed when the scene stopped;
+  the next update called `setText` on a destroyed text (null canvas).
+  `DebugScene.create` now resets the labels and the frame times. The panel
+  also shows the falling gravity.
