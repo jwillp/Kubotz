@@ -60,6 +60,15 @@ const ANIM = {
 /** Strikes carry the robot this many times further than their clip's own forward travel. */
 const ANIM_TURN = 'turn';
 const ROOT_MOTION_GAIN = 3;
+/** Walking (a tilted stick) tops out at this share of the run. */
+const WALK_FACTOR = 0.45;
+/** Smash-style jump squat before a grounded jump; let go of jump within it for a short hop of this height. */
+const JUMP_SQUAT_MS = 50;
+const SHORT_HOP = 0.68;
+/** A taunt's length. */
+const TAUNT_MS = 1000;
+/** People jump on the press, so they only need a short guard between jumps. */
+const HUMAN_JUMP_COOLDOWN = 140;
 
 /** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
 const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand_sha.png', x: 34, y: 34 }];
@@ -81,11 +90,13 @@ export interface Launch { knockback: number; angle: number; growth?: number; stu
 interface Move {
   anim: string; ms: number; points: PartPoint[]; damage: number; launch: Launch; active: [number, number];
   behind?: boolean; all?: boolean; both?: boolean; maps?: string[]; ghosts?: boolean;
+  /** Specials: a velocity (units/s, x forwards; null keeps that axis) held for the first `sustain` share of the move. */
+  burst?: [number | null, number | null]; sustain?: number;
 }
 
 /** Attack + direction, Super Smash Bros. style. */
 type Dir = 'neutral' | 'forward' | 'back' | 'up' | 'down';
-type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'fsmash' | 'dsmash' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
+type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'utilt' | 'fsmash' | 'dsmash' | 'usmash' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
 
 const LIMBS = [...FISTS, ...FEET];
 
@@ -109,6 +120,8 @@ const DIR_MOVES: DirMoves = {
   dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72], ghosts: true },
   ftilt: { anim: 'ftilt', ms: 380, points: FEET, damage: 6, launch: { knockback: 10, angle: 30 }, active: [0.32, 0.7] },
   dtilt: { anim: 'dtilt', ms: 340, points: FEET, damage: 5, launch: { knockback: 9, angle: 80 }, active: [0.3, 0.72] },
+  utilt: { anim: 'utilt', ms: 340, points: FISTS, damage: 6, launch: { knockback: 10, angle: 88 }, active: [0.36, 0.72] },
+  usmash: { anim: 'usmash', ms: 520, points: [FEET[0]], damage: 13, launch: { knockback: 16, angle: 88 }, active: [0.4, 0.68], ghosts: true },
   fsmash: { anim: 'fsmash', ms: 560, points: FIRE_FISTS, damage: 14, launch: { knockback: 17, angle: 32 }, active: [0.42, 0.66], maps: ['gauntlet_fireGauntlet'], ghosts: true },
   dsmash: { anim: 'dsmash', ms: 480, points: FEET, damage: 11, launch: { knockback: 14, angle: 28 }, active: [0.36, 0.7], all: true, both: true },
   nair: { anim: 'nair', ms: 420, points: LIMBS, damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], all: true, ghosts: true },
@@ -121,6 +134,8 @@ const SWORD_DIR_MOVES: DirMoves = {
   dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8], ghosts: true },
   ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
   dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
+  utilt: { anim: 'susmash', ms: 400, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 85 }, active: [0.38, 0.75] },
+  usmash: { anim: 'susmash', ms: 560, points: bladePoints(), damage: 15, launch: { knockback: 17, angle: 85 }, active: [0.4, 0.72], ghosts: true },
   fsmash: { anim: 'sfsmash', ms: 600, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [0.42, 0.68], ghosts: true },
   dsmash: { anim: 'sdsmash', ms: 520, points: bladePoints(), damage: 12, launch: { knockback: 14, angle: 25 }, active: [0.3, 0.75], both: true, ghosts: true },
   nair: { anim: 'snair', ms: 420, points: bladePoints(), damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], both: true, ghosts: true },
@@ -129,6 +144,21 @@ const SWORD_DIR_MOVES: DirMoves = {
   uair: { anim: 'suair', ms: 480, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 85 }, active: [0.2, 0.62], ghosts: true },
   dair: { anim: 'sdair', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: -70 }, active: [0.3, 1], ghosts: true },
 };
+/**
+ * Special moves (B), unarmed whatever the weapon: Captain Falcon flavoured
+ * ninja moves. The up special leaves the robot helpless until it lands or
+ * catches a ledge; the side and up specials work once per trip in the air.
+ */
+const SPECIALS = {
+  ion: { anim: 'ionPunch', ms: 900, points: FIRE_FISTS, damage: 22, launch: { knockback: 19, angle: 35 }, active: [0.6, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true },
+  raptor: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 9, launch: { knockback: 13, angle: 80 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [22, null], sustain: 0.5 },
+  raptorAir: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 10, launch: { knockback: 12, angle: -55 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [18, 1], sustain: 0.5 },
+  dive: { anim: 'shadowDive', ms: 640, points: FISTS, damage: 9, launch: { knockback: 12, angle: 78 }, active: [0.08, 0.55], ghosts: true, burst: [4, -20], sustain: 0.25 },
+  kick: { anim: 'dash', ms: 560, points: FEET, damage: 12, launch: { knockback: 14, angle: 38 }, active: [0.12, 0.72], ghosts: true, burst: [22, null], sustain: 0.55 },
+  kickAir: { anim: 'airKick', ms: 520, points: FEET, damage: 13, launch: { knockback: 13, angle: 45 }, active: [0.05, 1], ghosts: true, burst: [16, 22], sustain: 1 },
+} satisfies Record<string, Move>;
+type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
+
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
 const SMASH_CHARGE_MS = 1000;
 const SMASH_CHARGE_BONUS = 0.6;
@@ -240,6 +270,9 @@ export class Kubotz implements Damageable {
   private jumps = 0;
   maxJumps: number = Config.NB_JUMPS;
   private jumpReadyAt = 0;
+  private jumpHeld = false;
+  /** A grounded jump leaves at this time (the jump squat), 0 when none is coming. */
+  private jumpSquatUntil = 0;
   private attack: AttackBox | null = null;
   private attackEndsAt = 0;
   private attackStart = 0;
@@ -291,6 +324,12 @@ export class Kubotz implements Damageable {
   private nextGhostAt = 0;
   /** Input edges, for smash flicks and charging. */
   private attackHeld = false;
+  private specialHeld = false;
+  /** After the up special: no jumps, attacks or specials until landing or a ledge. */
+  helpless = false;
+  /** The side and up specials, once per trip in the air. */
+  private sideSpecialUsed = false;
+  private upSpecialUsed = false;
   private attackPressedAt = -1e9;
   private dirPressedAt = -1e9;
   private prevPad: PadState = emptyPad();
@@ -489,6 +528,7 @@ export class Kubotz implements Damageable {
       this.move(pad, now, dt);
       this.handleActions(pad, now);
     }
+    this.updateSpecial(now);
     // A touch heavier on the way down: the apex comes sooner.
     if (!this.grounded && this.body.vy > 0 && now >= this.dodgeUntil) this.body.vy += Config.GRAVITY * Config.FALL_GRAVITY_BONUS * UNIT * dt;
     // Falling past a ledge catches it (not while holding down, attacking or tumbling).
@@ -541,6 +581,11 @@ export class Kubotz implements Damageable {
     this.flashUntil = now + 60;
   }
 
+  /** For the CPU: air jumps left, and whether the up and side specials can be used now. */
+  get airJumpsLeft(): number { return this.maxJumps - this.jumps; }
+  get canUpSpecial(): boolean { return !this.upSpecialUsed && !this.helpless; }
+  get canSideSpecial(): boolean { return (this.grounded || !this.sideSpecialUsed) && !this.helpless; }
+
   get tumbling(): boolean { return this.hooks.now() < this.tumbleUntil; }
 
   /** Super Smash Bros.-style shield: hold to raise a bubble that soaks hits. */
@@ -549,7 +594,7 @@ export class Kubotz implements Damageable {
     this.guardHeld = pad.guard;
     if (this.grounded) this.dodgeReady = true;
     // Guard in the air: air dodge in the held direction, intangible for a moment.
-    if (pressed && !this.grounded && this.dodgeReady && !this.guarding) {
+    if (pressed && !this.grounded && this.dodgeReady && !this.guarding && !this.helpless) {
       this.dodgeReady = false;
       this.dodgeUntil = now + Config.AIR_DODGE_DURATION;
       this.attack = null;
@@ -587,40 +632,48 @@ export class Kubotz implements Damageable {
     const accel = Config.RUN_ACCELERATION * this.speedFactor() * dt;
     const grounded = this.grounded;
 
-    if (grounded) this.jumps = 0;
+    if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; }
 
     // Aerials keep the robot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
+    // A tilted stick walks; pushed (or a key), the robot dashes and runs.
+    const top = Config.MAX_SPEED * (pad.walk && grounded ? WALK_FACTOR : 1);
     if (pad.left) {
-      vx = Math.max(vx - accel, -Config.MAX_SPEED);
+      vx = vx < -top ? Math.min(vx + accel, -top) : Math.max(vx - accel, -top);
       if (canTurn) this.turnTo(-1, now, grounded);
     } else if (pad.right) {
-      vx = Math.min(vx + accel, Config.MAX_SPEED);
+      vx = vx > top ? Math.max(vx - accel, top) : Math.min(vx + accel, top);
       if (canTurn) this.turnTo(1, now, grounded);
     } else if (grounded) {
       vx = vx > 0 ? Math.max(vx - accel, 0) : Math.min(vx + accel, 0);
     }
 
-    if (pad.up) {
-      if (this.jumps < this.maxJumps && now >= this.jumpReadyAt) {
-        vy = -Config.JUMP_VELOCITY;
-        this.jumps++;
-        this.lastJumpAt = now;
-        this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
-        if (grounded) {
-          this.hooks.dust(this.x, b.bottom);
-          if (!this.attack) this.anim.play(ANIM.JUMP, { restart: true, fade: 50 });
-        } else {
-          this.hooks.airJump(this.x, b.bottom, this.look.color);
-          if (!this.attack) this.anim.play(ANIM.FLIP, { restart: true, fade: 40 });
-        }
+    // Jumps: the jump button, or pushing up all the way (tap jump). People jump
+    // on the press (after a short jump squat on the ground: let go within it
+    // for a short hop); the CPU holds up and jumps again after a cooldown.
+    const human = this.controller.label !== 'CPU';
+    // (The CPU holds up to aim its up attacks and specials: no jump then.)
+    const jumpInput = !!pad.jump || (pad.up && !pad.walk && (human || (!pad.attack && !pad.special)));
+    const jumpPress = human ? jumpInput && !this.jumpHeld : jumpInput;
+    this.jumpHeld = jumpInput;
+    if (this.jumpSquatUntil > 0 && now >= this.jumpSquatUntil) {
+      this.jumpSquatUntil = 0;
+      if (grounded) vy = this.jump(now, true, jumpInput ? 1 : SHORT_HOP);
+    }
+    if (pad.up && !jumpPress) {
+      // Up tilted (or held after a jump): no jump, just the direction.
+    } else if (jumpPress) {
+      if (this.jumps < this.maxJumps && now >= this.jumpReadyAt && this.jumpSquatUntil === 0 && !this.helpless) {
+        if (grounded && human) this.jumpSquatUntil = now + JUMP_SQUAT_MS;
+        else vy = this.jump(now, grounded, 1);
       }
     } else if (pad.down) {
       // Holding down on a soft platform drops through it (SSB-style).
       // Drops through the platform stood on, and only that one: after landing
       // on the next, it takes a fresh press to drop again (the CPU, which holds
       // down while following a path, drops again after a moment).
-      const fresh = !this.prevDown || (this.controller.label === 'CPU' && now - this.landedAt > 300);
+      // On a stick it takes a flick down (tilted down is a crouch).
+      const fresh = (!this.prevDown && (!pad.walk || !!pad.flick)) || (this.controller.label === 'CPU' && now - this.landedAt > 300);
       if (grounded && fresh && now >= this.dropUntil && this.body.onPlatform) {
         this.dropUntil = now + 400;
         b.dropTop = b.platformTop;
@@ -650,6 +703,21 @@ export class Kubotz implements Damageable {
     this.wasGrounded = grounded;
   }
 
+  /** Leaves the ground or jumps again in the air; returns the new vertical speed (units/s). */
+  private jump(now: number, grounded: boolean, height: number): number {
+    this.jumps++;
+    this.lastJumpAt = now;
+    this.jumpReadyAt = now + (this.controller.label === 'CPU' ? Config.JUMP_COOLDOWN : HUMAN_JUMP_COOLDOWN);
+    if (grounded) {
+      this.hooks.dust(this.x, this.body.bottom);
+      if (!this.attack) this.anim.play(ANIM.JUMP, { restart: true, fade: 50 });
+    } else {
+      this.hooks.airJump(this.x, this.body.bottom, this.look.color);
+      if (!this.attack) this.anim.play(ANIM.FLIP, { restart: true, fade: 40 });
+    }
+    return -Config.JUMP_VELOCITY * height;
+  }
+
   private turnTo(dir: 1 | -1, now: number, grounded: boolean): void {
     if (this.facing === dir) return;
     this.facing = dir;
@@ -674,10 +742,15 @@ export class Kubotz implements Damageable {
     const attackReleased = !pad.attack && this.attackHeld;
     this.attackHeld = pad.attack;
     if (attackPressed) this.attackPressedAt = now;
+    const specialPressed = !!pad.special && !this.specialHeld;
+    this.specialHeld = !!pad.special;
     const prev = this.prevPad;
-    const flick: Dir | null = pad.down && !prev.down ? 'down'
-      : pad.right && !prev.right ? (this.facingBefore === 1 ? 'forward' : 'back')
-      : pad.left && !prev.left ? (this.facingBefore === -1 ? 'forward' : 'back') : null;
+    // On the keyboard a newly pressed direction counts as a flick; on a stick only a real flick does.
+    const side = (dx: number): Dir => (dx === this.facingBefore ? 'forward' : 'back');
+    const flick: Dir | null = pad.analog
+      ? (pad.flick ? (pad.up ? 'up' : pad.down ? 'down' : pad.right ? side(1) : pad.left ? side(-1) : null) : null)
+      : pad.up && !prev.up ? 'up' : pad.down && !prev.down ? 'down'
+      : pad.right && !prev.right ? side(1) : pad.left && !prev.left ? side(-1) : null;
     if (flick) this.dirPressedAt = now;
     this.prevPad = { ...pad };
 
@@ -700,6 +773,38 @@ export class Kubotz implements Damageable {
         this.anim.freeze(null);
         this.facing = this.chargeDir;
         this.strike(move, now, 1 + SMASH_CHARGE_BONUS * Math.min(1, held / SMASH_CHARGE_MS), 0.3);
+      }
+      return;
+    }
+
+    // Taunt (D-pad), on the ground: committed to it until it ends (or a hit stops it).
+    if (pad.taunt && this.grounded && !this.attack && now >= this.attackReadyAt) {
+      this.lockUntil = now + TAUNT_MS;
+      this.anim.play('taunt', { restart: true, ms: TAUNT_MS, fade: 60 });
+      return;
+    }
+
+    // Helpless after the up special: nothing until landing or a ledge.
+    if (this.helpless && !this.grounded) { if (!this.attack) this.anim.play(ANIM.FALL, { fade: 80 }); return; }
+
+    // Special moves (B), alone or with a direction.
+    if (specialPressed && !this.attack && now >= this.attackReadyAt) {
+      const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
+      const kind: SpecialKind = pad.up ? 'up' : pad.down ? 'down' : dx !== 0 ? 'side' : 'neutral';
+      if (this.startSpecial(kind, dx, now)) return;
+    }
+
+    // The right stick (C-stick): an instant smash on the ground, an aerial in the air, in its direction.
+    if (pad.cstick && !this.attack && now >= this.attackReadyAt) {
+      const c = pad.cstick;
+      const dir: Dir = c === 'up' || c === 'down' ? c : (c === 'right' ? 1 : -1) === this.facingBefore ? 'forward' : 'back';
+      this.comboStep = 0;
+      if (this.grounded) {
+        // Strikes on the next frame, unless A is held too: then it charges (as in Smash).
+        this.startSmash(dir === 'down' ? moves.dsmash : dir === 'up' ? moves.usmash : moves.fsmash, dir, now);
+      } else {
+        this.facing = this.facingBefore;
+        this.strike(moves[dir === 'up' ? 'uair' : dir === 'down' ? 'dair' : dir === 'forward' ? 'fair' : 'bair'], now);
       }
       return;
     }
@@ -730,7 +835,7 @@ export class Kubotz implements Damageable {
           && now - this.attackPressedAt <= SMASH_INPUT_MS && this.grounded;
         if (early) {
           this.attack = null;
-          this.startSmash(flick === 'down' ? moves.dsmash : moves.fsmash, flick, now);
+          this.startSmash(flick === 'down' ? moves.dsmash : flick === 'up' ? moves.usmash : moves.fsmash, flick, now);
         } else if (this.inCombo && this.comboStep > 0 && attackPressed) {
           // A press during a strike is kept for the next move of the combo.
           this.comboQueued = true;
@@ -741,8 +846,12 @@ export class Kubotz implements Damageable {
           this.facing = this.facingBefore;
           this.strike(moves[dir === 'up' ? 'uair' : dir === 'down' ? 'dair' : dir === 'forward' ? 'fair' : dir === 'back' ? 'bair' : 'nair'], now);
         } else if (dir === 'up') {
+          // Up + attack: a smash when flicked (or pressed during the jump squat, which it cancels), else the up tilt.
           this.comboStep = 0;
-          this.strike(moves.uair, now); // jump + attack: the backflip kick
+          if (this.jumpSquatUntil > 0 || smashFlick) {
+            this.jumpSquatUntil = 0;
+            this.startSmash(moves.usmash, 'up', now);
+          } else this.strike(moves.utilt, now);
         } else if (smashFlick && (dir === 'down' || dir === 'forward' || dir === 'back')) {
           this.startSmash(dir === 'down' ? moves.dsmash : moves.fsmash, dir, now);
         } else if (dir === 'down') {
@@ -805,8 +914,50 @@ export class Kubotz implements Damageable {
   }
 
   /** Starts charging a smash: rooted, the wind-up held while the attack is. */
+  /** Starts a special move; false when it cannot be used now (once per trip in the air). */
+  private startSpecial(kind: SpecialKind, dx: number, now: number): boolean {
+    const air = !this.grounded;
+    if (kind === 'side' && air && this.sideSpecialUsed) return false;
+    if (kind === 'up' && this.upSpecialUsed) return false;
+    this.comboStep = 0;
+    this.jumpSquatUntil = 0;
+    // Side specials go the way pressed; the neutral one turns round when back is held.
+    if (dx !== 0 && kind !== 'up' && kind !== 'down') this.facing = dx > 0 ? 1 : -1;
+    else this.facing = this.facingBefore;
+    if (kind === 'side') this.sideSpecialUsed ||= air;
+    if (kind === 'up') this.upSpecialUsed = true;
+    const move = kind === 'neutral' ? SPECIALS.ion : kind === 'side' ? (air ? SPECIALS.raptorAir : SPECIALS.raptor)
+      : kind === 'up' ? SPECIALS.dive : air ? SPECIALS.kickAir : SPECIALS.kick;
+    this.strike(move, now);
+    this.hooks.playSfx('dodge', 0.35);
+    return true;
+  }
+
+  /** Specials keep their burst of speed for a share of the move; the up special leaves the robot helpless. */
+  private updateSpecial(now: number): void {
+    const m = this.currentMove;
+    if (!this.attack || !m) return;
+    const t = (now - this.attackStart) / (this.attackEndsAt - this.attackStart);
+    if (m.burst && t < (m.sustain ?? 0)) {
+      const [bx, by] = m.burst;
+      this.body.setVelocity(bx === null ? this.body.vx : this.facing * bx * UNIT, by === null ? this.body.vy : by * UNIT);
+    }
+    // The Ion Punch hangs in the air while it winds up.
+    if (m === SPECIALS.ion && !this.grounded && t < 0.6) this.body.vy = Math.min(this.body.vy, 2 * UNIT);
+    // The air kick ends when it lands, with a little landing lag.
+    if (m === SPECIALS.kickAir && this.grounded && t > 0.08) {
+      this.attack = null;
+      this.currentMove = null;
+      this.attackReadyAt = now + 160;
+      this.hooks.dust(this.x, this.body.bottom);
+      this.hooks.shake(0.15);
+    }
+    if (m === SPECIALS.dive && t >= 0.5 && !this.grounded) this.helpless = true;
+  }
+
   private startSmash(move: Move, dir: Dir, now: number): void {
     this.comboStep = 0;
+    this.jumpSquatUntil = 0; // a smash out of the jump squat cancels the jump
     this.charging = move;
     this.chargeStart = now;
     // A back flick turns round for it.
@@ -1015,8 +1166,11 @@ export class Kubotz implements Damageable {
     this.ledgeAt = now;
     this.ledgeSafeUntil = now + LEDGE_INTANGIBLE;
     this.ledgePrev = { ...this.pad };
-    // The air jumps and the air dodge come back.
+    // The air jumps, the air dodge and the specials come back.
     this.jumps = 1;
+    this.helpless = false;
+    this.sideSpecialUsed = false;
+    this.upSpecialUsed = false;
     this.dodgeReady = true;
     this.facing = l.dir === 1 ? -1 : 1;
     const p = this.hangPos(l);

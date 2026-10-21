@@ -54,6 +54,7 @@ export class CpuController implements Controller {
       this.state.attack = this.state.attack && now < this.holdAttackUntil;
       this.state.grab = false;
       this.state.smash = false;
+      this.state.special = false;
     }
     return { ...this.state };
   }
@@ -141,7 +142,13 @@ export class CpuController implements Controller {
           else if (dy > 0.6 * UNIT) pad.down = true;
           else if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx > 0 ? 'left' : 'right'] = true; // back air
         } else if (dy < -1.2 * UNIT) {
-          pad.up = true; // the backflip kick reaches up
+          pad.up = true; // the up tilt, or now and then the up smash
+          if (Math.random() < 0.3) pad.smash = true;
+        } else if (Math.random() < 0.06 && Math.sign(dx) === me.facing) {
+          // Special moves now and then: the Ion Punch on a robot still reeling, else the Plasma Kick.
+          pad.attack = false;
+          pad.special = true;
+          if (!(enemy.tumbling || enemy.health < 30)) pad.down = true;
         } else if (Math.random() < (enemy.health < 40 ? 0.4 : 0.18)) {
           // A smash (forward, or down to hit both sides), finishing off a weak enemy, sometimes charged.
           pad.smash = true;
@@ -151,6 +158,12 @@ export class CpuController implements Controller {
           pad.down = true; // a low sweep now and then
         }
         if (me.grounded && Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
+      } else if (!ranged && Math.abs(dx) > 3 * UNIT && Math.abs(dx) < 6 * UNIT && Math.abs(dy) < UNIT && me.grounded
+        && Math.random() < 0.05) {
+        // The Raptor Dash closes the gap.
+        pad.special = true;
+        pad[dx < 0 ? 'left' : 'right'] = true;
+        return pad;
       } else if (!ranged && Math.abs(dx) < 3.5 * UNIT && Math.abs(dy) < UNIT && Math.abs(me.body.vx) > 0.5 * Config.MAX_SPEED * UNIT && Math.sign(me.body.vx) === Math.sign(dx)) {
         // Running at it: a dash attack.
         pad.attack = true;
@@ -355,7 +368,12 @@ export class CpuController implements Controller {
     }
     if (!best) return false;
     pad[bestX < me.x ? 'left' : 'right'] = true;
-    if (me.body.vy > 0 && me.body.bottom > best.y - UNIT) pad.up = true;
+    if (me.body.vy > 0 && me.body.bottom > best.y - UNIT) {
+      // Jumps first; out of jumps, the Shadow Dive (up special), or the Raptor Dash when far to the side.
+      if (me.airJumpsLeft > 0) pad.up = true;
+      else if (Math.abs(bestX - me.x) > 6 * UNIT && me.canSideSpecial && me.body.bottom < best.y + 2 * UNIT) pad.special = true;
+      else if (me.canUpSpecial) { pad.up = true; pad.special = true; }
+    }
     return true;
   }
 }

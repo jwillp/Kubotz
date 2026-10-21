@@ -89,8 +89,8 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.add.text(width / 2, height - 36,
-      'P1: WASD move/jump (S: drop down) · O attack (x3 combo) · I grab · Shift guard      P2: Arrows · , attack · . grab · / guard\n'
-      + 'Gamepads work too. Grab power-ups, knock rivals out, last robot standing wins.', {
+      'P1: WASD move (W, Space: jump) · O attack · P special · I grab · Shift shield · U taunt      P2: Arrows · , attack · N special · . grab · / shield · M jump\n'
+      + 'Gamepads use the Smash Ultimate layout. Grab power-ups, knock rivals out, last robot standing wins.', {
         fontFamily: 'Arial, sans-serif', fontSize: '17px', color: '#cfe9ff', align: 'center', lineSpacing: 8,
       }).setOrigin(0.5);
 

@@ -258,6 +258,118 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 110 }, ease: 'inOut' },
   ]),
 
+  /** Up tilt: a rising palm thrust straight overhead. */
+  utilt: clip('utilt', 340, [
+    { t: 0, pose: FIGHT },
+    { t: 0.25, pose: { ...CROUCH, torso: 80, y: -6, shoulderF: -120, armF: -60, handF: -40, shoulderB: -40, armB: 30 }, ease: 'out' },
+    { t: 0.45, pose: {
+    ...READY, torso: 90, head: 96, tilt: 0, x: 34, y: 14, shoulderF: 76, armF: 82, handF: 90, shoulderB: -120, armB: -140,
+    thighF: -70, legF: -95, thighB: -110, legB: -115,
+  }, ease: 'snap' },
+    { t: 0.72, pose: {
+    ...READY, torso: 90, head: 96, tilt: 0, x: 36, y: 12, shoulderF: 78, armF: 84, handF: 92, shoulderB: -118, armB: -138,
+    thighF: -70, legF: -95, thighB: -110, legB: -115,
+  } },
+    { t: 1, pose: READY, ease: 'inOut' },
+  ]),
+
+  /** Up smash: coils low (held while charging), then a vertical scissor kick straight up. */
+  usmash: clip('usmash', 520, [
+    { t: 0, pose: FIGHT },
+    { t: 0.3, pose: { ...CROUCH, torso: 70, y: -10, shoulderF: -150, armF: -130, shoulderB: -150, armB: -130 }, ease: 'out' },
+    { t: 0.46, pose: {
+    torso: 100, head: 100, tilt: -2, x: 44, y: 28, thighF: 64, legF: 76, footF: 104, thighB: -92, legB: -100, footB: -80,
+    shoulderF: -140, armF: -160, handF: -160, shoulderB: -120, armB: -150,
+  }, ease: 'snap' },
+    { t: 0.7, pose: {
+    torso: 100, head: 100, tilt: -2, x: 46, y: 20, thighF: 68, legF: 80, footF: 108, thighB: -92, legB: -100, footB: -80,
+    shoulderF: -138, armF: -158, handF: -158, shoulderB: -118, armB: -148,
+  } },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Sword up smash (and, quicker, up tilt): the blade sweeps from low in front, over the head, to behind. */
+  susmash: clip('susmash', 560, [
+    { t: 0, pose: FIGHT },
+    { t: 0.3, pose: { ...CROUCH, y: -8, shoulderF: -150, armF: -170, handF: -170 }, ease: 'out' },
+    { t: 0.44, pose: { ...READY, torso: 96, head: 100, y: 16, shoulderF: 30, armF: 40, handF: 40 }, ease: 'snap' },
+    { t: 0.56, pose: { ...READY, torso: 108, head: 108, tilt: -8, y: 18, shoulderF: 95, armF: 100, handF: 100 }, ease: 'linear' },
+    { t: 0.72, pose: { ...READY, torso: 112, head: 110, tilt: -10, y: 10, shoulderF: 150, armF: 160, handF: 160 }, ease: 'out' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Taunt (D-pad): stands tall, one hand on the hip, and beckons twice: "come on". */
+  taunt: clip('taunt', 1000, [
+    { t: 0, pose: FIGHT },
+    { t: 0.15, pose: { ...S, torso: 92, head: 98, shoulderF: 5, armF: 10, handF: 20, shoulderB: -100, armB: -40, handB: -20 }, ease: 'out' },
+    { t: 0.3, pose: { ...S, torso: 92, head: 98, shoulderF: 5, armF: 95, handF: 150, shoulderB: -100, y: 4, armB: -40, handB: -20 }, ease: 'inOut' },
+    { t: 0.45, pose: { ...S, torso: 92, head: 98, shoulderF: 5, armF: 10, handF: 20, shoulderB: -100, armB: -40, handB: -20 }, ease: 'inOut' },
+    { t: 0.6, pose: { ...S, torso: 92, head: 98, shoulderF: 5, armF: 95, handF: 150, shoulderB: -100, y: 4, armB: -40, handB: -20 }, ease: 'inOut' },
+    { t: 0.78, pose: { ...S, torso: 93, head: 84, shoulderF: 5, armF: 10, handF: 20, shoulderB: -100, armB: -40, handB: -20 }, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  // ------------------------------------------------------- special moves (B)
+  /** Neutral special, the Ion Punch: a long coil with the burning fist drawn back, then a huge lunging punch. */
+  ionPunch: clip('ionPunch', 900, [
+    { t: 0, pose: FIGHT },
+    { t: 0.15, pose: { ...READY, torso: 96, x: -6, shoulderF: -60, armF: 60, handF: 70 }, ease: 'out' },
+    { t: 0.5, pose: {
+    ...READY, torso: 106, head: 98, tilt: -12, x: -24, y: -6, thighF: -28, legF: -112, thighB: -148, legB: -126, footB: -100,
+    shoulderF: -172, armF: 160, handF: 165, shoulderB: 10, armB: 40, handB: 50,
+  }, ease: 'out' },
+    { t: 0.57, pose: {
+    ...READY, torso: 108, head: 99, tilt: -13, x: -28, y: -7, thighF: -28, legF: -112, thighB: -148, legB: -126, footB: -100,
+    shoulderF: -174, armF: 158, handF: 163, shoulderB: 12, armB: 42, handB: 52,
+  } },
+    { t: 0.64, pose: {
+    ...READY, torso: 58, head: 72, tilt: 22, x: 190, thighF: -10, legF: -66, footF: -48, thighB: -160, legB: -170, footB: -134,
+    shoulderF: 2, armF: 0, handF: 0, shoulderB: -160, armB: -172,
+  }, ease: 'snap' },
+    { t: 0.86, pose: {
+    ...READY, torso: 60, head: 74, tilt: 20, x: 198, thighF: -10, legF: -66, footF: -48, thighB: -160, legB: -170, footB: -134,
+    shoulderF: 0, armF: -2, handF: -2, shoulderB: -158, armB: -170,
+  } },
+    { t: 1, pose: { ...READY, x: 180 }, ease: 'inOut' },
+  ]),
+
+  /** Side special, the Raptor Dash: a low sprinting lunge, then a rising uppercut. */
+  raptor: clip('raptor', 560, [
+    { t: 0, pose: FIGHT },
+    { t: 0.14, pose: {
+    ...READY, torso: 58, head: 70, tilt: 18, thighF: -10, legF: -80, thighB: -150, legB: -150, footB: -120,
+    shoulderF: -150, armF: -120, handF: -110, shoulderB: -30, armB: 30,
+  }, ease: 'out' },
+    { t: 0.48, pose: {
+    ...READY, torso: 56, head: 68, tilt: 20, thighF: -20, legF: -96, thighB: -140, legB: -140, footB: -110,
+    shoulderF: -154, armF: -126, handF: -116, shoulderB: -26, armB: 34,
+  } },
+    { t: 0.62, pose: {
+    ...READY, torso: 104, head: 104, tilt: -6, y: 22, thighF: -40, legF: -100, thighB: -120, legB: -110,
+    shoulderF: 70, armF: 88, handF: 95, shoulderB: -130, armB: -150,
+  }, ease: 'snap' },
+    { t: 0.82, pose: {
+    ...READY, torso: 103, head: 103, tilt: -5, y: 18, thighF: -40, legF: -100, thighB: -120, legB: -110,
+    shoulderF: 72, armF: 90, handF: 96, shoulderB: -128, armB: -148,
+  } },
+    { t: 1, pose: READY, ease: 'inOut' },
+  ]),
+
+  /** Up special, the Shadow Dive: a rising uppercut that spins up into a tuck. */
+  shadowDive: clip('shadowDive', 640, [
+    { t: 0, pose: { ...READY, y: -6 } },
+    { t: 0.12, pose: {
+    torso: 96, head: 100, thighF: 0, legF: -100, footF: -80, thighB: -110, legB: -120, footB: -90,
+    shoulderF: 80, armF: 88, handF: 92, shoulderB: -100, armB: -60,
+  }, ease: 'snap' },
+    { t: 0.55, pose: {
+    torso: 96, head: 100, spin: -360, thighF: 0, legF: -100, footF: -80, thighB: -110, legB: -120, footB: -90,
+    shoulderF: 80, armF: 88, handF: 92, shoulderB: -100, armB: -60,
+  }, ease: 'linear' },
+    { t: 0.8, pose: { ...TUCK, spin: -360 }, ease: 'out' },
+    { t: 1, pose: { ...TUCK, torso: 86, spin: -360, shoulderF: -20, armF: 10, shoulderB: -160, armB: -170 }, ease: 'inOut' },
+  ], { planted: false }),
+
   // ------------------------------------------------- directional moves (SSB)
   /** Dash attack: a sliding kick along the ground. */
   dash: clip('dash', 420, [

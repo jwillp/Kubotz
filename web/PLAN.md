@@ -576,3 +576,70 @@ The owner asked for the branch to hold only the web port.
 - **Bokeh**: 40% of the discs take accent colours (teal, violet, magenta,
   amber, pink, pale blue); the disc has a wider soft edge and a fainter rim,
   and the discs are ~15% larger.
+
+## Phase 11 — Smash Ultimate controls (2026-10-21)
+
+The owner sent the Super Smash Bros. Ultimate control card (Switch Pro
+Controller) and asked for those controls. Gamepad buttons are read by
+position (the browser's standard mapping), so the Nintendo labels land
+where the card shows them on any pad.
+
+| Card | Gamepad | P1 keyboard | P2 keyboard |
+| --- | --- | --- | --- |
+| Move: tilt = walk, flick = dash | left stick (half tilt walks, full or fast flick dashes); D-pad not used for moving | A / D (digital: always the dash) | arrows |
+| Stick up = jump, down = crouch, flick down = drop through | left stick | W / S | up / down |
+| Jump, midair jump (X / Y) | top and left face buttons | Space (W still jumps) | Numpad 5, M |
+| A: standard attack; tilt + A = strong (tilt) attack; flick + A = smash attack | right face button | O | , |
+| B: special moves, neutral or with a direction | bottom face button | P | N |
+| Right stick: smash attack (in the air: aerial) | right stick | — | — |
+| Grab (L) | L | I | . |
+| Shield (R, ZL, ZR) | R, ZL, ZR | Shift | / |
+| Taunt (D-pad) | D-pad | U | Numpad 6 |
+
+Steps, each one built and published on its own:
+1. **Input model**: `PadState` gains `jump`, `special`, `taunt`, `walk`
+   (stick tilted, not pushed), `flick` (the stick slammed from the centre
+   in under ~3 frames) and `cstick`. Gamepad mapping as above; keyboard
+   keys added. Walk speed ~45% of the run, walking clip at a slower rate.
+2. **Strong vs smash from the stick**: on a pad a flick + A is the smash,
+   a tilt + A the strong attack (keyboard keeps the timing rule: direction
+   pressed with the button = smash, held first = tilt). New grounded **up
+   tilt** and **up smash** (the card's up + A); up + A no longer jumps.
+3. **Right stick**: an instant smash in its direction on the ground, the
+   matching aerial in the air.
+4. **Special moves (B)**, unarmed, Captain Falcon flavoured ninja moves:
+   - neutral: **Ion Punch**, a slow wind-up and a huge fire punch (can
+     turn round at the start);
+   - side: **Raptor Dash**, a dashing uppercut (in the air a downward
+     strike);
+   - up: **Shadow Dive**, a rising strike for recovery, then helpless until
+     landing or a ledge;
+   - down: **Plasma Kick**, a sliding fire kick on the ground, a diagonal
+     dive kick in the air.
+5. **Taunt**: a short pose on the D-pad.
+6. **CPUs** use the specials (up special to recover, side and neutral to
+   punish) and the up moves.
+7. Key help on the page and the title screen.
+
+Done (2026-10-21), one build per step:
+- Input (game/Input.ts): new `PadState` fields; gamepad by position; flick =
+  centred to past 0.8 within 70 ms; tilted stick (0.3 to 0.8, or not
+  flicked) walks at 45% speed. People jump on the press after a 50 ms jump
+  squat (let go within it: short hop at 68%), so holding up no longer
+  re-jumps; the CPU still holds up and jumps on a cooldown, but not while
+  it aims an up attack or special.
+- Up tilt (rising palm) and up smash (vertical scissor kick, chargeable);
+  sword versions use a new overhead arc (`susmash`). Up + attack in the
+  jump squat cancels the jump into the up smash.
+- Right stick: smash on the ground (charges if A is held too), aerial in
+  the air.
+- Specials (`SPECIALS` in Kubotz.ts, clips `ionPunch`, `raptor`,
+  `shadowDive`; the Plasma Kick reuses `dash` and `airKick`). A move's
+  `burst` velocity is held for its `sustain` share. Up special: helpless
+  after the rise until landing or a ledge (no jumps, attacks, dodge);
+  side and up specials once per trip in the air.
+- Taunt: 1 s, committed (a hit ends it).
+- CPUs: up tilt / up smash on robots above, Raptor Dash to close in,
+  Plasma Kick or Ion Punch now and then, Raptor Dash and Shadow Dive to
+  recover once out of jumps.
+
