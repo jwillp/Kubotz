@@ -25,7 +25,7 @@ import { body } from '../ui/Type';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
-function opaqueOutline(scene: Phaser.Scene, key: string): number[][] {
+export function opaqueOutline(scene: Phaser.Scene, key: string): number[][] {
   const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
   const c = document.createElement('canvas');
   c.width = src.width; c.height = src.height;

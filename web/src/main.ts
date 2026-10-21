@@ -7,6 +7,7 @@ import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
 import { BackdropScene } from './scenes/BackdropScene';
 import { DebugScene } from './scenes/DebugScene';
+import { MoveListScene } from './scenes/MoveListScene';
 import { SettingsScene } from './scenes/SettingsScene';
 
 // 1280x768 (5:3), the resolution of the original HUD mock-up and close to its 80x48 viewport.
@@ -19,7 +20,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
   render: { antialias: true, maxLights: 36 },
-  scene: [BootScene, TitleScene, JoinScene, ArenaScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene],
+  scene: [BootScene, TitleScene, JoinScene, ArenaScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, MoveListScene],
 });
 
 // Handy for debugging from the browser console.
