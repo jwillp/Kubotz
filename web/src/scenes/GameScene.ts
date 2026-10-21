@@ -12,6 +12,8 @@ import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
+import { surface } from '../fx/Surface';
+import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -90,6 +92,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
+  /** The arena being played (index into ARENA_INFO). */
+  private arena = 0;
   /** The robots' specs from the join screen, by fighter index. */
   specs: FighterSpec[] = [];
   /** The winning team, null for a draw; undefined while the match runs. */
@@ -138,7 +142,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
 
-    this.scene.launch('Backdrop');
+    this.arena = setup.arena;
+    this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
     this.debris = new DebrisField(this, this.physicsWorld);
@@ -204,6 +209,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F', () => {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
+    });
+    kb.on('keydown-G', () => {
+      surface.worn = !surface.worn;
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn robots' : 'Clean robots', 0xffffff);
     });
     // Debug mode; the function keys are kept from the browser while the game has the keyboard.
     kb.addCapture([Phaser.Input.Keyboard.KeyCodes.F3, Phaser.Input.Keyboard.KeyCodes.F4, Phaser.Input.Keyboard.KeyCodes.F6,
@@ -302,6 +311,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.arenaLayers.push(lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2)));
     // The tiles' blue light strips glow on their own, whatever the lights do.
     this.buildArenaGlow(actx.canvas, mapW, mapH);
+    // Then the tiles take the arena's palette (fx/Backdrops.ts).
+    const tiles = backdropOf(this.arena).tiles;
+    if (tiles) { tintArt(actx, mapW, mapH, tiles); art.refresh(); }
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -323,10 +335,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
     // A lit edge along the top of every block, like the 3D version's glowing rims.
+    const mood = backdropOf(this.arena);
     const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
     for (const b of this.blocks) {
-      rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
-      rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(7, mood.glow, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
@@ -434,6 +447,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const sctx = soft.getContext('2d')!;
     sctx.filter = `blur(${S * 1.2}px)`;
     sctx.drawImage(mask, 0, 0, soft.width, soft.height);
+    const tiles = backdropOf(this.arena).tiles;
+    if (tiles) tintArt(ctx, art.width, art.height, tiles);
     ctx.globalCompositeOperation = 'destination-in';
     ctx.drawImage(soft, 0, 0);
     if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
@@ -474,6 +489,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       d[i] = Math.min(255, r * 0.6 + 40 * k); d[i + 1] = Math.min(255, g + 40 * k); d[i + 2] = 255; d[i + 3] = 255 * k;
     }
     mctx.putImageData(src, 0, 0);
+    const tiles = backdropOf(this.arena).tiles;
+    if (tiles) tintArt(mctx, w, h, tiles);
     if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
     const glow = this.textures.createCanvas('arena-glow', w, h)!;
     const g = glow.getContext();
@@ -794,17 +811,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.sys.renderer.type !== Phaser.WEBGL) return;
     // A dim room: the key light shapes, the rim light outlines, and the
     // glowing platforms, lasers and blades light what is near them.
-    this.lights.enable().setAmbientColor(0x64709a);
-    this.keyLight = this.lights.addLight(0, 0, 100, 0xffe8cc, 3.2);
-    this.rimLight = this.lights.addLight(0, 0, 100, 0x3aa8ff, 2.0);
+    // Each arena's backdrop sets the mood of the light (fx/Backdrops.ts).
+    const mood = backdropOf(this.arena);
+    this.lights.enable().setAmbientColor(mood.ambient);
+    this.keyLight = this.lights.addLight(0, 0, 100, mood.key, 3.2);
+    this.rimLight = this.lights.addLight(0, 0, 100, mood.rim, 2.0);
     for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
-    // Blue light rising off the top of every block (wide ones get several).
+    // Light in the arena's glow colour rising off the top of every block (wide ones get several).
     let fixed = 0;
     for (const b of this.blocks) {
       const n = Math.max(1, Math.round(b.width / (UNIT * 9)));
       for (let i = 0; i < n && fixed < PLATFORM_LIGHTS; i++, fixed++) {
         const x = b.x + (b.width * (i + 0.5)) / n;
-        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), 0x29abe2, 2.4);
+        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), mood.glow, 2.4);
       }
     }
     this.placeFixedLights();
