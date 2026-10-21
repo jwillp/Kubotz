@@ -422,6 +422,8 @@ export class Kubotz implements Damageable, Teamed {
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
+    // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
+    this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
@@ -1601,14 +1603,30 @@ export class Kubotz implements Damageable, Teamed {
 
   private drawOverlay(now: number): void {
     const g = this.healthBar.clear();
-    const w = UNIT * 1.2;
-    const x = this.x - w / 2;
-    const y = this.body.top - UNIT * 0.75;
-    g.fillStyle(0x000000, 0.55).fillRect(x - 2, y - 2, w + 4, 10);
-    g.fillStyle(this.health > 30 ? 0x7df466 : 0xff5252, 1).fillRect(x, y, (w * this.health) / Config.KUBOTZ_HEALTH, 6);
     // Constant on-screen size whatever the camera zoom.
     const zoom = this.scene.cameras.main.zoom;
+    const y = this.body.top - UNIT * 0.75;
     this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom);
+    // The HUD cards carry health; over the robot it shows only while low (red),
+    // so close fights stay readable.
+    const low = this.health <= 30;
+    if (low) {
+      // A small Kube plate: segments like the HUD's, underlined in the helmet colour.
+      const px = 1 / zoom;
+      const w = 64 * px;
+      const h = 7 * px;
+      const x = this.x - w / 2;
+      const by = y + 2 * px;
+      const segs = 8;
+      const seg = w / segs;
+      const hp = Phaser.Math.Clamp(this.health / Config.KUBOTZ_HEALTH, 0, 1);
+      g.fillStyle(0x0d1520, 0.8).fillRect(x - 2 * px, by - 2 * px, w + 2 * px, h + 4 * px);
+      for (let s = 0; s < segs; s++) {
+        const fill = Phaser.Math.Clamp(hp * segs - s, 0, 1);
+        if (fill > 0) g.fillStyle(0xff4a4a, 1).fillRect(x + s * seg, by, (seg - px) * fill, h);
+      }
+      g.fillStyle(this.look.color, 1).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
+    }
     if (this.guarding) {
       const r = UNIT * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX));
       g.fillStyle(this.look.color, 0.35).fillCircle(this.x, this.y, r);

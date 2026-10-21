@@ -10,6 +10,7 @@ import {
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
 import { opaqueOutline } from './GameScene';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { drawPlate, drawStrip, kubeBackdrop, shutter } from '../ui/Plate';
 
 /** Where the preview stage sits in the world, away from the list (its own camera shows it). */
 const STAGE_X = 6000;
@@ -296,9 +297,8 @@ export class MoveListScene extends Phaser.Scene {
     this.leaving = false;
     this.bolts = [];
     this.scroll = 0;
-    const { width, height } = this.scale;
-    this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.5);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.7);
+    const { width } = this.scale;
+    kubeBackdrop(this, 0.45);
     // Centred on the header row, its glow clear of the panels below.
     heading(this, LIST.x - 8, 44, 'Move list', 48).setOrigin(0, 0.5);
     this.buildSpeedToggle();
@@ -342,7 +342,7 @@ export class MoveListScene extends Phaser.Scene {
 
   // ----------------------------------------------------------------- list
   private buildList(): void {
-    this.add.rectangle(LIST.x - 8, LIST.y - 8, LIST.w + 16, LIST.h + 16, 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawStrip(drawPlate(this.add.graphics(), LIST.x - 8, LIST.y - 8, LIST.w + 16, LIST.h + 16, { cut: 18 }), LIST.x - 8, LIST.y + 10, LIST.x - 8, LIST.y + LIST.h + 8, 0x29abe2, 3);
     this.list = this.add.container(LIST.x, LIST.y);
     this.highlight = this.add.rectangle(0, 0, LIST.w, ROW_H, 0x29abe2, 0.28).setOrigin(0);
     this.list.add(this.highlight);
@@ -394,7 +394,7 @@ export class MoveListScene extends Phaser.Scene {
   private buildInfo(): void {
     const x = PANEL.x;
     const y = PANEL.y + PANEL.h + 18;
-    this.add.rectangle(x - 8, y - 10, PANEL.w + 16, LIST.y + LIST.h + 8 - (y - 10), 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawPlate(this.add.graphics(), x - 8, y - 10, PANEL.w + 16, LIST.y + LIST.h + 8 - (y - 10), { cut: 18 });
     this.nameText = this.add.text(x + 8, y, '', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '24px', color: '#ffffff' });
     const label = (ly: number, s: string) => this.add.text(x + 8, ly, s, { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' });
     label(y + 40, 'KEYBOARD');
@@ -407,7 +407,7 @@ export class MoveListScene extends Phaser.Scene {
 
   // -------------------------------------------------------------- preview
   private buildPreview(): void {
-    this.add.rectangle(PANEL.x - 8, PANEL.y - 8, PANEL.w + 16, PANEL.h + 16, 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawStrip(drawPlate(this.add.graphics(), PANEL.x - 8, PANEL.y - 8, PANEL.w + 16, PANEL.h + 16, { cut: 18, alpha: 0.8 }), PANEL.x + 10, PANEL.y - 8, PANEL.x + PANEL.w * 0.4, PANEL.y - 8, 0x29abe2, 3);
     const spriter: SpriterData = this.registry.get('spriter');
     this.rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot_sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
@@ -615,6 +615,6 @@ export class MoveListScene extends Phaser.Scene {
     this.victimRobot.destroy();
     this.lights.disable();
     this.cameras.remove(this.cam);
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }

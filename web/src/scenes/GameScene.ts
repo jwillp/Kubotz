@@ -23,6 +23,7 @@ import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -136,6 +137,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.createEffects();
     this.portals = new PortalFx(this, this.warpZones);
 
+    if (setup.preview) { this.createPreview(setup.preview); return; }
+
     let humans = 0;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
@@ -225,6 +228,35 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.portals.destroy();
       for (const k of this.fighters) k.destroy();
     });
+  }
+
+  // ------------------------------------------------------------ arena preview
+  /** Set while the scene only shows the arena for the arena select (MatchSetup.preview). */
+  private preview = false;
+
+  /** The arena alone, fitted into `rect`: lights, glow, portals and screen grade, nothing else. */
+  private createPreview(rect: NonNullable<MatchSetup['preview']>): void {
+    this.preview = true;
+    const cam = this.cameras.main;
+    const mapW = this.map.width * this.map.tileWidth;
+    const mapH = this.map.height * this.map.tileHeight;
+    cam.setViewport(rect.x, rect.y, rect.width, rect.height);
+    cam.setZoom(Math.min(rect.width / mapW, rect.height / mapH)).centerOn(mapW / 2, mapH / 2);
+    this.setupScreenFx();
+    this.setupLights();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.preview = false;
+      this.debris.destroy();
+      this.portals.destroy();
+    });
+  }
+
+  private updatePreview(deltaMs: number): void {
+    const now = this.clock += deltaMs;
+    this.particles.update(deltaMs);
+    this.impact.update(now, deltaMs);
+    this.portals.update(now, deltaMs);
+    this.drawGlows();
   }
 
   // ---------------------------------------------------------------------- map
@@ -555,6 +587,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ update
   update(_time: number, deltaMs: number): void {
     if (this.paused) return;
+    if (this.preview) { this.updatePreview(deltaMs); return; }
     // Debug time controls: slow motion, or frozen and stepped frame by frame.
     const d = this.debugState;
     let dtMs = Math.min(deltaMs, 50) * d.timeScale;
@@ -1086,7 +1119,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   backToTitle(): void {
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }
 

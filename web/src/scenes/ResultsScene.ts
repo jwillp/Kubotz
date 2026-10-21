@@ -9,6 +9,7 @@ import { ImpactFx } from '../fx/Impact';
 import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { drawPlate, drawStrip, shutter } from '../ui/Plate';
 import { sfxVolume } from '../game/Settings';
 
 /** Light2D pool for the recorded lights (the match uses up to 36). */
@@ -190,7 +191,13 @@ export class ResultsScene extends Phaser.Scene {
       const color = r.colors[i];
       const row = this.add.container(0, y);
       const won = winners.includes(i);
-      row.add(this.add.rectangle(width / 2, 0, width - 2 * x0 + 40, rowH - 10, color, won ? 0.28 : 0.14).setStrokeStyle(2, color, won ? 0.9 : 0.4));
+      // A Kube plate per robot, a slab and strip in its colour (lit brighter for the winners).
+      const rw = width - 2 * x0 + 40;
+      const rh = rowH - 10;
+      const plate = drawPlate(this.add.graphics(), width / 2 - rw / 2, -rh / 2, rw, rh, { cut: 14, edge: won ? color : undefined });
+      plate.fillStyle(color, won ? 0.3 : 0.16).fillRect(width / 2 - rw / 2, -rh / 2 + 14, 6, rh - 14);
+      drawStrip(plate, width / 2 - rw / 2, rh / 2, width / 2 + rw / 2 - 14, rh / 2, color, won ? 3 : 1);
+      row.add(plate);
       const label = r.tags?.[i] ?? `label-${r.fighters[i].input}:${hex(color)}`;
       if (this.textures.exists(label)) row.add(this.add.image(x0 + 22, 0, label).setScale(0.34));
       row.add(this.add.text(x0 + 52, 0, name, { fontFamily: FONT, fontStyle: '800', fontSize: '28px', color: css(color), stroke: '#000000', strokeThickness: 5 }).setOrigin(0, 0.5));
@@ -230,7 +237,7 @@ export class ResultsScene extends Phaser.Scene {
     if (this.current >= 0) { this.nextReplay(); return; }
     if (this.time.now < this.statsReadyAt) return;
     if (!this.seenReplays) { this.startReplay(0); return; }
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 
   // ---------------------------------------------------------------- replays
