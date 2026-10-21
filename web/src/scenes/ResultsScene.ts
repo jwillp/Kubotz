@@ -5,8 +5,14 @@ import { Rig } from '../anim/Rig';
 import { Robot2D } from '../anim/Robot2D';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
-import type { FighterStats, KoReplay, MatchResult, RobotFrame } from '../game/Match';
+import { ImpactFx } from '../fx/Impact';
+import { GradePipeline } from '../fx/Grade';
+import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { sfxVolume } from '../game/Settings';
+
+/** Light2D pool for the recorded lights (the match uses up to 36). */
+const LIGHT_POOL = 36;
 
 /** The stats table's columns; `good` ones light up their best value. */
 const COLUMNS: { label: string; good: boolean; get: (s: FighterStats) => number }[] = [
@@ -60,7 +66,10 @@ export class ResultsScene extends Phaser.Scene {
   private replayTitle!: Phaser.GameObjects.Text;
   private replaySpeed!: Phaser.GameObjects.Text;
   private footer!: Phaser.GameObjects.Text;
-  private keyLight: Phaser.GameObjects.Light | null = null;
+  private lightPool: Phaser.GameObjects.Light[] = [];
+  private impact!: ImpactFx;
+  /** The last frame whose sounds and effects went off. */
+  private fired = -1;
   private flash!: Phaser.GameObjects.Graphics;
   private pieces: Piece[] = [];
   /** Which replay plays (-1: the stats are up), its clock, its frame cursor, and whether its K.O. burst went off. */
@@ -83,7 +92,7 @@ export class ResultsScene extends Phaser.Scene {
     this.pieces = [];
     this.current = -1;
     this.seenReplays = result.replays.length === 0;
-    this.keyLight = null;
+    this.lightPool = [];
   }
 
   create(): void {
@@ -100,8 +109,17 @@ export class ResultsScene extends Phaser.Scene {
     this.only(this.backCam, bg);
 
     // The arena as the match drew it (its textures stay until the next match builds its own).
-    if (this.sys.renderer.type === Phaser.WEBGL) this.lights.enable().setAmbientColor(0x8a94bc);
-    this.keyLight = this.sys.renderer.type === Phaser.WEBGL ? this.lights.addLight(0, 0, 3000, 0xffe8cc, 1.6) : null;
+    // Lit like the match: its ambient, and every light it had on, frame by frame (key, rim, platforms, lasers, hits).
+    if (this.sys.renderer.type === Phaser.WEBGL) {
+      this.lights.enable().setAmbientColor(0x64709a);
+      for (let i = 0; i < LIGHT_POOL; i++) this.lightPool.push(this.lights.addLight(0, 0, UNIT, 0xffffff, 0).setVisible(false));
+      // The match's grade pass (vignette, split tone, grain, scanlines) on the replay.
+      if (!new URLSearchParams(location.search).has('lowfx')) {
+        const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
+        if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
+        this.worldCam.setPostPipeline(GradePipeline);
+      }
+    }
     const lit = <T extends Phaser.GameObjects.Image>(o: T) => (this.sys.renderer.type === Phaser.WEBGL ? o.setPipeline('Light2D') : o);
     if (r.hull && this.textures.exists('arena-hull')) this.only(this.worldCam, lit(this.add.image(-12 * UNIT, -12 * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9)));
     if (this.textures.exists('arena')) this.only(this.worldCam, lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2)));
@@ -120,6 +138,10 @@ export class ResultsScene extends Phaser.Scene {
     });
     this.flash = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.only(this.worldCam, this.flash);
+    // Hit sparks, rings and dust replayed from the match's calls.
+    const before = new Set(this.children.list);
+    this.impact = new ImpactFx(this);
+    for (const o of this.children.list) if (!before.has(o)) this.only(this.worldCam, o);
 
     this.buildStats();
     this.buildReplayUi();
@@ -234,6 +256,7 @@ export class ResultsScene extends Phaser.Scene {
     this.current = i;
     this.tau = ko.frames[0].t;
     this.cursor = 0;
+    this.fired = -1;
     this.burst = false;
     this.holdUntil = 0;
     this.clearPieces();
@@ -269,6 +292,10 @@ export class ResultsScene extends Phaser.Scene {
     this.replaySpeed.setText(rate < 0.99 || rate > 1.01 ? `${rate >= 1 ? rate.toFixed(1) : rate.toFixed(2)}x` : '1x');
 
     while (this.cursor < frames.length - 2 && frames[this.cursor + 1].t <= this.tau) this.cursor++;
+    // Sounds and effects of every frame passed, sounds pitched with the replay speed.
+    const upTo = this.tau >= last ? frames.length - 1 : this.cursor;
+    while (this.fired < upTo) this.fire(frames[++this.fired], rate);
+    this.impact.update(this.tau, step);
     const a = frames[this.cursor];
     const b = frames[Math.min(frames.length - 1, this.cursor + 1)];
     const f = b.t > a.t ? Phaser.Math.Clamp((this.tau - a.t) / (b.t - a.t), 0, 1) : 0;
@@ -276,10 +303,7 @@ export class ResultsScene extends Phaser.Scene {
     const cam = this.worldCam;
     cam.setZoom(L(a.zoom, b.zoom, f)).setRotation(L(a.rotation, b.rotation, f));
     cam.centerOn(L(a.camX, b.camX, f), L(a.camY, b.camY, f));
-    if (this.keyLight) {
-      const v = cam.worldView;
-      this.keyLight.setPosition(v.x + v.width * 0.3, v.y - v.height * 0.15).setRadius(Math.max(v.width, v.height) * 1.8);
-    }
+    this.setLights(a);
     // The K.O.: the victim bursts apart (before it disappears from the frames).
     if (!this.burst && this.tau >= ko.at) {
       this.burst = true;
@@ -287,6 +311,26 @@ export class ResultsScene extends Phaser.Scene {
     }
     a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom));
     this.updatePieces(step);
+  }
+
+  private fire(frame: ReplayFrame, rate: number): void {
+    for (const e of frame.events ?? []) {
+      if (e.kind === 'sfx') {
+        if (this.cache.audio.exists(e.key)) this.sound.play(e.key, { volume: sfxVolume(e.volume), detune: e.detune, rate: Phaser.Math.Clamp(rate, 0.45, 1.3) });
+      } else {
+        const fx = (this.impact as unknown as Record<string, (...a: number[]) => void>)[e.method];
+        fx?.apply(this.impact, e.args);
+      }
+    }
+  }
+
+  private setLights(frame: ReplayFrame): void {
+    const l = frame.lights ?? [];
+    this.lightPool.forEach((light, i) => {
+      const o = i * 5;
+      if (o >= l.length) { light.setVisible(false); return; }
+      light.setVisible(true).setPosition(l[o], l[o + 1]).setRadius(l[o + 2]).setColor(l[o + 3]).setIntensity(l[o + 4]);
+    });
   }
 
   private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number): void {
@@ -326,7 +370,7 @@ export class ResultsScene extends Phaser.Scene {
       this.flash.setAlpha(1);
       this.tweens.add({ targets: this.flash, alpha: 0, duration: 900 });
     }
-    if (this.cache.audio.exists('boom')) this.sound.play('boom', { volume: 0.5, rate: 0.6 });
+    if (this.cache.audio.exists('boom')) this.sound.play('boom', { volume: sfxVolume(0.5), rate: 0.6 });
   }
 
   private updatePieces(dtMs: number): void {

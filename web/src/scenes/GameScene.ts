@@ -447,6 +447,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -473,6 +474,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     if (!this.cache.audio.exists(key)) return;
     this.sound.play(key, { volume: sfxVolume(volume), detune });
+    this.recorder.sfx(key, volume, detune);
   }
 
   dust(x: number, y: number): void {
@@ -604,7 +606,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
-    this.recorder.record(now, this.fighters, this.cameras.main);
+    this.recorder.record(now, this.fighters, this.cameras.main, this.lights);
     this.updateAfterMatch(now);
   }
 
