@@ -54,6 +54,17 @@ const CROUCH: Pose = {
   ...READY, torso: 78, head: 88, thighF: -15, legF: -125, footF: -95, thighB: -60, legB: -150, footB: -100,
   shoulderF: -60, armF: 60, shoulderB: -45, armB: -10,
 };
+/** One knee dipped low towards the ground, the front shin upright (victory dance). */
+const KNEE_DIP: Pose = {
+  ...S, torso: 84, head: 86, tilt: 0,
+  thighF: -8, legF: -92, footF: -84, thighB: -98, legB: -178, footB: -130,
+  shoulderF: -105, armF: 15, handF: 25, shoulderB: -70, armB: -40, handB: -20,
+};
+/** "Yes!": standing tall, the front elbow pulled down and the fist up and back. */
+const YAY: Pose = {
+  ...S, torso: 94, head: 100, y: 6, shoulderF: 82, armF: 92, handF: 96, shoulderB: -62, armB: -24, handB: -10,
+  thighF: -56, legF: -94, thighB: -110, legB: -120,
+};
 /** Knees to the chest, in the air. */
 const TUCK: Pose = {
   torso: 75, head: 80, thighF: 10, legF: -120, footF: -100, thighB: -20, legB: -140, footB: -110,
@@ -311,25 +322,21 @@ export const CLIPS: Record<string, Clip> = {
 
   /**
    * Victory dance (phase 11 D), a ninja's few beats, looping: a hand seal and
-   * a bow, a high front kick, a back flip with the arms flung out, then a
-   * fist raised high. The flip ends a full turn round, so the loop is seamless.
+   * a bow, then one knee dips low with the fist drawn in,
+   * and the robot springs up into a "yes!": the elbow pulled down, the fist
+   * up and back, pumped once.
    */
   victory: clip('victory', 2600, [
     { t: 0, pose: FIGHT },
     { t: 0.1, pose: { ...S, torso: 90, head: 74, y: -6, shoulderF: -15, armF: 82, handF: 95, shoulderB: -28, armB: 74, handB: 90 }, ease: 'out' },
     { t: 0.2, pose: { ...S, torso: 92, head: 96, y: -2, shoulderF: -15, armF: 82, handF: 95, shoulderB: -28, armB: 74, handB: 90 }, ease: 'inOut' },
-    { t: 0.3, pose: {
-      ...S, torso: 104, head: 100, tilt: -6, thighF: 55, legF: 68, footF: 75, thighB: -96, legB: -102, footB: -86,
-      shoulderF: -135, armF: -115, handF: -110, shoulderB: -40, armB: 10, handB: 20,
-    }, ease: 'snap' },
-    { t: 0.38, pose: { ...READY }, ease: 'inOut' },
-    { t: 0.46, pose: { ...CROUCH, y: -8 }, ease: 'in' },
-    { t: 0.52, pose: { ...TUCK, y: 70, spin: -140, shoulderF: 20, armF: 20, shoulderB: 160, armB: 160 }, ease: 'out' },
-    { t: 0.6, pose: { ...TUCK, y: 60, spin: -290, shoulderF: 10, armF: 10, shoulderB: 170, armB: 170 }, ease: 'linear' },
-    { t: 0.68, pose: { ...CROUCH, spin: -360, y: -6 }, ease: 'out' },
-    { t: 0.76, pose: { ...S, spin: -360, torso: 94, head: 100, y: 6, shoulderF: 82, armF: 92, handF: 96, shoulderB: -62, armB: -24, handB: -10, thighF: -56, legF: -94, thighB: -110, legB: -120 }, ease: 'back' },
-    { t: 0.9, pose: { ...S, spin: -360, torso: 94, head: 98, y: 3, shoulderF: 85, armF: 98, handF: 100, shoulderB: -62, armB: -24, handB: -10, thighF: -56, legF: -94, thighB: -110, legB: -120 }, ease: 'inOut' },
-    { t: 1, pose: { ...FIGHT, spin: -360 }, ease: 'inOut' },
+    { t: 0.4, pose: { ...KNEE_DIP }, ease: 'inOut' },
+    { t: 0.54, pose: { ...KNEE_DIP, torso: 80, head: 80, thighF: -2, legF: -90, shoulderF: -115, armF: 5, handF: 15 }, ease: 'inOut' },
+    { t: 0.66, pose: { ...YAY }, ease: 'back' },
+    { t: 0.75, pose: { ...YAY, y: 2, shoulderF: 68, armF: 100, handF: 104, head: 96 }, ease: 'inOut' },
+    { t: 0.83, pose: { ...YAY }, ease: 'back' },
+    { t: 0.92, pose: { ...YAY, y: 3, shoulderF: 85, armF: 98, handF: 100, head: 98 }, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
   ], { loop: true }),
 
   // ------------------------------------------------------- special moves (B)

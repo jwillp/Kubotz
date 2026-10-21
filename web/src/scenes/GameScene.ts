@@ -10,10 +10,11 @@ import { Bullet } from '../game/Combat';
 import { BONUS_RATES, canHurt, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
-import { GradePipeline } from '../fx/Grade';
+import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
+import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -24,6 +25,7 @@ import type { DebugState } from './DebugScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
+import { shutter } from '../ui/Plate';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -72,6 +74,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
   private portals!: PortalFx;
+  /** The spawn holograms (match start, respawns). */
+  private holo!: HoloSpawns;
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
   private nextBonusAt = 0;
@@ -140,6 +144,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
     this.portals = new PortalFx(this, this.warpZones);
+    this.holo = new HoloSpawns(this);
+
+    if (setup.preview) { this.createPreview(setup.preview); return; }
 
     let humans = 0;
     this.specs.forEach((spec, i) => {
@@ -166,7 +173,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (controller instanceof CpuController) controller.agent = k;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
+      this.holo.start(k, 0, (x, y) => k.teleport(x, y), spawn.y);
     });
+    this.playSfx('holo-spawn', 0.45);
 
     const cam = this.cameras.main;
     const c = this.centerOfFighters();
@@ -234,8 +243,38 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.scene.stop('Backdrop');
       this.debris.destroy();
       this.portals.destroy();
+      this.holo.destroy();
       for (const k of this.fighters) k.destroy();
     });
+  }
+
+  // ------------------------------------------------------------ arena preview
+  /** Set while the scene only shows the arena for the arena select (MatchSetup.preview). */
+  private preview = false;
+
+  /** The arena alone, fitted into `rect`: lights, glow, portals and screen grade, nothing else. */
+  private createPreview(rect: NonNullable<MatchSetup['preview']>): void {
+    this.preview = true;
+    const cam = this.cameras.main;
+    const mapW = this.map.width * this.map.tileWidth;
+    const mapH = this.map.height * this.map.tileHeight;
+    cam.setViewport(rect.x, rect.y, rect.width, rect.height);
+    cam.setZoom(Math.min(rect.width / mapW, rect.height / mapH)).centerOn(mapW / 2, mapH / 2);
+    this.setupScreenFx();
+    this.setupLights();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.preview = false;
+      this.debris.destroy();
+      this.portals.destroy();
+    });
+  }
+
+  private updatePreview(deltaMs: number): void {
+    const now = this.clock += deltaMs;
+    this.particles.update(deltaMs);
+    this.impact.update(now, deltaMs);
+    this.portals.update(now, deltaMs);
+    this.drawGlows();
   }
 
   // ---------------------------------------------------------------------- map
@@ -568,6 +607,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ update
   update(_time: number, deltaMs: number): void {
     if (this.paused) return;
+    if (this.preview) { this.updatePreview(deltaMs); return; }
     // Debug time controls: slow motion, or frozen and stepped frame by frame.
     const d = this.debugState;
     let dtMs = Math.min(deltaMs, 50) * d.timeScale;
@@ -607,19 +647,22 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // Invincibility and shield: the orb's motes keep circling the robot while they last.
       if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
       if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
+      // Materializing: the same motes swirl round it in the hologram's cyan.
+      if (k.isAlive() && this.holo.state(k, now)) this.impact.aura(k, 'hologram', HOLO_COLOR);
       // A charging gun draws sparks into its barrel.
       if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
         const m = k.muzzle();
         this.impact.charge(m.x, m.y, k.look.color, k.charge);
       }
     }
+    this.holo.update(now);
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.portals.update(now, dtMs);
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
-    this.recorder.record(now, this.fighters, this.cameras.main, this.lights);
+    this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now));
     this.updateAfterMatch(now);
   }
 
@@ -688,6 +731,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
       // Explosion and hit flashes dim with the VFX setting.
+      ...this.holo.lights(this.clock),
       ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: l.intensity * vfx() })),
     ].filter((l) => l.intensity > 0);
     // The brightest first, so the pool keeps the hits and lasers when there are many.
@@ -713,9 +757,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private gradeOn = false;
 
   /**
-   * The grade pass (vignette, split tone, grain, scanlines) on the whole view
-   * (WebGL only); off with ?lowfx or a VFX setting under half, toggled with F.
-   * No bloom: the owner preferred the crisper look without it.
+   * The grade pass (vignette, split tone, grain, scanlines) on the arena and
+   * the same grain and scanlines on the backdrop behind it, so they cover the
+   * whole view (WebGL only); off with ?lowfx or a VFX setting under half,
+   * toggled with F. No bloom: the owner preferred the crisper look without it.
    */
   private setupScreenFx(): void {
     this.gradeOn = false;
@@ -731,17 +776,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private setScreenFx(on: boolean): boolean {
-    const cam = this.cameras.main;
-    if (this.sys.renderer.type !== Phaser.WEBGL) return false;
-    // Remove the instances themselves: removing by the name 'Grade' missed
-    // (the instance is named after its class), so every toggle stacked another pass.
-    for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
-    this.gradeOn = on;
-    if (this.gradeOn) {
-      const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
-      if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
-      cam.setPostPipeline(GradePipeline);
-    }
+    this.gradeOn = setPass(this, this.cameras.main, GradePipeline, on);
+    // The backdrop reads this when it starts; once it runs, set its pass here.
+    this.registry.set('screenFx', this.gradeOn);
+    const backdrop = this.scene.get('Backdrop');
+    if (backdrop.sys.isActive()) setPass(backdrop, backdrop.cameras.main, GrainPipeline, this.gradeOn);
     return this.gradeOn;
   }
 
@@ -978,6 +1017,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const blow = k.lastAttacker && now - k.lastAttacker.at < 3000 ? k.lastAttacker.at : now;
       this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, blow);
       this.debris.explode(k, now);
+      this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
       this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
@@ -1023,6 +1063,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       return d(q) - d(p);
     })[0];
     k.respawn(spawn.x + Phaser.Math.Between(-6, 6), spawn.y);
+    // It materializes in a hologram over the spawn point, then drops.
+    this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), spawn.y);
+    this.playSfx('holo-spawn', 0.45);
   }
 
   // ------------------------------------------------------------------ camera
@@ -1106,7 +1149,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   backToTitle(): void {
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }
 

@@ -4,10 +4,13 @@ import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
 import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import type { SpriterData } from '../spriter/Spriter';
-import { GUN_FILE, HEADS, HEAD_FILES, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
+import {
+  GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
+} from '../game/Kubotz';
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
 import { opaqueOutline } from './GameScene';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { drawPlate, drawStrip, kubeBackdrop, shutter } from '../ui/Plate';
 
 /** Where the preview stage sits in the world, away from the list (its own camera shows it). */
 const STAGE_X = 6000;
@@ -21,6 +24,11 @@ const HEADER_H = 38;
 /** Rest between two plays of a move. */
 const PAUSE_MS = 650;
 const COLOR = SLOT_COLORS[0];
+const VICTIM_COLOR = SLOT_COLORS[1];
+/** Preview speeds (the toggle at the top). */
+const SPEEDS = [{ label: 'Normal', rate: 1 }, { label: 'Slow', rate: 0.35 }];
+/** The speed chosen, kept for the next visit. */
+let speedIndex = 0;
 const FALL_GRAVITY = Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS);
 
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -139,15 +147,108 @@ class PreviewRun {
   }
 }
 
+/** Where a held robot sits from its holder (units, x forwards, y up), as Kubotz.placeHeld puts it: `u` is 0..1 to the throw's release. */
+function heldOffset(kind: ThrowKind | null, u: number): [number, number] {
+  switch (kind) {
+    case 'forward': return [u < 0.66 ? 1.05 - 0.4 * (u / 0.66) : 0.65 + 1.0 * ((u - 0.66) / 0.34), 0.15];
+    case 'back': { const a = (u * 250 * Math.PI) / 180; return [1.05 * Math.cos(a), 0.15 + 0.25 * Math.sin(a)]; }
+    case 'up': return [1.05 - 0.85 * u, 0.15 + 1.1 * u];
+    case 'down': return [1.05 - 0.2 * u, u < 0.6 ? 0.15 + 0.9 * (u / 0.6) : 1.05 - 1.1 * ((u - 0.6) / 0.4)];
+    default: return [1.05, 0.15];
+  }
+}
+
+const THROW_OF: Record<string, ThrowKind> = Object.fromEntries(
+  (Object.keys(THROWS) as ThrowKind[]).map((k) => [THROWS[k].anim, k]));
+
+/**
+ * The second robot of the grab previews: it stands in reach facing the
+ * first, is caught by the grab, held and kneed, carried round by a throw
+ * and launched at its release (or by a strike that reaches it), then falls,
+ * lands flat and gets up. Stage pixels, like PreviewRun.
+ */
+class Victim {
+  x = 1.05 * UNIT; y = 0; vx = 0; vy = 0;
+  private state: 'stand' | 'held' | 'air' | 'down' = 'stand';
+  private downMs = 0;
+  /** The holder's step that last launched it (one hit a step). */
+  private hitBy = -1;
+  flash = false;
+
+  constructor(readonly anim: Animator) { anim.play('idle'); }
+
+  /** Back on its feet (or still held): nothing left to frame. */
+  get settled(): boolean { return this.state === 'stand' || this.state === 'held'; }
+
+  tick(dtMs: number, run: PreviewRun): void {
+    const dt = dtMs / 1000;
+    this.anim.tick(dtMs);
+    this.anim.takeRootMotion();
+    const s = run.step;
+    this.flash = false;
+    if (this.state === 'stand' && s?.anim === 'grab' && run.progress >= 0.4) {
+      this.state = 'held';
+      this.anim.play('held', { fade: 40 });
+    }
+    if (this.state === 'held') {
+      const kind = s ? THROW_OF[s.anim] ?? null : null;
+      const release = kind ? THROWS[kind].release : 1;
+      const [dx, dy] = heldOffset(kind, Math.min(1, run.progress / release));
+      this.x = run.x + dx * UNIT;
+      this.y = run.y - dy * UNIT;
+      this.flash = s?.anim === 'pummel' && run.progress > 0.35 && run.progress < 0.55;
+      if (kind && run.progress >= release) this.launch(THROWS[kind].launch, THROWS[kind].dir, run.index);
+      return;
+    }
+    // A strike that reaches it launches it.
+    const m = s?.move;
+    if (m && run.index !== this.hitBy && run.progress >= m.active[0] && run.progress <= m.active[1]
+      && Math.abs(this.x - run.x) < 1.7 * UNIT && Math.abs(this.y - run.y) < 2.2 * UNIT) {
+      this.launch(m.launch, m.behind ? -1 : 1, run.index);
+    }
+    if (this.state === 'air') {
+      this.vy += (this.vy > 0 ? FALL_GRAVITY : Config.GRAVITY) * UNIT * dt;
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+      if (this.y >= 0 && this.vy > 0) {
+        this.y = 0; this.vy = 0; this.vx *= 0.4;
+        this.state = 'down'; this.downMs = 0;
+        this.anim.play('knockdown', { restart: true, fade: 60 });
+      }
+    } else if (this.state === 'down') {
+      this.x += this.vx * dt;
+      this.vx *= Math.exp(-9 * dt);
+      this.downMs += dtMs;
+      if (this.downMs >= 900) { this.state = 'stand'; this.anim.play('idle', { fade: 160 }); }
+    }
+  }
+
+  /** Sent along a launch (speed and angle at 0 %), `dir` 1 forwards; strong ones tumble. */
+  private launch(l: Launch, dir: number, step: number): void {
+    const a = (l.angle * Math.PI) / 180;
+    this.vx = dir * Math.cos(a) * l.knockback * UNIT;
+    this.vy = -Math.sin(a) * l.knockback * UNIT;
+    this.y = Math.min(this.y, -1);
+    this.state = 'air';
+    this.hitBy = step;
+    this.anim.play(l.knockback >= 8 ? 'tumble' : 'hit', { restart: true, fade: 30 });
+  }
+}
+
 /** Plays an entry once without drawing, for where it goes: its reach left, right and up (stage pixels). */
 function extent(entry: MoveEntry, rig: Rig): { minX: number; maxX: number; top: number } {
   const run = new PreviewRun(entry, new Animator(rig));
+  const victim = entry.victim ? new Victim(new Animator(rig)) : null;
   let minX = run.x; let maxX = run.x; let top = run.y;
-  for (let i = 0; i < 900 && !run.done; i++) {
+  for (let i = 0; i < 900 && !(run.done && (victim?.settled ?? true)); i++) {
     run.tick(1000 / 60);
     minX = Math.min(minX, run.x); maxX = Math.max(maxX, run.x); top = Math.min(top, run.y);
     // Room in front for the bolt to fly.
     if (run.shots.length) maxX = Math.max(maxX, run.x + 5 * UNIT);
+    if (victim) {
+      victim.tick(1000 / 60, run);
+      minX = Math.min(minX, victim.x); maxX = Math.max(maxX, victim.x); top = Math.min(top, victim.y);
+    }
   }
   return { minX, maxX, top };
 }
@@ -161,7 +262,10 @@ interface Bolt { img: Phaser.GameObjects.Image; vx: number; until: number }
 export class MoveListScene extends Phaser.Scene {
   private rig!: Rig;
   private robot!: Robot2D;
+  private victimRobot!: Robot2D;
   private run!: PreviewRun;
+  private victim: Victim | null = null;
+  private speedButtons: { box: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text }[] = [];
   private entry!: MoveEntry;
   private selected = 0;
   private rows: { text: Phaser.GameObjects.Text; index: number; y: number }[] = [];
@@ -181,7 +285,7 @@ export class MoveListScene extends Phaser.Scene {
   private pauseUntil = 0;
   private nextGhostAt = 0;
   private bolts: Bolt[] = [];
-  private padPrev = { up: false, down: false, back: false };
+  private padPrev = { up: false, down: false, back: false, speed: false };
   /** Set by back(): the scene stops at the next step, so nothing may draw the destroyed robot meanwhile. */
   private leaving = false;
   private padRepeatAt = 0;
@@ -193,10 +297,11 @@ export class MoveListScene extends Phaser.Scene {
     this.leaving = false;
     this.bolts = [];
     this.scroll = 0;
-    const { width, height } = this.scale;
-    this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height).setAlpha(0.5);
-    this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.7);
-    heading(this, LIST.x, 30, 'Move list', 48).setOrigin(0, 0);
+    const { width } = this.scale;
+    kubeBackdrop(this, 0.45);
+    // Centred on the header row, its glow clear of the panels below.
+    heading(this, LIST.x - 8, 44, 'Move list', 48).setOrigin(0, 0.5);
+    this.buildSpeedToggle();
     this.add.text(width - 32, 44, '▲▼ / W S / wheel: choose      Esc / B: back', {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '17px', color: '#9fe3ff',
     }).setOrigin(1, 0.5);
@@ -208,9 +313,36 @@ export class MoveListScene extends Phaser.Scene {
     this.select(0);
   }
 
+  // ---------------------------------------------------------------- speed
+  /** Normal / Slow buttons over the preview. */
+  private buildSpeedToggle(): void {
+    this.speedButtons = [];
+    const w = 92;
+    const x0 = PANEL.x - 8;
+    const label = this.add.text(x0, 44, 'SPEED  TAB / Y', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' }).setOrigin(0, 0.5);
+    SPEEDS.forEach((sp, i) => {
+      const x = x0 + label.width + 14 + i * w;
+      const box = this.add.rectangle(x, 44, w, 32, 0x29abe2, 0).setOrigin(0, 0.5).setStrokeStyle(1, 0x29abe2, 0.7)
+        .setInteractive({ useHandCursor: true });
+      const text = this.add.text(x + w / 2, 44, sp.label, { fontFamily: BODY_FAMILY, fontStyle: '700', fontSize: '17px', color: '#e8f4ff' }).setOrigin(0.5);
+      box.on('pointerdown', () => this.setSpeed(i));
+      this.speedButtons.push({ box, text });
+    });
+    this.setSpeed(speedIndex);
+  }
+
+  private setSpeed(i: number): void {
+    speedIndex = i % SPEEDS.length;
+    this.speedButtons.forEach((b, j) => {
+      const on = j === speedIndex;
+      b.box.setFillStyle(0x29abe2, on ? 0.45 : 0.08);
+      b.text.setColor(on ? '#ffffff' : '#9fbdd6');
+    });
+  }
+
   // ----------------------------------------------------------------- list
   private buildList(): void {
-    this.add.rectangle(LIST.x - 8, LIST.y - 8, LIST.w + 16, LIST.h + 16, 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawStrip(drawPlate(this.add.graphics(), LIST.x - 8, LIST.y - 8, LIST.w + 16, LIST.h + 16, { cut: 18 }), LIST.x - 8, LIST.y + 10, LIST.x - 8, LIST.y + LIST.h + 8, 0x29abe2, 3);
     this.list = this.add.container(LIST.x, LIST.y);
     this.highlight = this.add.rectangle(0, 0, LIST.w, ROW_H, 0x29abe2, 0.28).setOrigin(0);
     this.list.add(this.highlight);
@@ -262,7 +394,7 @@ export class MoveListScene extends Phaser.Scene {
   private buildInfo(): void {
     const x = PANEL.x;
     const y = PANEL.y + PANEL.h + 18;
-    this.add.rectangle(x - 8, y - 10, PANEL.w + 16, LIST.y + LIST.h + 8 - (y - 10), 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawPlate(this.add.graphics(), x - 8, y - 10, PANEL.w + 16, LIST.y + LIST.h + 8 - (y - 10), { cut: 18 });
     this.nameText = this.add.text(x + 8, y, '', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '24px', color: '#ffffff' });
     const label = (ly: number, s: string) => this.add.text(x + 8, ly, s, { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' });
     label(y + 40, 'KEYBOARD');
@@ -275,18 +407,16 @@ export class MoveListScene extends Phaser.Scene {
 
   // -------------------------------------------------------------- preview
   private buildPreview(): void {
-    this.add.rectangle(PANEL.x - 8, PANEL.y - 8, PANEL.w + 16, PANEL.h + 16, 0x0b1626, 0.75).setOrigin(0).setStrokeStyle(1, 0x29abe2, 0.4);
+    drawStrip(drawPlate(this.add.graphics(), PANEL.x - 8, PANEL.y - 8, PANEL.w + 16, PANEL.h + 16, { cut: 18, alpha: 0.8 }), PANEL.x + 10, PANEL.y - 8, PANEL.x + PANEL.w * 0.4, PANEL.y - 8, 0x29abe2, 3);
     const spriter: SpriterData = this.registry.get('spriter');
     this.rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot_sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.stage = this.add.graphics().setDepth(5);
     this.fx = this.add.graphics().setDepth(11).setBlendMode(Phaser.BlendModes.ADD);
-    this.robot = new Robot2D(this, this.rig, (file) => {
-      let key = `kubotz:${file}`;
-      if (HEAD_FILES.includes(file)) key = `head:${hex(COLOR)}:${file}`;
-      else if (file === SWORD_FILE) key = `sword:${hex(COLOR)}`;
-      return this.textures.exists(key) ? key : `kubotz:${file}`;
-    });
+    this.robot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
+    // The grabbed one, just behind the grabber's hands.
+    this.victimRobot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, VICTIM_COLOR));
+    this.victimRobot.view.setDepth(9.5);
     this.cam = this.cameras.add(PANEL.x, PANEL.y, PANEL.w, PANEL.h).setBackgroundColor('rgba(0,0,0,0)');
     this.lights.enable().setAmbientColor(0x7a86ac);
     this.light = this.lights.addLight(STAGE_X, STAGE_Y - 4 * UNIT, 12 * UNIT, 0xffe8cc, 2.6);
@@ -317,6 +447,8 @@ export class MoveListScene extends Phaser.Scene {
     this.bolts = [];
     const anim = new Animator(this.rig);
     this.run = new PreviewRun(this.entry, anim);
+    this.victim = this.entry.victim ? new Victim(new Animator(this.rig)) : null;
+    this.victimRobot.view.setVisible(!!this.victim);
     this.pauseUntil = 0;
     this.draw(0, true);
   }
@@ -336,12 +468,13 @@ export class MoveListScene extends Phaser.Scene {
     if (this.leaving) return;
     this.pollPad(time);
     if (this.leaving) return;
-    const dt = Math.min(delta, 50);
+    const dt = Math.min(delta, 50) * SPEEDS[speedIndex].rate;
     if (this.run.done) {
-      if (!this.pauseUntil) this.pauseUntil = time + PAUSE_MS;
+      if (!this.pauseUntil) this.pauseUntil = time + PAUSE_MS / SPEEDS[speedIndex].rate;
       if (time >= this.pauseUntil) { this.restart(); return; }
     }
     this.run.tick(dt);
+    this.victim?.tick(dt, this.run);
     for (const c of this.run.shots) this.fire(c);
     this.draw(dt, false);
     for (const b of this.bolts) b.img.x += b.vx * (dt / 1000);
@@ -376,6 +509,13 @@ export class MoveListScene extends Phaser.Scene {
       flash: build > 0.98 && Math.floor(now / 60) % 2 === 0,
     });
     this.light.setPosition(x + UNIT, bottom - 4 * UNIT);
+    const v = this.victim;
+    if (v) {
+      const vp = v.anim.pose();
+      this.victimRobot.update(vp, HEADS[2] ? [HEADS[2]] : [], STAGE_X + this.offsetX + v.x, STAGE_Y + v.y, 180 + (vp.yaw ?? 0), {
+        dtMs, lean: 0, squash: 1, snap, alpha: 1, flash: v.flash, glitch: v.flash,
+      });
+    }
     const m = s?.move;
     if (m?.ghosts && !holding && now >= this.nextGhostAt) {
       this.nextGhostAt = now + 38;
@@ -433,6 +573,7 @@ export class MoveListScene extends Phaser.Scene {
     kb.on('keydown-S', down);
     kb.on('keydown-PAGE_UP', () => this.select(Math.max(0, this.selected - 10)));
     kb.on('keydown-PAGE_DOWN', () => this.select(Math.min(MOVE_LIST.length - 1, this.selected + 10)));
+    kb.on('keydown-TAB', (e: KeyboardEvent) => { e.preventDefault(); this.setSpeed(speedIndex + 1); });
     kb.on('keydown-ESC', () => this.back());
     kb.on('keydown-BACKSPACE', () => this.back());
     this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
@@ -444,13 +585,14 @@ export class MoveListScene extends Phaser.Scene {
   /** Gamepads: D-pad or left stick to choose (repeating while held), B (bottom face) back. */
   private pollPad(time: number): void {
     const pads = this.input.gamepad?.gamepads.filter((p) => p && p.connected) ?? [];
-    let up = false; let down = false; let back = false;
+    let up = false; let down = false; let back = false; let speed = false;
     for (const pad of pads) {
       const btn = (i: number) => (pad.buttons[i]?.value ?? 0) > 0.5;
       const ay = pad.axes.length > 1 ? pad.axes[1].getValue() : 0;
       up ||= btn(12) || ay < -0.6;
       down ||= btn(13) || ay > 0.6;
       back ||= btn(0);
+      speed ||= btn(2);
     }
     const prev = this.padPrev;
     if ((up && !prev.up) || (down && !prev.down)) {
@@ -460,8 +602,9 @@ export class MoveListScene extends Phaser.Scene {
       this.select(this.selected + (up ? -1 : 1));
       this.padRepeatAt = time + 110;
     }
+    if (speed && !prev.speed) this.setSpeed(speedIndex + 1);
     if (back && !prev.back) this.back();
-    this.padPrev = { up, down, back };
+    this.padPrev = { up, down, back, speed };
   }
 
   private back(): void {
@@ -469,8 +612,9 @@ export class MoveListScene extends Phaser.Scene {
     this.leaving = true;
     for (const b of this.bolts) b.img.destroy();
     this.robot.destroy();
+    this.victimRobot.destroy();
     this.lights.disable();
     this.cameras.remove(this.cam);
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 }

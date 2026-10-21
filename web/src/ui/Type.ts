@@ -204,8 +204,10 @@ export function makeTagTexture(scene: Phaser.Scene, key: string, text: string, c
   const outline = 6;
   const l = layout(scene, text, 150 * 0.45);
   const arrow = 18;
+  /** Space between the letters and the pointer. */
+  const gap = 26;
   const w = Math.ceil(l.width + outline * 2 + 4);
-  const h = Math.ceil(l.height + arrow + outline * 2 + 4);
+  const h = Math.ceil(l.height + gap + arrow + outline * 2 + 4);
   if (scene.textures.exists(key)) scene.textures.remove(key);
 
   // The letters and pointer as a white mask...
@@ -214,7 +216,7 @@ export function makeTagTexture(scene: Phaser.Scene, key: string, text: string, c
   const m = mask.getContext('2d')!;
   drawGlyphs(scene, m, l, outline + 2, outline + 2 - l.top);
   const cx = w / 2;
-  const ay = outline + 2 + l.height + 4;
+  const ay = outline + 2 + l.height + gap;
   m.beginPath();
   m.moveTo(cx - arrow * 0.75, ay); m.lineTo(cx + arrow * 0.75, ay); m.lineTo(cx, ay + arrow);
   m.closePath(); m.fillStyle = '#ffffff'; m.fill();

@@ -851,3 +851,87 @@ are drawn through Light2D (flat normal), so lasers, blades, hits and pick-up
 lights wash over them like over the tile art.
 The K.O. replays draw the same faces (the match hands its blocks over in the
 result), following the replay camera; `V` works there too.
+
+## Phase 12 — HUD and menus (`feat/hud-menus`, 2026-10-21)
+
+Goal: one visual language for the HUD and every menu, taken from the robots
+and the Kube instead of the 2015 mock-up badges, keeping the original logo and
+the Okuba Cloud / Exo 2 pairing.
+
+**Visual language ("Kube plate").**
+- Panels are hard-edged gunmetal plates like the Kube's walls: a dark blue-grey
+  vertical gradient, a 1 px lighter bevel on top, two opposite corners cut at
+  45° (the robots' helmet and armour cut), no rounded corners.
+- Light comes from cyan strips (the logo neon, `NEON` 0x29abe2) along one
+  edge, with a soft glow, like the arenas' lit block edges. Selection = the
+  strip lights up and the plate slides in a few pixels.
+- A fighter's helmet colour (slot colour = team) is the only other accent:
+  the edge strip and tag slab of its HUD card, its stock pips, its banner.
+- Okuba Cloud (heading helper) for titles, countdown, winner banner and the
+  font-drawn P1/P2/CPU tags; Exo 2 for everything people read.
+- One shared module, `ui/Plate.ts`, draws plates, strips and menu buttons so
+  every screen matches.
+
+**In-match HUD.**
+- Fighter cards move from the top corners (where they hid platforms) to a row
+  along the bottom edge, centred, one card per fighter in seat order, Smash
+  style. Card: P1/CPU tag on a helmet-colour slab, name + team, a segmented
+  health bar (red under 30%), a thin amber guard bar, the shield as a cyan
+  overlay, stock as small cube pips in the helmet colour, K.O. count.
+- Status line above each card: power-up chips with a draining bar, GUARD
+  BROKEN (red), respawn countdown, ELIMINATED (card dims).
+- Timer: a small chamfered plate top centre with a cyan underline.
+- Countdown and winner banner keep Okuba Cloud; the winner banner sits on a
+  plate strip lit in the winner's colour.
+- Pause: the arena dims, a vertical plate menu (Resume, Settings, Quit to
+  title) under a PAUSED heading, with a key hint footer.
+
+**Menus.**
+- A shared frame: Okuba heading top left (top centre on the title) with a
+  cyan rule under it, content in plates, a footer bar with key/pad hints.
+- Title: the original logo unchanged; menu entries become plate buttons.
+- Settings: one plate per slider, cyan track and square knob.
+- Title subtitle: "ARENA" in Okuba Cloud with the logo's neon, spaced out
+  under the logo (KUBOTZ ARENA), replacing "robot arena brawler".
+- Title, join, arena select and move list sit on the Kube's blurred backdrop
+  (`kubeBackdrop`: the match's BackdropScene with bokeh, shafts and haze).
+- Join, arena select, move list and results keep their layouts with plate
+  panels: seat plates lit in the seat colour, the arena preview set in a lit
+  plate, the move list panels as plates, a plate per robot on the results.
+- Transitions: a short "shutter" (two plates closing from the sides with a
+  cyan seam, then opening) between menu scenes, about 350 ms, skipped when
+  visual effects are at 0.
+
+**Order.** HUD → pause → title + shared frame → settings → join, arena
+select, move list, results.
+
+### Hologram spawns (`feat/hologram-spawn`)
+
+Owner: robots appear on a floating hologram projector at the match start
+and on every respawn, materialize out of scan lines, then the beam recedes
+and they drop; on a K.O. the parts scan out one by one instead of fading.
+
+- **fx/Hologram.ts** holds all of it. `spawnLook(age)` is the sequence
+  (2.3 s): the projector floats in (0–0.3 s), the beam opens (0.2–0.5 s),
+  a scan line draws the robot from the feet up (0.42–1.3 s), the cyan
+  hologram turns solid (1.3–1.72 s), the robot is let go at 1.75 s and
+  drops (it hangs `HOVER` = 1.1 units over its spawn), the beam recedes and
+  the projector flies off and powers down.
+- `HologramPipeline`: a per-object post pass on the robot's container (and
+  on debris pieces): cyan tint from the lit colours, 3 px scan lines
+  drifting up, flicker, rows slipping sideways, a bright edge at the line,
+  a faint scan-line outline ahead of it. Without WebGL it just fades.
+- The projector (a brushed-metal disc with the Kube's cyan strip and lens,
+  an antigravity glow) and the beam (layered cones, rising scan lines) are
+  drawn with two Graphics; a cyan point light joins the glow pool.
+  `holo-spawn` is a synth sound made in the module.
+- While a robot materializes the invincibility motes swirl round it in the
+  hologram's cyan (`ImpactFx.aura(k, 'hologram', HOLO_COLOR)`, also in replays).
+- Kubotz: `materializeUntil`: held in the beam (body off, no controls,
+  idle pose), intangible, full alpha. GameScene: `HoloSpawns.start` at the
+  match start (during the countdown) and in `respawn`.
+- Debris: each piece gets its own end time over the last 1.1 s of its 3.2 s
+  and scans out from the top for 0.65 s (`holoPiece`).
+- Replays: `RobotFrame.holo` = [age, projector x, feet y]; ResultsScene
+  redraws the hologram and projector from it, and its own K.O. pieces scan
+  out before the replay moves on.

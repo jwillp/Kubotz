@@ -7,9 +7,11 @@ import { ArenaPerspective, look25 } from '../map/Perspective';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx } from '../fx/Impact';
-import { GradePipeline } from '../fx/Grade';
+import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
+import { DISSOLVE_MS, HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoRobot } from '../fx/Hologram';
 import type { FighterStats, KoReplay, MatchResult, ReplayFrame, RobotFrame } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { drawPlate, drawStrip, shutter } from '../ui/Plate';
 import { sfxVolume } from '../game/Settings';
 
 /** Light2D pool for the recorded lights (the match uses up to 36). */
@@ -45,7 +47,7 @@ const SLOW = 0.2;
 const FONT = BODY_FAMILY;
 const css = (c: number) => '#' + hex(c);
 
-interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: number; age: number }
+interface Piece { img: Phaser.GameObjects.Image; vx: number; vy: number; spin: number; age: number; end: number }
 
 /**
  * After the match (phase 11 D): every robot's numbers in its colour, then
@@ -74,6 +76,10 @@ export class ResultsScene extends Phaser.Scene {
   /** The last frame whose sounds and effects went off. */
   private fired = -1;
   private flash!: Phaser.GameObjects.Graphics;
+  private holoG!: Phaser.GameObjects.Graphics;
+  private holoAdd!: Phaser.GameObjects.Graphics;
+  /** Per robot, where its spawn motes swirl (the middle of the robot as replayed). */
+  private holoMotes: { x: number; y: number }[] = [];
   private pieces: Piece[] = [];
   /** Which replay plays (-1: the stats are up), its clock, its frame cursor, and whether its K.O. burst went off. */
   private current = -1;
@@ -91,6 +97,7 @@ export class ResultsScene extends Phaser.Scene {
   init(result: MatchResult): void {
     this.result = result;
     this.robots = [];
+    this.holoMotes = [];
     this.tags = [];
     this.pieces = [];
     this.current = -1;
@@ -116,11 +123,10 @@ export class ResultsScene extends Phaser.Scene {
     if (this.sys.renderer.type === Phaser.WEBGL) {
       this.lights.enable().setAmbientColor(0x64709a);
       for (let i = 0; i < LIGHT_POOL; i++) this.lightPool.push(this.lights.addLight(0, 0, UNIT, 0xffffff, 0).setVisible(false));
-      // The match's grade pass (vignette, split tone, grain, scanlines) on the replay.
-      if (!new URLSearchParams(location.search).has('lowfx')) {
-        const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
-        if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
-        this.worldCam.setPostPipeline(GradePipeline);
+      // The match's screen effects on the replay: the grade on the arena, the grain on the room behind.
+      if (this.registry.get('screenFx') !== false && !new URLSearchParams(location.search).has('lowfx')) {
+        setPass(this, this.worldCam, GradePipeline, true);
+        setPass(this, this.backCam, GrainPipeline, true);
       }
     }
     const lit = <T extends Phaser.GameObjects.Image>(o: T) => (this.sys.renderer.type === Phaser.WEBGL ? o.setPipeline('Light2D') : o);
@@ -140,6 +146,7 @@ export class ResultsScene extends Phaser.Scene {
     r.colors.forEach((color, i) => {
       const robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, color));
       robot.visible = false;
+      robot.camera = this.worldCam;
       this.only(this.worldCam, robot.view);
       this.robots.push(robot);
       const tag = this.add.text(0, 0, r.names[i], { fontFamily: FONT, fontStyle: '800', fontSize: '20px', color: css(color), stroke: '#000000', strokeThickness: 5 })
@@ -149,6 +156,11 @@ export class ResultsScene extends Phaser.Scene {
     });
     this.flash = this.add.graphics().setDepth(15).setBlendMode(Phaser.BlendModes.ADD);
     this.only(this.worldCam, this.flash);
+    // Spawn holograms (fx/Hologram.ts): the beam over the robot, the projector in front of it.
+    this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
+    this.holoG = this.add.graphics().setDepth(10.5);
+    this.only(this.worldCam, this.holoAdd);
+    this.only(this.worldCam, this.holoG);
     // Hit sparks, rings and dust replayed from the match's calls.
     const before = new Set(this.children.list);
     this.impact = new ImpactFx(this);
@@ -203,7 +215,13 @@ export class ResultsScene extends Phaser.Scene {
       const color = r.colors[i];
       const row = this.add.container(0, y);
       const won = winners.includes(i);
-      row.add(this.add.rectangle(width / 2, 0, width - 2 * x0 + 40, rowH - 10, color, won ? 0.28 : 0.14).setStrokeStyle(2, color, won ? 0.9 : 0.4));
+      // A Kube plate per robot, a slab and strip in its colour (lit brighter for the winners).
+      const rw = width - 2 * x0 + 40;
+      const rh = rowH - 10;
+      const plate = drawPlate(this.add.graphics(), width / 2 - rw / 2, -rh / 2, rw, rh, { cut: 14, edge: won ? color : undefined });
+      plate.fillStyle(color, won ? 0.3 : 0.16).fillRect(width / 2 - rw / 2, -rh / 2 + 14, 6, rh - 14);
+      drawStrip(plate, width / 2 - rw / 2, rh / 2, width / 2 + rw / 2 - 14, rh / 2, color, won ? 3 : 1);
+      row.add(plate);
       const label = r.tags?.[i] ?? `label-${r.fighters[i].input}:${hex(color)}`;
       if (this.textures.exists(label)) row.add(this.add.image(x0 + 22, 0, label).setScale(0.34));
       row.add(this.add.text(x0 + 52, 0, name, { fontFamily: FONT, fontStyle: '800', fontSize: '28px', color: css(color), stroke: '#000000', strokeThickness: 5 }).setOrigin(0, 0.5));
@@ -243,7 +261,7 @@ export class ResultsScene extends Phaser.Scene {
     if (this.current >= 0) { this.nextReplay(); return; }
     if (this.time.now < this.statsReadyAt) return;
     if (!this.seenReplays) { this.startReplay(0); return; }
-    this.scene.start('Title');
+    shutter(this, () => this.scene.start('Title'));
   }
 
   // ---------------------------------------------------------------- replays
@@ -322,7 +340,9 @@ export class ResultsScene extends Phaser.Scene {
       this.burst = true;
       this.explode(ko);
     }
-    a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom));
+    this.holoG.clear();
+    this.holoAdd.clear();
+    a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom, this.tau - a.t));
     this.updatePieces(step);
   }
 
@@ -346,7 +366,8 @@ export class ResultsScene extends Phaser.Scene {
     });
   }
 
-  private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number): void {
+  /** @param since ms since frame `ra` was recorded (for the spawn hologram's clock) */
+  private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number, since: number): void {
     const robot = this.robots[i];
     const tag = this.tags[i];
     if (!ra.visible) { robot.visible = false; tag.setVisible(false); return; }
@@ -356,9 +377,17 @@ export class ResultsScene extends Phaser.Scene {
     robot.visible = true;
     const bottom = L(ra.bottom, rb.bottom);
     robot.update(pose, ra.maps, L(ra.x, rb.x), bottom, L(ra.yaw, rb.yaw), {
-      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash,
+      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch,
     });
     tag.setVisible(true).setPosition(L(ra.x, rb.x), bottom - 2.9 * UNIT).setScale(1 / zoom);
+    if (ra.holo) {
+      const [age, hx, feet] = ra.holo;
+      holoRobot(robot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
+      drawSpawn(this.holoG, this.holoAdd, hx, feet, age + since, this.tau);
+      const m = this.holoMotes[i] ??= { x: 0, y: 0 };
+      m.x = L(ra.x, rb.x); m.y = bottom - UNIT;
+      this.impact.aura(m, 'hologram', HOLO_COLOR);
+    } else clearHolo(robot.view);
   }
 
   private explode(ko: KoReplay): void {
@@ -376,7 +405,8 @@ export class ResultsScene extends Phaser.Scene {
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
       const speed = Phaser.Math.FloatBetween(11, 21) * UNIT;
-      this.pieces.push({ img, vx: dx * speed, vy: dy * speed - 6 * UNIT, spin: Phaser.Math.FloatBetween(-600, 600), age: 0 });
+      // Each piece scans out on its own before the replay moves on.
+      this.pieces.push({ img, vx: dx * speed, vy: dy * speed - 6 * UNIT, spin: Phaser.Math.FloatBetween(-600, 600), age: 0, end: Phaser.Math.FloatBetween(950, 1500) });
     }
     if (parts.length) {
       this.flash.clear().fillStyle(color, 0.55).fillCircle(cx, cy, 2.4 * UNIT).fillStyle(0xffffff, 0.8).fillCircle(cx, cy, 1.1 * UNIT);
@@ -391,7 +421,9 @@ export class ResultsScene extends Phaser.Scene {
     for (const p of this.pieces) {
       p.age += dtMs;
       p.vy += 30 * UNIT * dt;
-      p.img.setPosition(p.img.x + p.vx * dt, p.img.y + p.vy * dt).setAngle(p.img.angle + p.spin * dt).setAlpha(Math.max(0, 1 - p.age / 2500));
+      p.img.setPosition(p.img.x + p.vx * dt, p.img.y + p.vy * dt).setAngle(p.img.angle + p.spin * dt).setVisible(p.age < p.end);
+      const t = 1 - (p.end - p.age) / DISSOLVE_MS;
+      if (t > 0) holoPiece(p.img, Math.min(1, t), this.worldCam);
     }
   }
 
@@ -399,5 +431,7 @@ export class ResultsScene extends Phaser.Scene {
     for (const p of this.pieces) p.img.destroy();
     this.pieces = [];
     this.flash?.clear();
+    this.holoG?.clear();
+    this.holoAdd?.clear();
   }
 }

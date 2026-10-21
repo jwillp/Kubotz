@@ -50,7 +50,9 @@ export interface MatchResult {
 export interface RobotFrame {
   visible: boolean;
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
-  lean: number; squash: number; alpha: number; flash: boolean;
+  lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean;
+  /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
+  holo?: [number, number, number];
 }
 
 /** A recorded frame: the match clock, the arena camera (centre, zoom, roll) and every robot. */
@@ -98,6 +100,11 @@ export interface MatchSetup {
   /** Index into ARENA_INFO / ARENAS. */
   arena: number;
   bonuses: BonusRate;
+  /**
+   * Arena select preview: no robots, music, HUD or rules; the whole arena
+   * fitted into this screen rectangle, lit and animated as in a match.
+   */
+  preview?: { x: number; y: number; width: number; height: number };
 }
 
 /** Faction names, by team (same order as SLOT_COLORS). */
