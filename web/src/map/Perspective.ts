@@ -8,10 +8,11 @@ export const look25 = { on: true };
 /**
  * Scale round the camera centre of the blocks' front faces (the tile art,
  * where the robots stand, so it never moves) and of their back edges: a
- * shallow depth, just enough to read.
+ * shallow depth, just enough to read. At the arena's sides it shows about as
+ * much of the walls as the portals' ovals (fx/Portals.ts) already imply.
  */
 const FRONT = 1;
-const BACK = 0.975;
+const BACK = 0.955;
 /** The dim copy of the arena further back. */
 const FAR = 0.9;
 

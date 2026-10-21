@@ -839,5 +839,5 @@ toggles the 2.5D look on and off in a match.
 dropped: the owner prefers the normal 2D characters, and scaling the art
 layers in front of the play plane moved the robots off their platforms. The
 arena perspective stays, made much shallower (the front faces sit exactly on
-the play plane, the back edges only 2.5% in), with "The Kube 2.5D" beside
+the play plane, the back edges 4.5% in, about what the portals' ovals imply), with "The Kube 2.5D" beside
 "The Kube" for a side-by-side comparison.
