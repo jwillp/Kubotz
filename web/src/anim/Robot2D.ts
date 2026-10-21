@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
+import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { lit } from '../fx/NormalMaps';
 import { type PosedPart, type Pose, type Rig } from './Rig';
 
@@ -26,6 +27,8 @@ function depthOf(file: string): Depth {
 export interface DrawState {
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
   lean: number; squash: number; alpha: number; flash: boolean;
+  /** Struck this frame (the white flash of a hit, not a charge blink): it glitches. */
+  glitch?: boolean;
 }
 
 interface Ghost { view: Phaser.GameObjects.Container; born: number; life: number }
@@ -35,8 +38,8 @@ interface Ghost { view: Phaser.GameObjects.Container; born: number; life: number
  * in a container at the robot's feet. The parts are layered in depth, so the
  * robot turns round the vertical axis like a puppet with volume: each part
  * narrows, swings round by its depth and mirrors past 90°, the head first and
- * the legs last. Spin moves use the same yaw. Hits flash it white; fast moves
- * leave afterimages.
+ * the legs last. Spin moves use the same yaw. Hits flash it white and glitch
+ * it (fx/HitGlitch.ts); fast moves leave afterimages.
  */
 export class Robot2D {
   readonly view: Phaser.GameObjects.Container;
@@ -44,6 +47,11 @@ export class Robot2D {
   private readonly yaws = new Map<string, number>();
   private readonly ghosts: Ghost[] = [];
   private parts: PosedPart[] = [];
+  /** How long since the last hit glitch started (ms of frame time, so slow motion slows it), and whether the hit is still on. */
+  private glitchAge = Infinity;
+  private glitching = false;
+  /** The camera the robot is seen through, when not the scene's main one. */
+  camera?: Phaser.Cameras.Scene2D.Camera;
   /** What update() drew last, for the kill replays (game/Replay.ts). */
   lastDraw: DrawState | null = null;
 
@@ -59,11 +67,11 @@ export class Robot2D {
   /**
    * @param yaw degrees round the vertical axis: 0 faces right, 180 left (the
    *   turn, plus the clip's own yaw for spins)
-   * @param fx extra motion: lean (radians), squash (y scale), alpha, white flash, frame time
+   * @param fx extra motion: lean (radians), squash (y scale), alpha, white flash, hit glitch, frame time
    */
   update(pose: Pose, maps: string[], x: number, bottom: number, yaw: number,
-    fx: { lean: number; squash: number; alpha: number; flash: boolean; dtMs: number; snap?: boolean }): void {
-    this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash };
+    fx: { lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean; dtMs: number; snap?: boolean }): void {
+    this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash, glitch: fx.glitch };
     this.parts = this.rig.solve(pose, maps);
     // The art faces left: the container mirrors it, and yaw 180 mirrors it back.
     this.view.setPosition(x, bottom).setScale(-ART_SCALE, fx.squash * ART_SCALE).setRotation(fx.lean).setAlpha(fx.alpha);
@@ -103,7 +111,16 @@ export class Robot2D {
       if (fx.flash) img.setTintFill(0xffffff); else img.clearTint();
       this.view.moveTo(img, depth);
     });
+    this.updateGlitch(!!fx.glitch, fx.dtMs);
     this.updateGhosts();
+  }
+
+  /** Each new hit restarts the glitch, which settles over GLITCH_MS. */
+  private updateGlitch(hit: boolean, dtMs: number): void {
+    this.glitchAge = hit && !this.glitching ? 0 : this.glitchAge + dtMs;
+    this.glitching = hit;
+    const f = this.glitchAge / GLITCH_MS;
+    hitGlitch(this.view, f < 1 ? (1 - f) * (1 - f) * 0.6 + 0.4 * (1 - f) : 0, this.camera);
   }
 
   /** A fading copy of the robot as drawn now, in a colour (afterimages of fast moves). */

@@ -135,6 +135,7 @@ export class ResultsScene extends Phaser.Scene {
     r.colors.forEach((color, i) => {
       const robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, color));
       robot.visible = false;
+      robot.camera = this.worldCam;
       this.only(this.worldCam, robot.view);
       this.robots.push(robot);
       const tag = this.add.text(0, 0, r.names[i], { fontFamily: FONT, fontStyle: '800', fontSize: '20px', color: css(color), stroke: '#000000', strokeThickness: 5 })
@@ -363,7 +364,7 @@ export class ResultsScene extends Phaser.Scene {
     robot.visible = true;
     const bottom = L(ra.bottom, rb.bottom);
     robot.update(pose, ra.maps, L(ra.x, rb.x), bottom, L(ra.yaw, rb.yaw), {
-      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash,
+      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch,
     });
     tag.setVisible(true).setPosition(L(ra.x, rb.x), bottom - 2.9 * UNIT).setScale(1 / zoom);
     if (ra.holo) {
