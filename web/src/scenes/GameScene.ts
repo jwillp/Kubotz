@@ -1,0 +1,1035 @@
+import Phaser from 'phaser';
+import { Config, UNIT } from '../config';
+import { SpriterData } from '../spriter/Spriter';
+import { TmxMap, MapObject } from '../map/TmxMap';
+import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
+import { CpuController } from '../game/Ai';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
+import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
+import { Bullet } from '../game/Combat';
+import { BONUS_RATES, type MatchSetup } from './TitleScene';
+import type { ParticleName } from './BootScene';
+import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { GradePipeline } from '../fx/Grade';
+import { lit, normalMapFor } from '../fx/NormalMaps';
+import { ImpactFx } from '../fx/Impact';
+import { PortalFx } from '../fx/Portals';
+import { PhysicsWorld } from '../physics/Physics';
+import { Nav, NavBlock } from '../game/Nav';
+import { DebrisField } from '../game/Debris';
+import { ARENAS, buildArenaMap } from '../map/Arenas';
+import { Rig } from '../anim/Rig';
+import type { DebugState } from './DebugScene';
+
+/** The arena: InGameScreen + the gameplay systems that work across entities. */
+/** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
+function opaqueOutline(scene: Phaser.Scene, key: string): number[][] {
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement;
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(src, 0, 0);
+  const { data, width: w, height: h } = ctx.getImageData(0, 0, src.width, src.height);
+  const pts: number[][] = [];
+  for (let x = 0; x < w; x += 2) {
+    let top = -1; let bottom = -1;
+    for (let y = 0; y < h; y++) if (data[(y * w + x) * 4 + 3] > 100) { if (top < 0) top = y; bottom = y; }
+    if (top >= 0) pts.push([x, h - top], [x, h - 1 - bottom]);
+  }
+  return pts;
+}
+
+/** Fixed blue lights over the platforms (main.ts maxLights must cover these + 2 + the pool). */
+const PLATFORM_LIGHTS = 20;
+
+export class GameScene extends Phaser.Scene implements ArenaHooks {
+  fighters: Kubotz[] = [];
+  private map!: TmxMap;
+  physicsWorld!: PhysicsWorld;
+  /** Debug mode and its time controls (F3, see DebugScene). */
+  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
+  private glows: Phaser.GameObjects.Image[] = [];
+  /** Lightsaber blades: a white-hot core in a coloured glow, drawn over the blade art. */
+  private sabers!: Phaser.GameObjects.Graphics;
+  /** Light2D: a key light and a rim light that follow the camera, and a pool for lasers, hits and pick-ups. */
+  private keyLight: Phaser.GameObjects.Light | null = null;
+  private rimLight: Phaser.GameObjects.Light | null = null;
+  private pointLights: Phaser.GameObjects.Light[] = [];
+  private solids: Phaser.Geom.Rectangle[] = [];
+  private blocks: NavBlock[] = [];
+  /** Ledges robots can hang from (top corners of solid blocks). */
+  ledges: Ledge[] = [];
+  private nav!: Nav;
+  private debris!: DebrisField;
+  private playerSpawns: Phaser.Math.Vector2[] = [];
+  private bonusSpawns: Phaser.Math.Vector2[] = [];
+  private warpZones: Phaser.Geom.Rectangle[] = [];
+  private portals!: PortalFx;
+  private orbs: PowerUpOrb[] = [];
+  private bullets: Bullet[] = [];
+  private nextBonusAt = 0;
+  /** The title screen's power-up setting. */
+  private bonusRate = BONUS_RATES.normal;
+  /** The camera's centre before shake, and the shake's trauma (0..1). */
+  private camMid = new Phaser.Math.Vector2();
+  private trauma = 0;
+  private particles!: ParticleFx;
+  private impact!: ImpactFx;
+  private effects!: Record<ParticleName, EffectDef>;
+  private pickupFx!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private camTarget = new Phaser.Math.Vector2();
+  private camVisibleWidth = 30;
+  winner: Kubotz | null | undefined; // undefined while the match runs
+  /** Match clock in ms: only advances while the game is not paused. */
+  clock = 0;
+  /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
+  startedAt: number = Config.COUNTDOWN;
+  private countdownStep = -1;
+  paused = false;
+  private music?: Phaser.Sound.BaseSound;
+
+  constructor() { super('Game'); }
+
+  init(): void {
+    this.fighters = [];
+    this.orbs = [];
+    this.bullets = [];
+    this.playerSpawns = [];
+    this.bonusSpawns = [];
+    this.warpZones = [];
+    this.solids = [];
+    this.blocks = [];
+    this.winner = undefined;
+    this.paused = false;
+    this.clock = 0;
+    this.countdownStep = -1;
+  }
+
+  create(setup: MatchSetup): void {
+    const original: TmxMap = this.registry.get('map');
+    const arena = ARENAS[setup.arena ?? 0];
+    this.map = arena ? buildArenaMap(arena, original) : original;
+    const spriter: SpriterData = this.registry.get('spriter');
+    const rig = new Rig(spriter);
+    for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
+    this.physicsWorld = new PhysicsWorld();
+    const mapW = this.map.width * this.map.tileWidth;
+
+    this.scene.launch('Backdrop');
+    this.scene.sendToBack('Backdrop');
+    this.buildMap();
+    this.debris = new DebrisField(this, this.physicsWorld);
+    this.createEffects();
+    this.portals = new PortalFx(this, this.warpZones);
+
+    const humans = { P1: 0, P2: 0 };
+    setup.slots.forEach((slot, i) => {
+      let controller: Controller;
+      const color = SLOT_COLORS[i % SLOT_COLORS.length];
+      if (slot === 'CPU') {
+        controller = new CpuController({
+          enemiesOf: (k) => this.fighters.filter((f) => f !== k && !f.eliminated),
+          powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
+          now: () => this.clock,
+          nav: this.nav,
+        });
+      } else {
+        controller = new HumanController(this, slot === 'P1' ? PLAYER_1_KEYS : PLAYER_2_KEYS, slot, humans.P1 + humans.P2);
+        humans[slot]++;
+      }
+      const spawn = this.playerSpawns[i % this.playerSpawns.length];
+      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld);
+      if (controller instanceof CpuController) controller.agent = k;
+      k.facing = spawn.x < mapW / 2 ? 1 : -1;
+      this.fighters.push(k);
+    });
+
+    const cam = this.cameras.main;
+    const c = this.centerOfFighters();
+    this.camTarget.copy(c);
+    cam.centerOn(c.x, c.y);
+    this.camMid.set(c.x, c.y);
+    this.trauma = 0;
+    this.applyZoom();
+    this.bonusRate = BONUS_RATES[setup.bonuses ?? 'normal'];
+    this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : Config.COUNTDOWN + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
+
+    this.sound.stopByKey('music-title');
+    this.music = this.sound.add('music-game', { loop: true, volume: 0.28 });
+    this.music.play();
+
+    this.scene.launch('Hud');
+    this.scene.bringToTop('Hud');
+
+    const kb = this.input.keyboard!;
+    kb.on('keydown-ESC', () => this.togglePause());
+    kb.on('keydown-P', () => this.togglePause());
+    kb.on('keydown-F', () => {
+      const on = this.toggleScreenFx();
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
+    });
+    // Debug mode; the function keys are kept from the browser while the game has the keyboard.
+    kb.addCapture([Phaser.Input.Keyboard.KeyCodes.F3, Phaser.Input.Keyboard.KeyCodes.F4, Phaser.Input.Keyboard.KeyCodes.F6,
+      Phaser.Input.Keyboard.KeyCodes.F7, Phaser.Input.Keyboard.KeyCodes.F8]);
+    const d = this.debugState;
+    const toggleDebug = () => {
+      d.on = !d.on;
+      if (d.on) { this.scene.launch('Debug'); this.scene.bringToTop('Debug'); } else { this.scene.stop('Debug'); d.timeScale = 1; d.frozen = false; }
+    };
+    kb.on('keydown-F3', toggleDebug);
+    kb.on('keydown-BACKTICK', toggleDebug);
+    kb.on('keydown-F4', () => { if (d.on) d.timeScale = d.timeScale === 1 ? 0.5 : d.timeScale === 0.5 ? 0.25 : 1; });
+    kb.on('keydown-F6', () => { if (d.on) d.frozen = !d.frozen; });
+    kb.on('keydown-F7', () => { if (d.on) { d.frozen = true; d.steps++; } });
+    kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
+    this.setupScreenFx();
+    this.setupLights();
+    kb.on('keydown-ENTER', () => { if (this.winner !== undefined) this.backToTitle(); });
+    // From the pause: Q quits to the title screen.
+    kb.on('keydown-Q', () => { if (this.paused) this.backToTitle(); });
+    this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
+      if (button.index === 9) this.togglePause(); // Start
+      if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.music?.destroy();
+      this.scene.stop('Hud');
+      this.scene.stop('Debug');
+      this.scene.stop('Backdrop');
+      this.debris.destroy();
+      this.portals.destroy();
+      for (const k of this.fighters) k.destroy();
+    });
+  }
+
+  // ---------------------------------------------------------------------- map
+  private buildMap(): void {
+    const m = this.map;
+    // The original kept the Tiled art layers hidden behind its debug shapes; the
+    // port draws them. Everything static is baked into one render texture.
+    const mapW = m.width * m.tileWidth;
+    const mapH = m.height * m.tileHeight;
+    // Colour and normal map canvases of the whole arena, lit like everything else.
+    for (const key of ['arena', 'arena-normals']) if (this.textures.exists(key)) this.textures.remove(key);
+    const art = this.textures.createCanvas('arena', mapW, mapH)!;
+    const normals = document.createElement('canvas');
+    normals.width = mapW; normals.height = mapH;
+    const nctx = normals.getContext('2d')!;
+    nctx.fillStyle = 'rgb(128,128,255)';
+    nctx.fillRect(0, 0, mapW, mapH);
+    const actx = art.getContext();
+    for (const layer of m.layers) {
+      layer.gids.forEach((gid, i) => {
+        const img = m.tileImages.get(gid);
+        if (!img) return;
+        const source = this.textures.get(`tile:${img.source}`).getSourceImage() as HTMLImageElement;
+        // Tiled anchors image tiles at the cell's bottom-left corner.
+        const x = (i % m.width) * m.tileWidth;
+        const y = (Math.floor(i / m.width) + 1) * m.tileHeight - source.height;
+        actx.drawImage(source, x, y);
+        nctx.drawImage(normalMapFor(`tile:${img.source}`, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
+      });
+    }
+    art.refresh();
+    if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
+    lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2));
+    // The tiles' blue light strips glow on their own, whatever the lights do.
+    this.buildArenaGlow(actx.canvas, mapW, mapH);
+
+    for (const o of m.objects) {
+      switch (o.type) {
+        case 'PLAYER_SPAWN':
+          this.playerSpawns.push(this.spawnPoint(o));
+          break;
+        case 'BONUS_SPAWN':
+          this.bonusSpawns.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height / 2));
+          break;
+        case 'WARP_ZONE':
+          this.warpZones.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
+          break;
+        default: { // WALL, STATIC_PLATFORM: BlockFactory
+          this.physicsWorld.addBlock(o.x, o.y, o.width, o.height, o.type === 'STATIC_PLATFORM');
+          this.solids.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
+          this.blocks.push({ x: o.x, y: o.y, width: o.width, height: o.height, soft: o.type === 'STATIC_PLATFORM' });
+        }
+      }
+    }
+    if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
+    // A lit edge along the top of every block, like the 3D version's glowing rims.
+    const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+    for (const b of this.blocks) {
+      rims.lineStyle(7, 0x29abe2, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      rims.lineStyle(2, 0x9fe6ff, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+    }
+    this.nav = new Nav(this.blocks);
+    this.ledges = findLedges(this.blocks);
+    // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
+    // at (8, 7)): add mirrored and central spawns so up to four robots start apart.
+    if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
+    const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
+    this.playerSpawns.push(
+      new Phaser.Math.Vector2(mapW - first.x, first.y),
+      new Phaser.Math.Vector2(mapW / 2 - 3 * UNIT, 21.5 * UNIT),
+      new Phaser.Math.Vector2(mapW / 2 + 3 * UNIT, 21.5 * UNIT),
+    );
+  }
+
+  /**
+   * The cube's outer hull: dark plating that carries on past the frame into the
+   * non-playable area and fades out, so the walls do not stop short. Cells
+   * outside the play space are the ones a flood fill from the spawns cannot
+   * reach (portals stop it); the fade follows each cell's distance to the frame.
+   * Half resolution and blurred, under the arena art.
+   */
+  private buildHull(mapArt: HTMLCanvasElement, mapW: number, mapH: number): void {
+    const M = 12; // margin around the map, in units
+    const gw = mapW / UNIT + 2 * M;
+    const gh = mapH / UNIT + 2 * M;
+    const solid = new Uint8Array(gw * gh);
+    const cellsOf = (r: { x: number; y: number; width: number; height: number }, mark: (i: number) => void) => {
+      for (let y = Math.round(r.y / UNIT); y < Math.round((r.y + r.height) / UNIT); y++)
+        for (let x = Math.round(r.x / UNIT); x < Math.round((r.x + r.width) / UNIT); x++) mark((y + M) * gw + x + M);
+    };
+    for (const b of this.blocks) if (!b.soft) cellsOf(b, (i) => { solid[i] = 1; });
+    // Cells the map's own art already covers (the frame and its dark fades) count as frame too.
+    const cover = document.createElement('canvas');
+    cover.width = mapW / UNIT; cover.height = mapH / UNIT;
+    const cctx = cover.getContext('2d')!;
+    cctx.drawImage(mapArt, 0, 0, cover.width, cover.height);
+    const cd = cctx.getImageData(0, 0, cover.width, cover.height).data;
+    const covered = new Uint8Array(gw * gh);
+    for (let y = 0; y < cover.height; y++) for (let x = 0; x < cover.width; x++) {
+      if (cd[(y * cover.width + x) * 4 + 3] > 215) covered[(y + M) * gw + x + M] = 1;
+    }
+    // The play space: flood from the spawns inside the frame's bounding box.
+    const frame = this.blocks.filter((b) => !b.soft);
+    const x0 = Math.min(...frame.map((b) => b.x)) / UNIT + M;
+    const x1 = Math.max(...frame.map((b) => b.x + b.width)) / UNIT + M;
+    const y0 = Math.min(...frame.map((b) => b.y)) / UNIT + M;
+    const y1 = Math.max(...frame.map((b) => b.y + b.height)) / UNIT + M;
+    const inside = new Uint8Array(gw * gh);
+    for (const z of this.warpZones) cellsOf(z, (i) => { inside[i] = 2; }); // portals: stop the flood
+    const queue: number[] = [];
+    for (const p of this.playerSpawns) {
+      const i = (Math.floor(p.y / UNIT - 0.5) + M) * gw + Math.floor(p.x / UNIT) + M;
+      if (!solid[i] && !inside[i]) { inside[i] = 1; queue.push(i); }
+    }
+    while (queue.length > 0) {
+      const i = queue.pop()!;
+      const x = i % gw; const y = (i - x) / gw;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < x0 || nx >= x1 || ny < y0 || ny >= y1) continue;
+        const n = ny * gw + nx;
+        if (solid[n] || inside[n]) continue;
+        inside[n] = 1; queue.push(n);
+      }
+    }
+    // Distance (in cells) from each outside cell to the frame.
+    const dist = new Float32Array(gw * gh).fill(1e9);
+    const bfs: number[] = [];
+    for (let i = 0; i < solid.length; i++) if (solid[i] || (covered[i] && inside[i] !== 1)) { dist[i] = 0; bfs.push(i); }
+    for (let h = 0; h < bfs.length; h++) {
+      const i = bfs[h];
+      const x = i % gw; const y = (i - x) / gw;
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < 0 || nx >= gw || ny < 0 || ny >= gh) continue;
+        const n = ny * gw + nx;
+        if (inside[n] === 1 || dist[n] <= dist[i] + 1) continue;
+        dist[n] = dist[i] + 1; bfs.push(n);
+      }
+    }
+    const S = UNIT / 2; // half resolution
+    const art = document.createElement('canvas');
+    art.width = gw * S; art.height = gh * S;
+    const ctx = art.getContext('2d')!;
+    // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
+    const tile = (name: string) => this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement;
+    const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner_top_left.png'), tile('corner_bottom_left.png')];
+    let seed = 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) {
+      const r = rnd();
+      ctx.drawImage(r < 0.12 ? lines[Math.floor(r / 0.12 * 3)] : plain, x * S, y * S, 2 * S, 2 * S);
+    }
+    // Alpha: solid near the frame, gone some 9 cells out; never over the play space.
+    const mask = document.createElement('canvas');
+    mask.width = gw; mask.height = gh;
+    const mctx = mask.getContext('2d')!;
+    const md = mctx.createImageData(gw, gh);
+    for (let i = 0; i < dist.length; i++) {
+      const a = inside[i] === 1 ? 0 : Math.max(0, Math.min(1, 1.15 - (dist[i] - 1) / 8));
+      md.data[i * 4 + 3] = 255 * a * a;
+    }
+    mctx.putImageData(md, 0, 0);
+    const soft = document.createElement('canvas');
+    soft.width = art.width; soft.height = art.height;
+    const sctx = soft.getContext('2d')!;
+    sctx.filter = `blur(${S * 1.2}px)`;
+    sctx.drawImage(mask, 0, 0, soft.width, soft.height);
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(soft, 0, 0);
+    if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
+    this.textures.addCanvas('arena-hull', art);
+    lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9));
+  }
+
+  /**
+   * Plain additive blending (ONE, ONE). Phaser's ADD scales what is below by
+   * its alpha, which lifts translucent layers under a full-arena glow (the
+   * outer hull showed the glow's rectangle).
+   */
+  private pureAdd(): number {
+    const r = this.sys.renderer;
+    if (!(r instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return Phaser.BlendModes.ADD;
+    const gl = r.gl;
+    return (GameScene.pureAddMode ??= r.addBlendMode([gl.ONE, gl.ONE], gl.FUNC_ADD));
+  }
+
+  private static pureAddMode?: number;
+
+  /**
+   * The emissive layer: the saturated blue pixels of the arena art, sharp and
+   * blurred twice, drawn additively over the lit arena and breathing slowly,
+   * like the 3D version's glowing platforms.
+   */
+  private buildArenaGlow(art: HTMLCanvasElement, w: number, h: number): void {
+    const mask = document.createElement('canvas');
+    mask.width = w; mask.height = h;
+    const mctx = mask.getContext('2d')!;
+    const src = art.getContext('2d')!.getImageData(0, 0, w, h);
+    const d = src.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const blue = b - Math.max(r, g * 0.55);
+      if (d[i + 3] < 40 || b < 120 || blue < 50) { d[i + 3] = 0; continue; }
+      const k = Math.min(1, (blue - 50) / 90);
+      d[i] = Math.min(255, r * 0.6 + 40 * k); d[i + 1] = Math.min(255, g + 40 * k); d[i + 2] = 255; d[i + 3] = 255 * k;
+    }
+    mctx.putImageData(src, 0, 0);
+    if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
+    const glow = this.textures.createCanvas('arena-glow', w, h)!;
+    const g = glow.getContext();
+    g.filter = 'blur(18px)';
+    g.drawImage(mask, 0, 0);
+    g.drawImage(mask, 0, 0);
+    g.filter = 'blur(5px)';
+    g.drawImage(mask, 0, 0);
+    g.filter = 'none';
+    g.globalAlpha = 0.8;
+    g.drawImage(mask, 0, 0);
+    glow.refresh();
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
+    this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+  }
+
+  private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height - (Config.KUBOTZ_HEIGHT * UNIT) / 2);
+  }
+
+  private createEffects(): void {
+    // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
+    this.particles = new ParticleFx(this, 'pe:');
+    this.impact = new ImpactFx(this);
+    this.effects = this.registry.get('effects');
+    // Small sparkles for portals and power-ups appearing.
+    this.pickupFx = this.add.particles(0, 0, 'spark', {
+      speed: { min: 60, max: 220 }, lifespan: 500, scale: { start: 0.8, end: 0 }, blendMode: 'ADD', emitting: false,
+    }).setDepth(15);
+  }
+
+  private fx(name: ParticleName, x: number, y: number, tint?: number): void {
+    this.particles.play(this.effects[name], x, y, tint);
+  }
+
+  // -------------------------------------------------------------- ArenaHooks
+  now(): number {
+    return this.clock;
+  }
+
+  playSfx(key: string, volume = 0.5, detune = 0): void {
+    if (key === 'guard-break') { this.shake(0.35); key = 'punch'; }
+    if (key === 'dodge') key = 'step'; // the old step sample, as a quick shuffle
+    else if (key === 'step' && this.cache.audio.exists('step-0')) {
+      // Footsteps: one of the soft metal boot steps, pitch varied a little.
+      key = `step-${Phaser.Math.Between(0, 2)}`;
+      detune += Phaser.Math.Between(-80, 80);
+    }
+    if (!this.cache.audio.exists(key)) return;
+    this.sound.play(key, { volume, detune });
+  }
+
+  dust(x: number, y: number): void {
+    this.fx('landingDust', x, y);
+  }
+
+  runDust(x: number, y: number, dir: number): void {
+    this.impact.runDust(x, y, dir);
+  }
+
+  airJump(x: number, y: number, color: number): void {
+    this.impact.airJump(x, y, color);
+  }
+
+  fireBullet(shooter: Kubotz, damage: number, speed: number, size = 1, power = 1): void {
+    const { x, y } = shooter.muzzle();
+    const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock, size, power);
+    this.playSfx('shot', 0.3 * Math.min(2, size));
+    if (size > 1.2) this.impact.hit(x, y, shooter.facing, shooter.look.color, size * 0.6); // muzzle burst
+    this.bullets.push(b);
+  }
+
+  tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean {
+    let took = false;
+    for (const orb of [...this.orbs]) {
+      if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
+      const hp = kubotz.health;
+      kubotz.givePowerUp(orb.type, this.clock);
+      const def = POWER_UPS[orb.type];
+      if (orb.type === 'health') {
+        // Repair: its own sound, a longer twirl and the health regained.
+        this.playSfx('orb-heal', 0.55);
+        this.impact.twirl(kubotz, orb.color, 2100);
+        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)} HP`, def.color);
+      } else {
+        this.playSfx('orb-pickup', 0.5);
+        this.impact.twirl(kubotz, orb.color, 1500);
+        this.floatText(kubotz.x, kubotz.body.top - 40, def.label, def.color);
+      }
+      orb.destroy();
+      this.orbs = this.orbs.filter((o) => o !== orb);
+      took = true;
+    }
+    return took;
+  }
+
+  /** Melee grab reach: an opponent just in front, level with the grabber, that can be caught. */
+  grabTarget(k: Kubotz): Kubotz | null {
+    let best: Kubotz | null = null;
+    let bestD = Infinity;
+    for (const o of this.fighters) {
+      if (o === k || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge) continue;
+      const ahead = (o.x - k.x) * k.facing;
+      if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
+      if (ahead < bestD) { bestD = ahead; best = o; }
+    }
+    if (best) this.playSfx('punch', 0.25, -600);
+    return best;
+  }
+
+  /** A free ledge whose top is level with the robot's hands, on the side the robot is (edge hogging: one robot per ledge). */
+  ledgeNear(k: Kubotz): Ledge | null {
+    for (const l of this.ledges) {
+      const out = (k.x - l.x) * l.dir;
+      const below = l.y - k.body.top;
+      if (out < 0.1 * UNIT || out > 1.0 * UNIT || below < -0.45 * UNIT || below > 0.85 * UNIT) continue;
+      if (this.fighters.some((o) => o !== k && o.ledgeHeld === l)) continue;
+      return l;
+    }
+    return null;
+  }
+
+  grabFx(x: number, y: number, color: number, power: number): void {
+    this.impact.hit(x, y, 0, color, power);
+    this.playSfx('punch', 0.2 + 0.25 * power, power >= 1 ? -300 : 200);
+  }
+
+  // ------------------------------------------------------------------ update
+  update(_time: number, deltaMs: number): void {
+    if (this.paused) return;
+    // Debug time controls: slow motion, or frozen and stepped frame by frame.
+    const d = this.debugState;
+    let dtMs = Math.min(deltaMs, 50) * d.timeScale;
+    if (d.frozen) {
+      if (d.steps <= 0) return;
+      d.steps--;
+      dtMs = 1000 / 60;
+    }
+    const dt = dtMs / 1000;
+    // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
+    // it stops while the game is paused.
+    const now = this.clock += dtMs;
+    this.updateCountdown(now);
+    const fighting = now >= this.startedAt;
+
+    for (const k of this.fighters) {
+      if (!k.isAlive() && !k.eliminated && this.winner === undefined && now >= k.respawnAt) this.respawn(k);
+      k.update(now, dt, fighting);
+    }
+    this.physicsWorld.step(dt);
+    this.resolveMelee(now);
+    this.kickOrbs(now);
+    this.debris.update(now, this.fighters, (victim, x, y) => {
+      this.playSfx('punch', 0.3);
+      this.impact.hit(x, y, Math.sign(victim.x - x) || 1, 0xffb060, 0.6);
+    });
+    this.updateBullets(now, dt);
+    this.updateOrbs(now);
+    this.checkBoundsAndWarps(now);
+    this.checkDeaths(now);
+    this.updateBonusSpawns(now);
+    for (const k of this.fighters) {
+      k.render(now, dtMs);
+      // A trail behind the striking fist or foot, and behind the laser blade
+      // whenever it swings fast (not only during strikes).
+      this.impact.swing(k, k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null, k.look.color);
+      // Invincibility and shield: the orb's motes keep circling the robot while they last.
+      if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
+      if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
+      // A charging gun draws sparks into its barrel.
+      if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
+        const m = k.muzzle();
+        this.impact.charge(m.x, m.y, k.look.color, k.charge);
+      }
+    }
+    this.particles.update(dtMs);
+    this.impact.update(now, dtMs);
+    this.portals.update(now, dtMs);
+    this.updateCamera(dt);
+    this.drawGlows();
+    this.drawSabers(now);
+  }
+
+  private lastTips = new Map<Kubotz, { x: number; y: number }>();
+
+  /** The blade's arc while its tip moves fast (6 units/s or more), else null. */
+  private bladeArc(k: Kubotz, dtMs: number): { ox: number; oy: number; ix: number; iy: number } | null {
+    const b = k.blade();
+    const last = this.lastTips.get(k);
+    if (!b) { this.lastTips.delete(k); return null; }
+    this.lastTips.set(k, { x: b.x2, y: b.y2 });
+    if (!last || dtMs <= 0) return null;
+    const speed = Math.hypot(b.x2 - last.x, b.y2 - last.y) / (dtMs / 1000) / UNIT;
+    return speed >= 6 ? { ox: b.x2, oy: b.y2, ix: b.x1, iy: b.y1 } : null;
+  }
+
+  private drawSabers(now: number): void {
+    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    const g = this.sabers.clear();
+    for (const k of this.fighters) {
+      const b = k.blade();
+      if (!b) continue;
+      const c = k.look.color;
+      const flicker = 0.9 + 0.1 * Math.sin(now * 0.09 + k.x);
+      const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
+      // Wide soft halo, the coloured blade, then the white core.
+      const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
+      for (const [w, col, a] of strokes) {
+        g.lineStyle(w, col, a).lineBetween(b.x1, b.y1, b.x2, b.y2);
+        g.fillStyle(col, a).fillCircle(b.x2, b.y2, w / 2);
+      }
+    }
+  }
+
+  /** Soft additive glow and a Light2D point light around lasers, blades, pick-ups, explosions and hits. */
+  private drawGlows(): void {
+    const lights = [
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ x: b.x, y: b.y, color: b.shooter.look.color, intensity: 4 * b.size })),
+      ...this.fighters.filter((k) => k.isAlive() && k.charge > 0).map((k) => ({ ...(k.weapon.startsWith('laserGun') ? k.muzzle() : { x: k.x, y: k.y }), color: k.look.color, intensity: 1 + 5 * k.charge })),
+      ...this.fighters.filter((k) => k.isAlive() && k.weapon === 'laserSword').map((k) => {
+        const p = k.bladeMiddle();
+        return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
+      }),
+      ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
+      ...this.debris.lights(this.clock),
+      ...this.impact.lights(),
+    ];
+    // The brightest first, so the pool keeps the hits and lasers when there are many.
+    lights.sort((a, b) => b.intensity - a.intensity);
+    this.pointLights.forEach((light, i) => {
+      const l = lights[i];
+      if (!l) { light.setVisible(false); return; }
+      light.setVisible(true).setPosition(l.x, l.y).setColor(l.color)
+        .setIntensity(Math.min(2.2, 0.5 + l.intensity * 0.35)).setRadius(UNIT * (4 + Math.sqrt(l.intensity) * 2.5));
+    });
+    while (this.glows.length < lights.length) {
+      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(13));
+    }
+    this.glows.forEach((img, i) => {
+      const l = lights[i];
+      if (!l) { img.setVisible(false); return; }
+      const size = UNIT * (1.2 + Math.min(6, Math.sqrt(l.intensity) * 0.9));
+      img.setVisible(true).setPosition(l.x, l.y).setTint(l.color).setDisplaySize(size, size).setAlpha(Math.min(0.85, 0.25 + l.intensity * 0.05));
+    });
+  }
+
+  // -------------------------------------------------------------- screen effects
+  private gradeOn = false;
+
+  /**
+   * The grade pass (vignette, split tone, grain, scanlines) on the whole view
+   * (WebGL only); off with ?lowfx, toggled with F. No bloom: the owner
+   * preferred the crisper look without it.
+   */
+  private setupScreenFx(): void {
+    if (new URLSearchParams(location.search).has('lowfx')) return;
+    this.toggleScreenFx();
+  }
+
+  private toggleScreenFx(): boolean {
+    const cam = this.cameras.main;
+    if (this.sys.renderer.type !== Phaser.WEBGL) return false;
+    // Remove the instances themselves: removing by the name 'Grade' missed
+    // (the instance is named after its class), so every toggle stacked another pass.
+    for (const p of cam.postPipelines.filter((q) => q instanceof GradePipeline)) cam.removePostPipeline(p as Phaser.Renderer.WebGL.Pipelines.PostFXPipeline);
+    this.gradeOn = !this.gradeOn;
+    if (this.gradeOn) {
+      const pipelines = (this.sys.renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
+      if (!pipelines.postPipelineClasses.has('Grade')) pipelines.addPostPipeline('Grade', GradePipeline);
+      cam.setPostPipeline(GradePipeline);
+    }
+    return this.gradeOn;
+  }
+
+  // -------------------------------------------------------------- lights
+  /**
+   * Light2D over the arena and robots (their normal maps are generated at
+   * boot): a warm key light from the upper front, a cool rim light from
+   * behind, both following the camera, and a pool of coloured point lights.
+   */
+  private setupLights(): void {
+    if (this.sys.renderer.type !== Phaser.WEBGL) return;
+    // A dim room: the key light shapes, the rim light outlines, and the
+    // glowing platforms, lasers and blades light what is near them.
+    this.lights.enable().setAmbientColor(0x64709a);
+    this.keyLight = this.lights.addLight(0, 0, 100, 0xffe8cc, 3.2);
+    this.rimLight = this.lights.addLight(0, 0, 100, 0x3aa8ff, 2.0);
+    for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
+    // Blue light rising off the top of every block (wide ones get several).
+    let fixed = 0;
+    for (const b of this.blocks) {
+      const n = Math.max(1, Math.round(b.width / (UNIT * 9)));
+      for (let i = 0; i < n && fixed < PLATFORM_LIGHTS; i++, fixed++) {
+        const x = b.x + (b.width * (i + 0.5)) / n;
+        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), 0x29abe2, 2.4);
+      }
+    }
+    this.placeFixedLights();
+  }
+
+  private placeFixedLights(): void {
+    if (!this.keyLight || !this.rimLight) return;
+    const view = this.cameras.main.worldView;
+    const span = Math.max(view.width, view.height);
+    this.keyLight.setPosition(view.x + view.width * 0.3, view.y - view.height * 0.15).setRadius(span * 1.8);
+    this.rimLight.setPosition(view.right + view.width * 0.1, view.bottom + view.height * 0.1).setRadius(span * 1.6);
+  }
+
+  // -------------------------------------------------------------- debug view
+  get warpZoneRects(): Phaser.Geom.Rectangle[] { return this.warpZones; }
+  get navGraph(): Nav { return this.nav; }
+  get bulletCount(): number { return this.bullets.length; }
+  get orbCount(): number { return this.orbs.length; }
+  debrisCircles(): Phaser.Geom.Circle[] { return this.debris.circles(); }
+
+  /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
+  private updateCountdown(now: number): void {
+    const step = Math.min(3, Math.floor(now / 1000));
+    if (step === this.countdownStep) return;
+    this.countdownStep = step;
+    const word = ['3', '2', '1', 'fight'][step];
+    this.sound.play(`narrator-${word}`, { volume: 0.8 });
+    this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
+  }
+
+  private damageablesFor(attacker: Kubotz): Damageable[] {
+    return this.fighters.filter((f) => f !== attacker && f.isAlive() && !f.intangible);
+  }
+
+  /** MeleeSystem / LaserSwordSystem hitboxes + DamageSystem (with clashes). */
+  private resolveMelee(now: number): void {
+    for (const attacker of this.fighters) {
+      const box = attacker.isAlive() ? attacker.currentAttack() : null;
+      if (!box) continue;
+      for (const target of this.damageablesFor(attacker)) {
+        if (box.hit.has(target)) continue;
+        const hurt = target.hurtbox();
+        const at = box.circles.find((c) => Phaser.Geom.Intersects.CircleToRectangle(c, hurt));
+        if (!at) continue;
+        box.hit.add(target);
+        // Clash: two attacks of similar strength meeting cancel out (CLASH_THRESHOLD = 5).
+        const other = target instanceof Kubotz ? target.currentAttack() : null;
+        const meet = other?.circles.find((c) => Phaser.Geom.Intersects.CircleToCircle(at, c));
+        if (other && meet && Math.abs(other.damage - box.damage) <= 5) {
+          other.hit.add(attacker);
+          this.impact.clash((at.x + meet.x) / 2, at.y);
+          continue;
+        }
+        this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
+      }
+      // Strikes knock the power-up balls away along the move's launch angle.
+      for (const orb of this.orbs) {
+        if (now < orb.kickedUntil) continue;
+        const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
+        if (!box.circles.some((c) => Phaser.Geom.Intersects.CircleToCircle(c, ball))) continue;
+        const dir = box.both ? (orb.x < attacker.x ? -1 : 1) : box.behind ? -attacker.facing : attacker.facing;
+        const ang = Phaser.Math.DegToRad(Math.max(20, box.launch.angle));
+        const speed = (6 + box.launch.knockback * 0.9) * UNIT;
+        orb.body.push(dir * Math.cos(ang) * speed, -Math.sin(ang) * speed);
+        orb.kickedUntil = now + 250;
+        this.impact.pop(orb.x, orb.y, orb.color);
+      }
+    }
+  }
+
+  /** Robots running into a power-up ball kick it along. */
+  private kickOrbs(now: number): void {
+    for (const orb of this.orbs) {
+      if (now < orb.kickedUntil) continue;
+      const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
+      for (const k of this.fighters) {
+        if (!k.isAlive() || !Phaser.Geom.Intersects.CircleToRectangle(ball, k.hurtbox())) continue;
+        const away = orb.x < k.x ? -1 : 1;
+        const vx = k.body.vx;
+        // Faster when running into it; a nudge out of the way when standing.
+        const kick = Math.sign(vx) === away ? Math.abs(vx) * 1.1 + 2 * UNIT : 3 * UNIT;
+        if (orb.body.vx * away < kick) orb.body.vx = away * kick;
+        orb.body.vy = Math.min(orb.body.vy, -(1.5 + (Math.abs(vx) / UNIT) * 0.12) * UNIT);
+        orb.kickedUntil = now + 180;
+        break;
+      }
+    }
+  }
+
+  private hit(target: Damageable, attacker: Kubotz, damage: number, launch: Launch, dirX: 1 | -1, x: number, y: number): void {
+    target.takeDamage(damage, attacker, launch, dirX);
+    const pushX = dirX * launch.knockback;
+    const blocked = target instanceof Kubotz && (target.guarding || target.shield > 0);
+    this.playSfx('punch', blocked ? 0.2 : 0.45);
+    this.impact.hit(x, y, Math.sign(pushX) || 1, blocked ? 0x9fdcff : attacker.look.color, (damage / 4) * (blocked ? 0.5 : 1));
+  }
+
+  private popBullet(b: Bullet): void {
+    if (b.dead) return;
+    this.impact.pop(b.x, b.y, b.shooter.look.color);
+    b.destroy();
+  }
+
+  private updateBullets(now: number, dt: number): void {
+    for (const b of this.bullets) {
+      if (b.dead) continue;
+      b.update(dt);
+      this.impact.laserTrail(b.x, b.y, Math.sign(b.pushX) || 1, b.shooter.look.color, b.size);
+      if (now >= b.expiresAt) { b.destroy(); continue; }
+      const box = b.hitbox();
+      if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
+      // A laser bolt knocks a power-up ball away.
+      const orb = this.orbs.find((o) => Phaser.Geom.Intersects.CircleToRectangle(new Phaser.Geom.Circle(o.x, o.y, o.radius), box));
+      if (orb) {
+        orb.body.push(Math.sign(b.pushX) * (8 + Math.abs(b.pushX) * 0.6) * UNIT, -4 * UNIT);
+        this.popBullet(b);
+        continue;
+      }
+      for (const target of this.damageablesFor(b.shooter)) {
+        if (!Phaser.Geom.Intersects.RectangleToRectangle(box, target.hurtbox())) continue;
+        this.hit(target, b.shooter, b.damage, { knockback: Math.abs(b.pushX), angle: 20 }, b.pushX < 0 ? -1 : 1, b.x, b.y);
+        this.popBullet(b);
+        break;
+      }
+    }
+    this.bullets = this.bullets.filter((b) => !b.dead);
+  }
+
+  private updateOrbs(now: number): void {
+    for (const o of this.orbs) {
+      // A crystal tink when it bounces (a sudden change of velocity), louder the harder.
+      const dv = Math.hypot(o.body.vx - o.lastVx, o.body.vy - o.lastVy) / UNIT;
+      if (dv > 3.5 && now - o.lastTinkAt > 70) {
+        o.lastTinkAt = now;
+        this.playSfx('orb-bounce', Math.min(0.55, 0.1 + dv * 0.025), Phaser.Math.Between(-250, 350));
+      }
+      o.lastVx = o.body.vx; o.lastVy = o.body.vy;
+      this.impact.motes(o.x, o.y, o.color, o.radius, 16);
+      if (now >= o.expiresAt || o.y > this.map.height * UNIT + 10 * UNIT) o.destroy();
+      else o.update(now);
+    }
+    this.orbs = this.orbs.filter((o) => o.sprite.active);
+  }
+
+  /** PowerUpsSystem.updateSpawns: every 5-10 s, at most 5 on the map. */
+  private updateBonusSpawns(now: number): void {
+    if (now < this.nextBonusAt || this.winner !== undefined) return;
+    this.nextBonusAt = now + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
+    if (this.orbs.length >= this.bonusRate.most || this.bonusSpawns.length === 0) return;
+    // Never on top of a ball already there.
+    const free = this.bonusSpawns.filter((q) => !this.orbs.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < 2 * UNIT));
+    if (free.length === 0) return;
+    const p = Phaser.Utils.Array.GetRandom(free);
+    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
+    this.pickupFx.explode(12, orb.x, orb.y);
+    this.orbs.push(orb);
+  }
+
+  /**
+   * WARP_ZONE objects (unused in the original) wrap robots and laser bullets
+   * across the arena, so a shot fired into a portal comes back from the other
+   * side. Falling out of the arena kills.
+   */
+  private checkBoundsAndWarps(_now: number): void {
+    const mapW = this.map.width * UNIT;
+    const mapH = this.map.height * UNIT;
+    for (const k of this.fighters) {
+      if (!k.isAlive()) continue;
+      if (k.y > mapH + 6 * UNIT || k.y < -20 * UNIT || k.x < -6 * UNIT || k.x > mapW + 6 * UNIT) {
+        k.health = 0;
+        continue;
+      }
+      this.warp(k.x, k.y, k.body.vx, (x, y) => k.teleport(x, y));
+    }
+    // Everything else that moves goes through the portals too: laser bolts,
+    // power-up balls and debris (anything with a position, a velocity and a move).
+    const movers: { x: number; y: number; vx: number; teleport: (x: number, y: number) => void }[] = [
+      ...this.bullets.filter((b) => !b.dead),
+      ...this.orbs.map((o) => ({ x: o.x, y: o.y, vx: o.body.vx, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
+      ...this.debris.bodies.map((d) => ({ x: d.x, y: d.y, vx: d.vx, teleport: (x: number, y: number) => d.setPosition(x, y) })),
+    ];
+    for (const m of movers) this.warp(m.x, m.y, m.vx, (x, y) => m.teleport(x, y));
+  }
+
+  private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
+    if (this.warpZones.length !== 2) return;
+    const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
+    // "Past the zone's inner edge" rather than "inside it", so fast bullets
+    // cannot skip over a 1-unit-wide portal between two frames.
+    const inLane = (z: Phaser.Geom.Rectangle) => y >= z.top && y <= z.bottom;
+    if (vx < 0 && x < a.right && inLane(a)) {
+      teleport(b.x - UNIT, y);
+      this.portals.burst(b.centerX, y, this.clock);
+    } else if (vx > 0 && x > b.x && inLane(b)) {
+      teleport(a.right + UNIT, y);
+      this.portals.burst(a.centerX, y, this.clock);
+    }
+  }
+
+  /** RespawnSystem + LifeBasedFreeForAll. */
+  private checkDeaths(now: number): void {
+    for (const k of this.fighters) {
+      if (!k.isAlive() || k.health > 0) continue;
+      this.fx('deathDust', k.x, k.body.bottom);
+      this.shake(0.7);
+      const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
+      if (killer && killer !== k) killer.kills++;
+      this.debris.explode(k, now);
+      if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
+      k.kill(now);
+      this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
+    }
+    if (this.winner === undefined) {
+      const alive = this.fighters.filter((f) => !f.eliminated);
+      if (alive.length <= 1) {
+        this.winner = alive[0] ?? null;
+        this.events.emit('match-over', this.winner);
+      }
+    }
+  }
+
+  private respawn(k: Kubotz): void {
+    // Prefer the spawn point farthest from the other robots.
+    const others = this.fighters.filter((f) => f !== k && f.isAlive());
+    const spawn = [...this.playerSpawns].sort((p, q) => {
+      const d = (v: Phaser.Math.Vector2) => Math.min(...others.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
+      return d(q) - d(p);
+    })[0];
+    k.respawn(spawn.x + Phaser.Math.Between(-6, 6), spawn.y);
+  }
+
+  // ------------------------------------------------------------------ camera
+  /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
+  private focusPoints(): { x: number; y: number }[] {
+    const alive = this.fighters.filter((f) => f.isAlive());
+    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the robots.
+    const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
+    return alive.length === 0 ? [] : [...alive, ...fresh];
+  }
+
+  private centerOfFighters(): Phaser.Math.Vector2 {
+    const pts = this.focusPoints();
+    if (pts.length === 0) return this.camTarget.clone();
+    const xs = pts.map((f) => f.x);
+    const ys = pts.map((f) => f.y);
+    return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
+  }
+
+  /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
+  private updateCamera(dt: number): void {
+    const pts = this.focusPoints();
+    if (pts.length > 0) {
+      const xs = pts.map((f) => f.x);
+      const ys = pts.map((f) => f.y);
+      const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
+      const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
+      const aspect = this.scale.width / this.scale.height;
+      const wanted = Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
+      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * dt));
+      this.camTarget.copy(this.centerOfFighters());
+    }
+    const cam = this.cameras.main;
+    const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * dt);
+    const mid = this.camMid;
+    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y - UNIT, t));
+    this.applyZoom();
+    // Shake: trauma squared drives a smooth wobble of position and roll, and wears off.
+    const s = this.trauma * this.trauma;
+    const k = this.clock / 1000;
+    const wob = (f: number, p: number) => Math.sin(k * f + p) * 0.6 + Math.sin(k * f * 2.3 + p * 1.7) * 0.4;
+    cam.centerOn(mid.x + SHAKE_MAX * s * wob(47, 0), mid.y + SHAKE_MAX * s * wob(53, 2));
+    cam.setRotation(0.012 * s * wob(31, 4));
+    this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
+    this.placeFixedLights();
+  }
+
+  /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
+  shake(amount: number): void {
+    this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  private applyZoom(): void {
+    this.cameras.main.setZoom(this.scale.width / (this.camVisibleWidth * UNIT));
+  }
+
+  // ---------------------------------------------------------------- helpers
+  floatText(x: number, y: number, text: string, color: number): void {
+    const t = this.add.text(x, y, text, {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '26px',
+      color: '#' + color.toString(16).padStart(6, '0'), stroke: '#000000', strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(30);
+    this.tweens.add({ targets: t, y: y - 70, alpha: 0, duration: 1200, ease: 'Cubic.out', onComplete: () => t.destroy() });
+  }
+
+  togglePause(): void {
+    if (this.winner !== undefined) return;
+    this.paused = !this.paused;
+    if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
+    this.events.emit('pause', this.paused);
+  }
+
+  backToTitle(): void {
+    this.scene.start('Title');
+  }
+}
+
+/** Camera shake: the largest offset (world px) and how fast trauma wears off (per second). */
+const SHAKE_MAX = 0.45 * UNIT;
+const SHAKE_DECAY = 1.8;
+
+/** How long the camera keeps a newly spawned power-up ball in view. */
+const ORB_FOCUS_MS = 2000;
+
+/**
+ * Ledges, Melee-style: the top corners of solid blocks with room to stand on
+ * just inside the corner and room to hang just outside it. Soft platforms
+ * have none.
+ */
+export function findLedges(blocks: NavBlock[]): Ledge[] {
+  const solid = blocks.filter((b) => !b.soft);
+  const free = (x1: number, y1: number, x2: number, y2: number) =>
+    !solid.some((o) => o.x < Math.max(x1, x2) - 1 && o.x + o.width > Math.min(x1, x2) + 1 && o.y < Math.max(y1, y2) - 1 && o.y + o.height > Math.min(y1, y2) + 1);
+  const out: Ledge[] = [];
+  for (const b of solid) {
+    for (const dir of [-1, 1] as const) {
+      const x = dir < 0 ? b.x : b.x + b.width;
+      const y = b.y;
+      if (free(x, y - 2 * UNIT, x - dir * UNIT, y) && free(x, y - 0.5 * UNIT, x + dir * 1.2 * UNIT, y + 2.2 * UNIT)) out.push({ x, y, dir });
+    }
+  }
+  return out;
+}
