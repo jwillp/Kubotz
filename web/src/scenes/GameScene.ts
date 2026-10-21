@@ -1011,6 +1011,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       tags: this.fighters.map((k) => k.tagKey),
       replays: [],
       hull: this.warpZones.length > 0,
+      blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
     };
   }
 

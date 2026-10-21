@@ -35,7 +35,8 @@ function mix(a: number, b: number, t: number): number {
  * from the camera midpoint; V (look25) switches back to the flat arena.
  */
 export class ArenaPerspective {
-  private readonly faces: Phaser.GameObjects.Graphics;
+  /** The faces, one graphics object (so a scene with several cameras can pick which one shows it). */
+  readonly faces: Phaser.GameObjects.Graphics;
   private readonly front: { obj: Phaser.GameObjects.Image; x: number; y: number; scale: number }[];
 
   constructor(

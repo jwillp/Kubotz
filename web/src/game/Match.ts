@@ -42,6 +42,8 @@ export interface MatchResult {
   replays: KoReplay[];
   /** The arena had an outer hull texture (cube arenas), for drawing the replays. */
   hull: boolean;
+  /** The arena's blocks (world pixels), for the replays' perspective faces. */
+  blocks: { x: number; y: number; width: number; height: number }[];
 }
 
 /** One robot as drawn on one frame (see Robot2D.DrawState); hidden while dead. */
