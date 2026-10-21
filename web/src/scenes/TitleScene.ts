@@ -14,12 +14,13 @@ export const BONUS_RATES: Record<BonusRate, { label: string; min: number; max: n
 };
 const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
-const MODES: { label: string; slots: Slot[] }[] = [
+const MODES: { label: string; slots: Slot[]; scene?: string }[] = [
   { label: '1 Player vs CPU', slots: ['P1', 'CPU'] },
   { label: '2 Players', slots: ['P1', 'P2'] },
   { label: '1 Player vs 3 CPU', slots: ['P1', 'CPU', 'CPU', 'CPU'] },
   { label: '2 Players vs 2 CPU', slots: ['P1', 'P2', 'CPU', 'CPU'] },
   { label: 'Watch CPUs fight', slots: ['CPU', 'CPU', 'CPU', 'CPU'] },
+  { label: 'Moves', slots: [], scene: 'MoveList' },
 ];
 
 export class TitleScene extends Phaser.Scene {
@@ -51,7 +52,7 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     MODES.forEach((m, i) => {
-      const t = this.add.text(width / 2, 300 + i * 56, m.label, {
+      const t = this.add.text(width / 2, 290 + i * 48, m.label, {
         fontFamily: 'Arial Black, sans-serif', fontSize: '32px', color: '#ffffff',
       }).setOrigin(0.5).setInteractive({ useHandCursor: true });
       t.on('pointerover', () => this.select(i));
@@ -131,6 +132,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private start(i: number): void {
+    if (MODES[i].scene) { this.scene.start(MODES[i].scene); return; }
     const setup: MatchSetup = { slots: MODES[i].slots, arena: this.arena, bonuses: this.bonuses };
     this.scene.start('Game', setup);
   }
