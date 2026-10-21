@@ -67,7 +67,7 @@ export class DebrisField {
         const circle = new Phaser.Geom.Circle(x, y, p.radius);
         if (!Phaser.Geom.Intersects.CircleToRectangle(circle, f.hurtbox())) continue;
         p.hit.add(f);
-        f.takeDamage(DAMAGE, p.owner, Math.sign(p.body.vx || f.x - x) * PUSH);
+        f.takeDamage(DAMAGE, p.owner, { knockback: PUSH, angle: 45 }, (p.body.vx || f.x - x) < 0 ? -1 : 1);
         // The piece bounces off the robot.
         p.body.setVelocity(-p.body.vx * 0.4, -Math.abs(p.body.vy) * 0.5 - 3 * UNIT);
         onHit(f, x, y);

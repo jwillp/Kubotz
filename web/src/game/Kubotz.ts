@@ -15,7 +15,7 @@ export interface Damageable {
   hurtbox(): Phaser.Geom.Rectangle;
   isAlive(): boolean;
   /** @param stun ms without control (hitstun), so light combo hits connect. */
-  takeDamage(amount: number, attacker: Kubotz, pushX: number, stun?: number): void;
+  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void;
 }
 
 /** A point of a body part (Spriter image pixels, origin bottom-left, y up). */
@@ -28,9 +28,10 @@ export interface AttackBox {
   points: PartPoint[];
   /** One circle on whichever of the points is furthest forward (the striking fist or foot), instead of one on each. */
   striker: boolean;
+  /** The strike goes backwards (back air): the furthest-back point strikes. */
+  behind: boolean;
   damage: number;
-  knockback: number;
-  stun: number;
+  launch: Launch;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
 }
@@ -53,6 +54,7 @@ const ANIM = {
 } as const;
 
 /** Strikes carry the robot this many times further than their clip's own forward travel. */
+const ANIM_TURN = 'turn';
 const ROOT_MOTION_GAIN = 3;
 
 /** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
@@ -60,7 +62,14 @@ const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'ar
 const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot_sha.png', x: 24, y: 45 }];
 
 /** A strike: its clip, length, striking points, effect, and the part of it (0..1) that hurts. */
-interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; knockback: number; stun: number; active: [number, number] }
+/** How a hit sends its target: speed (units/s, before damage growth), launch angle (0 forwards, 90 up), fixed hitstun for combo links. */
+export interface Launch { knockback: number; angle: number; growth?: number; stun?: number }
+
+interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; launch: Launch; active: [number, number]; behind?: boolean }
+
+/** Attack + direction, Super Smash Bros. style. */
+type Dir = 'neutral' | 'forward' | 'back' | 'up' | 'down';
+type DirMoves = Record<'dash' | 'dtilt' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
 
 /**
  * The unarmed ground combo, Super Smash Bros. style: three presses in a row
@@ -68,18 +77,34 @@ interface Move { anim: string; ms: number; points: PartPoint[]; damage: number; 
  * briefly so the next hit connects; the kick launches.
  */
 const COMBO: Move[] = [
-  { anim: 'jab', ms: 280, points: FISTS, damage: 3, knockback: 3, stun: 280, active: [0.3, 0.72] },
-  { anim: 'cross', ms: 360, points: FISTS, damage: 4, knockback: 4, stun: 320, active: [0.36, 0.78] },
-  { anim: 'kick', ms: 440, points: FEET, damage: 6, knockback: 13, stun: 0, active: [0.32, 0.74] },
+  { anim: 'jab', ms: 280, points: FISTS, damage: 3, launch: { knockback: 3, angle: 15, stun: 280 }, active: [0.3, 0.72] },
+  { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 320 }, active: [0.36, 0.78] },
+  { anim: 'kick', ms: 440, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.32, 0.74] },
 ];
-/** The laser sword's combo: overhead slash, rising slash, lunging thrust. */
 const SWORD_COMBO: Move[] = [
-  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, knockback: 4, stun: 300, active: [0.36, 0.78] },
-  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, knockback: 5, stun: 320, active: [0.28, 0.66] },
-  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, knockback: 15, stun: 0, active: [0.35, 0.8] },
+  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.36, 0.78] },
+  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.28, 0.66] },
+  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.35, 0.8] },
 ];
-const AIR_KICK: Move = { anim: 'airKick', ms: 420, points: FEET, damage: Config.PUNCH_DAMAGE, knockback: Config.PUNCH_KNOCKBACK, stun: 0, active: [0.35, 1] };
-const AIR_SLASH: Move = { ...SWORD_COMBO[1], stun: 0, knockback: 9 };
+/** Directional moves (SSB): dash attack, down tilt, and the five aerials. */
+const DIR_MOVES: DirMoves = {
+  dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72] },
+  dtilt: { anim: 'dtilt', ms: 380, points: FEET, damage: 5, launch: { knockback: 9, angle: 80 }, active: [0.3, 0.72] },
+  nair: { anim: 'nair', ms: 400, points: FEET, damage: 6, launch: { knockback: 9, angle: 35 }, active: [0.18, 0.75] },
+  fair: { anim: 'fair', ms: 420, points: FEET, damage: 9, launch: { knockback: 11, angle: 30 }, active: [0.25, 0.72] },
+  bair: { anim: 'bair', ms: 440, points: FEET, damage: 10, launch: { knockback: 14, angle: 35 }, active: [0.25, 0.72], behind: true },
+  uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62] },
+  dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1] },
+};
+const SWORD_DIR_MOVES: DirMoves = {
+  dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8] },
+  dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
+  nair: { anim: 'slash1', ms: 340, points: bladePoints(), damage: 6, launch: { knockback: 8, angle: 35 }, active: [0.3, 0.78] },
+  fair: { anim: 'slash2', ms: 360, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 40 }, active: [0.28, 0.66] },
+  bair: { anim: 'sbair', ms: 440, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.25, 0.72], behind: true },
+  uair: { anim: 'suair', ms: 480, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 85 }, active: [0.2, 0.62] },
+  dair: { anim: 'sdair', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: -70 }, active: [0.3, 1] },
+};
 /** After a move, how long the next press still continues the combo. */
 const COMBO_WINDOW = 260;
 /** Rest after the combo's last move. */
@@ -167,6 +192,15 @@ export class Kubotz implements Damageable {
   private flashUntil = 0;
   /** Hitstun from light combo hits (no control, unlike a guard break it shows no wobble). */
   private hitstunUntil = 0;
+  /** Tumbling (big hit): no control, bounces off walls and ceilings, lands in a knockdown. */
+  private tumbleUntil = 0;
+  private knockdownUntil = 0;
+  private floorBounced = false;
+  private prevVx = 0;
+  private prevVy = 0;
+  private turnUntil = 0;
+  private lastJumpAt = 0;
+  private facingBefore: 1 | -1 = -1;
   private wasGrounded = false;
   private dead = false;
   respawnAt = 0;
@@ -238,12 +272,13 @@ export class Kubotz implements Damageable {
     if (t < this.attackActive[0] || t > this.attackActive[1]) return null;
     const at = a.points.map((p) => this.model.pointsOn(p.file, p.x, p.y));
     // The fists (or feet): the striking one is the one furthest forward.
-    const placed = a.striker ? [at.flat().sort((u, v) => this.facing * (v.x - u.x))[0]] : at.map((l) => l[0]);
+    const dir = this.facing * (a.behind ? -1 : 1);
+    const placed = a.striker ? [at.flat().sort((u, v) => dir * (v.x - u.x))[0]] : at.map((l) => l[0]);
     a.circles = placed
       .filter((p): p is { x: number; y: number } => !!p)
       .map((p) => new Phaser.Geom.Circle(p.x, p.y, a.radius));
     // Before the first pose (or if the part is hidden), fall back to the reach in front.
-    if (a.circles.length === 0) a.circles = [new Phaser.Geom.Circle(this.x + this.facing * 0.75 * UNIT, this.y, a.radius)];
+    if (a.circles.length === 0) a.circles = [new Phaser.Geom.Circle(this.x + dir * 0.75 * UNIT, this.y, a.radius)];
     return a;
   }
 
@@ -258,6 +293,7 @@ export class Kubotz implements Damageable {
     if (this.dead) { this.healthBar.clear(); return; }
     const read = this.controller.read();
     const pad = this.pad = controls && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
+    this.facingBefore = this.facing;
     this.updateGuard(pad, now, dt);
     if (this.guarding) {
       // Guarding roots the robot: no running, jumping or attacking.
@@ -274,8 +310,45 @@ export class Kubotz implements Damageable {
     if (this.attack && travel > 0 && dt > 0) {
       this.body.vx = this.facing * Math.min(travel / dt, 26 * UNIT);
     }
+    this.updateTumble(now);
+    this.prevVx = this.body.vx;
+    this.prevVy = this.body.vy;
     this.updatePowerUps(now);
   }
+
+  /** Tumbling robots rebound off walls and ceilings and bounce once on the floor (SSB). */
+  private updateTumble(now: number): void {
+    if (!this.tumbling) return;
+    const b = this.body;
+    const wall = b.wall;
+    if (wall !== 0 && Math.sign(this.prevVx) === wall && Math.abs(this.prevVx) > 5 * UNIT) {
+      b.setVelocity(-this.prevVx * Config.WALL_BOUNCE, b.vy);
+      this.bounce(now, b.x + wall * b.width / 2, b.y);
+    } else if (b.ceiling && this.prevVy < -5 * UNIT) {
+      b.setVelocity(b.vx, -this.prevVy * Config.WALL_BOUNCE);
+      this.bounce(now, b.x, b.top);
+    } else if (b.grounded && this.prevVy > 7 * UNIT && !this.floorBounced) {
+      this.floorBounced = true;
+      b.setVelocity(b.vx * 0.8, -this.prevVy * 0.45);
+      this.bounce(now, b.x, b.bottom);
+    } else if (b.grounded && Math.abs(b.vy) < 2 * UNIT && now >= this.knockdownUntil) {
+      // Down on the floor: a moment to get up.
+      this.knockdownUntil = now + 450;
+      this.hitstunUntil = Math.max(this.hitstunUntil, this.knockdownUntil);
+      this.tumbleUntil = 0;
+      this.anim.play('knockdown', { restart: true, ms: 450, fade: 60 });
+    }
+  }
+
+  private bounce(now: number, x: number, y: number): void {
+    this.hooks.dust(x, y);
+    this.hooks.playSfx('punch', 0.3);
+    this.hitstunUntil += 120;
+    this.tumbleUntil = this.hitstunUntil;
+    this.flashUntil = now + 60;
+  }
+
+  get tumbling(): boolean { return this.hooks.now() < this.tumbleUntil; }
 
   /** Super Smash Bros.-style shield: hold to raise a bubble that soaks hits. */
   private updateGuard(pad: PadState, now: number, dt: number): void {
@@ -323,12 +396,14 @@ export class Kubotz implements Damageable {
 
     if (grounded) this.jumps = 0;
 
+    // Aerials keep the robot facing the way it struck (a back air hits behind).
+    const canTurn = !this.attack || grounded;
     if (pad.left) {
       vx = Math.max(vx - accel, -Config.MAX_SPEED);
-      this.facing = -1;
+      if (canTurn) this.turnTo(-1, now, grounded);
     } else if (pad.right) {
       vx = Math.min(vx + accel, Config.MAX_SPEED);
-      this.facing = 1;
+      if (canTurn) this.turnTo(1, now, grounded);
     } else if (grounded) {
       vx = vx > 0 ? Math.max(vx - accel, 0) : Math.min(vx + accel, 0);
     }
@@ -337,6 +412,7 @@ export class Kubotz implements Damageable {
       if (this.jumps < this.maxJumps && now >= this.jumpReadyAt) {
         vy = -Config.JUMP_VELOCITY;
         this.jumps++;
+        this.lastJumpAt = now;
         this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
         if (grounded) {
           this.hooks.dust(this.x, b.bottom);
@@ -370,6 +446,15 @@ export class Kubotz implements Damageable {
     this.wasGrounded = grounded;
   }
 
+  private turnTo(dir: 1 | -1, now: number, grounded: boolean): void {
+    if (this.facing === dir) return;
+    this.facing = dir;
+    if (grounded && !this.attack && !this.guarding) {
+      this.turnUntil = now + 180;
+      this.anim.play(ANIM_TURN, { restart: true, fade: 40 });
+    }
+  }
+
   private speedFactor(): number {
     return this.powerUps.some((p) => p.type === 'speed') ? 1.1 : 1;
   }
@@ -400,9 +485,21 @@ export class Kubotz implements Damageable {
         // A press during a strike is kept for the next move of the combo.
         if (this.inCombo && this.comboStep > 0) this.comboQueued = true;
       } else if (now >= this.attackReadyAt) {
+        const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+        const dir = this.attackDirection(pad);
         if (!this.grounded) {
           this.comboStep = 0;
-          this.strike(this.weapon === 'laserSword' ? AIR_SLASH : AIR_KICK, now);
+          this.facing = this.facingBefore;
+          this.strike(moves[dir === 'up' ? 'uair' : dir === 'down' ? 'dair' : dir === 'forward' ? 'fair' : dir === 'back' ? 'bair' : 'nair'], now);
+        } else if (dir === 'up') {
+          this.comboStep = 0;
+          this.strike(moves.uair, now); // jump + attack: the backflip kick
+        } else if (dir === 'down') {
+          this.comboStep = 0;
+          this.strike(moves.dtilt, now);
+        } else if (dir === 'forward' && Math.abs(this.body.vx) > 0.45 * Config.MAX_SPEED * UNIT) {
+          this.comboStep = 0;
+          this.strike(moves.dash, now);
         } else {
           if (now > this.comboUntil) this.comboStep = 0;
           this.strike(combo[this.comboStep], now);
@@ -421,31 +518,59 @@ export class Kubotz implements Damageable {
     }
   }
 
+  /**
+   * Which move the stick asks for: up and down first, then towards or away
+   * from where the robot faced before this frame's input, or, with nothing
+   * held in the air, up while rising and down while falling.
+   */
+  private attackDirection(pad: PadState): Dir {
+    if (pad.up) return 'up';
+    if (pad.down) return 'down';
+    const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
+    if (dx !== 0) return dx === this.facingBefore ? 'forward' : 'back';
+    if (!this.grounded) {
+      // Just after a jump the attack is the rising flip; falling fast, the dive.
+      if (this.hooks.now() - this.lastJumpAt < 180) return 'up';
+      if (this.body.vy / UNIT > 6) return 'down';
+    }
+    return 'neutral';
+  }
+
   /** Starts a strike; on the ground it advances the combo. */
   private strike(move: Move, now: number): void {
-    const sword = move.anim.startsWith('slash');
+    const sword = move.points[0]?.file === SWORD_FILE;
     this.attack = {
       circles: [],
       // The blade is covered by circles from hilt to tip; fists and feet by one on the striking one.
       radius: (sword ? 0.3 : 0.35) * UNIT,
       points: move.points,
       striker: !sword,
+      behind: !!move.behind,
       damage: move.damage,
-      knockback: move.knockback,
-      stun: move.stun,
+      launch: move.launch,
       hit: new Set(),
     };
     this.attackStart = now;
     this.attackEndsAt = now + move.ms;
     this.attackActive = move.active;
     this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 45 });
-    this.inCombo = move !== AIR_KICK && move !== AIR_SLASH;
+    this.inCombo = COMBO.includes(move) || SWORD_COMBO.includes(move);
     if (this.inCombo) {
       this.comboStep = (this.comboStep + 1) % COMBO.length;
       this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
-    } else if (move === AIR_KICK) {
-      // The air kick dives forwards.
-      this.body.setVelocity(this.facing * Math.max(Math.abs(this.body.vx), 10 * UNIT), Math.max(this.body.vy, 6 * UNIT));
+      return;
+    }
+    const b = this.body;
+    switch (move.anim) {
+      case 'airKick': case 'sdair': // dives forwards and down
+        b.setVelocity(this.facing * Math.max(Math.abs(b.vx), 10 * UNIT), Math.max(b.vy, 6 * UNIT));
+        break;
+      case 'uair': case 'suair': // the backflip hops up
+        b.setVelocity(b.vx, Math.min(b.vy, -9 * UNIT));
+        break;
+      case 'fair': // thrown forwards
+        b.setVelocity(this.facing * Math.max(Math.abs(b.vx), 7 * UNIT), b.vy);
+        break;
     }
   }
 
@@ -472,10 +597,11 @@ export class Kubotz implements Damageable {
   }
 
   // ------------------------------------------------------------------ damage
-  takeDamage(amount: number, attacker: Kubotz, pushX: number, stun = 0): void {
+  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
     if (this.dead || this.invincible || this.intangible) return;
     const now = this.hooks.now();
     this.lastAttacker = { by: attacker, at: now };
+    const pushX = dirX * launch.knockback;
     if (this.guarding) {
       this.guard -= amount;
       this.body.vx += (pushX / 3) * UNIT;
@@ -488,23 +614,37 @@ export class Kubotz implements Damageable {
       return;
     }
     this.health = Math.max(0, this.health - amount);
-    // The more damage taken, the further hits send you (SSB-like).
-    const growth = 1 + Config.KNOCKBACK_GROWTH * (1 - this.health / Config.KUBOTZ_HEALTH);
-    if (stun) {
+    let hitstun: number;
+    let tumble = false;
+    if (launch.stun) {
       // Light combo hits keep the target on the ground and in reach of the next one.
       this.body.vx = pushX * UNIT;
+      hitstun = launch.stun;
     } else {
-      this.body.vx += pushX * growth * UNIT;
-      this.body.vy -= Math.abs(pushX) * 0.6 * growth * UNIT;
+      // Knockback grows with the damage taken (SSB), along the move's launch angle;
+      // hitstun follows the launch speed, and a hard launch tumbles.
+      const taken = 1 - this.health / Config.KUBOTZ_HEALTH;
+      const speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1));
+      const a = (launch.angle * Math.PI) / 180;
+      this.body.setVelocity(dirX * Math.cos(a) * speed * UNIT, -Math.sin(a) * speed * UNIT);
+      hitstun = Math.min(Config.HITSTUN_MAX, Config.HITSTUN_BASE + speed * Config.HITSTUN_PER_UNIT);
+      tumble = hitstun >= Config.TUMBLE_HITSTUN;
     }
-    this.hitUntil = now + Math.max(250, stun);
+    this.hitUntil = now + Math.max(250, hitstun);
     this.flashUntil = now + 70;
-    this.hitstunUntil = Math.max(this.hitstunUntil, now + stun);
+    this.hitstunUntil = Math.max(this.hitstunUntil, now + hitstun);
+    this.tumbleUntil = tumble ? this.hitstunUntil : 0;
+    this.knockdownUntil = 0;
+    this.floorBounced = false;
     // Interrupted: a hit cancels the victim's own move and combo.
     this.attack = null;
     this.comboStep = 0;
-    this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
-    this.anim.play(this.hitAnim, { restart: true, fade: 30 });
+    if (tumble) {
+      this.anim.play('tumble', { restart: true, fade: 40 });
+    } else {
+      this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
+      this.anim.play(this.hitAnim, { restart: true, fade: 30 });
+    }
   }
 
   /** RespawnSystem DEAD state: hide and freeze until respawn. */
@@ -535,6 +675,8 @@ export class Kubotz implements Damageable {
     this.guard = Config.GUARD_MAX;
     this.stunnedUntil = 0;
     this.hitstunUntil = 0;
+    this.tumbleUntil = 0;
+    this.knockdownUntil = 0;
     this.body.enable = true;
     this.tag.setVisible(true);
     this.body.reset(x, y);
@@ -560,7 +702,7 @@ export class Kubotz implements Damageable {
 
     // On top of the clips: turning round, leaning into runs, squash on landing,
     // a wobble when the guard broke.
-    this.face += (this.facing - this.face) * Math.min(1, (dtMs / 1000) * 16);
+    this.face += (this.facing - this.face) * Math.min(1, (dtMs / 1000) * 11);
     const vx = this.body.vx / (Config.MAX_SPEED * UNIT);
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
@@ -580,6 +722,8 @@ export class Kubotz implements Damageable {
     if (now < this.dodgeUntil) return; // the dodge roll plays out
     const vx = this.body.vx;
     const vy = this.body.vy;
+    if (now < this.knockdownUntil) return; // the knockdown plays out
+    if (this.tumbling) { a.play('tumble', { fade: 40 }); return; }
     if (now < this.hitUntil || now < this.stunnedUntil || now < this.hitstunUntil) { a.play(this.hitAnim, { fade: 30 }); return; }
     if (this.guarding) { a.play(ANIM.GUARD, { fade: 70 }); return; }
     if (now < this.grabAnimUntil) return;
@@ -588,6 +732,8 @@ export class Kubotz implements Damageable {
       // The jump and the flip play out, then the fall.
       if ((a.name === ANIM.JUMP || a.name === ANIM.FLIP) && !a.finished) return;
       a.play(vy < 0 && a.name === ANIM.JUMP ? ANIM.JUMP : ANIM.FALL, { fade: 160 });
+    } else if (now < this.turnUntil) {
+      return; // the pivot plays out
     } else if (Math.abs(vx) > 4) {
       a.play(ANIM.RUN, { fade: 90 });
       // The stride follows the speed.

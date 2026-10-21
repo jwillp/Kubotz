@@ -105,7 +105,21 @@ export class CpuController implements Controller {
       if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) pad.attack = true;
       else if (Math.abs(dx) < reach * UNIT && Math.abs(dy) < 1.5 * UNIT) {
         pad.attack = true;
-        if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
+        if (!me.grounded) {
+          // Aerials by where the enemy is: above, below, behind.
+          if (dy < -0.6 * UNIT) pad.up = true;
+          else if (dy > 0.6 * UNIT) pad.down = true;
+          else if (Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx > 0 ? 'left' : 'right'] = true; // back air
+        } else if (dy < -1.2 * UNIT) {
+          pad.up = true; // the backflip kick reaches up
+        } else if (Math.random() < 0.25) {
+          pad.down = true; // a low sweep now and then
+        }
+        if (me.grounded && Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
+      } else if (!ranged && Math.abs(dx) < 3.5 * UNIT && Math.abs(dy) < UNIT && Math.abs(me.body.vx) > 0.5 * Config.MAX_SPEED * UNIT && Math.sign(me.body.vx) === Math.sign(dx)) {
+        // Running at it: a dash attack.
+        pad.attack = true;
+        pad[dx < 0 ? 'left' : 'right'] = true;
       }
       // Raise the guard against a swing that is about to land, now and then.
       if (enemy.attacking && manhattan(me, enemy) < 2.5 && me.guard > Config.GUARD_MAX * 0.3 && Math.random() < 0.4) {

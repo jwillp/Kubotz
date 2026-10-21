@@ -137,6 +137,22 @@ export class KubotzBody extends PxBody {
   }
 
   get grounded(): boolean { return this.ground() !== null; }
+
+  /** Touching something above while moving up (for the tumble's ceiling bounce). */
+  get ceiling(): boolean {
+    if (this.body.getLinearVelocity().y > -0.5) return false;
+    for (let e = this.body.getContactList(); e; e = e.next ?? null) {
+      const c = e.contact;
+      if (!c.isTouching() || !c.isEnabled() || c.getFixtureA().isSensor() || c.getFixtureB().isSensor()) continue;
+      if (e.other?.getType() !== 'static') continue;
+      const m = c.getWorldManifold(null);
+      if (!m) continue;
+      // As in ground(): the normal pointing from the other body to this one.
+      const ny = c.getFixtureA().getBody() === this.body ? -m.normal.y : m.normal.y;
+      if (ny > 0.5) return true; // pushed downwards
+    }
+    return false;
+  }
   /** Standing on a soft platform (so holding down drops through it). */
   get onPlatform(): boolean { const g = this.ground(); return !!g && isPlatform(g); }
   get top(): number { return this.y - this.height / 2; }

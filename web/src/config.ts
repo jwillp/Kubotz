@@ -29,6 +29,13 @@ export const Config = {
   PUNCH_KNOCKBACK: 9, // original passed 0; the owner wants hits to push
   // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (damage taken / max health), SSB-like.
   KNOCKBACK_GROWTH: 2,
+  // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT, like SSB's 0.4 x knockback;
+  // past TUMBLE_HITSTUN the robot tumbles, bouncing off walls and ceilings.
+  HITSTUN_BASE: 120,
+  HITSTUN_PER_UNIT: 30,
+  HITSTUN_MAX: 1500,
+  TUMBLE_HITSTUN: 600,
+  WALL_BOUNCE: 0.65,
 
   // Grab (GrabComponent)
   GRAB_DURATION: 200,

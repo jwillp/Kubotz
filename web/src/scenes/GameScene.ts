@@ -4,7 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
-import { Kubotz, Damageable, ArenaHooks, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, P1_COLOR, P2_COLOR, CPU_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import type { MatchSetup } from './TitleScene';
@@ -461,13 +461,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.impact.clash((at.x + meet.x) / 2, at.y);
           continue;
         }
-        this.hit(target, attacker, box.damage, attacker.facing * box.knockback, at.x, at.y, box.stun);
+        this.hit(target, attacker, box.damage, box.launch, box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
       }
     }
   }
 
-  private hit(target: Damageable, attacker: Kubotz, damage: number, pushX: number, x: number, y: number, stun = 0): void {
-    target.takeDamage(damage, attacker, pushX, stun);
+  private hit(target: Damageable, attacker: Kubotz, damage: number, launch: Launch, dirX: 1 | -1, x: number, y: number): void {
+    target.takeDamage(damage, attacker, launch, dirX);
+    const pushX = dirX * launch.knockback;
     const blocked = target instanceof Kubotz && (target.guarding || target.shield > 0);
     this.playSfx('punch', blocked ? 0.2 : 0.45);
     this.impact.hit(x, y, Math.sign(pushX) || 1, blocked ? 0x9fdcff : attacker.look.color, (damage / 4) * (blocked ? 0.5 : 1));
@@ -492,7 +493,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
       for (const target of this.damageablesFor(b.shooter)) {
         if (!Phaser.Geom.Intersects.RectangleToRectangle(box, target.hurtbox())) continue;
-        this.hit(target, b.shooter, b.damage, b.pushX, b.x, b.y);
+        this.hit(target, b.shooter, b.damage, { knockback: Math.abs(b.pushX), angle: 20 }, b.pushX < 0 ? -1 : 1, b.x, b.y);
         this.popBullet(b);
         break;
       }

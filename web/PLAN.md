@@ -293,3 +293,45 @@ robots' skeletons were broken (heads inside bodies).
 - Sprite sheets were considered: the only art is the original part images, so
   pre-rendered sheets would just be frames of this rig with no extra fluidity;
   the skeleton stays (and blends between moves, which sheets could not).
+
+## Phase 8 — Smash-style directional moves, real turns, helmets, knockback (2026-10-21)
+
+Owner feedback: the moves looked stiff; attacks should depend on direction
+like Super Smash Bros. (the robots are agile ninjas, think Captain Falcon);
+turning looked like an image flip; helmets were painted whole; heavy hits
+should stun and bounce off walls. Sources read: SmashWiki's
+[Hitstun](https://ssbwiki.com/Hitstun) and [Knockback](https://www.ssbwiki.com/KB)
+pages (hitstun ≈ 0.4 × knockback, tumble past ~32 frames of hitstun,
+knockback grows with the damage taken) and the
+[aerial attack](https://www.ssbwiki.com/aerial_attack) page (neutral,
+forward, back, up and down airs).
+
+- **Directional attacks** (`Kubotz.attackDirection`): up and down win, then
+  towards / away from the way the robot faced before this frame's input.
+  - Ground: neutral = the 3-hit combo; forward while running = dash attack
+    (sliding kick); down = down tilt (low sweep that pops up); up = jump +
+    backflip kick (the up air).
+  - Air: neutral air (side kick held out), forward air (flying knee), back air
+    (reverse kick behind, the robot keeps facing the way it struck), up air
+    (backflip kick with a hop), down air (the dive kick). With nothing held:
+    within 180 ms of a jump the attack is the backflip; falling faster than 6
+    units/s it is the dive.
+  - Laser sword: slashes for the combo, thrust for the dash, low sweep slash,
+    and air versions (overhead, rising, back cut over the shoulder, rising
+    flip, plunging stab).
+  - Every move has a launch angle (0 forwards, 90 up; the dives meteor at
+    -70). Light combo links keep a fixed short hitstun so the next hit lands.
+- **Knockback and hitstun** (`takeDamage`): launch speed = move knockback ×
+  (1 + 2 × damage taken); hitstun = 120 ms + 30 ms per unit/s (max 1.5 s).
+  Past 600 ms the robot *tumbles*: no control, spinning; it rebounds off
+  walls and ceilings (65% of its speed), bounces once on the floor, then lies
+  in a knockdown for a moment before getting up.
+- **Turning**: the facing eases more slowly, the body narrows to 22% at the
+  middle of the turn while its parts fan out by depth (the far side swings
+  round) and the back is drawn in front past half-way; on the ground a pivot
+  step clip plays.
+- **Helmets**: only the saturated pixels (eyes, stripes, domes, flames) take
+  the player colour; whites, greys and blacks stay the helmet's base.
+- **CPU** uses the aerials by where the enemy is (above, below, behind), the
+  backflip for enemies above, dash attacks when running in, and the sweep now
+  and then.

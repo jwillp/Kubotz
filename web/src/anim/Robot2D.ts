@@ -5,6 +5,8 @@ import { pointOnPart, type PosedPart, type Pose, type Rig } from './Rig';
 
 /** Spriter pixels to world pixels. */
 export const ART_SCALE = Config.SPRITER_SCALE * UNIT;
+/** How far (Spriter pixels) the front and back parts swing apart at the middle of a turn. */
+const TURN_SPREAD = 55;
 
 /**
  * One robot drawn in 2D: an image per body part, placed from the rig's pose,
@@ -32,11 +34,19 @@ export class Robot2D {
    */
   update(pose: Pose, maps: string[], x: number, bottom: number, face: number, fx: { lean: number; squash: number; alpha: number; flash: boolean }): void {
     this.parts = this.rig.solve(pose, maps);
-    // The art faces left: facing right mirrors it.
-    this.flipX = -Math.sign(face || 1) * Math.max(0.12, Math.abs(face));
+    // The art faces left: facing right mirrors it. Mid-turn the body is seen
+    // edge-on: it narrows, its parts fan out by their depth (the far side
+    // swings round) and, past half-way, the back is drawn in front.
+    const turn = 1 - Math.min(1, Math.abs(face));
+    this.flipX = -Math.sign(face || 1) * Math.max(0.22, Math.abs(face));
+    const showBack = turn > 0.5;
+    const n = this.parts.length;
     this.view.setPosition(x, bottom).setScale(this.flipX * ART_SCALE, fx.squash * ART_SCALE).setRotation(fx.lean).setAlpha(fx.alpha);
     for (const img of this.images.values()) img.setVisible(false);
-    this.parts.forEach((p, depth) => {
+    this.parts.forEach((p, i) => {
+      const depthOrder = showBack ? n - 1 - i : i;
+      const depth = (i / Math.max(1, n - 1)) * 2 - 1; // -1 back .. 1 front
+      const swing = depth * turn * TURN_SPREAD;
       const key = this.textureFor(p.file.name);
       let img = this.images.get(p.name);
       if (!img) {
@@ -48,11 +58,11 @@ export class Robot2D {
       }
       img.setVisible(true)
         .setOrigin(p.pivotX, 1 - p.pivotY)
-        .setPosition(p.tr.x, -p.tr.y)
+        .setPosition(p.tr.x + swing, -p.tr.y)
         .setAngle(-p.tr.angle)
         .setScale(p.tr.scaleX, p.tr.scaleY);
       if (fx.flash) img.setTintFill(0xffffff); else img.clearTint();
-      this.view.moveTo(img, depth);
+      this.view.moveTo(img, depthOrder);
     });
   }
 

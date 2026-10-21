@@ -2,7 +2,7 @@ import { CLIPS, mixPoses, sampleClip, type Clip } from './Clips';
 import type { Pose, Rig } from './Rig';
 
 /** Clips whose forward motion moves the robot itself (root motion) instead of only its drawing. */
-const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab']);
+const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt']);
 
 /**
  * Plays the clips of one robot: time, the blend from the previous pose on each

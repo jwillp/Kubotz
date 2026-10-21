@@ -85,7 +85,7 @@ export class BootScene extends Phaser.Scene {
     for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) addNormalMap(this.textures, `bonus_${b}`, { bevel: 4, detail: 0.3 });
     for (const color of [P1_COLOR, P2_COLOR, ...CPU_COLORS]) {
       for (const file of HEAD_FILES) {
-        this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color);
+        this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
       }
       this.recolor('label-CPU', `label-CPU:${hex(color)}`, color, false);
@@ -165,9 +165,11 @@ export class BootScene extends Phaser.Scene {
       if (p[i + 3] === 0) continue;
       const c = Phaser.Display.Color.RGBToHSV(p[i], p[i + 1], p[i + 2]);
       let { s, v } = c;
-      if (s >= 0.35) s = Math.max(s, 0.8); // coloured parts take the new hue
-      else if (paintGreys && v > 0.3) { s = 0.7; v = Math.min(1, v * 1.15); } // grey shells get painted too
-      else continue; // black outlines and shadows stay
+      // Only what is actually coloured takes the player's hue (the eyes, stripes
+      // and domes): whites, greys and blacks are the helmet's own base.
+      if (s >= 0.35) s = Math.max(s, 0.6);
+      else if (paintGreys && v > 0.3) { s = 0.7; v = Math.min(1, v * 1.15); }
+      else continue;
       const rgb = Phaser.Display.Color.HSVToRGB(target.h, s, v) as Phaser.Types.Display.ColorObject;
       p[i] = rgb.r; p[i + 1] = rgb.g; p[i + 2] = rgb.b;
     }

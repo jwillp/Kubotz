@@ -251,6 +251,113 @@ export const CLIPS: Record<string, Clip> = {
     } },
     { t: 1, pose: { ...READY, x: 110 }, ease: 'inOut' },
   ]),
+
+  // ------------------------------------------------- directional moves (SSB)
+  /** Dash attack: a sliding kick along the ground. */
+  dash: clip('dash', 420, [
+    { t: 0, pose: { ...READY, x: 0 } },
+    { t: 0.2, pose: { ...READY, torso: 60, head: 70, tilt: 14, x: 30, thighF: 20, legF: -60, footF: -40, thighB: -70, legB: -150, shoulderF: -140, armF: -120, shoulderB: 130, armB: 160 }, ease: 'out' },
+    { t: 0.4, pose: { torso: 125, head: 118, tilt: -8, x: 120, thighF: 4, legF: 0, footF: 20, thighB: -50, legB: -165, footB: -140, shoulderF: -150, armF: -110, shoulderB: 150, armB: 175 }, ease: 'snap' },
+    { t: 0.7, pose: { torso: 122, head: 116, tilt: -8, x: 170, thighF: 2, legF: -2, footF: 18, thighB: -52, legB: -165, footB: -140, shoulderF: -148, armF: -108, shoulderB: 148, armB: 172 } },
+    { t: 1, pose: { ...READY, x: 190 }, ease: 'inOut' },
+  ]),
+
+  /** Down tilt: a low sweep of the front leg that pops the target up. */
+  dtilt: clip('dtilt', 380, [
+    { t: 0, pose: CROUCH },
+    { t: 0.22, pose: { ...CROUCH, torso: 92, tilt: -4, thighF: -110, legF: -140, footF: -120, thighB: -40, legB: -150, shoulderF: -120, armF: -60 }, ease: 'out' },
+    { t: 0.45, pose: { ...CROUCH, torso: 70, head: 76, tilt: 10, x: 24, thighF: -4, legF: -8, footF: -30, thighB: -35, legB: -160, footB: -115, shoulderF: -70, armF: -40, handF: -40, shoulderB: -20, armB: -110 }, ease: 'snap' },
+    { t: 0.7, pose: { ...CROUCH, torso: 71, head: 77, tilt: 10, x: 26, thighF: -8, legF: -12, footF: -34, thighB: -35, legB: -160, footB: -115, shoulderF: -72, armF: -42, handF: -42, shoulderB: -20, armB: -110 } },
+    { t: 1, pose: { ...CROUCH, x: 20 }, ease: 'inOut' },
+  ]),
+
+  /** Neutral air: a side kick held out (the ninja's "sex kick"). */
+  nair: clip('nair', 400, [
+    { t: 0, pose: TUCK },
+    { t: 0.22, pose: { torso: 96, head: 98, tilt: -6, thighF: 6, legF: 0, footF: 30, thighB: -60, legB: -140, footB: -110, shoulderF: -130, armF: -70, shoulderB: 70, armB: 130 }, ease: 'snap' },
+    { t: 0.6, pose: { torso: 94, head: 96, tilt: -6, thighF: -6, legF: -14, footF: 16, thighB: -62, legB: -142, footB: -112, shoulderF: -126, armF: -66, shoulderB: 64, armB: 126 } },
+    { t: 1, pose: { ...TUCK, torso: 84 }, ease: 'inOut' },
+  ]),
+
+  /** Forward air: a flying knee, the whole body thrown forwards. */
+  fair: clip('fair', 420, [
+    { t: 0, pose: { ...TUCK, shoulderF: 100, armF: 150, shoulderB: 60, armB: 130 } },
+    { t: 0.3, pose: { torso: 62, head: 72, tilt: 24, thighF: 46, legF: -56, footF: -40, thighB: -130, legB: -172, footB: -135, shoulderB: -140, armB: -110, shoulderF: 110, armF: 160 }, ease: 'snap' },
+    { t: 0.7, pose: { torso: 64, head: 74, tilt: 22, thighF: 40, legF: -60, footF: -44, thighB: -130, legB: -172, footB: -135, shoulderB: -142, armB: -112, shoulderF: 106, armF: 156 } },
+    { t: 1, pose: { ...TUCK, torso: 82 }, ease: 'inOut' },
+  ]),
+
+  /** Back air: a reverse kick behind, looking over the shoulder. */
+  bair: clip('bair', 440, [
+    { t: 0, pose: { ...TUCK, torso: 100, head: 104 } },
+    { t: 0.3, pose: { torso: 60, head: 56, tilt: 22, thighB: 150, legB: 162, footB: 180, thighF: -40, legF: -140, footF: -120, shoulderF: -20, armF: 10, shoulderB: -30, armB: 20 }, ease: 'snap' },
+    { t: 0.7, pose: { torso: 62, head: 58, tilt: 20, thighB: 146, legB: 158, footB: 176, thighF: -44, legF: -142, footF: -122, shoulderF: -24, armF: 6, shoulderB: -32, armB: 18 } },
+    { t: 1, pose: { ...TUCK, torso: 86 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Up air: a backflip kick, the front leg whipping up and over. */
+  uair: clip('uair', 480, [
+    { t: 0, pose: { ...TUCK, spin: 0, shoulderF: -120, armF: -100, shoulderB: -110, armB: -80 } },
+    { t: 0.28, pose: { torso: 108, head: 112, spin: -70, thighF: 86, legF: 98, footF: 125, thighB: -70, legB: -150, footB: -120, shoulderF: -150, armF: -120, shoulderB: -140, armB: -100 }, ease: 'snap' },
+    { t: 0.55, pose: { torso: 104, head: 108, spin: -210, thighF: 92, legF: 104, footF: 130, thighB: -60, legB: -140, footB: -110, shoulderF: -140, armF: -110, shoulderB: -130, armB: -90 }, ease: 'linear' },
+    { t: 0.82, pose: { ...TUCK, spin: -330 }, ease: 'out' },
+    { t: 1, pose: { ...TUCK, torso: 86, spin: -360 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  // Sword versions.
+  /** Sword down tilt: a low sweep of the blade along the ground. */
+  sdtilt: clip('sdtilt', 380, [
+    { t: 0, pose: CROUCH },
+    { t: 0.22, pose: { ...CROUCH, torso: 90, tilt: -4, shoulderF: -170, armF: -170, handF: -170, thighF: -40 }, ease: 'out' },
+    { t: 0.45, pose: { ...CROUCH, torso: 66, head: 72, tilt: 12, x: 16, shoulderF: -42, armF: -34, handF: -34, shoulderB: -40, armB: -110, thighF: -8, legF: -100 }, ease: 'snap' },
+    { t: 0.7, pose: { ...CROUCH, torso: 67, head: 73, tilt: 12, x: 18, shoulderF: -36, armF: -28, handF: -28, shoulderB: -40, armB: -110, thighF: -8, legF: -100 } },
+    { t: 1, pose: { ...CROUCH, x: 24 }, ease: 'inOut' },
+  ]),
+
+  /** Sword back air: a cut behind, the blade arm reaching back over the shoulder. */
+  sbair: clip('sbair', 440, [
+    { t: 0, pose: { ...TUCK, torso: 100, head: 104, shoulderF: 40, armF: 60, handF: 60 } },
+    { t: 0.3, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 170, armF: 178, handF: 178, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'snap' },
+    { t: 0.7, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 176, armF: 184, handF: 184, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 } },
+    { t: 1, pose: { ...TUCK, torso: 86 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Sword up air: a rising flip with the blade swinging up and over. */
+  suair: clip('suair', 480, [
+    { t: 0, pose: { ...TUCK, spin: 0, shoulderF: -130, armF: -150, handF: -150 } },
+    { t: 0.28, pose: { torso: 100, head: 104, spin: -70, shoulderF: 30, armF: 50, handF: 50, shoulderB: -130, armB: -100, thighF: 10, legF: -110, thighB: -70, legB: -150 }, ease: 'snap' },
+    { t: 0.55, pose: { torso: 98, head: 102, spin: -210, shoulderF: 70, armF: 90, handF: 90, shoulderB: -130, armB: -100, thighF: 10, legF: -110, thighB: -70, legB: -150 }, ease: 'linear' },
+    { t: 0.82, pose: { ...TUCK, spin: -330, shoulderF: 20, armF: 40 }, ease: 'out' },
+    { t: 1, pose: { ...TUCK, torso: 86, spin: -360 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Sword down air: a plunging stab, blade under the feet. */
+  sdair: clip('sdair', 420, [
+    { t: 0, pose: { ...TUCK, shoulderF: 60, armF: 100, handF: 100 } },
+    { t: 0.3, pose: { torso: 104, head: 106, tilt: 10, shoulderF: -50, armF: -66, handF: -66, shoulderB: 60, armB: 120, thighF: -40, legF: -150, footF: -130, thighB: -120, legB: -170, footB: -140 }, ease: 'snap' },
+    { t: 1, pose: { torso: 102, head: 104, tilt: 12, shoulderF: -52, armF: -68, handF: -68, shoulderB: 64, armB: 124, thighF: -44, legF: -152, footF: -132, thighB: -124, legB: -172, footB: -142 } },
+  ], { planted: false }),
+
+  /** Tumbling through the air after a big hit (loops). */
+  tumble: clip('tumble', 720, [
+    { t: 0, pose: { torso: 100, head: 110, spin: 0, thighF: 30, legF: -40, footF: -20, thighB: -140, legB: -170, footB: -150, shoulderF: 120, armF: 160, shoulderB: -150, armB: -170 } },
+    { t: 0.5, pose: { torso: 96, head: 104, spin: 180, thighF: -10, legF: -80, footF: -60, thighB: -110, legB: -160, footB: -140, shoulderF: 80, armF: 130, shoulderB: -120, armB: -150 }, ease: 'linear' },
+    { t: 1, pose: { torso: 100, head: 110, spin: 360, thighF: 30, legF: -40, footF: -20, thighB: -140, legB: -170, footB: -150, shoulderF: 120, armF: 160, shoulderB: -150, armB: -170 }, ease: 'linear' },
+  ], { loop: true, planted: false }),
+
+  /** Knocked down flat after a tumble, then pushing up. */
+  knockdown: clip('knockdown', 600, [
+    { t: 0, pose: { torso: 160, head: 150, tilt: -60, thighF: -150, legF: -170, footF: -150, thighB: -170, legB: -175, footB: -160, shoulderF: 150, armF: 160, shoulderB: 170, armB: 175, y: -60 } },
+    { t: 0.6, pose: { torso: 150, head: 140, tilt: -55, thighF: -140, legF: -165, footF: -145, thighB: -165, legB: -175, footB: -160, shoulderF: -120, armF: -150, shoulderB: 170, armB: 175, y: -58 } },
+    { t: 1, pose: { ...CROUCH, torso: 70, head: 80, tilt: 8 }, ease: 'inOut' },
+  ]),
+
+  /** Turning round on the spot: a pivot step with the shoulders swinging through. */
+  turn: clip('turn', 180, [
+    { t: 0, pose: READY },
+    { t: 0.5, pose: { ...READY, torso: 100, head: 96, tilt: -3, y: 4, thighF: -76, legF: -102, footF: -84, thighB: -78, legB: -122, footB: -82, shoulderF: -110, armF: -40, shoulderB: -40, armB: 30 }, ease: 'out' },
+    { t: 1, pose: READY, ease: 'inOut' },
+  ]),
 };
 
 const EASE: Record<Ease, (t: number) => number> = {
