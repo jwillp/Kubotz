@@ -3,6 +3,9 @@ import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, type Kubotz } from '../game/Kubotz';
 import type { GameScene } from './GameScene';
+import { MenuInput } from './MenuInput';
+
+const PAUSE_ITEMS = ['Resume', 'Settings', 'Quit to title'];
 
 interface Panel {
   container: Phaser.GameObjects.Container;
@@ -19,6 +22,10 @@ export class HudScene extends Phaser.Scene {
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
   private bannerText!: Phaser.GameObjects.Text;
+  /** The pause menu under the PAUSED banner. */
+  private pauseItems: Phaser.GameObjects.Text[] = [];
+  private pauseSelected = 0;
+  private pauseMenu!: MenuInput;
 
   constructor() { super('Hud'); }
 
@@ -51,6 +58,19 @@ export class HudScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif', fontSize: '22px', color: '#cfe9ff',
     }).setOrigin(0.5).setName('hint');
     this.banner.add([bg, this.bannerText, hint]);
+    this.pauseItems = PAUSE_ITEMS.map((label, i) => {
+      const t = this.add.text((i - 1) * 260, 48, label, {
+        fontFamily: 'Arial Black, sans-serif', fontSize: '28px', color: '#ffffff',
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      t.on('pointerover', () => this.selectPause(i));
+      t.on('pointerdown', () => this.choosePause(i));
+      return t;
+    });
+    this.banner.add(this.pauseItems);
+    this.pauseMenu = new MenuInput({
+      move: (dx, dy) => this.selectPause((this.pauseSelected + (dx || dy) + PAUSE_ITEMS.length) % PAUSE_ITEMS.length),
+      confirm: () => this.choosePause(this.pauseSelected),
+    });
 
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
@@ -82,6 +102,7 @@ export class HudScene extends Phaser.Scene {
   update(): void {
     const g = this.game_;
     if (!g?.fighters) return;
+    if (g.paused) this.pauseMenu.update(this.time.now);
     const time = g.clock; // the match clock stands still while paused
     const elapsed = Math.max(0, Math.floor((time - g.startedAt) / 1000));
     if (g.winner === undefined && !g.paused) {
@@ -120,14 +141,32 @@ export class HudScene extends Phaser.Scene {
   private onMatchOver(winner: Kubotz | null): void {
     this.bannerText.setText(winner ? `${winner.name} WINS!` : 'DRAW');
     if (winner) this.bannerText.setStroke('#' + hex(winner.look.color), 8);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu');
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Press Enter to return to the menu').setY(55).setFontSize(22);
+    this.bannerText.setY(-20);
+    for (const t of this.pauseItems) t.setVisible(false);
     this.banner.setVisible(true).setScale(0.6).setAlpha(0);
     this.tweens.add({ targets: this.banner, scale: 1, alpha: 1, duration: 400, ease: 'Back.out' });
   }
 
   private onPause(paused: boolean): void {
     this.bannerText.setText('PAUSED').setStroke('#29abe2', 8);
-    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen');
+    (this.banner.getByName('hint') as Phaser.GameObjects.Text).setText('Esc to resume  ·  Q to quit to the title screen').setY(-82).setFontSize(16);
+    for (const t of this.pauseItems) t.setVisible(true);
+    this.bannerText.setY(-28);
     this.banner.setVisible(paused).setScale(1).setAlpha(1);
+    this.pauseMenu.reset();
+    this.selectPause(0);
+  }
+
+  private selectPause(i: number): void {
+    this.pauseSelected = i;
+    this.pauseItems.forEach((t, j) => t.setColor(j === i ? '#29abe2' : '#ffffff').setScale(j === i ? 1.1 : 1));
+  }
+
+  private choosePause(i: number): void {
+    if (!this.game_.paused) return;
+    if (i === 0) this.game_.togglePause();
+    else if (i === 1) this.game_.openSettings();
+    else this.game_.backToTitle();
   }
 }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ARENA_INFO } from '../map/Arenas';
+import { addMusic } from '../game/Settings';
 
 export type Slot = 'P1' | 'P2' | 'CPU';
 export interface MatchSetup { slots: Slot[]; arena?: number; bonuses?: BonusRate; }
@@ -58,6 +59,13 @@ export class TitleScene extends Phaser.Scene {
       t.on('pointerdown', () => this.start(i));
       this.items.push(t);
     });
+    // Settings (volumes, visual effects): the last entry of the menu, in the top corner.
+    const gear = this.add.text(width - 28, 28, '⚙ Settings', {
+      fontFamily: 'Arial Black, sans-serif', fontSize: '24px', color: '#ffffff',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    gear.on('pointerover', () => this.select(MODES.length));
+    gear.on('pointerdown', () => this.start(MODES.length));
+    this.items.push(gear);
     this.select(0);
 
     // Arena picker: the original cube, or one of the arenas built from its tiles.
@@ -85,7 +93,7 @@ export class TitleScene extends Phaser.Scene {
     // Title music (dashboard.ogg); browsers start it after the first click or key.
     if (!this.sound.get('music-title')?.isPlaying) {
       this.sound.removeByKey('music-title');
-      this.sound.add('music-title', { loop: true, volume: 0.5 }).play();
+      addMusic(this, 'music-title', 0.5).play();
     }
 
     this.add.text(width / 2, height - 36,
@@ -95,10 +103,11 @@ export class TitleScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
     const kb = this.input.keyboard!;
-    kb.on('keydown-UP', () => this.select((this.selected + MODES.length - 1) % MODES.length));
-    kb.on('keydown-W', () => this.select((this.selected + MODES.length - 1) % MODES.length));
-    kb.on('keydown-DOWN', () => this.select((this.selected + 1) % MODES.length));
-    kb.on('keydown-S', () => this.select((this.selected + 1) % MODES.length));
+    const n = this.items.length;
+    kb.on('keydown-UP', () => this.select((this.selected + n - 1) % n));
+    kb.on('keydown-W', () => this.select((this.selected + n - 1) % n));
+    kb.on('keydown-DOWN', () => this.select((this.selected + 1) % n));
+    kb.on('keydown-S', () => this.select((this.selected + 1) % n));
     kb.on('keydown-LEFT', () => this.pickArena(-1));
     kb.on('keydown-A', () => this.pickArena(-1));
     kb.on('keydown-RIGHT', () => this.pickArena(1));
@@ -131,6 +140,13 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private start(i: number): void {
+    if (i === MODES.length) {
+      // Over the title, which waits paused until Back.
+      this.scene.pause();
+      this.scene.launch('Settings', { resume: ['Title'] });
+      this.scene.bringToTop('Settings');
+      return;
+    }
     const setup: MatchSetup = { slots: MODES[i].slots, arena: this.arena, bonuses: this.bonuses };
     this.scene.start('Game', setup);
   }

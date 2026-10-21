@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
+import { vfx, vfxChance } from '../game/Settings';
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote';
 
@@ -28,6 +29,7 @@ const ROBOT_H = Config.KUBOTZ_HEIGHT * UNIT;
 const TWIRL_FADE = 300;
 
 const TRAIL_MS = 170;
+const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -352,6 +354,8 @@ export class ImpactFx {
   }
 
   private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): void {
+    // VFX setting: the many small bits thin out with it; single flashes, rings and beams stay until it is 0.
+    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return;
     this.particles.push({ vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p });
   }
 
