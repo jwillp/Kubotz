@@ -73,6 +73,8 @@ export const ROOT_MOTION_GAIN = 3;
  */
 const INITIAL_DASH = 1.1;
 const INITIAL_DASH_MS = 160;
+/** Walking (a light stick tilt): up to this share of the run, as fast as the tilt (Ultimate: Mario walks 1.05, runs 1.76 u/f). */
+const WALK_SPEED = 0.6;
 /** Letting go on the ground: stops from full speed in about 0.3 s (Ultimate: ~20 frames of traction). */
 const GROUND_FRICTION = 60;
 /**
@@ -795,15 +797,18 @@ export class Kubotz implements Damageable, Teamed {
 
     // Aerials keep the robot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
-    // Any direction runs (a tilted stick too). On the ground, starting off or
-    // turning round dashes: at speed at once.
+    // A light stick tilt walks, as fast as the tilt; pushed all the way (or a
+    // key) the robot runs. On the ground, starting off or turning round to run
+    // dashes: at speed at once (Ultimate's initial dash).
     const dir = pad.left ? -1 : pad.right ? 1 : 0;
     const run = Config.MAX_SPEED * this.speedFactor();
-    if (dir && grounded && !this.attack && !this.charging && (Math.sign(vx) !== dir || Math.abs(vx) < 0.5 * run)) {
+    const walking = !!pad.walk && grounded;
+    if (dir && grounded && !walking && !this.attack && !this.charging && (Math.sign(vx) !== dir || Math.abs(vx) < 0.5 * run)) {
       this.dashUntil = now + INITIAL_DASH_MS;
       vx = dir * run * INITIAL_DASH;
     }
-    const top = Config.MAX_SPEED * (grounded && now < this.dashUntil ? INITIAL_DASH : 1);
+    if (walking) this.dashUntil = 0;
+    const top = Config.MAX_SPEED * (walking ? WALK_SPEED * (pad.walkAmount ?? 1) : grounded && now < this.dashUntil ? INITIAL_DASH : 1);
     if (pad.left) {
       vx = vx < -top ? Math.min(vx + accel, -top) : Math.max(vx - accel, -top);
       if (canTurn) this.turnTo(-1, now, grounded);

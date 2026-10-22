@@ -641,7 +641,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         // Repair: its own sound, a longer twirl and the health regained.
         this.playSfx('orb-heal', 0.55);
         this.impact.twirl(kubotz, orb.color, 2100);
-        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)} HP`, def.color);
+        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)}% HP`, def.color);
       } else {
         this.playSfx('orb-pickup', 0.5);
         this.impact.twirl(kubotz, orb.color, 1500);

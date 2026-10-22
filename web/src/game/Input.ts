@@ -21,6 +21,8 @@ export interface PadState {
   taunt?: boolean;
   /** An analog stick tilted, not pushed: walk instead of dash, strong attacks instead of smashes, no tap jump. */
   walk?: boolean;
+  /** Walking: how far the stick is tilted sideways (0..1 of a full walk), so the walk speed follows it (Ultimate). */
+  walkAmount?: number;
   /** The direction came from an analog stick (flicks and tilts apply). */
   analog?: boolean;
   /** Stick only: a direction slammed from the centre this frame (a flick: dash, smash, drop through). */
@@ -133,9 +135,13 @@ export class HumanController implements Controller {
     if (mx > TILT || my > TILT) {
       s.left ||= ax < -TILT; s.right ||= ax > TILT;
       s.up ||= ay < -TILT; s.down ||= ay > TILT;
-      // Tilted (not flicked or pushed all the way): tilt attacks instead of smashes, and no
-      // tap jump short of a full push up. It still runs: any tilt sideways runs at once.
-      if (!this.dashing && !(ay < -FULL)) s.walk = true;
+      // Tilted, not pushed all the way (or flicked): a walk as fast as the tilt
+      // (Ultimate), tilt attacks instead of smashes, and no tap jump short of a
+      // full push up. Pushed all the way, it dashes and runs at once.
+      if (!this.dashing && mx < FULL && !(ay < -FULL)) {
+        s.walk = true;
+        s.walkAmount = Phaser.Math.Clamp((mx - TILT) / (FULL - TILT), 0.25, 1);
+      }
       s.analog = true;
       if (flick) s.flick = true;
     }

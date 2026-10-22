@@ -36,8 +36,11 @@ export const Config = {
   PUNCH_DURATION: 500,
   PUNCH_COOLDOWN: 80,
   PUNCH_KNOCKBACK: 9, // original passed 0; the owner wants hits to push
-  // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (damage taken / max health), SSB-like.
-  KNOCKBACK_GROWTH: 2,
+  // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (health lost / max health), as in Ultimate:
+  // health runs from 100 % down to 0 % (when the robot explodes), and 0 % stands for Ultimate's
+  // practical 300 %. Ultimate's knockback formula (Mario's forward smash) launches about 3x
+  // harder at 100 % than at 0 %, 4x at 150 % and 7x at 300 %, close to 1 + 6.2 x (% / 300).
+  KNOCKBACK_GROWTH: 6.2,
   // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT, like SSB's 0.4 x knockback;
   // past TUMBLE_HITSTUN the robot tumbles, bouncing off walls and ceilings.
   HITSTUN_BASE: 120,
