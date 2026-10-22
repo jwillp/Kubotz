@@ -13,6 +13,8 @@ export class TvIdent {
   private readonly logo: Phaser.GameObjects.Image;
   private readonly ghost: Phaser.GameObjects.Image;
   private readonly bar: Phaser.GameObjects.Graphics;
+  /** A soft cyan-white halo round the lit blocks (additive). */
+  private readonly barGlow: Phaser.GameObjects.Graphics;
   private readonly scale: number;
   private progress = 0;
   /** The bar as shown: it eases towards the progress, so it fills smoothly. */
@@ -33,6 +35,7 @@ export class TvIdent {
     // A faint second image off to the side: the signal's ghost.
     this.ghost = scene.add.image(width / 2, height / 2 - 30, logoKey).setScale(this.scale).setTint(0xff3a6a).setBlendMode(Phaser.BlendModes.ADD);
     this.logo = scene.add.image(width / 2, height / 2 - 30, logoKey).setScale(this.scale);
+    this.barGlow = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     this.bar = scene.add.graphics();
   }
 
@@ -55,8 +58,15 @@ export class TvIdent {
     const g = this.bar.clear();
     const bw = 22;
     const x0 = width / 2 - (blocks * (bw + 6)) / 2;
-    // White blocks, the one being filled partly lit.
-    for (let i = 0; i < blocks; i++) g.fillStyle(0xffffff, 0.14 + 0.81 * Phaser.Math.Clamp(fill - i, 0, 1)).fillRect(x0 + i * (bw + 6), height - 150, bw, 14);
+    // White blocks, the one being filled partly lit, each lit one haloed in a few soft layers.
+    const glow = this.barGlow.clear();
+    for (let i = 0; i < blocks; i++) {
+      const lit = Phaser.Math.Clamp(fill - i, 0, 1);
+      const x = x0 + i * (bw + 6);
+      const y = height - 150;
+      g.fillStyle(0xffffff, 0.14 + 0.81 * lit).fillRect(x, y, bw, 14);
+      for (const [grow, a] of [[3, 0.22], [7, 0.1], [13, 0.05]] as const) glow.fillStyle(0xbfe9ff, a * lit).fillRect(x - grow, y - grow, bw + 2 * grow, 14 + 2 * grow);
+    }
     // The TV look, a little lighter than a screen change at its peak.
     tvCut(this.cam, 0.75, 0);
   }
