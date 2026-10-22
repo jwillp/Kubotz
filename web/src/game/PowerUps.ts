@@ -116,7 +116,7 @@ function ballTextures(scene: Phaser.Scene): void {
 }
 
 /**
- * A power-up: a ball that rolls round the arena (a physics circle). Robots
+ * A power-up: a ball that rolls round the arena (a physics circle). Kubotz
  * running into it kick it along, hits and laser bolts knock it away; grab
  * picks it up.
  */
@@ -130,7 +130,7 @@ export class PowerUpOrb {
   readonly body: ItemBody;
   readonly expiresAt: number;
   readonly radius = Config.POWERUP_RADIUS * UNIT;
-  /** No kicks again until then (a robot overlapping it pushes it once, not every frame). */
+  /** No kicks again until then (a Kubot overlapping it pushes it once, not every frame). */
   kickedUntil = 0;
   /** For the bounce sound: last velocity (pixels/s) and last tink. */
   lastVx = 0;
@@ -168,7 +168,7 @@ export class PowerUpOrb {
     // The art rolls with the ball; the shading and the highlight stay lit from above.
     this.view.setPosition(this.x, this.y).setAlpha(a);
     this.sprite.setRotation(this.body.angle);
-    // A bounce glitches it like a hit robot (fx/HitGlitch.ts), settling over GLITCH_MS.
+    // A bounce glitches it like a hit Kubot (fx/HitGlitch.ts), settling over GLITCH_MS.
     const f = (now - this.glitchAt) / GLITCH_MS;
     const k = f >= 0 && f < 1 ? this.glitchPower * (1 - f) * (1 - f) : 0;
     hitGlitch(this.view, k);

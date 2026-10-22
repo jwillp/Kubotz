@@ -111,7 +111,7 @@ export function healChimeBuffer(ctx: BaseAudioContext): AudioBuffer {
 }
 
 /**
- * A robot blowing up, sci-fi style: a sub-bass thump, a laser zap diving
+ * A Kubot blowing up, sci-fi style: a sub-bass thump, a laser zap diving
  * down, a filtered blast of noise with a ring-modulated metallic edge,
  * crackling sparks and a shimmering power-down whine, in a larger reverb.
  */
@@ -324,7 +324,7 @@ export function scanBuffer(ctx: BaseAudioContext): AudioBuffer {
 // ------------------------------------------------------------------ the table
 /** Every synth sound by key (audio/Sounds.ts loads them; the recorded ones are listed there). */
 export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {
-  boom: sciFiExplosionBuffer, // a robot blowing up
+  boom: sciFiExplosionBuffer, // a Kubot blowing up
   'orb-bounce': crystalBounceBuffer, // the power-up ball bouncing
   'orb-pickup': pickupChimeBuffer,
   'orb-heal': healChimeBuffer,
@@ -332,8 +332,8 @@ export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer
   'step-0': (ctx) => metalStepBuffer(ctx, 0),
   'step-1': (ctx) => metalStepBuffer(ctx, 1),
   'step-2': (ctx) => metalStepBuffer(ctx, 2),
-  'holo-spawn': holoSpawnBuffer, // a robot materializing
-  'portal-warp': portalWarpBuffer, // a robot going through a portal
+  'holo-spawn': holoSpawnBuffer, // a Kubot materializing
+  'portal-warp': portalWarpBuffer, // a Kubot going through a portal
   'ui-move': (ctx) => uiSoundBuffer(ctx, 'move'),
   'ui-tick': (ctx) => uiSoundBuffer(ctx, 'tick'),
   'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),

@@ -3,10 +3,10 @@ import { UNIT } from '../config';
 
 /**
  * Spawn holograms: at the match start and on every respawn a projector
- * floats in under the spawn point and beams light upward; the robot is drawn
+ * floats in under the spawn point and beams light upward; the Kubot is drawn
  * out of scan lines from the feet up as a cyan hologram (flicker, sliding
  * rows, a bright line where the beam is drawing it), solidifies into the
- * normal lit robot, then the beam recedes and the robot drops to the ground
+ * normal lit Kubot, then the beam recedes and the Kubot drops to the ground
  * while the projector powers down. On a K.O. the debris dissolves the same
  * way, each piece on its own, scanned away from the top.
  *
@@ -21,12 +21,12 @@ const HOLO_CORE = 0xc8f6ff;
 
 /** The spawn sequence (ms from its start). */
 export const SPAWN_MS = 2300;
-/** The robot is let go (physics, controls) and drops. */
+/** The Kubot is let go (physics, controls) and drops. */
 export const RELEASE_AT = 1750;
-/** How far above its spawn point the robot hangs in the beam. */
+/** How far above its spawn point the Kubot hangs in the beam. */
 export const HOVER = 1.1 * UNIT;
 /**
- * The match intro's spawns: the robot is drawn twice as fast into a full
+ * The match intro's spawns: the Kubot is drawn twice as fast into a full
  * hologram (to HOLO_AT in the sequence, while the camera is on it) and waits
  * as a hologram. From the countdown's start it solidifies (HOLO_AT to
  * SOLID_AT) between INTRO_SOLID_FROM and INTRO_SOLID_AT ms (solid on "1"),
@@ -68,9 +68,9 @@ export function spawnLook(age: number): {
   projector: number;
   /** The beam's height. */
   beam: number;
-  /** The scan line drawing the robot from the feet (0) to the head (1). */
+  /** The scan line drawing the Kubot from the feet (0) to the head (1). */
   reveal: number;
-  /** How much of a hologram the robot still is (1 cyan, 0 solid). */
+  /** How much of a hologram the Kubot still is (1 cyan, 0 solid). */
   holo: number;
   /** The faint scan-line outline ahead of the drawing line. */
   ghost: number;
@@ -130,7 +130,7 @@ void main () {
 `;
 
 /**
- * The hologram look on one game object (a robot's container, a debris piece):
+ * The hologram look on one game object (a Kubot's container, a debris piece):
  * a post pass with its own line, drawn below a horizontal line on screen.
  * The line is given in world y (`line`), or as a 0..1 sweep down the
  * object's own bounds (`sweep`, debris pieces).
@@ -194,11 +194,11 @@ export function clearHolo(obj: Phaser.GameObjects.Image | Phaser.GameObjects.Con
 }
 
 /**
- * A robot's look `age` ms into its spawn: hidden above the scan line, a
+ * A Kubot's look `age` ms into its spawn: hidden above the scan line, a
  * hologram that solidifies. `feet` / `head` are the world y the line sweeps
  * between. Without WebGL it simply fades in.
  */
-export function holoRobot(view: Phaser.GameObjects.Container, age: number, feet: number, head: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
+export function holoKubot(view: Phaser.GameObjects.Container, age: number, feet: number, head: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
   const look = spawnLook(age);
   if (look.holo <= 0) { clearHolo(view); return; }
   const p = holoOf(view, camera);
@@ -225,8 +225,8 @@ export function holoPiece(img: Phaser.GameObjects.Image, t: number, camera?: Pha
 // --------------------------------------------------------------- projector
 
 /**
- * The projector, the beam and the robot's glow `age` ms into a spawn,
- * with the robot's feet at (x, feet) (the projector floats just below).
+ * The projector, the beam and the Kubot's glow `age` ms into a spawn,
+ * with the Kubot's feet at (x, feet) (the projector floats just below).
  * `g` is drawn normally, `add` additively.
  */
 export function drawSpawn(g: Phaser.GameObjects.Graphics, add: Phaser.GameObjects.Graphics, x: number, feet: number, age: number, time: number): void {
@@ -235,7 +235,7 @@ export function drawSpawn(g: Phaser.GameObjects.Graphics, add: Phaser.GameObject
   const s = look.projector;
   if (s <= 0.001) return;
   const t = time / 1000;
-  // Once the robot is let go it flies off to one side and up, out of its way.
+  // Once the Kubot is let go it flies off to one side and up, out of its way.
   const away = smooth(RELEASE_AT - 80, SPAWN_MS, age);
   x += (Math.floor(x / 7) % 2 === 0 ? 1 : -1) * away * 1.6 * UNIT;
   // Floating: a slow bob, and it flies in from a little lower.
@@ -289,7 +289,7 @@ export function drawSpawn(g: Phaser.GameObjects.Graphics, add: Phaser.GameObject
   for (const side of [-1, 1]) g.fillStyle(0xbfefff, s * lit).fillCircle(x + side * w * 0.36, py + h * 0.1, 1.8);
 }
 
-/** The light the spawn throws on the robot and round it (x, the beam's middle). */
+/** The light the spawn throws on the Kubot and round it (x, the beam's middle). */
 export function spawnLight(x: number, feet: number, age: number): { x: number; y: number; color: number; intensity: number } | null {
   if (age < 0 || age >= SPAWN_MS) return null;
   const look = spawnLook(age);
@@ -310,7 +310,7 @@ export interface Spawner {
 }
 
 /**
- * The spawn holograms of a match: starts one for a robot (lifting it into
+ * The spawn holograms of a match: starts one for a Kubot (lifting it into
  * the beam and holding it there), draws the projectors, and lights them.
  */
 export class HoloSpawns {
@@ -319,14 +319,14 @@ export class HoloSpawns {
   private readonly active = new Map<Spawner, Spawning>();
 
   constructor(private readonly scene: Phaser.Scene) {
-    // The beam over the robot, the projector in front of its feet.
+    // The beam over the Kubot, the projector in front of its feet.
     this.add = scene.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
     this.g = scene.add.graphics().setDepth(10.5);
   }
 
   /**
-   * Starts a robot's spawn at `now`: it is raised by HOVER and held until
-   * RELEASE_AT. The intro passes `countdownAt`: the robot waits as a
+   * Starts a Kubot's spawn at `now`: it is raised by HOVER and held until
+   * RELEASE_AT. The intro passes `countdownAt`: the Kubot waits as a
    * hologram until then, and materializes during the countdown (spawnAge).
    */
   start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, countdownAt?: number): void {
@@ -336,26 +336,26 @@ export class HoloSpawns {
     this.active.set(k, { at: now, x: k.x, feet: k.body.bottom, hold });
   }
 
-  /** How far into its spawn a robot is (in the usual timing), and where its projector is (for the replays). */
+  /** How far into its spawn a Kubot is (in the usual timing), and where its projector is (for the replays). */
   state(k: Spawner, now: number): [number, number, number] | undefined {
     const s = this.active.get(k);
     const age = s && spawnAge(now - s.at, s.hold);
     return s && age! < SPAWN_MS ? [age!, s.x, s.feet] : undefined;
   }
 
-  /** After the robots are drawn: their hologram look, and the projectors. */
+  /** After the Kubotz are drawn: their hologram look, and the projectors. */
   update(now: number): void {
     this.g.clear();
     this.add.clear();
     for (const [k, s] of this.active) {
       const age = spawnAge(now - s.at, s.hold);
       if (age >= SPAWN_MS) { this.active.delete(k); clearHolo(k.model.view); continue; }
-      holoRobot(k.model.view, age, s.feet, s.feet - 2.15 * UNIT);
+      holoKubot(k.model.view, age, s.feet, s.feet - 2.15 * UNIT);
       drawSpawn(this.g, this.add, s.x, s.feet, age, this.scene.time.now);
     }
   }
 
-  /** A robot left (K.O. during its spawn, the match ending). */
+  /** A Kubot left (K.O. during its spawn, the match ending). */
   cancel(k: Spawner): void {
     if (this.active.delete(k)) clearHolo(k.model.view);
   }

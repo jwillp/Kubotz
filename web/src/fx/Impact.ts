@@ -44,10 +44,10 @@ interface Wisp { x: number; y: number; angle: number; len: number; width: number
 
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
 
-/** Orb motes spiralling round a robot: once after a pick-up, or lasting while a power-up runs. */
+/** Orb motes spiralling round a Kubot: once after a pick-up, or lasting while a power-up runs. */
 interface Twirl { owner: { x: number; y: number }; key: string; color: number; start: number; end: number; lasting: boolean; }
 
-const ROBOT_H = Config.KUBOTZ_HEIGHT * UNIT;
+const KUBOT_H = Config.KUBOTZ_HEIGHT * UNIT;
 const TWIRL_FADE = 300;
 
 const TRAIL_MS = 170;
@@ -97,7 +97,7 @@ export class ImpactFx {
   private readonly celLayers: { view: Phaser.GameObjects.Container; pool: Phaser.GameObjects.Image[] }[];
 
   constructor(scene: Phaser.Scene) {
-    // Twirl motes passing behind a robot are drawn under it.
+    // Twirl motes passing behind a Kubot are drawn under it.
     this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(Phaser.BlendModes.ADD);
     this.dust = scene.add.graphics().setDepth(14);
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
@@ -176,7 +176,7 @@ export class ImpactFx {
   }
 
   /**
-   * A K.O.: a big, magical explosion of smoke in the robot's team colour,
+   * A K.O.: a big, magical explosion of smoke in the Kubot's team colour,
    * cel-shaded like a cartoon effect (deep rim, bright body, cream highlights),
    * with streaks whipping out of the core and glittering motes.
    */
@@ -224,7 +224,7 @@ export class ImpactFx {
         life: rand(1400, 2200), drag: 0.08, gravity: -1.8 * UNIT,
       });
     }
-    // Hit sparks flying out of the blast as far as the robot's pieces, stopped by walls.
+    // Hit sparks flying out of the blast as far as the Kubot's pieces, stopped by walls.
     for (let i = 0; i < 26; i++) {
       const a = rand(0, Math.PI * 2);
       const speed = rand(12, 26) * UNIT;
@@ -271,7 +271,7 @@ export class ImpactFx {
     }
   }
 
-  /** Dust kicked up behind a running robot (`dir`: away from the run). */
+  /** Dust kicked up behind a running Kubot (`dir`: away from the run). */
   runDust(x: number, y: number, dir: number): void {
     for (let i = 0; i < 2; i++) {
       this.add({
@@ -323,19 +323,19 @@ export class ImpactFx {
     });
   }
 
-  /** A power-up taken: the orb's motes spiral up round the robot for `ms`. */
+  /** A power-up taken: the orb's motes spiral up round the Kubot for `ms`. */
   twirl(owner: { x: number; y: number }, color: number, ms: number): void {
     this.twirls.push({ owner, key: 'pickup', color, start: this.now, end: this.now + ms, lasting: false });
   }
 
-  /** Keeps motes circling the robot while an effect lasts (call every frame; fades out once not called). */
+  /** Keeps motes circling the Kubot while an effect lasts (call every frame; fades out once not called). */
   aura(owner: { x: number; y: number }, key: string, color: number): void {
     const t = this.twirls.find((w) => w.owner === owner && w.key === key && w.lasting);
     if (t) { t.end = this.now + TWIRL_FADE; t.color = color; return; }
     this.twirls.push({ owner, key, color, start: this.now, end: this.now + TWIRL_FADE, lasting: true });
   }
 
-  /** Stops a robot's twirls at once (when it is knocked out). */
+  /** Stops a Kubot's twirls at once (when it is knocked out). */
   clearTwirls(owner: object): void { this.twirls = this.twirls.filter((w) => w.owner !== owner); }
 
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
@@ -553,8 +553,8 @@ export class ImpactFx {
   }
 
   /**
-   * Two strands of motes on a helix round the robot, seen in perspective (a
-   * flat ellipse): bright and larger in front, dim and under the robot behind,
+   * Two strands of motes on a helix round the Kubot, seen in perspective (a
+   * flat ellipse): bright and larger in front, dim and under the Kubot behind,
    * each with a short tail along its path. A pick-up rises from the feet to
    * the head; a lasting one keeps climbing round the body.
    */
@@ -565,7 +565,7 @@ export class ImpactFx {
     const spin = (Math.PI * 2 * (w.lasting ? 1.1 : 1.7) * t) / 1000;
     const dur = w.end - w.start;
     const { x: cx, y: cy } = w.owner;
-    const bottom = cy + ROBOT_H / 2;
+    const bottom = cy + KUBOT_H / 2;
     const light = mix(w.color, 0xffffff, 0.35);
     for (let j = 0; j < n; j++) {
       // Height up the body (0 feet, 1 head).
@@ -579,9 +579,9 @@ export class ImpactFx {
       const color = j % 3 === 0 ? mix(w.color, 0xffffff, 0.75) : light;
       for (let k = 4; k >= 0; k--) {
         const a = base - k * 0.16;
-        const depth = Math.sin(a); // > 0: in front of the robot
+        const depth = Math.sin(a); // > 0: in front of the Kubot
         const x = cx + Math.cos(a) * r;
-        const y = bottom - hf * ROBOT_H + depth * r * 0.28;
+        const y = bottom - hf * KUBOT_H + depth * r * 0.28;
         const tail = 1 - k / 5;
         const alpha = fade * edge * tail * (depth > 0 ? 1 : 0.4);
         const size = (k === 0 ? 2.1 : 1.5) * (depth > 0 ? 1.15 : 0.8) * tail;
@@ -594,7 +594,7 @@ export class ImpactFx {
     if (Math.random() < 0.25 * fade) {
       const a = spin + Math.random() * Math.PI * 2;
       this.add({
-        kind: 'mote', x: cx + Math.cos(a) * UNIT * 0.8, y: bottom - Math.random() * ROBOT_H,
+        kind: 'mote', x: cx + Math.cos(a) * UNIT * 0.8, y: bottom - Math.random() * KUBOT_H,
         vx: Math.cos(a) * rand(0.3, 0.8) * UNIT, vy: -rand(0.3, 0.9) * UNIT,
         color: light, size: rand(1, 2), life: rand(400, 800), drag: 0.6,
       });

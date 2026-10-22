@@ -1,7 +1,7 @@
 import { boxBlur } from './NormalMaps';
 
 /**
- * Surface wear for the robot parts, so they read like the arena tiles: the
+ * Surface wear for the Kubot parts, so they read like the arena tiles: the
  * flat vector plates get the tiles' fine stipple, soft shade towards their
  * inner edges, a thin worn highlight along their upper edges (the tiles'
  * bright bevel), a few light scratches and chipped edges. Shapes and colours
@@ -14,7 +14,7 @@ import { boxBlur } from './NormalMaps';
 /** Prefix of the worn copy of a part texture's key. */
 export const WORN = 'worn:';
 
-/** Whether robots are drawn with their worn copies (G in a match toggles it). */
+/** Whether Kubotz are drawn with their worn copies (G in a match toggles it). */
 export const surface = { worn: true };
 
 export interface SurfaceOptions {
@@ -82,7 +82,7 @@ export function weather(source: HTMLImageElement | HTMLCanvasElement, seed: stri
   }
   const scratch = mctx.getImageData(0, 0, w, h).data;
 
-  // Grain on a ~2.5 px lattice (one screen pixel at the robots' scale), and wear blotches on a coarse one.
+  // Grain on a ~2.5 px lattice (one screen pixel at the Kubotz' scale), and wear blotches on a coarse one.
   const fine = valueNoise(w, h, 2, rand);
   const blotch = valueNoise(w, h, 14, rand);
 

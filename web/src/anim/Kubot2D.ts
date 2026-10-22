@@ -23,33 +23,33 @@ function depthOf(file: string): Depth {
   return { z: back ? -46 : 46, round: leg ? 0.45 : 0.38, follow: leg ? 30 : 48 };
 }
 
-/** The arguments of one Robot2D.update (poses and map lists are never mutated, so they are kept by reference). */
+/** The arguments of one Kubot2D.update (poses and map lists are never mutated, so they are kept by reference). */
 export interface DrawState {
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
   lean: number; squash: number; alpha: number; flash: boolean;
   /** Struck this frame (the white flash of a hit, not a charge blink): it glitches. */
   glitch?: boolean;
-  /** A raised guard: the shield hexagon over the robot. */
+  /** A raised guard: the shield hexagon over the Kubot. */
   shield?: Shield;
 }
 
 /** The guard's shield: half height of the hexagon and its centre above the feet (px), and the team colour. */
 export interface Shield { r: number; above: number; color: number }
 
-/** How hard the robot glitches where it shows through a raised shield. */
+/** How hard the Kubot glitches where it shows through a raised shield. */
 const SHIELD_GLITCH = 0.42;
 
 interface Ghost { view: Phaser.GameObjects.Container; born: number; life: number }
 
 /**
- * One robot drawn in 2D: an image per body part, placed from the rig's pose,
- * in a container at the robot's feet. The parts are layered in depth, so the
- * robot turns round the vertical axis like a puppet with volume: each part
+ * One Kubot drawn in 2D: an image per body part, placed from the rig's pose,
+ * in a container at the Kubot's feet. The parts are layered in depth, so the
+ * Kubot turns round the vertical axis like a puppet with volume: each part
  * narrows, swings round by its depth and mirrors past 90°, the head first and
  * the legs last. Spin moves use the same yaw. Hits flash it white and glitch
  * it (fx/HitGlitch.ts); fast moves leave afterimages.
  */
-export class Robot2D {
+export class Kubot2D {
   readonly view: Phaser.GameObjects.Container;
   private readonly images = new Map<string, Phaser.GameObjects.Image>();
   private readonly yaws = new Map<string, number>();
@@ -60,7 +60,7 @@ export class Robot2D {
   private glitching = false;
   /** The guard's shield hexagon: a team-coloured fill and a lighter sheen from the art's gradient. */
   private hex?: { fill: Phaser.GameObjects.Image; sheen: Phaser.GameObjects.Image };
-  /** The camera the robot is seen through, when not the scene's main one. */
+  /** The camera the Kubot is seen through, when not the scene's main one. */
   camera?: Phaser.Cameras.Scene2D.Camera;
   /** What update() drew last, for the kill replays (game/Replay.ts). */
   lastDraw: DrawState | null = null;
@@ -128,7 +128,7 @@ export class Robot2D {
 
   /**
    * The guard's shield: the hexagon art (particles/hexa.png) in the team
-   * colour, over the robot and inside its container so it tears with it.
+   * colour, over the Kubot and inside its container so it tears with it.
    */
   private drawShield(shield: Shield | undefined, squash: number): void {
     if (!shield) { if (this.hex) { this.hex.fill.setVisible(false); this.hex.sheen.setVisible(false); } return; }
@@ -140,7 +140,7 @@ export class Robot2D {
       this.view.add([this.hex.fill, this.hex.sheen]);
     }
     const { fill, sheen } = this.hex;
-    // Container space: mirrored and scaled by ART_SCALE, squashed with the robot.
+    // Container space: mirrored and scaled by ART_SCALE, squashed with the Kubot.
     const sy = (2 * shield.r) / fill.height / ART_SCALE;
     const ly = -shield.above / (ART_SCALE * squash);
     // A signal that is not quite steady: the hexagon flickers a little.
@@ -161,7 +161,7 @@ export class Robot2D {
     hitGlitch(this.view, f < 1 ? (1 - f) * (1 - f) * 0.6 + 0.4 * (1 - f) : 0, this.camera, hex);
   }
 
-  /** A fading copy of the robot as drawn now, in a colour (afterimages of fast moves). */
+  /** A fading copy of the Kubot as drawn now, in a colour (afterimages of fast moves). */
   ghost(color: number, life = 200, alpha = 0.5): void {
     let g = this.ghosts.find((q) => !q.view.visible);
     if (!g) {

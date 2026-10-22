@@ -46,7 +46,7 @@ Each step ends in a playable build and a commit.
    extra jump, Laser Gun Mk I/II (bullets), Laser Sword, invincibility, shield.
 6. **Guard** — the owner asked for a Super Smash Bros.-style shield instead of
    a skill: hold the guard button to raise a bubble that soaks hits, drains
-   while held and refills when released; breaking it stuns the robot.
+   while held and refills when released; breaking it stuns the Kubot.
    (Drones were removed: they were not part of the released game.)
 7. **HUD & game flow** — title screen, player badges/labels, lives, match end
    (life-based free-for-all), pause.
@@ -97,7 +97,7 @@ Bugs fixed or unfinished features completed:
 - A punch overlapping several fixtures (head, torso, legs) could hit several times;
   now each swing hits a target once.
 - The map has one player spawn; mirrored and central spawns were added for 4 players.
-- `WARP_ZONE` objects were never used; they now wrap robots across the arena, and
+- `WARP_ZONE` objects were never used; they now wrap Kubotz across the arena, and
   falling out of the arena costs a life.
 - Drones were dropped (owner feedback: not part of the released game).
 - New, at the owner's request: a held guard bubble (Super Smash Bros.-style),
@@ -118,9 +118,9 @@ Bugs fixed or unfinished features completed:
   pick up power-ups) — same behaviour tree, simpler navigation.
 
 Engine differences:
-- Arcade physics (axis-aligned boxes) instead of Box2D; robots pass through each
+- Arcade physics (axis-aligned boxes) instead of Box2D; Kubotz pass through each
   other instead of shoving, and hitboxes are circles/rectangles checked by hand.
-- The camera frames all robots between 24 and 58 units wide (the original could
+- The camera frames all Kubotz between 24 and 58 units wide (the original could
   zoom out to 136 units, far wider than the map).
 - The original drew Box2D debug shapes over a hidden map; the port draws the map's
   tile layers and the background art, and the collision blocks stay invisible.
@@ -131,7 +131,7 @@ The owner asked for SSB-style depth: Box2D feel, 3D characters, lighting.
 Done in four steps, each one playable and republished.
 
 **A. Gameplay fixes** (current engine) — done
-- CPUs avoid invincible robots (hitting them does nothing) instead of chasing them.
+- CPUs avoid invincible Kubotz (hitting them does nothing) instead of chasing them.
 - A 4th CPU colour (orange), so four CPUs never share a colour.
 - Guard in mid-air = air dodge (SSB): a short burst in the held direction with
   intangibility frames (hits and bullets pass through), once per jump.
@@ -143,20 +143,20 @@ Done in four steps, each one playable and republished.
 port of Box2D, replaces Phaser Arcade — done:
 - Same world as `PhysicsSystem`: gravity −40, fixed 60 Hz step (6/2 iterations).
 - Same Kubotz body as `KubotzFactory.buildBody`: fixed-rotation dynamic body
-  made of a box + head circle + legs circle (a capsule) and a foot sensor; robots
+  made of a box + head circle + legs circle (a capsule) and a foot sensor; Kubotz
   collide with each other and slide off heads and ledges like the original.
 - Movement keeps `MovementSystem` (set the velocity, accelerate towards max speed);
   knockback becomes a linear impulse (`DamageSystem`).
 - Power-ups: dynamic circles, density 0.8, restitution 0.5 (they only hit the arena).
   Bullets fly in straight lines, so they are moved directly and tested against the blocks.
 - The original body was 2 x 4 units (`withHeight(2)` gives half-extents 1 x 2); the
-  same capsule is scaled to the 1 x 2 robot that the art and map of this port use.
+  same capsule is scaled to the 1 x 2 Kubot that the art and map of this port use.
 
 **C. 3D (2.5D) rendering** — [three.js](https://threejs.org) r186 — done:
 - Gameplay stays on the 2D plane (an SSB-style platformer); only the view is 3D.
 - A three.js canvas draws the world behind Phaser's (now transparent) canvas;
   Phaser keeps the title screen, HUD, input and sound.
-- Kubotz robots are built in code from the original art (`three/Extrude.ts`): each
+- Kubotz are built in code from the original art (`three/Extrude.ts`): each
   Spriter body part's outline is traced and extruded into a bevelled solid with
   its painting on the faces, parts are stacked front to back in drawing order,
   and the `.scml` animations drive them (`SpriterAnimator`). Extra motion on top:
@@ -165,7 +165,7 @@ port of Box2D, replaces Phaser Arcade — done:
 - Hitboxes follow the striking part: circles along the laser blade, the fist for
   punches, the foot for air kicks; lasers leave from the gun barrel.
 - Arena blocks are extruded in 3D and textured with the original tile art; the
-  background image becomes a distant backdrop; the camera keeps framing all robots.
+  background image becomes a distant backdrop; the camera keeps framing all Kubotz.
 
 **D. Lighting** — done (add `?lowfx` to the URL to turn bloom and shadows off) — scene lights (key, rim, per-player light), emissive lasers with
 point lights, shadows on the arena, and a post-processing pass (bloom, vignette,
@@ -173,22 +173,22 @@ subtle colour grading) for mood.
 
 ## Phase 3 — owner feedback round 3 (2026-10-20)
 
-- **Camera:** power-ups on offer count like robots when framing and zooming, so
+- **Camera:** power-ups on offer count like Kubotz when framing and zooming, so
   every player sees a new bonus.
-- **One-way platforms:** `STATIC_PLATFORM` blocks are soft (SSB style): robots
+- **One-way platforms:** `STATIC_PLATFORM` blocks are soft (SSB style): Kubotz
   jump through them from below and land on them from above; holding down while
   standing on one drops through it. Walls stay solid.
 - **CPU pathfinding** (`game/Nav.ts`): like the original's A*, but on the surfaces
-  robots can stand on, linked by the moves between them (jump up, through a soft
+  Kubotz can stand on, linked by the moves between them (jump up, through a soft
   platform from below or beside a solid block; drop through; run off an edge;
   jump across a gap). The CPU plays the first move of the path: walks to the
   take-off window, then jumps (again, until above the target), drops or falls.
-  It takes off beside a robot standing right above (robots bump into each other),
-  never runs off an edge after a robot flying over the void, flees to the
+  It takes off beside a Kubot standing right above (Kubotz bump into each other),
+  never runs off an edge after a Kubot flying over the void, flees to the
   reachable surface farthest away, and steers back when knocked over the void.
-- **K.O. explosion** (`game/Debris.ts`): the robot blows apart; every body part
+- **K.O. explosion** (`game/Debris.ts`): the Kubot blows apart; every body part
   becomes a tumbling 3D piece on a Box2D circle that bounces around the arena,
-  hurts the robots it hits (2 damage + knockback, once per piece and robot,
+  hurts the Kubotz it hits (2 damage + knockback, once per piece and Kubot,
   only while flying fast) and fades after about 3 s. Flash of light and a
   synthesised explosion sound (the original had none).
 - **Arenas** (`map/Arenas.ts`): the original cube plus three arenas built from
@@ -200,14 +200,14 @@ subtle colour grading) for mood.
 
 ## Phase 4 — Blender models (2026-10-20)
 
-The robot, the bonus chips and the arena tiles were remade in Blender from the
+The Kubot, the bonus chips and the arena tiles were remade in Blender from the
 original art (sources and build script: `W:\claude\kubotz-blender`, outside this
 repo). The exports live in `core/assets/models/` and replace the 3D the game
 built from the sprites:
-- `robot.glb` (`three/RobotGltf.ts`): the original Spriter bones and animations,
+- `kubot.glb` (`three/KubotGltf.ts`): the original Spriter bones and animations,
   played at the point the game's Spriter clock is at, so attack timings and
   hitboxes are unchanged (hit points still come from the Spriter pose, through a
-  skeleton-only `Robot3D`). Helmet and weapon variants follow the character maps;
+  skeleton-only `Kubot3D`). Helmet and weapon variants follow the character maps;
   `player_color` / `player_glow` materials take the player's colour; the extra
   `Guard` animation plays while guarding.
 - `pickups/bonus_*.glb`: spinning bonus chips (golden for invincibility, yellow for energy).
@@ -241,8 +241,8 @@ The owner asked to drop the 3D look and go back to 2D, with smoother
 animations, combat moves that travel further, and a debug mode.
 
 - **2D rendering again**: Phaser draws everything. The arena is the original
-  tile art baked into one texture (as in phase 1), robots are their original
-  part images, bonuses are their original icons, K.O. debris are the robot's
+  tile art baked into one texture (as in phase 1), Kubotz are their original
+  part images, bonuses are their original icons, K.O. debris are the Kubot's
   own part images flying on Box2D bodies. Glow comes from additive sprites and
   an optional camera bloom (F toggles it). three.js, the Blender models and the
   3D code are removed from the build (the models stay in `core/assets/models`).
@@ -254,11 +254,11 @@ animations, combat moves that travel further, and a debug mode.
   between clips blends over a few frames. Clips: idle, run, jump, double jump
   flip, fall, land, crouch, guard, air dodge, hit (2), grab, shoot, jab,
   cross, roundhouse kick, air kick, three sword slashes.
-- **Moves travel**: each strike carries the robot forward (lunge) on its
+- **Moves travel**: each strike carries the Kubot forward (lunge) on its
   active frames, larger for later hits of a combo; the laser sword gets its own
   three-hit combo; the air kick dives.
 - **Debug mode** (F3 or `): Box2D fixtures, hurtboxes, attack and grab
-  circles, the navigation graph and each CPU's path and state, per-robot
+  circles, the navigation graph and each CPU's path and state, per-Kubot
   readouts (animation, velocity, combo step, stun), FPS and frame time graph,
   entity counts. While it is on: F4 cycles slow motion (1, ½, ¼), F6 freezes,
   F7 steps one frame while frozen, F8 toggles the navigation graph.
@@ -270,7 +270,7 @@ animations, combat moves that travel further, and a debug mode.
 ## Phase 7 — Rig fix, lights and shading back in 2D (2026-10-21)
 
 Owner feedback: the lights and shaders were lost with the 3D version, and the
-robots' skeletons were broken (heads inside bodies).
+Kubotz' skeletons were broken (heads inside bodies).
 
 - **Rig bug**: the Spriter keys carry each part image's pivot; the rig used the
   file default (bottom-left) instead, so every part hung off its bone wrongly
@@ -279,7 +279,7 @@ robots' skeletons were broken (heads inside bodies).
   The bone angles of the clips were right; only the images moved.
 - **Lighting (Phaser Light2D)**: normal maps are generated at boot from the
   art itself (`fx/NormalMaps.ts`: a bevel from the alpha edge plus embossed
-  brightness detail), for the robot parts, the recoloured helmets and blades,
+  brightness detail), for the Kubot parts, the recoloured helmets and blades,
   the bonus chips and the arena tiles. The arena is baked into a canvas with a
   matching normal canvas. A warm key light and a cool rim light follow the
   camera; a pool of 12 point lights goes to lasers, laser blades, power-ups,
@@ -297,7 +297,7 @@ robots' skeletons were broken (heads inside bodies).
 ## Phase 8 — Smash-style directional moves, real turns, helmets, knockback (2026-10-21)
 
 Owner feedback: the moves looked stiff; attacks should depend on direction
-like Super Smash Bros. (the robots are agile ninjas, think Captain Falcon);
+like Super Smash Bros. (the Kubotz are agile ninjas, think Captain Falcon);
 turning looked like an image flip; helmets were painted whole; heavy hits
 should stun and bounce off walls. Sources read: SmashWiki's
 [Hitstun](https://ssbwiki.com/Hitstun) and [Knockback](https://www.ssbwiki.com/KB)
@@ -307,12 +307,12 @@ knockback grows with the damage taken) and the
 forward, back, up and down airs).
 
 - **Directional attacks** (`Kubotz.attackDirection`): up and down win, then
-  towards / away from the way the robot faced before this frame's input.
+  towards / away from the way the Kubot faced before this frame's input.
   - Ground: neutral = the 3-hit combo; forward while running = dash attack
     (sliding kick); down = down tilt (low sweep that pops up); up = jump +
     backflip kick (the up air).
   - Air: neutral air (side kick held out), forward air (flying knee), back air
-    (reverse kick behind, the robot keeps facing the way it struck), up air
+    (reverse kick behind, the Kubot keeps facing the way it struck), up air
     (backflip kick with a hop), down air (the dive kick). With nothing held:
     within 180 ms of a jump the attack is the backflip; falling faster than 6
     units/s it is the dive.
@@ -323,7 +323,7 @@ forward, back, up and down airs).
     -70). Light combo links keep a fixed short hitstun so the next hit lands.
 - **Knockback and hitstun** (`takeDamage`): launch speed = move knockback ×
   (1 + 2 × damage taken); hitstun = 120 ms + 30 ms per unit/s (max 1.5 s).
-  Past 600 ms the robot *tumbles*: no control, spinning; it rebounds off
+  Past 600 ms the Kubot *tumbles*: no control, spinning; it rebounds off
   walls and ceilings (65% of its speed), bounces once on the floor, then lies
   in a knockdown for a moment before getting up.
 - **Turning**: the facing eases more slowly, the body narrows to 22% at the
@@ -342,11 +342,11 @@ Owner feedback: ground attacks directional like Smash with sword versions;
 the laser gun taps light shots and charges a heavy bolt with a longer
 cooldown and more recoil; turns looked like a flipped sheet of paper; the
 lights did nothing in a bright room; blue platforms should glow; a little
-film grain and scanlines; the robots moved like retro boxers.
+film grain and scanlines; the Kubotz moved like retro boxers.
 
 - **Smash inputs** (`Kubotz.handleActions`): a direction pressed within
   100 ms of the attack is a *smash*; holding the attack charges it (wind-up
-  frozen, the robot shakes and flashes at full charge) for up to 1 s, +60%
+  frozen, the Kubot shakes and flashes at full charge) for up to 1 s, +60%
   damage and knockback. Forward smash = a lunging fire-gauntlet punch (sword:
   leaping overhead cleave); down smash = a split kick hitting both sides
   (sword: crouched spin slash). A direction already held, then attack, is a
@@ -357,11 +357,11 @@ film grain and scanlines; the robots moved like retro boxers.
   charges up to 1.2 s: damage ×(1 + 2c), a bigger bolt, more push, recoil
   ×(1 + 2.5c), cooldown + 0.8 × held time × c. The muzzle glows while
   charging.
-- **Real turns** (`anim/Robot2D.ts`): the robot is a layered 2.5D puppet.
+- **Real turns** (`anim/Kubot2D.ts`): the Kubot is a layered 2.5D puppet.
   Every part has a depth (near limbs in front, far limbs behind, head and
   torso in the middle) and a roundness; yaw swings each part round by its
   depth, narrows flat parts edge-on and mirrors them past 90°, so a turn
-  shows the robot from the front or back mid-way. The head leads and the
+  shows the Kubot from the front or back mid-way. The head leads and the
   legs follow. Clips can carry a yaw track, used for spinning moves (spin
   back fist, spin hook kick, tornado kick, spinning slashes).
 - **Ninja animation set** (`anim/Clips.ts`): a low wide ready stance, a
@@ -369,7 +369,7 @@ film grain and scanlines; the robots moved like retro boxers.
   jumping spin hook kick combo, and the new tilts and smashes.
 - **Swooshes and afterimages**: fast moves leave a crescent smear (colour
   with a white core) behind the striking limb or blade, and coloured
-  afterimages of the whole robot during spins, dodges and tumbles.
+  afterimages of the whole Kubot during spins, dodges and tumbles.
 - **Lighting**: the backdrop is dimmed and the ambient lowered; key and rim
   lights are stronger; blue lights rise off every platform; the tiles' blue
   strips glow on their own (an emissive layer extracted from the art,
@@ -404,7 +404,7 @@ film grain and scanlines; the robots moved like retro boxers.
 - **Dust**: no longer while running; a puff when changing direction on the
   ground (and on landing, as before).
 - **Power-up balls**: power-ups are rolling physics balls (radius 0.45 units,
-  bouncy, bump each other). Robots running into one kick it along, strikes
+  bouncy, bump each other). Kubotz running into one kick it along, strikes
   knock it away along the move's launch angle, laser bolts push it. The art
   rolls with the ball under a fixed shading and highlight. Grab picks it up.
 
@@ -429,7 +429,7 @@ film grain and scanlines; the robots moved like retro boxers.
   flickering square bits. Charging draws sparks in from all round into the
   barrel, more as it fills.
 - **Power-up balls**: tiny twinkling motes rise off them.
-- **Portals**: everything that moves wraps (robots, bolts, balls, debris)
+- **Portals**: everything that moves wraps (Kubotz, bolts, balls, debris)
   through one list of movers.
 
 ### Phase 9e — owner feedback (2026-10-21)
@@ -443,17 +443,17 @@ film grain and scanlines; the robots moved like retro boxers.
   its own warm chord swell. Both pass through a small Schroeder reverb so
   they sit in the room with the sampled sounds.
 - **Twirl** (`ImpactFx.twirl`): on pick-up the orb's motes spiral up round
-  the robot in two strands for 1.5 s (2.1 s for health), in the orb's colour,
-  bright in front and drawn under the robot behind. Health also shows
+  the Kubot in two strands for 1.5 s (2.1 s for health), in the orb's colour,
+  bright in front and drawn under the Kubot behind. Health also shows
   "+N HP" with the amount actually restored.
 - **Lasting effects** (`ImpactFx.aura`): invincibility (gold, its orb's
-  colour) and shield (blue) keep motes circling the robot until they run
+  colour) and shield (blue) keep motes circling the Kubot until they run
   out, replacing the blue ellipse and the invincibility blink.
 
 ## Phase 10 — Weight, sci-fi explosion, Melee grabs and ledges (2026-10-21)
 
-Owner asks: robots very slightly heavier (gravity catches up earlier), a
-sci-fi explosion when a robot blows up, grabbing opponents and grabbing
+Owner asks: Kubotz very slightly heavier (gravity catches up earlier), a
+sci-fi explosion when a Kubot blows up, grabbing opponents and grabbing
 ledges like Super Smash Bros. Melee.
 
 Melee references (community frame data, SmashWiki / Smashboards; Melee runs
@@ -464,23 +464,23 @@ at 60 frames a second, so 1 frame = 16.7 ms; Melee "%" is our damage taken,
   steps). Each mash (a new button press or a new direction) takes off about
   6 frames. No mashing during a pummel's hitstun.
 - Pummel: 3 % per hit.
-- Grab release (time out): both robots stuck 29 frames, pushed apart.
+- Grab release (time out): both Kubotz stuck 29 frames, pushed apart.
 - Ledge grab: intangible for the 7-frame catch plus 30 frames. Options open
-  after the catch. One robot per ledge (edge hogging). Get-ups are slower at
-  high damage (Melee: 100 %; here 60 damage, as our robots die at 100).
+  after the catch. One Kubot per ledge (edge hogging). Get-ups are slower at
+  high damage (Melee: 100 %; here 60 damage, as our Kubotz die at 100).
 
 Plan:
 
-1. **Weight**: gravity 40 → 44 u/s², and +10 % more for robots once they
+1. **Weight**: gravity 40 → 44 u/s², and +10 % more for Kubotz once they
    start falling (the apex comes sooner and the drop is quicker). Jump
    speed 20 → 20.5 u/s keeps the jump nearly as high (5.0 → 4.8 units),
    with air time about 1.0 s → 0.9 s.
 2. **Explosion**: synthesised (fx/Synth.ts): a sub thump, a falling laser
    zap, a filtered noise blast, a metallic ring and crackling bits, in reverb.
-3. **Grabs** (I / `.` on the ground; balls are picked up when no robot is in
+3. **Grabs** (I / `.` on the ground; balls are picked up when no Kubot is in
    reach):
    - The grab reaches just in front (about 1 unit), works through the guard
-     bubble and misses intangible or invincible robots. A miss has 480 ms of
+     bubble and misses intangible or invincible Kubotz. A miss has 480 ms of
      end lag.
    - Holding: the victim is lifted in front and can't act. They mash out in
      (76 + 1.6 × damage, in steps of 5) frames, minus 6 frames per mash.
@@ -494,7 +494,7 @@ Plan:
    them (soft platforms have none, as in Melee).
    - Grabbed automatically while falling past the corner with the hands
      near it, unless holding down, in hitstun, or within 480 ms of letting
-     go. One robot per ledge.
+     go. One Kubot per ledge.
    - Hanging: jumps and air dodge restored, intangible for 37 frames
      (620 ms). After 7 frames:
      - toward = climb up (550 ms, 900 ms at 60+ damage);
@@ -504,7 +504,7 @@ Plan:
      - down or away = let go.
    - Hit after the intangibility ends: knocked off.
 5. **CPUs**:
-   - grab guarding robots and sometimes close ones;
+   - grab guarding Kubotz and sometimes close ones;
    - pummel once or twice, then throw towards the nearest edge or blast zone;
    - mash when held (about 8 a second);
    - pick a ledge option after a short random wait (roll or attack when
@@ -562,10 +562,10 @@ The owner asked for the branch to hold only the web port.
   fall; landing from one shakes the camera (0.2 + speed/90, at most 0.45
   trauma). Ordinary hard landings still shake above 22 U/s.
 - **Slot colours**: red, blue, green, purple (red asked again after a short yellow detour), for humans and CPUs alike.
-  The P1, P2 and CPU labels take the robot's colour.
+  The P1, P2 and CPU labels take the Kubot's colour.
 - **Portals**: both the same cyan-blue, each with a strong light (radius
   11 U) that pulses with the rift and an additive halo, so they light the
-  walls and robots around them.
+  walls and Kubotz around them.
 - **Outer hull** (GameScene.buildHull, cube arenas): dark plating carries on
   past the frame into the non-playable area and fades out over ~9 cells.
   Outside cells are the ones a flood fill from the spawns cannot reach
@@ -639,7 +639,7 @@ Done (2026-10-21), one build per step:
   after the rise until landing or a ledge (no jumps, attacks, dodge);
   side and up specials once per trip in the air.
 - Taunt: 1 s, committed (a hit ends it).
-- CPUs: up tilt / up smash on robots above, Raptor Dash to close in,
+- CPUs: up tilt / up smash on Kubotz above, Raptor Dash to close in,
   Plasma Kick or Ion Punch now and then, Raptor Dash and Shadow Dive to
   recover once out of jumps.
 
@@ -652,11 +652,11 @@ every feature branch starts from `dev`.
 
 | PR | Branch | Asks |
 |----|--------|------|
-| A | `feat/heavier-fall-roll` | Heavier robots: normal jump, much stronger pull on the way down (fall gravity and fast-fall). Ground dodge roll: guard + left/right on the ground rolls through enemies, intangible, the ground version of the air dodge. Fix: debug on, off, on again crashed. |
+| A | `feat/heavier-fall-roll` | Heavier Kubotz: normal jump, much stronger pull on the way down (fall gravity and fast-fall). Ground dodge roll: guard + left/right on the ground rolls through enemies, intangible, the ground version of the air dodge. Fix: debug on, off, on again crashed. |
 | B | `feat/settings` | Settings screen: music, sound effects and visual effects volumes (VFX intensity), saved in the browser, reachable from the title screen and the pause menu mid-battle. |
 | C | `feat/match-setup` | Join screen: each human presses to join, picks a helmet and a colour; the colour is a faction (same colour = same team, no friendly damage, the last team standing wins); the number of CPUs and their colours. Then an arena select with a live preview of each arena. |
 | D | `feat/post-match` | The winners dance; "press to continue" prompt; a results screen with per-player stats (K.O.s, falls, damage dealt and taken, hits, longest combo) and a replay of each K.O.: the frames before it, slowing to slow motion at the blow. |
-| E | `feat/move-list` | Move list: every move and combo, grouped (ground, smash, air, special, sword, gun); the selected move plays on a robot in a loop with its input. |
+| E | `feat/move-list` | Move list: every move and combo, grouped (ground, smash, air, special, sword, gun); the selected move plays on a Kubot in a loop with its input. |
 
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
@@ -664,7 +664,7 @@ PRs B to E each build on the previous one where they touch the same scenes
 ### Phase 11 A — heavier fall, dodge roll, debug fix (2026-10-21)
 
 - **Heavier fall**: the jump is unchanged (20.5 u/s under 44 u/s², about
-  4.6 units, 433 ms up), but past the apex robots fall under 132 u/s²
+  4.6 units, 433 ms up), but past the apex Kubotz fall under 132 u/s²
   (`FALL_GRAVITY_BONUS` 0.1 → 2) up to a terminal 32 u/s (none before).
   The fall from a full jump takes 283 ms instead of 450 ms (air time
   883 → 717 ms). Fast fall (down held past the apex, no longer while rising)
@@ -676,9 +676,9 @@ PRs B to E each build on the previous one where they touch the same scenes
   with the guard up or both at once; running into a guard just guards):
   - 3.4 units in 330 ms (fast off the mark, slowing to a stop), then 110 ms
     of end lag; intangible from 30 to 300 ms; 150 ms before the next one.
-  - Passes through robots (the body's `ghost`, kept until it no longer
-    overlaps one: `KubotzBody.overlapsRobot`); stops at walls; rolling off
-    an edge ends it and the robot falls.
+  - Passes through Kubotz (the body's `ghost`, kept until it no longer
+    overlaps one: `KubotzBody.overlapsKubot`); stops at walls; rolling off
+    an edge ends it and the Kubot falls.
   - Ends facing back the way it came (Melee). Clips `roll` (forward ninja
     roll from a crouch into a low tuck) and `rollBack`; afterimages like the
     air dodge.
@@ -688,7 +688,7 @@ PRs B to E each build on the previous one where they touch the same scenes
   - CPUs roll now and then instead of guarding a swing (mostly through the
     attacker), and when cornered while low on health.
 - **Debug crash** (F3 on, off, on): the Debug scene object is reused on
-  every launch and kept its robot labels, destroyed when the scene stopped;
+  every launch and kept its Kubot labels, destroyed when the scene stopped;
   the next update called `setText` on a destroyed text (null canvas).
   `DebugScene.create` now resets the labels and the frame times. The panel
   also shows the falling gravity.
@@ -705,7 +705,7 @@ PRs B to E each build on the previous one where they touch the same scenes
   emission (`ParticleFx`), the impact sparks, bits, motes and dust
   (`ImpactFx.add`; single flashes, rings and beams stay until 0), portal
   motes, the power-up sparkle burst, screen shake trauma, the hit and K.O.
-  glows/lights, the robots' white hit flash (off at 0) and the grade pass
+  glows/lights, the Kubotz' white hit flash (off at 0) and the grade pass
   (on from 0.5; F still toggles it for the match).
 - `scenes/SettingsScene.ts`: three sliders (music, sound effects, visual
   effects) and Back; arrows / WASD, D-pad or stick (held keys repeat),
@@ -728,10 +728,10 @@ PRs B to E each build on the previous one where they touch the same scenes
 - **JoinScene** (Smash character select): four slots. Keyboard 1 (O), keyboard
   2 (,) or a gamepad (A) joins, special (P / N / B) leaves (with nobody in,
   back to the title); up / down cycles the helmet, left / right the colour.
-  The colour is the faction. A live preview of each robot (the rig in its
-  colour and helmet, idling, a taunt on a change). CPUs 0-3 (max 4 robots;
+  The colour is the faction. A live preview of each Kubot (the rig in its
+  colour and helmet, idling, a taunt on a change). CPUs 0-3 (max 4 Kubotz;
   + / -, gamepad L / R, or the mouse), each CPU's colour and helmet set with
-  the mouse (or keys 1-4 for a slot's colour). Goes on with two robots on at
+  the mouse (or keys 1-4 for a slot's colour). Goes on with two Kubotz on at
   least two teams. The choices stay in the registry (`join`).
 - **ArenaScene**: a picture of each arena (its tile art drawn small with the
   same `eachTile` GameScene bakes from, the rims and portals), name, blurb,
@@ -746,7 +746,7 @@ PRs B to E each build on the previous one where they touch the same scenes
   nobody) is left: `GameScene.winnerTeam`, `'match-over'` carries the team,
   `GameScene.result()` gives the `MatchResult` (stats left empty for D).
 - **HUD**: a team tag in the team colour on each panel; with two teams each
-  side of the screen is one team; the banner names the team (or the robot
+  side of the screen is one team; the banner names the team (or the Kubot
   if it is alone).
 - Humans who join with a gamepad drive with that pad only, keyboard players
   with their keys only.
@@ -766,7 +766,7 @@ PRs B to E each build on the previous one where they touch the same scenes
 - One data table, `game/MoveList.ts`: each entry is a list of steps (a clip
   and its length, the strike it plays, a held smash charge, a jump, a set
   velocity, a ledge get-up path, until-landing...). No per-move code.
-- The preview plays the steps on a `Robot2D` in a loop with a 650 ms pause:
+- The preview plays the steps on a `Kubot2D` in a loop with a 650 ms pause:
   real clips, weapon maps (sword, gun, fire gauntlet), root motion and
   bursts as body travel, gravity and landing on a floor line (a ledge block
   for the ledge entries), afterimages, a glow on the striking points during
@@ -794,17 +794,17 @@ rapid and then a few frames before the kill slow motions."
   capped at the health left, hits landed, combos = hits landing before the
   last one's hitstun wore off) and one in `GameScene.checkDeaths` (K.O.s,
   falls). Guarded and shielded hits do not count. Until match setup gives
-  robots teams, `team` = slot index.
-- **Kill replays** (game/Replay.ts): `Robot2D.lastDraw` keeps the arguments
+  Kubotz teams, `team` = slot index.
+- **Kill replays** (game/Replay.ts): `Kubot2D.lastDraw` keeps the arguments
   of every draw (pose, part maps, place, yaw, lean, squash, flash, by
-  reference: no copies); `ReplayRecorder` keeps 6 s of frames (robots and
+  reference: no copies); `ReplayRecorder` keeps 6 s of frames (Kubotz and
   the camera's centre, zoom and roll) and on each K.O. cuts out from 2.6 s
   before the blow (the victim's last hit if within 3 s, else the K.O.) to
   0.6 s after the K.O.
 - **ResultsScene**: three cameras (backdrop, arena, screen). The stats table
-  (a row per robot in its colour, the best of each column lit, the winner
+  (a row per Kubot in its colour, the best of each column lit, the winner
   marked), then each K.O. over the arena art (its textures outlive the
-  match) with the robots redrawn by Robot2D from the frames, interpolated:
+  match) with the Kubotz redrawn by Kubot2D from the frames, interpolated:
   2.4x through the run-up, easing into 0.2x just before the blow, held
   through the hit, back to 1x for the flight, and the victim bursting apart
   at the K.O. "K.O. 2/3  P1 K.O.'d CPU 2" on top. Attack / Enter skips to the
@@ -812,7 +812,7 @@ rapid and then a few frames before the kill slow motions."
   replays the K.O.s again). Not redrawn in replays: sabre glow, bullets,
   particles, power-up balls.
 
-## Exploration — a 2.5D look for the arenas and the robots (2026-10-21, `explore/2.5d`)
+## Exploration — a 2.5D look for the arenas and the Kubotz (2026-10-21, `explore/2.5d`)
 
 The owner wants to try a more 2.5D look for the platforms, the ground and the
 character animations. The 3D version (phase 4) was dropped because the
@@ -821,12 +821,12 @@ animations felt stiff, not because of the look, so whatever we do must keep the
 
 | Option | What it is | Animation fluidity | Art reuse | Performance |
 |---|---|---|---|---|
-| A. Pre-rendered 3D sprites (Blender) | Render the Blender robot and blocks to sprite sheets / block images | Worst: frames are fixed, no blends between clips, every new move needs a re-render on the Windows side | Good for blocks; robot sheets per helmet, weapon and colour multiply | Good, but large textures |
+| A. Pre-rendered 3D sprites (Blender) | Render the Blender Kubot and blocks to sprite sheets / block images | Worst: frames are fixed, no blends between clips, every new move needs a re-render on the Windows side | Good for blocks; Kubot sheets per helmet, weapon and colour multiply | Good, but large textures |
 | B. Perspective blocks in engine | Each block keeps its front face (the original tile art) and gets a top, bottom and side faces drawn towards a vanishing point at the camera centre, so they shift as the camera moves; a dim, slower parallax copy of the arena behind | Not affected | Full: faces are made from the original tile art | Cheap: a few hundred quads redrawn when the camera moves |
 | C. Volumetric rig parts | Keep the rig and its clips, but lift every part image into a rounded volume (the same method as the Blender port: distance from the edge gives the thickness) and render it at several yaw angles at boot, with real normal maps; turns and spins then show the part's side instead of a squeezed flat image | Best: same clips and blends, with real volume in turns | Full: works from the part images, so every helmet, weapon and player colour comes for free | Boot-time cost (a few views per part), nothing per frame |
 | D. Drawn side faces and foreshortening only | Fake thickness by stacking darker copies of each part during a turn | Same as now | Full | Cheap, but reads as cardboard |
 
-**Recommendation: B for the arenas plus C for the robots.** Both keep the
+**Recommendation: B for the arenas plus C for the Kubotz.** Both keep the
 original art and the rig, need no Blender round trip, and react to the camera
 and the turns, which is what sells 2.5D. Blender pre-renders (A) stay an option
 later for hero props or backgrounds.
@@ -835,9 +835,9 @@ later for hero props or backgrounds.
 "The Kube 2.5D", get the perspective blocks and a parallax back layer. `V`
 toggles the 2.5D look on and off in a match.
 
-**Owner feedback (2026-10-21)**: the volumetric robot parts (C) were tried and
+**Owner feedback (2026-10-21)**: the volumetric Kubot parts (C) were tried and
 dropped: the owner prefers the normal 2D characters, and scaling the art
-layers in front of the play plane moved the robots off their platforms. The
+layers in front of the play plane moved the Kubotz off their platforms. The
 arena perspective stays, made much shallower (the front faces sit exactly on
 the play plane, the back edges 4.5% in, about what the portals' ovals imply), with "The Kube 2.5D" beside
 "The Kube" for a side-by-side comparison.
@@ -854,14 +854,14 @@ result), following the replay camera; `V` works there too.
 
 ## Phase 12 — HUD and menus (`feat/hud-menus`, 2026-10-21)
 
-Goal: one visual language for the HUD and every menu, taken from the robots
+Goal: one visual language for the HUD and every menu, taken from the Kubotz
 and the Kube instead of the 2015 mock-up badges, keeping the original logo and
 the Okuba Cloud / Exo 2 pairing.
 
 **Visual language ("Kube plate").**
 - Panels are hard-edged gunmetal plates like the Kube's walls: a dark blue-grey
   vertical gradient, a 1 px lighter bevel on top, two opposite corners cut at
-  45° (the robots' helmet and armour cut), no rounded corners.
+  45° (the Kubotz' helmet and armour cut), no rounded corners.
 - Light comes from cyan strips (the logo neon, `NEON` 0x29abe2) along one
   edge, with a soft glow, like the arenas' lit block edges. Selection = the
   strip lights up and the plate slides in a few pixels.
@@ -892,12 +892,12 @@ the Okuba Cloud / Exo 2 pairing.
 - Title: the original logo unchanged; menu entries become plate buttons.
 - Settings: one plate per slider, cyan track and square knob.
 - Title subtitle: "ARENA" in Okuba Cloud with the logo's neon, spaced out
-  under the logo (KUBOTZ ARENA), replacing "robot arena brawler".
+  under the logo (KUBOTZ ARENA), replacing "Kubot arena brawler".
 - Title, join, arena select and move list sit on the Kube's blurred backdrop
   (`kubeBackdrop`: the match's BackdropScene with bokeh, shafts and haze).
 - Join, arena select, move list and results keep their layouts with plate
   panels: seat plates lit in the seat colour, the arena preview set in a lit
-  plate, the move list panels as plates, a plate per robot on the results.
+  plate, the move list panels as plates, a plate per Kubot on the results.
 - Transitions: a short "shutter" (two plates closing from the sides with a
   cyan seam, then opening) between menu scenes, about 350 ms, skipped when
   visual effects are at 0.
@@ -907,17 +907,17 @@ select, move list, results.
 
 ### Hologram spawns (`feat/hologram-spawn`)
 
-Owner: robots appear on a floating hologram projector at the match start
+Owner: Kubotz appear on a floating hologram projector at the match start
 and on every respawn, materialize out of scan lines, then the beam recedes
 and they drop; on a K.O. the parts scan out one by one instead of fading.
 
 - **fx/Hologram.ts** holds all of it. `spawnLook(age)` is the sequence
   (2.3 s): the projector floats in (0–0.3 s), the beam opens (0.2–0.5 s),
-  a scan line draws the robot from the feet up (0.42–1.3 s), the cyan
-  hologram turns solid (1.3–1.72 s), the robot is let go at 1.75 s and
+  a scan line draws the Kubot from the feet up (0.42–1.3 s), the cyan
+  hologram turns solid (1.3–1.72 s), the Kubot is let go at 1.75 s and
   drops (it hangs `HOVER` = 1.1 units over its spawn), the beam recedes and
   the projector flies off and powers down.
-- `HologramPipeline`: a per-object post pass on the robot's container (and
+- `HologramPipeline`: a per-object post pass on the Kubot's container (and
   on debris pieces): cyan tint from the lit colours, 3 px scan lines
   drifting up, flicker, rows slipping sideways, a bright edge at the line,
   a faint scan-line outline ahead of it. Without WebGL it just fades.
@@ -925,13 +925,13 @@ and they drop; on a K.O. the parts scan out one by one instead of fading.
   an antigravity glow) and the beam (layered cones, rising scan lines) are
   drawn with two Graphics; a cyan point light joins the glow pool.
   `holo-spawn` is a synth sound made in the module.
-- While a robot materializes the invincibility motes swirl round it in the
+- While a Kubot materializes the invincibility motes swirl round it in the
   hologram's cyan (`ImpactFx.aura(k, 'hologram', HOLO_COLOR)`, also in replays).
 - Kubotz: `materializeUntil`: held in the beam (body off, no controls,
   idle pose), intangible, full alpha. GameScene: `HoloSpawns.start` at the
   match start (during the countdown) and in `respawn`.
 - Debris: each piece gets its own end time over the last 1.1 s of its 3.2 s
   and scans out from the top for 0.65 s (`holoPiece`).
-- Replays: `RobotFrame.holo` = [age, projector x, feet y]; ResultsScene
+- Replays: `KubotFrame.holo` = [age, projector x, feet y]; ResultsScene
   redraws the hologram and projector from it, and its own K.O. pieces scan
   out before the replay moves on.

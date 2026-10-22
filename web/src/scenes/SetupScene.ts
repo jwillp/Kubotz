@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Config } from '../config';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import {
@@ -89,7 +89,7 @@ interface Slot {
   slotNo: Phaser.GameObjects.Text;
   blurb: Phaser.GameObjects.Text;
   rows: Record<Field, Row>;
-  robot: Robot2D;
+  kubot: Kubot2D;
   anim: Animator;
   /** The colour the preview's parts are painted in. */
   color: number;
@@ -158,7 +158,7 @@ class StartButton extends Phaser.GameObjects.Container {
 }
 
 /**
- * The setup screen: arena, rules and robots on one page (it replaced the
+ * The setup screen: arena, rules and Kubotz on one page (it replaced the
  * join screen and the arena select). The chosen arena fills the background,
  * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.
@@ -331,9 +331,9 @@ export class SetupScene extends Phaser.Scene {
         ],
       };
     });
-    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, robot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
-    // The robot stands over the top right of its slot, in front of the plate.
-    slot.robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
+    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, kubot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
+    // The Kubot stands over the top right of its slot, in front of the plate.
+    slot.kubot = new Kubot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
     slot.anim.play('idle', { restart: true });
     return slot;
   }
@@ -437,7 +437,7 @@ export class SetupScene extends Phaser.Scene {
   /** The slots in the match (a slot still waiting for a pad is one). */
   private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF'); }
 
-  /** Why START is greyed out, if it is: too few robots (the grey button says it), or everyone on one team. */
+  /** Why START is greyed out, if it is: too few Kubotz (the grey button says it), or everyone on one team. */
   private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
     if (seats.length < 2) return 'few';
@@ -627,7 +627,7 @@ export class SetupScene extends Phaser.Scene {
       p.rows[field].label.setVisible(!off);
       for (const a of p.rows[field].arrows) a.setVisible(!off);
     }
-    p.robot.visible = !off;
+    p.kubot.visible = !off;
   }
 
   // ------------------------------------------------------------------- frame
@@ -643,9 +643,9 @@ export class SetupScene extends Phaser.Scene {
       if (p.anim.finished) p.anim.play('idle', { fade: 150 });
       const head = HEADS[seats[i].helmet];
       // Standing over the slot's top right, facing into the slot.
-      p.robot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
+      p.kubot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
         { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
-      p.robot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
+      p.kubot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
     });
   }
 

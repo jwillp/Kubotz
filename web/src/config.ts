@@ -6,9 +6,9 @@
 export const UNIT = 64;
 
 export const Config = {
-  GRAVITY: 44, // PhysicsSystem had 40; a touch heavier (owner, phase 10). Robots rise under this.
+  GRAVITY: 44, // PhysicsSystem had 40; a touch heavier (owner, phase 10). Kubotz rise under this.
   /**
-   * Extra gravity on robots once they fall (fraction of GRAVITY), Melee-style
+   * Extra gravity on Kubotz once they fall (fraction of GRAVITY), Melee-style
    * heavy bodies: a normal jump, then pulled back down hard past the apex
    * (phase 11 A: 0.1 -> 2, so 48.4 -> 132 u/s² on the way down).
    */
@@ -39,12 +39,12 @@ export const Config = {
   PUNCH_COOLDOWN: 80,
   PUNCH_KNOCKBACK: 9, // original passed 0; the owner wants hits to push
   // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (health lost / max health), as in Ultimate:
-  // health runs from 100 % down to 0 % (when the robot explodes), and 0 % stands for Ultimate's
+  // health runs from 100 % down to 0 % (when the Kubot explodes), and 0 % stands for Ultimate's
   // practical 300 %. Ultimate's knockback formula (Mario's forward smash) launches about 3x
   // harder at 100 % than at 0 %, 4x at 150 % and 7x at 300 %, close to 1 + 6.2 x (% / 300).
   KNOCKBACK_GROWTH: 6.2,
   // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT, like SSB's 0.4 x knockback;
-  // past TUMBLE_HITSTUN the robot tumbles, bouncing off walls and ceilings.
+  // past TUMBLE_HITSTUN the Kubot tumbles, bouncing off walls and ceilings.
   HITSTUN_BASE: 120,
   HITSTUN_PER_UNIT: 30,
   HITSTUN_MAX: 1500,
@@ -67,7 +67,7 @@ export const Config = {
   BULLET_LIFESPAN: 5000,
 
   // Guard bubble (held, like Super Smash Bros.' shield): drains while held and
-  // when hit, refills when released; breaking it stuns the robot.
+  // when hit, refills when released; breaking it stuns the Kubot.
   GUARD_MAX: 50,
   GUARD_DRAIN: 10, // per second while held
   GUARD_REGEN: 8, // per second while released
@@ -78,7 +78,7 @@ export const Config = {
   AIR_DODGE_SPEED: 16,
   AIR_DODGE_DURATION: 350, // intangible: attacks and bullets pass through
   // Guard + left / right on the ground: dodge roll (SSB), intangible for most of it,
-  // passing through robots.
+  // passing through Kubotz.
   // Timed like Ultimate's (Mario): intangible frames 4-15, over by frame 31.
   ROLL_DISTANCE: 3.4, // units
   ROLL_DURATION: 330, // ms of travel

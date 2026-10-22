@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import type { SpriterData } from '../spriter/Spriter';
 import {
   GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
@@ -35,10 +35,10 @@ const FALL_GRAVITY = Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS);
 const ease = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * One play-through of an entry's steps on a robot: the clips in order, with
+ * One play-through of an entry's steps on a Kubot: the clips in order, with
  * just enough body motion to read them (jumps and gravity, root motion of
  * strikes, bursts of specials, recoil, ledge get-ups along their path).
- * Positions are stage pixels: x forwards (the robot faces right), y down,
+ * Positions are stage pixels: x forwards (the Kubot faces right), y down,
  * the ground at y = 0.
  */
 class PreviewRun {
@@ -123,7 +123,7 @@ class PreviewRun {
     } else if (!s?.float || this.done) {
       if (!this.grounded || this.vy < 0) this.vy += (this.vy > 0 ? FALL_GRAVITY : Config.GRAVITY) * UNIT * dt;
       if (s?.hover && t < s.hover) this.vy = Math.min(this.vy, 2 * UNIT);
-      // Strikes carry the robot forwards with their motion.
+      // Strikes carry the Kubot forwards with their motion.
       const travel = this.anim.takeRootMotion() * ART_SCALE * ROOT_MOTION_GAIN;
       if (m && travel > 0) this.x += Math.min(travel, 26 * UNIT * dt);
       const prevY = this.y;
@@ -148,7 +148,7 @@ class PreviewRun {
   }
 }
 
-/** Where a held robot sits from its holder (units, x forwards, y up), as Kubotz.placeHeld puts it: `u` is 0..1 to the throw's release. */
+/** Where a held Kubot sits from its holder (units, x forwards, y up), as Kubotz.placeHeld puts it: `u` is 0..1 to the throw's release. */
 function heldOffset(kind: ThrowKind | null, u: number): [number, number] {
   switch (kind) {
     case 'forward': return [u < 0.66 ? 1.05 - 0.4 * (u / 0.66) : 0.65 + 1.0 * ((u - 0.66) / 0.34), 0.15];
@@ -163,7 +163,7 @@ const THROW_OF: Record<string, ThrowKind> = Object.fromEntries(
   (Object.keys(THROWS) as ThrowKind[]).map((k) => [THROWS[k].anim, k]));
 
 /**
- * The second robot of the grab previews: it stands in reach facing the
+ * The second Kubot of the grab previews: it stands in reach facing the
  * first, is caught by the grab, held and kneed, carried round by a throw
  * and launched at its release (or by a strike that reaches it), then falls,
  * lands flat and gets up. Stage pixels, like PreviewRun.
@@ -258,12 +258,12 @@ interface Bolt { img: Phaser.GameObjects.Image; vx: number; until: number }
 
 /**
  * The move list: every move and combo, grouped, with its inputs and numbers;
- * the selected one plays on a robot in a loop.
+ * the selected one plays on a Kubot in a loop.
  */
 export class MoveListScene extends Phaser.Scene {
   private rig!: Rig;
-  private robot!: Robot2D;
-  private victimRobot!: Robot2D;
+  private kubot!: Kubot2D;
+  private victimKubot!: Kubot2D;
   private run!: PreviewRun;
   private victim: Victim | null = null;
   private speedButtons: { box: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text }[] = [];
@@ -289,7 +289,7 @@ export class MoveListScene extends Phaser.Scene {
   private nextGhostAt = 0;
   private bolts: Bolt[] = [];
   private padPrev = { up: false, down: false, back: false, speed: false };
-  /** Set by back(): the scene stops at the next step, so nothing may draw the destroyed robot meanwhile. */
+  /** Set by back(): the scene stops at the next step, so nothing may draw the destroyed Kubot meanwhile. */
   private leaving = false;
   private padRepeatAt = 0;
 
@@ -423,10 +423,10 @@ export class MoveListScene extends Phaser.Scene {
     for (const file of ['feet/foot.png', 'feet/foot-sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.stage = this.add.graphics().setDepth(5);
     this.fx = this.add.graphics().setDepth(11).setBlendMode(Phaser.BlendModes.ADD);
-    this.robot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
+    this.kubot = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
     // The grabbed one, just behind the grabber's hands.
-    this.victimRobot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, VICTIM_COLOR));
-    this.victimRobot.view.setDepth(9.5);
+    this.victimKubot = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, VICTIM_COLOR));
+    this.victimKubot.view.setDepth(9.5);
     this.cam = this.cameras.add(PANEL.x, PANEL.y, PANEL.w, PANEL.h).setBackgroundColor('rgba(0,0,0,0)');
     this.lights.enable().setAmbientColor(0x7a86ac);
     this.light = this.lights.addLight(STAGE_X, STAGE_Y - 4 * UNIT, 12 * UNIT, 0xffe8cc, 2.6);
@@ -442,7 +442,7 @@ export class MoveListScene extends Phaser.Scene {
     // Frame the whole move: centred on its travel, zoomed out for high or long ones.
     const e = extent(entry, this.rig);
     this.offsetX = -(e.minX + e.maxX) / 2;
-    // The floor sits low in the panel; higher for ledges, where the robot hangs below it.
+    // The floor sits low in the panel; higher for ledges, where the Kubot hangs below it.
     const floor = entry.ledge ? 0.62 : 0.8;
     const w = e.maxX - e.minX + 3 * UNIT;
     const h = -Math.min(0, e.top) + 2.8 * UNIT;
@@ -458,7 +458,7 @@ export class MoveListScene extends Phaser.Scene {
     const anim = new Animator(this.rig);
     this.run = new PreviewRun(this.entry, anim);
     this.victim = this.entry.victim ? new Victim(new Animator(this.rig)) : null;
-    this.victimRobot.view.setVisible(!!this.victim);
+    this.victimKubot.view.setVisible(!!this.victim);
     this.pauseUntil = 0;
     this.draw(0, true);
   }
@@ -513,7 +513,7 @@ export class MoveListScene extends Phaser.Scene {
     const build = holding ? r.stepMs / s!.charge! : s?.gather ? r.stepMs / s.ms : 0;
     const shake = build > 0 ? Math.sin(now / 18) * 2.5 * build : 0;
     const pose = r.anim.pose();
-    this.robot.update(pose, this.maps(), x + shake, bottom, pose.yaw ?? 0, {
+    this.kubot.update(pose, this.maps(), x + shake, bottom, pose.yaw ?? 0, {
       dtMs, lean: 0, squash: 1, snap,
       alpha: s?.ghostly ? 0.55 : 1,
       flash: build > 0.98 && Math.floor(now / 60) % 2 === 0,
@@ -522,20 +522,20 @@ export class MoveListScene extends Phaser.Scene {
     const v = this.victim;
     if (v) {
       const vp = v.anim.pose();
-      this.victimRobot.update(vp, HEADS[2] ? [HEADS[2]] : [], STAGE_X + this.offsetX + v.x, STAGE_Y + v.y, 180 + (vp.yaw ?? 0), {
+      this.victimKubot.update(vp, HEADS[2] ? [HEADS[2]] : [], STAGE_X + this.offsetX + v.x, STAGE_Y + v.y, 180 + (vp.yaw ?? 0), {
         dtMs, lean: 0, squash: 1, snap, alpha: 1, flash: v.flash, glitch: v.flash,
       });
     }
     const m = s?.move;
     if (m?.ghosts && !holding && now >= this.nextGhostAt) {
       this.nextGhostAt = now + 38;
-      this.robot.ghost(COLOR, 210);
+      this.kubot.ghost(COLOR, 210);
     }
     const g = this.fx.clear();
     // The strike's active part: a glow on the striking points.
     if (m && !holding && r.progress >= m.active[0] && r.progress <= m.active[1]) {
       const sword = m.points[0]?.file === SWORD_FILE;
-      let pts = m.points.flatMap((p) => this.robot.pointsOn(p.file, p.x, p.y));
+      let pts = m.points.flatMap((p) => this.kubot.pointsOn(p.file, p.x, p.y));
       if (!sword && !m.all && pts.length) {
         const best = pts.reduce((a, b) => ((m.behind ? b.x < a.x : b.x > a.x) ? b : a));
         pts = [best];
@@ -552,7 +552,7 @@ export class MoveListScene extends Phaser.Scene {
       g.lineStyle(3, 0xffffff, 0.6).strokeCircle(x, bottom - UNIT, rad);
     }
     if (s?.gather) {
-      const tip = this.robot.pointOn(GUN_FILE, PART_TIPS.gun.x, PART_TIPS.gun.y);
+      const tip = this.kubot.pointOn(GUN_FILE, PART_TIPS.gun.x, PART_TIPS.gun.y);
       if (tip) {
         const c = Math.min(1, r.stepMs / s.ms);
         g.fillStyle(COLOR, 0.35).fillCircle(tip.x, tip.y, 6 + 18 * c);
@@ -563,7 +563,7 @@ export class MoveListScene extends Phaser.Scene {
 
   /** A laser bolt from the muzzle, as GameScene fires them (size and speed by charge). */
   private fire(c: number): void {
-    const tip = this.robot.pointOn(GUN_FILE, PART_TIPS.gun.x, PART_TIPS.gun.y)
+    const tip = this.kubot.pointOn(GUN_FILE, PART_TIPS.gun.x, PART_TIPS.gun.y)
       ?? { x: STAGE_X + this.offsetX + this.run.x + UNIT * 1.1, y: STAGE_Y + this.run.y - UNIT * 1.15 };
     const key = `bullet:${hex(COLOR)}`;
     const size = 0.75 + 1.9 * c;
@@ -621,8 +621,8 @@ export class MoveListScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     for (const b of this.bolts) b.img.destroy();
-    this.robot.destroy();
-    this.victimRobot.destroy();
+    this.kubot.destroy();
+    this.victimKubot.destroy();
     this.lights.disable();
     this.cameras.remove(this.cam);
     shutter(this, () => this.scene.start('Title'), 'back');
