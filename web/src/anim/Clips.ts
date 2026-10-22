@@ -1,7 +1,7 @@
 import { BONES, STANCE, type Bone, type Pose } from './Rig';
 
 /**
- * The robots' animation set, written as keyed poses (see Rig.ts for how a pose
+ * The Kubotz' animation set, written as keyed poses (see Rig.ts for how a pose
  * reads: bone directions facing right, 0 = forwards, 90 = up). Strikes wind
  * up, snap out and hold before settling back; every clip blends into the next
  * (Animator.ts).
@@ -323,7 +323,7 @@ export const CLIPS: Record<string, Clip> = {
   /**
    * Victory dance (phase 11 D), a ninja's few beats, looping: a hand seal and
    * a bow, then one knee dips low with the fist drawn in,
-   * and the robot springs up into a "yes!": the elbow pulled down, the fist
+   * and the Kubot springs up into a "yes!": the elbow pulled down, the fist
    * up and back, pumped once.
    */
   victory: clip('victory', 2600, [
@@ -502,7 +502,7 @@ export const CLIPS: Record<string, Clip> = {
   ]),
 
   // ------------------------------------------------ grabs (Melee-style)
-  /** Holding a grabbed robot out in front, both hands clamped on it. */
+  /** Holding a grabbed Kubot out in front, both hands clamped on it. */
   grabHold: clip('grabHold', 700, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, head: 88, shoulderF: -2, armF: 6, handF: 10, shoulderB: 8, armB: 14, handB: 18, thighF: -40, legF: -100 } },
     { t: 0.5, pose: { ...READY, tilt: 7, x: 14, y: -3, torso: 80, head: 86, shoulderF: 2, armF: 8, handF: 12, shoulderB: 12, armB: 16, handB: 20, thighF: -38, legF: -104 }, ease: 'inOut' },
@@ -514,7 +514,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 0.5, pose: { torso: 100, head: 106, tilt: -4, thighF: -95, legF: -120, footF: -92, thighB: -88, legB: -100, footB: -76, shoulderF: -130, armF: -100, shoulderB: 170, armB: 150 }, ease: 'inOut' },
   ], { loop: true, planted: false }),
 
-  /** Pummel: a knee into the held robot. */
+  /** Pummel: a knee into the held Kubot. */
   pummel: clip('pummel', 320, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
     { t: 0.35, pose: { ...READY, tilt: 10, x: 24, torso: 78, shoulderF: 4, armF: 10, shoulderB: 14, armB: 18, thighF: 30, legF: -70, footF: -40 }, ease: 'snap' },
@@ -529,7 +529,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Back throw: a full spin, slinging the robot out behind. */
+  /** Back throw: a full spin, slinging the Kubot out behind. */
   throwB: clip('throwB', 520, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14, yaw: 0 } },
     { t: 0.4, pose: { ...READY, torso: 92, shoulderF: 6, armF: 8, shoulderB: 12, armB: 16, thighF: -60, legF: -100, thighB: -110, legB: -120, yaw: 150 }, ease: 'in' },
@@ -537,7 +537,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...FIGHT, yaw: 360 }, ease: 'out' },
   ]),
 
-  /** Up throw: dips, then hurls the robot straight overhead. */
+  /** Up throw: dips, then hurls the Kubot straight overhead. */
   throwU: clip('throwU', 480, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
     { t: 0.3, pose: { ...CROUCH, torso: 84, head: 90, shoulderF: -40, armF: -10, shoulderB: -30, armB: 0 }, ease: 'out' },
@@ -545,7 +545,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Down throw: raises the robot, then slams it into the floor. */
+  /** Down throw: raises the Kubot, then slams it into the floor. */
   throwD: clip('throwD', 480, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
     { t: 0.3, pose: { ...READY, torso: 100, head: 104, tilt: -6, shoulderF: 80, armF: 90, shoulderB: 74, armB: 86 }, ease: 'out' },

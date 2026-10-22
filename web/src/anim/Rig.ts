@@ -1,13 +1,13 @@
 import type { SpriterData, SpriterFile } from '../spriter/Spriter';
 
 /**
- * The robot's skeleton, taken from the first frame of the original Idle
+ * The Kubot's skeleton, taken from the first frame of the original Idle
  * animation in kubotz.scml: 15 bones and the part images on them. The new
  * clips (see Clips.ts) pose it.
  *
- * Spriter space: pixels, y up, angles in degrees counter-clockwise, the robot
+ * Spriter space: pixels, y up, angles in degrees counter-clockwise, the Kubot
  * facing left (-x) like the original art. Poses are written as seen with the
- * robot facing right: each bone's direction (0 = forwards, 90 = up, -90 =
+ * Kubot facing right: each bone's direction (0 = forwards, 90 = up, -90 =
  * down) in the body's frame. Bones a pose leaves out keep their stance angle
  * to their parent (the head follows the torso).
  *
@@ -48,14 +48,14 @@ export interface Xf { x: number; y: number; angle: number; scaleX: number; scale
  * whole body's offset (Spriter pixels, x forwards, y up), tilt (degrees,
  * positive = leaning forwards, round the feet) and spin (degrees, positive =
  * a forward flip, round the middle of the body) and yaw (degrees round the
- * vertical axis, for spins; drawn by Robot2D, not the skeleton).
+ * vertical axis, for spins; drawn by Kubot2D, not the skeleton).
  */
 export type Pose = Partial<Record<Bone, number>> & { x?: number; y?: number; tilt?: number; spin?: number; yaw?: number };
 
 interface RigBone { name: Bone; parent: number; rest: Xf; }
 interface RigPart { name: string; parent: number; local: Xf; z: number; folder: number; file: number; pivotX?: number; pivotY?: number; }
 
-/** One drawn part of a posed robot (Spriter space). */
+/** One drawn part of a posed Kubot (Spriter space). */
 export interface PosedPart {
   name: string;
   file: SpriterFile;

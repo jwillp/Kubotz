@@ -172,7 +172,7 @@ export interface PosedObject {
 
 /**
  * Plays one animation of a SpriterData and computes the pose (bones + parts)
- * for any renderer: the 3D robots use it to drive their parts.
+ * for any renderer: the 3D Kubotz use it to drive their parts.
  */
 export class SpriterAnimator {
   private anim!: SpriterAnimation;
