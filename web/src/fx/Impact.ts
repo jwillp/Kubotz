@@ -7,16 +7,17 @@ import { EffectDef, ParticleFx } from './ParticleEffect';
 /**
  * The original laserSmoke effect (.pe) layered behind the K.O. smoke, drawn
  * as many small puffs cel-shaded like it: 'trails' streams it behind the
- * flying puffs, 'full' also boils a cloud of it out of the core. L cycles it in a match; ?laser=off|trails|full.
+ * flying puffs, 'full' also boils a cloud of it out of the core. 'alone' shows
+ * full laserSmoke without the main smoke or its glitch. L cycles it in a match;
+ * ?laser=full|trails|alone|off.
  */
-export type LaserSmokeMode = 'off' | 'trails' | 'full';
-export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['full', 'trails', 'off'];
+export type LaserSmokeMode = 'off' | 'trails' | 'full' | 'alone';
+export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['full', 'trails', 'alone', 'off'];
 export const laserSmoke = { mode: ((): LaserSmokeMode => {
   const q = new URLSearchParams(location.search).get('laser');
   return LASER_SMOKE_MODES.includes(q as LaserSmokeMode) ? q as LaserSmokeMode : 'full';
 })() };
-/** Exploration: ?laseronly=1 shows the laserSmoke layer alone, unglitched. */
-const LASER_ONLY = new URLSearchParams(location.search).has('laseronly');
+const laserAlone = () => laserSmoke.mode === 'alone';
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
@@ -251,7 +252,7 @@ export class ImpactFx {
         follow: () => (p.age < p.life * 0.8 ? p : null),
       });
     }
-    if (laserSmoke.mode !== 'full') return;
+    if (laserSmoke.mode === 'trails') return;
     // Many small puffs boiling out of the core, in a few bursts.
     for (let i = 0; i < 4; i++) {
       const a = rand(0, Math.PI * 2);
@@ -400,13 +401,13 @@ export class ImpactFx {
         left.push(at(d, -1, width));
         right.push(at(d, 1, width));
       }
-      g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
+      if (!laserAlone()) g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
     }
     // A broken signal over it all: it tears very hard at the blast (past the hits'
     // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
     const since = this.now - this.lastKoAt;
     const live = this.wisps.length > 0 || this.laser.live || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
-    hitGlitch(this.smokeView, live && !LASER_ONLY ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
+    hitGlitch(this.smokeView, live && !laserAlone() ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
   }
 
   private draw(): void {
@@ -503,7 +504,7 @@ export class ImpactFx {
     const g = this.smokeG.clear();
     // Soft haze behind the puffs, billowing out round them and lingering.
     for (const p of this.particles) {
-      if (p.kind !== 'haze' || LASER_ONLY) continue;
+      if (p.kind !== 'haze' || laserAlone()) continue;
       const f = p.age / p.life;
       g.fillStyle(p.color, 0.28 * Math.min(1, f / 0.1) * (1 - f)).fillCircle(p.x, p.y, p.size + p.grow * f);
     }
@@ -516,7 +517,7 @@ export class ImpactFx {
     for (const b of bits) g.fillStyle(b.deep, 1).fillCircle(b.x, b.y, b.r);
     for (const b of bits) g.fillStyle(b.body, 1).fillCircle(b.x - b.r * 0.16, b.y - b.r * 0.2, b.r * 0.7);
     for (const b of bits) if (b.r > 0.12 * UNIT) g.fillStyle(0xfffbe6, 1).fillEllipse(b.x - b.r * 0.34, b.y - b.r * 0.4, b.r * 0.45, b.r * 0.27);
-    const smoke = LASER_ONLY ? [] : this.particles.filter((p) => p.kind === 'smoke');
+    const smoke = laserAlone() ? [] : this.particles.filter((p) => p.kind === 'smoke');
     const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };
     for (const p of smoke) g.fillStyle(p.color, 1).fillCircle(p.x, p.y, radius(p));
