@@ -2,58 +2,58 @@
 <map version="1.0" orientation="orthogonal" renderorder="left-down" width="52" height="38" tilewidth="64" tileheight="64" nextobjectid="126">
  <tileset firstgid="1" name="Ground" tilewidth="512" tileheight="128">
   <tile id="0">
-   <image width="512" height="128" source="bottom_fade.png"/>
+   <image width="512" height="128" source="bottom-fade.png"/>
   </tile>
   <tile id="1">
-   <image width="128" height="128" source="corner_bottom_left.png"/>
+   <image width="128" height="128" source="corner-bottom-left.png"/>
   </tile>
   <tile id="2">
-   <image width="128" height="128" source="corner_bottom_right.png"/>
+   <image width="128" height="128" source="corner-bottom-right.png"/>
   </tile>
   <tile id="3">
-   <image width="128" height="128" source="corner_top_left.png"/>
+   <image width="128" height="128" source="corner-top-left.png"/>
   </tile>
   <tile id="4">
-   <image width="128" height="128" source="corner_top_right.png"/>
+   <image width="128" height="128" source="corner-top-right.png"/>
   </tile>
   <tile id="5">
-   <image width="128" height="128" source="ground_01.png"/>
+   <image width="128" height="128" source="ground-01.png"/>
   </tile>
   <tile id="6">
-   <image width="128" height="128" source="ground_02.png"/>
+   <image width="128" height="128" source="ground-02.png"/>
   </tile>
   <tile id="7">
-   <image width="128" height="128" source="ground_03.png"/>
+   <image width="128" height="128" source="ground-03.png"/>
   </tile>
   <tile id="8">
-   <image width="128" height="128" source="ground_04.png"/>
+   <image width="128" height="128" source="ground-04.png"/>
   </tile>
   <tile id="9">
-   <image width="512" height="128" source="groundComplete.png"/>
+   <image width="512" height="128" source="ground-complete.png"/>
   </tile>
   <tile id="10">
-   <image width="128" height="128" source="left_fade_01.png"/>
+   <image width="128" height="128" source="left-fade-01.png"/>
   </tile>
   <tile id="11">
-   <image width="128" height="128" source="left_fade_02.png"/>
+   <image width="128" height="128" source="left-fade-02.png"/>
   </tile>
   <tile id="12">
-   <image width="128" height="128" source="platform_01.png"/>
+   <image width="128" height="128" source="platform-01.png"/>
   </tile>
   <tile id="13">
-   <image width="128" height="128" source="platform_02.png"/>
+   <image width="128" height="128" source="platform-02.png"/>
   </tile>
   <tile id="14">
-   <image width="128" height="128" source="platform_03.png"/>
+   <image width="128" height="128" source="platform-03.png"/>
   </tile>
   <tile id="15">
-   <image width="124" height="128" source="platform_04.png"/>
+   <image width="124" height="128" source="platform-04.png"/>
   </tile>
   <tile id="16">
-   <image width="128" height="128" source="right_fade_01.png"/>
+   <image width="128" height="128" source="right-fade-01.png"/>
   </tile>
   <tile id="17">
-   <image width="128" height="128" source="right_fade_02.png"/>
+   <image width="128" height="128" source="right-fade-02.png"/>
   </tile>
   <tile id="18">
    <image width="128" height="128" source="side01.png"/>
@@ -68,19 +68,19 @@
    <image width="128" height="128" source="side4.png"/>
   </tile>
   <tile id="22">
-   <image width="128" height="128" source="top_01.png"/>
+   <image width="128" height="128" source="top-01.png"/>
   </tile>
   <tile id="23">
-   <image width="128" height="128" source="top_02.png"/>
+   <image width="128" height="128" source="top-02.png"/>
   </tile>
   <tile id="24">
-   <image width="128" height="128" source="top_03.png"/>
+   <image width="128" height="128" source="top-03.png"/>
   </tile>
   <tile id="25">
-   <image width="128" height="128" source="top_04.png"/>
+   <image width="128" height="128" source="top-04.png"/>
   </tile>
   <tile id="26">
-   <image width="512" height="128" source="top_fade.png"/>
+   <image width="512" height="128" source="top-fade.png"/>
   </tile>
   <tile id="27">
    <image width="128" height="128" source="blank.png"/>

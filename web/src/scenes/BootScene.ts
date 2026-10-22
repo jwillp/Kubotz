@@ -9,17 +9,17 @@ import { body, buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture }
 import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
-export const MAIN_MAP = 'maps/DebugMap.tmx';
+export const MAIN_MAP = 'maps/debug-map.tmx';
 /** The logo's texture is this many times the original's 298 x 134. */
 export const LOGO_RES = 3;
 
 /** Particle effects by name: the files the full-on-scripting branch plays. */
 export const PARTICLE_FILES = {
-  landingDust: 'landingDust.pe', // Constants.PARTICLES_LANDING_DUST
-  hitStars: 'eclatRouille.pe', // Constants.PARTICLES_HIT_STARS
-  laserSmoke: 'laserSmoke.pe', // Constants.PARTICLES_LASER_SMOKE
-  deathDust: 'deathDust.pe', // Constants.DEATH_DUST
-  pickUp: 'powerUpPickUp',
+  landingDust: 'landing-dust.pe', // Constants.PARTICLES_LANDING_DUST
+  hitStars: 'eclat-rouille.pe', // Constants.PARTICLES_HIT_STARS
+  laserSmoke: 'laser-smoke.pe', // Constants.PARTICLES_LASER_SMOKE
+  deathDust: 'death-dust.pe', // Constants.DEATH_DUST
+  pickUp: 'power-up-pick-up',
   stars: 'stars.pe',
 } as const;
 export type ParticleName = keyof typeof PARTICLE_FILES;
@@ -39,17 +39,17 @@ export class BootScene extends Phaser.Scene {
     this.load.image('hud-bars', 'hud-multi-bars.png');
     this.load.image('hud-timer', 'hud-multi-timer.png');
     loadHeadingFont(this);
-    this.load.image('dash-orb', 'dashOrb.png');
+    this.load.image('dash-orb', 'dash-orb.png');
     this.load.image('p-star', 'particles/star.png');
     this.load.image('p-star2', 'particles/star2.png');
     this.load.image('p-dust', 'particles/particle001.png');
     this.load.image('p-hexa', 'particles/hexa.png');
     this.load.image('p-flame', 'particles/flameche.png');
-    for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) this.load.image(`bonus_${b}`, `entities/bonus_${b}.png`);
+    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) this.load.image(`bonus-${b}`, `entities/bonus-${b}.png`);
     this.load.image('bullet', 'entities/bullet.png');
     // LibGDX particle effects (full-on-scripting branch) and their images.
     for (const [key, file] of Object.entries(PARTICLE_FILES)) this.load.text(`pe-file:${key}`, `particles/${file}`);
-    for (const img of ['pre_particle.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png']) this.load.image(`pe:${img}`, `particles/${img}`);
+    for (const img of ['pre-particle.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png']) this.load.image(`pe:${img}`, `particles/${img}`);
     // Original music and sounds (audio/Sounds.ts lists every sound).
     loadRecordedSounds(this.load);
   }
@@ -83,7 +83,7 @@ export class BootScene extends Phaser.Scene {
     const map = this.registry.get('map') as TmxMap;
     for (const file of spriter.allFiles()) addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 });
     for (const tile of map.tileImages.values()) addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 });
-    for (const b of ['gun', 'health', 'jump', 'laserSword', 'shield', 'speed']) addNormalMap(this.textures, `bonus_${b}`, { bevel: 4, detail: 0.3 });
+    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 });
     for (const color of SLOT_COLORS) {
       for (const file of HEAD_FILES) {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
@@ -136,7 +136,7 @@ export class BootScene extends Phaser.Scene {
       ctx.drawImage(img, 0, 0);
       return { d: ctx.getImageData(0, 0, img.width, img.height).data, w: img.width, h: img.height };
     };
-    // fore_arm.png pivot (0.0725, 0.111), y up
+    // fore-arm.png pivot (0.0725, 0.111), y up
     const sword = pixels(`kubotz:${SWORD_FILE}`);
     const px = 0.0725 * sword.w;
     const py = 0.111 * sword.h;

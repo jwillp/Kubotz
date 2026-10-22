@@ -420,7 +420,7 @@ export class MoveListScene extends Phaser.Scene {
     drawStrip(drawPlate(this.add.graphics(), PANEL.x - 8, PANEL.y - 8, PANEL.w + 16, PANEL.h + 16, { cut: 18, alpha: 0.8 }), PANEL.x + 10, PANEL.y - 8, PANEL.x + PANEL.w * 0.4, PANEL.y - 8, 0x29abe2, 3);
     const spriter: SpriterData = this.registry.get('spriter');
     this.rig = new Rig(spriter);
-    for (const file of ['feet/foot.png', 'feet/foot_sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
+    for (const file of ['feet/foot.png', 'feet/foot-sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.stage = this.add.graphics().setDepth(5);
     this.fx = this.add.graphics().setDepth(11).setBlendMode(Phaser.BlendModes.ADD);
     this.robot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));

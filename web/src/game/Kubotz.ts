@@ -46,8 +46,8 @@ export interface AttackBox {
 }
 
 /** Spriter files of the weapons, and points measured on their images (see BootScene). */
-export const SWORD_FILE = 'arms/lazerSword.png';
-export const GUN_FILE = 'arms/gunMk1.png';
+export const SWORD_FILE = 'arms/lazer-sword.png';
+export const GUN_FILE = 'arms/gun-mk1.png';
 export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
 
 /** Points from the sword's hilt to its tip, for the blade hitbox. */
@@ -76,10 +76,10 @@ export const TAUNT_MS = 1000;
 const HUMAN_JUMP_COOLDOWN = 140;
 
 /** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
-const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand_sha.png', x: 34, y: 34 }];
+const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand-sha.png', x: 34, y: 34 }];
 /** The fists with the fire gauntlet on (the forward smash swaps the hand image). */
-const FIRE_FISTS: PartPoint[] = [...FISTS, { file: 'arms/fireFist.png', x: 36, y: 53 }];
-const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot_sha.png', x: 24, y: 45 }];
+const FIRE_FISTS: PartPoint[] = [...FISTS, { file: 'arms/fire-fist.png', x: 36, y: 53 }];
+const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot-sha.png', x: 24, y: 45 }];
 
 /** A strike: its clip, length, striking points, effect, and the part of it (0..1) that hurts. */
 /** How a hit sends its target: speed (units/s, before damage growth), launch angle (0 forwards, 90 up), fixed hitstun for combo links. */
@@ -185,7 +185,7 @@ export interface KubotzLook { head: string | null; color: number; }
 /** Helmet shapes, one per robot in order (character maps of kubotz.scml). */
 export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull'];
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
-export const HEAD_FILES = ['head/Helmet2.png', 'head/Helmet3.png', 'head/Helmet4.png', 'head/Helmet5-grey.png'];
+export const HEAD_FILES = ['head/helmet2.png', 'head/helmet3.png', 'head/helmet4.png', 'head/helmet5-grey.png'];
 
 /** Robot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
 export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];

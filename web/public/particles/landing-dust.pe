@@ -145,7 +145,7 @@ additive: true
 behind: false
 premultipliedAlpha: false
 - Image Path -
-pre_particle.png
+pre-particle.png
 
 
 left
@@ -302,4 +302,4 @@ additive: true
 behind: false
 premultipliedAlpha: false
 - Image Path -
-pre_particle.png
+pre-particle.png

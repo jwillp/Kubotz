@@ -39,7 +39,7 @@ function kube(floor: Rect[] = [[6, 34, 40, 3]]): Pick<ArenaDef, 'walls' | 'warps
 }
 
 export const ARENAS: (ArenaDef | null)[] = [
-  null, // the original map (DebugMap.tmx)
+  null, // the original map (debug-map.tmx)
   {
     name: 'The Foundry',
     blurb: 'Two pillars and a block in the middle',
@@ -104,25 +104,25 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
       const xs = along(x, w, 2);
       xs.forEach((cx, i) => {
         const n = i === 0 ? 1 : i === xs.length - 1 ? 4 : pick(2, 3);
-        put('blocks', `${ceiling ? 'top' : 'ground'}_0${n}.png`, cx, y);
+        put('blocks', `${ceiling ? 'top' : 'ground'}-0${n}.png`, cx, y);
       });
       for (let cx = x; cx + 8 <= x + w + 1; cx += 8) {
-        if (ceiling) put('fades', 'top_fade.png', cx, y - 2);
-        else if (h >= 3) put('fades', 'bottom_fade.png', cx, y + 2);
+        if (ceiling) put('fades', 'top-fade.png', cx, y - 2);
+        else if (h >= 3) put('fades', 'bottom-fade.png', cx, y + 2);
       }
     } else {
       for (const cy of along(y, h, 2)) {
         for (const cx of along(x, w, 2)) put('blocks', `side${pick(3, 4) === 3 ? '03' : '4'}.png`, cx, cy);
         // Fades on the outer side of the frame.
-        if (x <= 6) put('fades', `left_fade_0${pick(1, 2)}.png`, x - 2, cy);
-        else if (x + w >= W - 6) put('fades', `right_fade_0${pick(1, 2)}.png`, x + w, cy);
+        if (x <= 6) put('fades', `left-fade-0${pick(1, 2)}.png`, x - 2, cy);
+        else if (x + w >= W - 6) put('fades', `right-fade-0${pick(1, 2)}.png`, x + w, cy);
       }
     }
   }
   for (const [x, y, w] of def.platforms) {
     for (let cx = x; cx <= x + w - 2; cx++) {
       const n = cx === x ? 1 : cx === x + w - 2 ? 4 : pick(2, 3);
-      put('platforms', `platform_0${n}.png`, cx, y);
+      put('platforms', `platform-0${n}.png`, cx, y);
     }
   }
 
