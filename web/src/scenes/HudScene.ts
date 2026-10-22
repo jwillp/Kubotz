@@ -171,7 +171,8 @@ export class HudScene extends Phaser.Scene {
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
     // Stock: cube pips in the helmet colour.
-    const stocks = this.game_.stocks;
+    // Infinite stocks (below 0) show as one pip and the K.O. count reads ∞.
+    const stocks = this.game_.stocks < 0 ? 1 : this.game_.stocks;
     const step = Math.min(16, (w - 70) / Math.max(1, stocks - 1));
     for (let s = 0; s < stocks; s++) {
       const cx = x0 + 6 + s * step;
@@ -179,7 +180,7 @@ export class HudScene extends Phaser.Scene {
       if (s < k.lives) b.fillStyle(k.look.color, 1).fillPoints(pip.points, true).lineStyle(1, 0xffffff, 0.55).strokePoints(pip.points, true);
       else b.lineStyle(1, 0xffffff, 0.2).strokePoints(pip.points, true);
     }
-    card.kills.setText(`K.O. ${k.kills}`);
+    card.kills.setText(`${this.game_.stocks < 0 ? '∞  ' : ''}K.O. ${k.kills}`);
 
     // The status chip above the card.
     let status = '';

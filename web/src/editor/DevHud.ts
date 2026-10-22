@@ -8,7 +8,9 @@ import { host, store } from './Host';
 import { Config } from '../config';
 import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
-import { npcStocks, warpExit, type ArenaData, type BlockLook, type NpcBehaviour, type TilePaint } from '../map/Arenas';
+import { MAX_MAP_LIGHTS, npcStocks, warpExit, type ArenaData, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
+import { MUSIC } from '../audio/Sounds';
+import { addMusic } from '../game/Settings';
 import { ROOM_CHOICES } from '../fx/Backdrops';
 import './devhud.css';
 
@@ -43,6 +45,7 @@ const ELEMENTS: [ArenaPiece['kind'], string, string][] = [
   ['bonus', 'Bonus', 'A spot where power-up balls drop.'],
   ['emitters', 'Particles', 'A particle effect playing in the map: pick the effect and how often it plays.'],
   ['npcs', 'NPC', 'A hostile CPU of the map (black team, no HUD card): pick its behaviour, level and whether it comes back.'],
+  ['lights', 'Light', 'A light for ambience: it lights the tiles and the Kubotz near it. Pick its colour, reach, strength and whether it pulses or flickers.'],
 ];
 
 const LAYERS: [keyof DebugLayers, string, string][] = [
@@ -74,6 +77,7 @@ export function installDevHud(game: Phaser.Game): void {
 
   /** Closing the HUD gives the match back as it plays: running, full speed, keys on, its camera its own. */
   const setOpen = (on: boolean) => {
+    if (!on) stopListening();
     open = on && inMatch();
     panel.hidden = !open;
     if (!open) {
@@ -268,6 +272,23 @@ export function installDevHud(game: Phaser.Game): void {
     sel.onchange = () => set(sel.value);
     return h('label', { cls: 'dev-field', help }, h('span', { textContent: label }), sel);
   };
+  // The arena's music, and a button to hear it (the editor's matches play none).
+  let listening: Phaser.Sound.BaseSound | null = null;
+  const stopListening = () => { listening?.destroy(); listening = null; };
+  const musicField = (value: string, set: (v: string) => void) => {
+    const sel = h('select', {}, ...MUSIC.map(([v, l]) => h('option', { value: v, textContent: l })));
+    sel.value = value;
+    const listen = h('button', { cls: 'btn', textContent: listening ? 'Stop' : 'Listen', help: 'Plays the chosen music here (the match plays it when it starts from the setup screen).' });
+    listen.onclick = () => {
+      if (listening) { stopListening(); listen.textContent = 'Listen'; return; }
+      if (sel.value === 'none') return;
+      listening = addMusic(match()!, sel.value, 0.28);
+      listening.play();
+      listen.textContent = 'Stop';
+    };
+    sel.onchange = () => { const was = !!listening; stopListening(); set(sel.value); if (was && sel.value !== 'none') listen.click(); else listen.textContent = 'Listen'; };
+    return h('label', { cls: 'dev-field', help: 'The music the match plays.' }, h('span', { textContent: 'Music' }), h('div', { cls: 'dev-row' }, sel, listen));
+  };
   const check = (label: string, help: string, on: boolean, set: (v: boolean) => void) => {
     const box = h('input', { type: 'checkbox', checked: on });
     box.onchange = () => set(box.checked);
@@ -282,7 +303,7 @@ export function installDevHud(game: Phaser.Game): void {
     // What the match was built from, before any edit from this panel.
     if (id && !applied.has(id)) applied.set(id, JSON.stringify(a ?? null));
     const piecesNow = a && p ? piecesOf(a, p.kind)[p.index] : null;
-    const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
+    const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${a?.music}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
     if (next === shape || !open || !g) { refresh(); return; }
     shape = next;
     const editArena = (fn: (x: ArenaData) => void) => store.edit('arenas', (d) => fn(d.arenas[id!]));
@@ -354,6 +375,21 @@ export function installDevHud(game: Phaser.Game): void {
           choose('Helmet', 'Its helmet (it is painted black).', ['flame', 'terminator', 'big buff', 'skull'].map((l, i) => [String(i), l] as [string, string]), String(npc.helmet ?? 3), (val) => editArena((x) => { x.npcs![p.index].helmet = Number(val); })),
         );
       }
+      if (p.kind === 'lights') {
+        const l = a.lights![p.index];
+        const setL = (fn: (q: MapLight) => void) => editArena((x) => fn(x.lights![p.index]));
+        const color = h('input', { type: 'color', value: l.color });
+        color.onchange = () => setL((q) => { q.color = color.value; });
+        extra.push(
+          h('label', { cls: 'dev-field', help: 'The light\'s colour.' }, h('span', { textContent: 'Colour' }), color),
+          h('div', { cls: 'dev-grid' },
+            num('Reach (units)', l.radius, (n) => setL((q) => { q.radius = Math.max(1, n); }), 1),
+            num('Strength', l.intensity, (n) => setL((q) => { q.intensity = Math.max(0, n); }), 0.1)),
+          choose('Effect', 'Steady, a slow pulse, or a flicker like a failing tube.', [['steady', 'steady'], ['pulse', 'pulse'], ['flicker', 'flicker']], l.effect ?? 'steady',
+            (val) => setL((q) => { if (val === 'steady') delete q.effect; else q.effect = val as LightEffect; })),
+          (a.lights!.length > MAX_MAP_LIGHTS ? h('p', { cls: 'dev-note', textContent: `Only the first ${MAX_MAP_LIGHTS} lights are lit.` }) : null)!,
+        );
+      }
       piece = section(`${PIECE_NAMES[p.kind]} ${p.index + 1}`,
         h('div', { cls: 'dev-grid' }, num('x', v[0], set(0), rect ? 1 : 0.5), num('y', v[1], set(1), rect ? 1 : 0.5),
           ...(rect ? [num('w', v[2], set(2, 1)), num('h', v[3], set(3, 1))] : [])),
@@ -368,6 +404,7 @@ export function installDevHud(game: Phaser.Game): void {
         a ? h('div', { cls: 'dev-grid' },
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
           choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
+          musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })),
         ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, or make a new one.' }),
         a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
           h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
@@ -380,7 +417,7 @@ export function installDevHud(game: Phaser.Game): void {
       editing && a ? tilesSection() : null,
       // The debug views last (folded while editing, to leave the room to the arena tools).
       (() => { const d = section('Show', ...layerBoxes.map((l) => l.el)); d.open = !editing; return d; })(),
-      editing && a ? h('p', { cls: 'dev-note', textContent: `${w} x ${hh} units · ${a.walls.length} walls · ${a.platforms.length} platforms · ${a.warps.length} portals · ${a.spawns.length} spawns · ${a.bonus.length} bonus spots · ${a.emitters?.length ?? 0} particles · ${a.npcs?.length ?? 0} NPCs` }) : null,
+      editing && a ? h('p', { cls: 'dev-note', textContent: `${w} x ${hh} units · ${a.walls.length} walls · ${a.platforms.length} platforms · ${a.warps.length} portals · ${a.spawns.length} spawns · ${a.bonus.length} bonus spots · ${a.emitters?.length ?? 0} particles · ${a.npcs?.length ?? 0} NPCs · ${a.lights?.length ?? 0} lights` }) : null,
     ].filter((el): el is HTMLElement => !!el));
     refresh();
   }
@@ -449,7 +486,8 @@ export function installDevHud(game: Phaser.Game): void {
       build();
     };
     game.events.on(Phaser.Core.Events.POST_STEP, ready);
-    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', editor: true });
+    // Infinite stocks: a K.O. never ends the match (and the editing with it).
+    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', stocks: -1, editor: true });
   };
 
   // The DEV button shows in matches only; the panel closes when the match ends.

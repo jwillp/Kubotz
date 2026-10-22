@@ -15,7 +15,7 @@ import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM, npcStocks, warpExit } from '../map/Arenas';
+import { ARENAS, DEFAULT_BLAST, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcStocks, warpExit, type LightEffect } from '../map/Arenas';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -146,6 +146,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // debug keys or the dev HUD ends with the match (the HUD sets them again when it rebuilds one).
     Object.assign(this.debugState, { on: false, timeScale: 1, frozen: false, steps: 0, holdCamera: false, show: { ...ALL_LAYERS } });
     this.fighters = [];
+    this.mapLights = [];
     this.orbs = [];
     this.bullets = [];
     this.playerSpawns = [];
@@ -223,7 +224,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spawn = kept ? new Phaser.Math.Vector2(kept.x, kept.y) : this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
-      k.lives = this.stocks;
+      // Below 0: infinite (the editor's own arena match, so a K.O. never ends it).
+      k.lives = this.stocks < 0 ? Infinity : this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
@@ -250,8 +252,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : this.startedAt + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
-    this.music = addMusic(this, 'music-game', 0.28);
-    if (!setup.editor) this.music.play();
+    // The arena's music (its file's `music`), or none.
+    const tune = ARENAS[this.arena]?.music ?? 'music-game';
+    this.music = addMusic(this, tune === 'none' ? 'music-game' : tune, 0.28);
+    if (!setup.editor && tune !== 'none') this.music.play();
 
     this.scene.launch('Hud');
     this.scene.bringToTop('Hud');
@@ -357,6 +361,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private updatePreview(deltaMs: number): void {
     const now = this.clock += deltaMs;
     this.updateMapEmitters(deltaMs);
+    this.updateMapLights(now);
     this.particles.update(deltaMs);
     this.impact.update(now, deltaMs);
     this.portals.update(now, deltaMs);
@@ -841,6 +846,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     this.holo.update(now);
     this.updateMapEmitters(dtMs);
+    this.updateMapLights(now);
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.portals.update(now, dtMs);
@@ -991,7 +997,42 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), mood.glow, 2.4);
       }
     }
+    // The lights placed in the map, for ambience: each lights the tiles and Kubotz near it, and
+    // glows softly in the air behind the arena (the backdrop takes no light of its own).
+    if (!this.textures.exists('light-pool')) {
+      const c = this.textures.createCanvas('light-pool', 256, 256)!;
+      const ctx = c.getContext();
+      const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 256);
+      c.refresh();
+    }
+    this.mapLights = (ARENAS[this.arena]?.lights ?? []).slice(0, MAX_MAP_LIGHTS).map((l, i) => {
+      const color = parseInt(l.color.replace('#', ''), 16);
+      const glow = this.add.image(l.x * UNIT, l.y * UNIT, 'light-pool').setBlendMode(Phaser.BlendModes.ADD).setTint(color)
+        .setDisplaySize(l.radius * UNIT * 2, l.radius * UNIT * 2).setDepth(1.85);
+      return { light: this.lights.addLight(l.x * UNIT, l.y * UNIT, l.radius * UNIT, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
+    });
+    this.updateMapLights(0);
     this.placeFixedLights();
+  }
+
+  /** The map's lights: pulsing ones breathe slowly, flickering ones drop out now and then like a failing tube. */
+  private mapLights: { light: Phaser.GameObjects.Light; glow: Phaser.GameObjects.Image; base: number; effect: LightEffect; phase: number }[] = [];
+  private updateMapLights(now: number): void {
+    for (const m of this.mapLights) {
+      let k = 1;
+      if (m.effect === 'pulse') k = 0.65 + 0.35 * Math.sin(now / 600 + m.phase);
+      else if (m.effect === 'flicker') {
+        const noise = Math.abs((Math.sin(Math.floor(now / 70 + m.phase * 10) * 12.9898 + m.phase) * 43758.5453) % 1);
+        k = noise < 0.12 ? 0.15 : 0.9 + 0.1 * noise;
+      }
+      m.light.intensity = m.base * k;
+      m.glow.setAlpha(Math.min(0.6, 0.16 * m.base * k));
+    }
   }
 
   private placeFixedLights(): void {

@@ -6,6 +6,10 @@ import type Phaser from 'phaser';
  * canvas (dragging an element from the dev HUD's palette onto the map), which
  * turned the next one-finger pan into a pinch: only touches that began on
  * the canvas count here.
+ *
+ * Touches are read in the capture phase on the window, before Phaser's own
+ * listeners on the canvas: a second finger is known here by the time Phaser
+ * reports its press (read after, the press found one finger and panned).
  */
 export class Fingers {
   private readonly at = new Map<number, { x: number; y: number }>();
@@ -13,15 +17,16 @@ export class Fingers {
 
   constructor(private readonly game: Phaser.Game) {
     const canvas = game.canvas;
-    const start = (e: TouchEvent) => { for (const t of Array.from(e.changedTouches)) this.at.set(t.identifier, this.toGame(t)); };
+    const start = (e: TouchEvent) => { if (e.target === canvas) for (const t of Array.from(e.changedTouches)) this.at.set(t.identifier, this.toGame(t)); };
     const move = (e: TouchEvent) => { for (const t of Array.from(e.changedTouches)) if (this.at.has(t.identifier)) this.at.set(t.identifier, this.toGame(t)); };
     const end = (e: TouchEvent) => { for (const t of Array.from(e.changedTouches)) this.at.delete(t.identifier); };
-    canvas.addEventListener('touchstart', start, { passive: true });
-    window.addEventListener('touchmove', move, { passive: true });
-    window.addEventListener('touchend', end, { passive: true });
-    window.addEventListener('touchcancel', end, { passive: true });
-    this.off.push(() => canvas.removeEventListener('touchstart', start), () => window.removeEventListener('touchmove', move),
-      () => window.removeEventListener('touchend', end), () => window.removeEventListener('touchcancel', end));
+    const on = { passive: true, capture: true };
+    window.addEventListener('touchstart', start, on);
+    window.addEventListener('touchmove', move, on);
+    window.addEventListener('touchend', end, on);
+    window.addEventListener('touchcancel', end, on);
+    this.off.push(() => window.removeEventListener('touchstart', start, true), () => window.removeEventListener('touchmove', move, true),
+      () => window.removeEventListener('touchend', end, true), () => window.removeEventListener('touchcancel', end, true));
   }
 
   /** How many fingers are on the canvas. */

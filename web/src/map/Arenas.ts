@@ -53,7 +53,21 @@ export interface ArenaDef {
   emitters?: MapEmitter[];
   /** Hostile CPUs that belong to the map (the black team): no HUD card, back at their spot after a K.O., never counted to win. */
   npcs?: MapNpc[];
+  /** Lights placed in the map, for ambience: they light the tiles and the Kubotz near them. */
+  lights?: MapLight[];
+  /** The match's music (audio/Sounds.ts MUSIC); default the game's theme. */
+  music?: string;
 }
+
+export type LightEffect = 'steady' | 'pulse' | 'flicker';
+/**
+ * A light in the map (units): its colour ('#rrggbb'), how far it reaches
+ * (radius, units), how strong it is, and whether it stays steady, pulses
+ * slowly or flickers like a failing tube.
+ */
+export interface MapLight { x: number; y: number; color: string; radius: number; intensity: number; effect?: LightEffect }
+/** At most this many map lights are lit (main.ts maxLights covers them). */
+export const MAX_MAP_LIGHTS = 12;
 
 /**
  * A particle effect of src/data/particles placed in the map (units): played

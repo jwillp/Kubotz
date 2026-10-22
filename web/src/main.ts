@@ -28,7 +28,7 @@ const game = new Phaser.Game({
   // Fullscreen takes the game's container (not a new element round the canvas), so what is drawn over the canvas stays on screen.
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, fullscreenTarget: 'game' },
   input: { gamepad: true },
-  render: { antialias: true, maxLights: 36 },
+  render: { antialias: true, maxLights: 48 },
   scene: [BootScene, TitleScene, SetupScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, ControlsScene, MoveListScene, ResultsScene, ShutterScene],
 });
 

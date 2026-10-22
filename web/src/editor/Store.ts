@@ -64,8 +64,8 @@ export interface Selection {
 /** A piece of an arena: a wall, platform or portal (a rectangle), or a spawn or bonus spot (a point), by its index. */
 export interface ArenaPiece { kind: 'walls' | 'platforms' | 'warps' | PointKind; index: number }
 /** Pieces that are a point: spawns and bonus spots ([x, y]), particle emitters and NPCs ({ x, y, ... }). */
-export type PointKind = 'spawns' | 'bonus' | 'emitters' | 'npcs';
-export const POINT_KINDS: PointKind[] = ['spawns', 'bonus', 'emitters', 'npcs'];
+export type PointKind = 'spawns' | 'bonus' | 'emitters' | 'npcs' | 'lights';
+export const POINT_KINDS: PointKind[] = ['spawns', 'bonus', 'emitters', 'npcs', 'lights'];
 
 /** Where a point piece is (units). */
 export function pointOf(a: ArenaData, kind: PointKind, i: number): [number, number] | null {
@@ -75,7 +75,7 @@ export function pointOf(a: ArenaData, kind: PointKind, i: number): [number, numb
 }
 
 /** Names of the arena's pieces, for headings. */
-export const PIECE_NAMES: Record<ArenaPiece['kind'], string> = { walls: 'Wall', platforms: 'Platform', warps: 'Portal', spawns: 'Spawn', bonus: 'Bonus spot', emitters: 'Particles', npcs: 'NPC' };
+export const PIECE_NAMES: Record<ArenaPiece['kind'], string> = { walls: 'Wall', platforms: 'Platform', warps: 'Portal', spawns: 'Spawn', bonus: 'Bonus spot', emitters: 'Particles', npcs: 'NPC', lights: 'Light' };
 
 /** A piece's list in an arena (the optional ones may be missing). */
 export function piecesOf(a: ArenaData, kind: ArenaPiece['kind']): unknown[] {

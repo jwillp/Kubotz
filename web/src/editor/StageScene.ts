@@ -438,6 +438,8 @@ export class StageScene extends Phaser.Scene {
     const d = this.drag;
     const s = this.store;
     if (d?.kind === 'pinch') { this.pinch(d); return; }
+    // A second finger the press missed (see Fingers): pinch from here.
+    if (this.startPinch()) return;
     if (!d) {
       const h = this.mode === 'anim' ? this.pick(p.worldX, p.worldY, p.wasTouch) : null;
       if (h !== this.hover) { this.hover = h; this.game.canvas.style.cursor = h ? 'grab' : 'default'; }

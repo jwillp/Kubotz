@@ -13,9 +13,9 @@ import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type S
  * spots, the blast zone), to pick, move, resize and draw with the tools.
  */
 
-export type ArenaTool = 'select' | 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus' | 'emitters' | 'npcs' | 'tile' | 'erase';
+export type ArenaTool = 'select' | 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus' | 'emitters' | 'npcs' | 'lights' | 'tile' | 'erase';
 
-const COLORS = { walls: 0x8e99a8, platforms: 0x3fb8a6, warps: 0xa06eff, spawns: 0x4aa3ff, bonus: 0xffd166, emitters: 0xff7ad9, npcs: 0x111111, blast: 0xff4d4d, sel: 0xffb547 };
+const COLORS = { walls: 0x8e99a8, platforms: 0x3fb8a6, warps: 0xa06eff, spawns: 0x4aa3ff, bonus: 0xffd166, emitters: 0xff7ad9, npcs: 0x111111, lights: 0xfff0b0, blast: 0xff4d4d, sel: 0xffb547 };
 type Drag =
   | { kind: 'pan'; sx: number; sy: number; cx: number; cy: number }
   | { kind: 'pinch'; dist: number; zoom: number; wx: number; wy: number }
@@ -129,7 +129,7 @@ export class ArenaScene extends Phaser.Scene {
     const a = this.arena;
     if (!a) { this.tiles.removeAll(true); this.over.clear(); this.grid.clear(); return; }
     // The tiles and the room are rebuilt only when the arena's shape changes.
-    const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, emitters: _e, npcs: _np, ...shape } = a;
+    const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, emitters: _e, npcs: _np, lights: _li, music: _mu, ...shape } = a;
     // Inside the game the match draws the real arena; this scene only adds the pieces.
     if (!this.overlay) {
       const key = JSON.stringify(shape);
@@ -233,6 +233,13 @@ export class ArenaScene extends Phaser.Scene {
       g.fillStyle(COLORS.npcs, 1).fillTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
       g.lineStyle(px(2), isSel('npcs', i) ? COLORS.sel : 0xffffff, 1).strokeTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
     });
+    // Lights: a disc in their colour, and a faint ring as far as they reach.
+    (a.lights ?? []).forEach(({ x, y, color, radius }, i) => {
+      const c = parseInt(color.replace('#', ''), 16);
+      g.lineStyle(px(1.5), c, 0.35).strokeCircle(x * UNIT, y * UNIT, radius * UNIT);
+      g.fillStyle(c, 1).fillCircle(x * UNIT, y * UNIT, px(7));
+      g.lineStyle(px(isSel('lights', i) ? 3 : 1.5), isSel('lights', i) ? COLORS.sel : 0xffffff, 1).strokeCircle(x * UNIT, y * UNIT, px(isSel('lights', i) ? 11 : 9));
+    });
     // Resize handles on the picked rectangle.
     const rect = this.selectedRect();
     if (rect) for (const [cx, cy] of this.corners(rect)) g.fillStyle(0xffffff, 1).fillRect(cx - px(5), cy - px(5), px(10), px(10));
@@ -304,6 +311,7 @@ export class ArenaScene extends Phaser.Scene {
           break;
         }
         case 'npcs': x.npcs = [...(x.npcs ?? []), { x: hx, y: hy, behaviour: 'attack', level: 5 }]; break;
+        case 'lights': x.lights = [...(x.lights ?? []), { x: hx, y: hy, color: '#ffd9a0', radius: 8, intensity: 1.5 }]; break;
       }
     });
     s.select({ piece: { kind, index } });
@@ -404,6 +412,13 @@ export class ArenaScene extends Phaser.Scene {
         s.select({ piece: { kind: 'emitters', index } });
         return;
       }
+      case 'lights': {
+        const [hx, hy] = this.unit(p, 0.5);
+        const index = a.lights?.length ?? 0;
+        s.edit('arenas', (d) => { const x = d.arenas[s.sel.arena]; x.lights = [...(x.lights ?? []), { x: hx, y: hy, color: '#ffd9a0', radius: 8, intensity: 1.5 }]; });
+        s.select({ piece: { kind: 'lights', index } });
+        return;
+      }
       case 'npcs': {
         const [hx, hy] = this.unit(p, 0.5);
         const index = a.npcs?.length ?? 0;
@@ -439,6 +454,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private moveTo(p: Phaser.Input.Pointer): void {
+    // A second finger the press missed (see Fingers): pinch from here.
+    if (this.drag?.kind !== 'pinch' && this.fingers.two()) { this.down(p); }
     const d = this.drag;
     const s = this.store;
     const cam = this.cam;

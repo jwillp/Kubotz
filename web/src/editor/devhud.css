@@ -42,7 +42,7 @@
 .dev-element { padding: 8px 4px; text-align: center; border-radius: 6px; border: 1px solid #333b48; background: #1a2029; cursor: grab; user-select: none; touch-action: none; font-size: 12px; }
 .dev-element:hover { border-color: #ffb547; }
 .dev-walls { border-left: 4px solid #8e99a8; } .dev-platforms { border-left: 4px solid #3fb8a6; } .dev-warps { border-left: 4px solid #a06eff; }
-.dev-spawns { border-left: 4px solid #4aa3ff; } .dev-bonus { border-left: 4px solid #ffd166; } .dev-emitters { border-left: 4px solid #ff7ad9; } .dev-npcs { border-left: 4px solid #000; }
+.dev-spawns { border-left: 4px solid #4aa3ff; } .dev-bonus { border-left: 4px solid #ffd166; } .dev-emitters { border-left: 4px solid #ff7ad9; } .dev-npcs { border-left: 4px solid #000; } .dev-lights { border-left: 4px solid #fff0b0; }
 .dev-ghost { position: absolute; z-index: 70; transform: translate(-50%, -120%); padding: 4px 8px; border-radius: 5px; background: #ffb547; color: #1a1205; font: 700 12px 'Exo 2', system-ui, sans-serif; pointer-events: none; }
 #game canvas { touch-action: none; }
 .dev-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 6px; }
