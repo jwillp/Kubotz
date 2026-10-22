@@ -265,8 +265,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       laserSmoke.mode = LASER_SMOKE_MODES[(LASER_SMOKE_MODES.indexOf(laserSmoke.mode) + 1) % LASER_SMOKE_MODES.length];
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Laser smoke: ${laserSmoke.mode}`, 0xffffff);
     });
-    // Exploration: K knocks out the nearest robot that isn't P1, to see the K.O. smoke.
+    // Debug mode (F3): K knocks out the nearest robot that isn't P1, to see the K.O. smoke.
     kb.on('keydown-K', () => {
+      if (!this.debugState.on) return;
       const p1 = this.fighters[0];
       const target = this.fighters.filter((k) => k !== p1 && k.isAlive())
         .sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y))[0];
