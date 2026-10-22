@@ -13,7 +13,7 @@ const CORE = 0x0a2a5e;
  * The portals at the arena's sides, drawn as energy rifts: a dark oval
  * with a glowing rim, spiral arms turning into it, motes drawn in towards
  * the middle and sparks thrown off the rim, a bright halo and a strong
- * light on the walls round it. Both portals share one colour. A robot or a bolt going through makes the exit portal flare.
+ * light on the walls round it. Both portals share one colour. A Kubot or a bolt going through makes the exit portal flare.
  */
 export class PortalFx {
   private readonly back: Phaser.GameObjects.Graphics;
@@ -23,12 +23,12 @@ export class PortalFx {
 
   /** @param lit false: no lights of its own (a replay sets the recorded ones). */
   constructor(scene: Phaser.Scene, zones: Phaser.Geom.Rectangle[], lit = true) {
-    // Behind the robots, so they step out of the rift.
+    // Behind the Kubotz, so they step out of the rift.
     this.back = scene.add.graphics().setDepth(9.3);
     this.glow = scene.add.graphics().setDepth(9.4).setBlendMode(Phaser.BlendModes.ADD);
     const sorted = [...zones].sort((p, q) => p.x - q.x);
     this.portals = sorted.map((zone) => {
-      // A strong light: it washes the walls, floor and robots round the portal.
+      // A strong light: it washes the walls, floor and Kubotz round the portal.
       const light = scene.lights.addLight(zone.centerX, zone.centerY, UNIT * 11, COLOR, 4).setVisible(lit);
       return { zone, color: COLOR, core: CORE, motes: [], light, burstAt: -1e9, burstY: zone.centerY };
     });

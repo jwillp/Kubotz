@@ -8,7 +8,7 @@ export const look25 = { on: true };
 
 /**
  * Scale round the camera centre of the blocks' front faces (the tile art,
- * where the robots stand, so it never moves) and of their back edges: a
+ * where the Kubotz stand, so it never moves) and of their back edges: a
  * shallow depth, just enough to read. At the arena's sides it shows about as
  * much of the walls as the portals' ovals (fx/Portals.ts) already imply.
  */
@@ -29,7 +29,7 @@ function mix(a: number, b: number, t: number): number {
 
 /**
  * 2.5D arena (exploration): every block keeps its original tile art as its
- * front face, on the plane the robots fight on, and gets shallow top,
+ * front face, on the plane the Kubotz fight on, and gets shallow top,
  * underside and side faces going back towards the camera centre, so the
  * blocks show their depth and shift as the camera moves. Redrawn each frame
  * from the camera midpoint; V (look25) switches back to the flat arena.

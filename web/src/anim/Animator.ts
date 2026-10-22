@@ -1,11 +1,11 @@
 import { CLIPS, mixPoses, sampleClip, type Clip } from './Clips';
 import type { Pose, Rig } from './Rig';
 
-/** Clips whose forward motion moves the robot itself (root motion) instead of only its drawing. */
+/** Clips whose forward motion moves the Kubot itself (root motion) instead of only its drawing. */
 const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt', 'ftilt', 'sftilt', 'fsmash', 'sfsmash']);
 
 /**
- * Plays the clips of one robot: time, the blend from the previous pose on each
+ * Plays the clips of one Kubot: time, the blend from the previous pose on each
  * switch, keeping the boots on the ground, and the forward travel of strikes
  * (handed to the game as root motion so the body really moves).
  */
