@@ -1,0 +1,70 @@
+{
+  "source": "https://ultimateframedata.com (game 13.0.x), fetched 2026-10-22",
+  "units": "Ultimate: distance in game units, time in frames (60/s); speeds in units/frame, accelerations in units/frame^2",
+  "conversion": {
+    "s": 0.1333,
+    "note": "Kubotz units per Ultimate unit (Kubot 2 units tall, typical Ultimate fighter ~15)",
+    "speed": "kubotz u/s = ultimate u/f * 60 * s",
+    "acceleration": "kubotz u/s^2 = ultimate u/f^2 * 3600 * s",
+    "time": "ms = frames * 1000 / 60",
+    "damage": "kubotz health lost (%) = ultimate % / 3"
+  },
+  "fighters": {
+    "fox": {
+      "weight": 77, "gravity": 0.23, "walk": 1.523, "initialDash": 2.09, "run": 2.402,
+      "airSpeed": 1.11, "airAccel": 0.09, "fallSpeed": 2.1, "fastFall": 3.36,
+      "jumpSquat": 3, "shortHopFrames": 24, "fullHopFrames": 36, "shortHopFastFallFrames": 17, "fullHopFastFallFrames": 27,
+      "shieldGrab": 10, "shieldDrop": 11,
+      "jab1": { "startup": 2, "total": 17, "damage": 1.8 },
+      "ftilt": { "startup": 6, "total": 23, "damage": 6.0 },
+      "fsmash": { "startup": 13, "total": 45, "damage": 14.0, "bkb": 28, "kbg": 100 },
+      "grab": { "startup": 6, "total": 36 },
+      "spotDodge": { "intangible": [3, 14] },
+      "forwardRoll": { "intangible": [4, 12], "total": 26 },
+      "backRoll": { "intangible": [4, 14], "total": 32 },
+      "airDodge": { "intangible": [2, 26], "total": 38 }
+    },
+    "falco": {
+      "weight": 82, "gravity": 0.13, "walk": 1.344, "initialDash": 2.035, "run": 1.619,
+      "airSpeed": 0.977, "airAccel": 0.1, "fallSpeed": 1.8, "fastFall": 2.88,
+      "jumpSquat": 3, "shortHopFrames": 32, "fullHopFrames": 57, "shortHopFastFallFrames": 23, "fullHopFastFallFrames": 41,
+      "shieldGrab": 10, "shieldDrop": 11,
+      "jab1": { "startup": 2, "total": 22, "damage": 1.5 },
+      "ftilt": { "startup": 6, "total": 24, "damage": 6.0 },
+      "fsmash": { "startup": 17, "total": 48, "damage": 16.0 },
+      "grab": { "startup": 6, "total": 34 },
+      "spotDodge": { "intangible": [3, 17] },
+      "forwardRoll": { "intangible": [4, 15], "total": 29 },
+      "backRoll": { "intangible": [5, 16], "total": 34 },
+      "airDodge": { "intangible": [2, 27], "total": 43 }
+    },
+    "captainFalcon": {
+      "weight": 104, "gravity": 0.12, "walk": 0.987, "initialDash": 1.98, "run": 2.552,
+      "airSpeed": 1.218, "airAccel": 0.075, "fallSpeed": 1.865, "fastFall": 2.984,
+      "jumpSquat": 3, "shortHopFrames": 34, "fullHopFrames": 48, "shortHopFastFallFrames": 24, "fullHopFastFallFrames": 34,
+      "shieldGrab": 10, "shieldDrop": 11,
+      "jab1": { "startup": 3, "total": 17 },
+      "ftilt": { "startup": 7, "total": 29 },
+      "fsmash": { "startup": 19, "total": 59, "damage": 19.0 },
+      "grab": { "startup": 6, "total": 35 },
+      "spotDodge": { "intangible": [3, 17] },
+      "forwardRoll": { "intangible": [4, 15], "total": 30 },
+      "backRoll": { "intangible": [5, 16], "total": 35 },
+      "airDodge": { "intangible": [3, 30], "total": 42 }
+    },
+    "samus": {
+      "weight": 108, "gravity": 0.075, "walk": 1.115, "initialDash": 1.87, "run": 1.654,
+      "airSpeed": 1.103, "airAccel": 0.09, "fallSpeed": 1.33, "fastFall": 2.128,
+      "jumpSquat": 3, "shortHopFrames": 44, "fullHopFrames": 61, "shortHopFastFallFrames": 31, "fullHopFastFallFrames": 43,
+      "shieldGrab": 19, "shieldDrop": 11,
+      "jab1": { "startup": 3, "total": 17, "damage": 3.0 },
+      "ftilt": { "startup": 8, "total": 33, "damage": 8.0 },
+      "fsmash": { "startup": 10, "total": 48, "damage": 12.0 },
+      "grab": { "startup": 15, "total": 59 },
+      "spotDodge": { "intangible": [3, 17] },
+      "forwardRoll": { "intangible": [4, 18], "total": 34 },
+      "backRoll": { "intangible": [5, 20], "total": 39 },
+      "airDodge": { "intangible": [3, 29], "total": 56 }
+    }
+  }
+}
