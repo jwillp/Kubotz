@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { UNIT } from '../config';
 import { CLIPS, sampleClip } from '../anim/Clips';
 import { BONES, Rig, type Bone, type Pose } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { HEADS, HURTBOX, SLOT_COLORS, SWORD_FILE, partTexture, type Move } from '../game/Kubotz';
 import { opaqueOutline } from '../scenes/GameScene';
 import type { SpriterData } from '../spriter/Spriter';
@@ -12,7 +12,7 @@ import { Fingers } from './Fingers';
 import { ParticleFx, effectFromData, type EffectDef, type ParticleHandle } from '../fx/ParticleEffect';
 
 /**
- * The editor's stage: the robot drawn by the game's own renderer at the
+ * The editor's stage: the Kubot drawn by the game's own renderer at the
  * selected time, with handles to pose its bones, the move's hit circles
  * (draggable on their part), the hurtbox, onion skins of the neighbouring
  * keys and a target dummy that lights up when a hit circle reaches it.
@@ -51,9 +51,9 @@ export class StageScene extends Phaser.Scene {
   view: StageView = { onion: true, dummy: true, handles: true, dummyX: 2.6, helmet: 0 };
   private store!: Store;
   private rig!: Rig;
-  private robot!: Robot2D;
-  private dummy!: Robot2D;
-  private onions: Robot2D[] = [];
+  private kubot!: Kubot2D;
+  private dummy!: Kubot2D;
+  private onions: Kubot2D[] = [];
   /** The clip's particle effects, played as the time passes their frames. */
   private particles!: ParticleFx;
   private clipEvents!: EventPlayer;
@@ -65,9 +65,9 @@ export class StageScene extends Phaser.Scene {
   private pressAt: { x: number; y: number } | null = null;
   /** Holds the move as if its smash were charging, to see the charge effects. */
   charging = false;
-  /** What the stage shows: the robot and its clip, or one particle effect playing over and over (Particles tab). */
+  /** What the stage shows: the Kubot and its clip, or one particle effect playing over and over (Particles tab). */
   mode: 'anim' | 'particles' = 'anim';
-  /** Particles tab: the effect mirrored (as a robot facing left plays it), and a robot beside it for scale. */
+  /** Particles tab: the effect mirrored (as a Kubot facing left plays it), and a Kubot beside it for scale. */
   preview = { flip: false, kubot: true };
   private previewing: { name: string; text: string; handle: ParticleHandle; again: number } | null = null;
   private grid!: Phaser.GameObjects.Graphics;
@@ -93,13 +93,13 @@ export class StageScene extends Phaser.Scene {
     for (const file of ['feet/foot.png', 'feet/foot-sha.png']) this.rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.grid = this.add.graphics().setDepth(0);
     for (let i = 0; i < 2; i++) {
-      const o = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
+      const o = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
       o.view.setDepth(8);
       this.onions.push(o);
     }
-    this.dummy = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, DUMMY_COLOR));
+    this.dummy = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, DUMMY_COLOR));
     this.dummy.view.setDepth(9);
-    this.robot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
+    this.kubot = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, COLOR));
     this.over = this.add.graphics().setDepth(20);
     this.particles = new ParticleFx(this, 'pe:', 16);
     this.clipEvents = new EventPlayer((name, x, y) => {
@@ -152,7 +152,7 @@ export class StageScene extends Phaser.Scene {
     this.drawGrid();
   }
 
-  /** Frames the robot again (after a resize or on request). */
+  /** Frames the Kubot again (after a resize or on request). */
   recentre(): void {
     this.cameras.main.setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
     this.drawGrid();
@@ -196,7 +196,7 @@ export class StageScene extends Phaser.Scene {
     if (!this.playing && s.sel.t < this.lastT) this.clipEvents.seek(s.sel.clip, s.sel.t);
     this.lastT = s.sel.t;
     const bx = s.clip.rootMotion ? (this.poseAt(s.sel.t).x ?? 0) * ART_SCALE : 0;
-    this.clipEvents.update(s.sel.clip, s.sel.t, this.robot, { x: bx, y: 0 }, this.charging);
+    this.clipEvents.update(s.sel.clip, s.sel.t, this.kubot, { x: bx, y: 0 }, this.charging);
     this.particles.update(dt * (this.playing ? this.rate : 1));
   }
 
@@ -213,13 +213,13 @@ export class StageScene extends Phaser.Scene {
       if (def) this.previewing = { name, text, handle: this.particles.play(def, at.x, at.y, { flip: this.preview.flip }), again: 350 };
     }
     this.particles.update(dt * (this.rate || 1));
-    // The robot for scale, standing to the side; nothing else of the animation stage.
-    this.robot.visible = this.preview.kubot;
+    // The Kubot for scale, standing to the side; nothing else of the animation stage.
+    this.kubot.visible = this.preview.kubot;
     for (const o of this.onions) o.visible = false;
     this.dummy.visible = false;
     if (this.preview.kubot) {
       const idle = sampleClip(CLIPS.idle, 0);
-      this.robot.update({ ...idle, y: (idle.y ?? 0) + this.rig.groundLift(idle) }, this.maps(null), -1.6 * UNIT, 0, 0, { lean: 0, squash: 1, alpha: 0.35, flash: false, dtMs: dt, snap: true });
+      this.kubot.update({ ...idle, y: (idle.y ?? 0) + this.rig.groundLift(idle) }, this.maps(null), -1.6 * UNIT, 0, 0, { lean: 0, squash: 1, alpha: 0.35, flash: false, dtMs: dt, snap: true });
     }
     const z = this.cameras.main.zoom;
     this.over.clear().lineStyle(1.5 / z, EVENT, 0.9)
@@ -267,8 +267,8 @@ export class StageScene extends Phaser.Scene {
     const pose = this.poseAt(t);
     const fx = { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: 16, snap: true };
     // The body travels by the clip's x (the game turns it into root motion).
-    this.robot.visible = true;
-    this.robot.update(pose, maps, 0, 0, pose.yaw ?? 0, fx);
+    this.kubot.visible = true;
+    this.kubot.update(pose, maps, 0, 0, pose.yaw ?? 0, fx);
 
     // Onion skins: the keys either side of the current time.
     const keys = s.clipData.keys;
@@ -299,7 +299,7 @@ export class StageScene extends Phaser.Scene {
       const striker = !sword && !move.all;
       const dir = move.behind ? -1 : 1;
       const setName = s.move()!.points;
-      const at = move.points.map((p, index) => this.robot.pointsOn(p.file, p.x, p.y).map((q) => ({ ...q, index, file: p.file })));
+      const at = move.points.map((p, index) => this.kubot.pointsOn(p.file, p.x, p.y).map((q) => ({ ...q, index, file: p.file })));
       const placed = striker ? [at.flat().sort((u, v) => dir * (v.x - u.x))[0]] : move.all ? at.flat() : at.map((l) => l[0]);
       const chosen = new Set(placed.filter(Boolean));
       for (const q of at.flat()) {
@@ -339,7 +339,7 @@ export class StageScene extends Phaser.Scene {
     (s.clipData.events ?? []).forEach((e, index) => {
       if (Math.abs(e.t - t) > tol && !(e.charge && this.charging)) return;
       const bx = s.clip.rootMotion ? (pose.x ?? 0) * ART_SCALE : 0;
-      const at = EventPlayer.where(e, this.robot, { x: bx, y: 0 });
+      const at = EventPlayer.where(e, this.kubot, { x: bx, y: 0 });
       this.eventPoints.push({ ...at, index });
       const r = line(this.hover === `e${index}` ? 8 : 6);
       g.fillStyle(EVENT, 1).fillPoints([{ x: at.x, y: at.y - r }, { x: at.x + r, y: at.y }, { x: at.x, y: at.y + r }, { x: at.x - r, y: at.y }], true);
@@ -410,7 +410,7 @@ export class StageScene extends Phaser.Scene {
       return;
     }
     if (this.startPinch()) return;
-    // Outside the Animation tab the robot is only there to look at: the stage just pans.
+    // Outside the Animation tab the Kubot is only there to look at: the stage just pans.
     const hit = this.mode === 'anim' ? this.pick(p.worldX, p.worldY, p.wasTouch) : null;
     const s = this.store;
     this.pressAt = { x: p.x, y: p.y };
@@ -457,7 +457,7 @@ export class StageScene extends Phaser.Scene {
     if (d.kind === 'dummy') { this.view.dummyX = Math.round((p.worldX / UNIT) * 20) / 20; return; }
     if (d.kind === 'event') {
       const e = s.clipData.events?.[d.index];
-      const share = e && e.part !== 'ground' ? this.robot.shareOnPart(e.part, p.worldX, p.worldY) : null;
+      const share = e && e.part !== 'ground' ? this.kubot.shareOnPart(e.part, p.worldX, p.worldY) : null;
       if (!share) return;
       s.edit('clips', (docs) => {
         const ev = docs.clips[s.sel.clip].events![d.index];
@@ -466,7 +466,7 @@ export class StageScene extends Phaser.Scene {
       return;
     }
     if (d.kind === 'point') {
-      const local = this.robot.pointIn(d.file, p.worldX, p.worldY);
+      const local = this.kubot.pointIn(d.file, p.worldX, p.worldY);
       if (!local) return;
       s.edit('moves', (docs) => {
         const pt = docs.moves.pointSets[d.set][d.index];

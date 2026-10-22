@@ -29,8 +29,8 @@ interface Card {
 }
 
 /**
- * HUDSystem: a "Kube plate" card per robot along the bottom edge (tag on a
- * slab in its helmet colour, segmented health, guard, stock pips, K.O.s),
+ * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
+ * slab in its helmet colour, segmented health, guard, recharge pips, K.O.s),
  * a status chip above each card, and the match timer plate top centre.
  */
 export class HudScene extends Phaser.Scene {
@@ -60,7 +60,7 @@ export class HudScene extends Phaser.Scene {
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
     this.timer = this.add.text(width / 2, 18, '0:00', body(22, { fontStyle: '800' })).setOrigin(0.5);
 
-    // One card per robot in seat order, centred along the bottom edge.
+    // One card per Kubot in seat order, centred along the bottom edge.
     // The map's NPCs (black team) have no card.
     const fighters = this.game_.fighters.filter((k) => !k.home);
     const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
@@ -170,17 +170,17 @@ export class HudScene extends Phaser.Scene {
     const stunned = time < k.stunnedUntil;
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
-    // Stock: cube pips in the helmet colour.
-    // Infinite stocks (below 0) show as one pip and the K.O. count reads ∞.
-    const stocks = this.game_.stocks < 0 ? 1 : this.game_.stocks;
-    const step = Math.min(16, (w - 70) / Math.max(1, stocks - 1));
-    for (let s = 0; s < stocks; s++) {
+    // Recharge: cube pips in the helmet colour.
+    // Infinite recharges (below 0) show as one pip and the K.O. count reads ∞.
+    const recharges = this.game_.recharges < 0 ? 1 : this.game_.recharges;
+    const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
+    for (let s = 0; s < recharges; s++) {
       const cx = x0 + 6 + s * step;
       const pip = new Phaser.Geom.Polygon([cx, 50, cx + 6, 56, cx, 62, cx - 6, 56]);
       if (s < k.lives) b.fillStyle(k.look.color, 1).fillPoints(pip.points, true).lineStyle(1, 0xffffff, 0.55).strokePoints(pip.points, true);
       else b.lineStyle(1, 0xffffff, 0.2).strokePoints(pip.points, true);
     }
-    card.kills.setText(`${this.game_.stocks < 0 ? '∞  ' : ''}K.O. ${k.kills}`);
+    card.kills.setText(`${this.game_.recharges < 0 ? '∞  ' : ''}K.O. ${k.kills}`);
 
     // The status chip above the card.
     let status = '';
@@ -218,7 +218,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onMatchOver(winnerTeam: number | null): void {
-    // One robot: its name; a team of several: the team.
+    // One Kubot: its name; a team of several: the team.
     const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
     const color = winnerTeam === null ? NEON : SLOT_COLORS[winnerTeam];

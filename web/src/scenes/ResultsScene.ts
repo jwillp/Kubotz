@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { SpriterData } from '../spriter/Spriter';
 import { Rig } from '../anim/Rig';
-import { Robot2D } from '../anim/Robot2D';
+import { Kubot2D } from '../anim/Kubot2D';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { mixPoses } from '../anim/Clips';
 import { hex, partTexture } from '../game/Kubotz';
@@ -10,10 +10,10 @@ import { ImpactFx, drawBlade } from '../fx/Impact';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PortalFx } from '../fx/Portals';
 import { GradePipeline, pureAdd, setPass } from '../fx/Grade';
-import { HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoRobot } from '../fx/Hologram';
+import { HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoKubot } from '../fx/Hologram';
 import { backdropOf } from '../fx/Backdrops';
 import { POWER_UPS, type PowerUpType } from '../game/PowerUps';
-import type { FighterStats, HighlightKind, MatchResult, Prop, ReplayFrame, RobotFrame } from '../game/Match';
+import type { FighterStats, HighlightKind, MatchResult, Prop, ReplayFrame, KubotFrame } from '../game/Match';
 import { BODY_FAMILY, HeadingText, heading } from '../ui/Type';
 import { drawPlate, drawStrip, shutter } from '../ui/Plate';
 import { MenuInput } from './MenuInput';
@@ -67,14 +67,14 @@ const FONT = BODY_FAMILY;
 const css = (c: number) => '#' + hex(c);
 
 /**
- * After the match (phase 11 D): every robot's numbers in its colour, then the
+ * After the match (phase 11 D): every Kubot's numbers in its colour, then the
  * match's highlights replayed: the best K.O.s, recoveries and combos, each
  * kind counting down to its best, each slowing to slow motion at its key
  * moment. Continue goes back to the title.
  *
  * The replay is drawn like the match: its backdrop scene behind (the arena's
  * room, drifting with the replay camera), the arena lit by the recorded
- * lights, the robots, and every effect and image the match drew (sparks,
+ * lights, the Kubotz, and every effect and image the match drew (sparks,
  * smoke, blades, swing trails, bolts, power-up balls, debris, portals, glows).
  * Two cameras: the arena (the replay camera, as recorded) and the screen
  * texts over it.
@@ -85,7 +85,7 @@ export class ResultsScene extends Phaser.Scene {
   /** The arena's perspective faces (2.5D exploration), following the replay camera. */
   private perspective: ArenaPerspective | null = null;
   private uiCam!: Phaser.Cameras.Scene2D.Camera;
-  private robots: Robot2D[] = [];
+  private kubotz: Kubot2D[] = [];
   private tags: Phaser.GameObjects.Image[] = [];
   private statsPanel!: Phaser.GameObjects.Container;
   private replayUi!: Phaser.GameObjects.Container;
@@ -108,14 +108,14 @@ export class ResultsScene extends Phaser.Scene {
   private fired = -1;
   private holoG!: Phaser.GameObjects.Graphics;
   private holoAdd!: Phaser.GameObjects.Graphics;
-  /** Per robot, the middle of the robot as replayed (where its motes swirl, what its swing trail belongs to). */
+  /** Per Kubot, the middle of the Kubot as replayed (where its motes swirl, what its swing trail belongs to). */
   private owners: { x: number; y: number }[] = [];
   /** Which highlight plays (-1: the stats are up), its clock and its frame cursor. */
   private current = -1;
   private tau = 0;
   private cursor = 0;
   private holdUntil = 0;
-  /** The robots jump straight to their first pose (no easing in from the last replay's). */
+  /** The Kubotz jump straight to their first pose (no easing in from the last replay's). */
   private snap = true;
   private seenReplays = false;
   private autoReplayAt = 0;
@@ -131,7 +131,7 @@ export class ResultsScene extends Phaser.Scene {
 
   init(result: MatchResult): void {
     this.result = result;
-    this.robots = [];
+    this.kubotz = [];
     this.owners = [];
     this.tags = [];
     this.props = [];
@@ -180,16 +180,16 @@ export class ResultsScene extends Phaser.Scene {
 
     const rig = new Rig(this.registry.get('spriter') as SpriterData);
     r.colors.forEach((color, i) => {
-      const robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, color));
-      robot.visible = false;
-      robot.camera = this.worldCam;
-      this.robots.push(robot);
-      // The player tag over the robot, as in the match (P1, CPU...).
+      const kubot = new Kubot2D(this, rig, (file) => partTexture(this.textures, file, color));
+      kubot.visible = false;
+      kubot.camera = this.worldCam;
+      this.kubotz.push(kubot);
+      // The player tag over the Kubot, as in the match (P1, CPU...).
       const key = r.tags?.[i] ?? `label-${r.fighters[i].input}:${hex(color)}`;
       this.tags.push(this.add.image(0, 0, this.textures.exists(key) ? key : '__DEFAULT').setOrigin(0.5, 1).setDepth(21).setVisible(false));
       this.owners.push({ x: 0, y: 0 });
     });
-    // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the robot, the projector in front of it.
+    // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
     this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
     this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
     this.holoG = this.add.graphics().setDepth(10.5);
@@ -204,7 +204,7 @@ export class ResultsScene extends Phaser.Scene {
     for (const o of this.children.list) this.uiCam.ignore(o);
     this.buildStats();
     this.buildReplayUi();
-    // Anything made from now on (particles, pooled images, the robots' afterimages) belongs to the arena.
+    // Anything made from now on (particles, pooled images, the Kubotz' afterimages) belongs to the arena.
     const onAdd = (o: Phaser.GameObjects.GameObject) => this.uiCam.ignore(o);
     this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, onAdd);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.ADDED_TO_SCENE, onAdd));
@@ -240,7 +240,7 @@ export class ResultsScene extends Phaser.Scene {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '20px', color: '#9fe3ff',
     }).setOrigin(0.5));
 
-    // One row per robot, the numbers in its colour; the best of each column is lit.
+    // One row per Kubot, the numbers in its colour; the best of each column is lit.
     const x0 = 120; const nameW = 260; const colW = (width - 2 * x0 - nameW) / COLUMNS.length;
     const top = 200;
     const rowH = Math.min(84, 380 / Math.max(1, r.names.length));
@@ -253,7 +253,7 @@ export class ResultsScene extends Phaser.Scene {
       const color = r.colors[i];
       const row = this.add.container(0, y);
       const won = winners.includes(i);
-      // A Kube plate per robot, a slab and strip in its colour (lit brighter for the winners).
+      // A Kube plate per Kubot, a slab and strip in its colour (lit brighter for the winners).
       const rw = width - 2 * x0 + 40;
       const rh = rowH - 10;
       const plate = drawPlate(this.add.graphics(), width / 2 - rw / 2, -rh / 2, rw, rh, { cut: 14, edge: won ? color : undefined });
@@ -372,9 +372,9 @@ export class ResultsScene extends Phaser.Scene {
     else this.showStats();
   }
 
-  /** Nothing of the last replay stays: robots, effects, images, lights. */
+  /** Nothing of the last replay stays: Kubotz, effects, images, lights. */
   private clearReplay(): void {
-    for (const k of this.robots) k.visible = false;
+    for (const k of this.kubotz) k.visible = false;
     for (const t of this.tags) t.setVisible(false);
     for (const p of this.props) p.setVisible(false);
     this.impact?.clear();
@@ -427,7 +427,7 @@ export class ResultsScene extends Phaser.Scene {
     this.holoG.clear();
     this.holoAdd.clear();
     this.sabers.clear();
-    a.robots.forEach((ra, i) => this.drawRobot(i, ra, b.robots[i], f, step, cam.zoom, this.tau - a.t));
+    a.kubotz.forEach((ra, i) => this.drawKubot(i, ra, b.kubotz[i], f, step, cam.zoom, this.tau - a.t));
     this.snap = false;
     this.drawProps(a, b, f);
     this.particles.update(step);
@@ -445,7 +445,7 @@ export class ResultsScene extends Phaser.Scene {
         const def = this.effects[e.name];
         if (def) this.particles.play(def, e.x, e.y, e.tint);
       } else if (e.kind === 'twirl') {
-        const o = this.owners[e.robot];
+        const o = this.owners[e.kubot];
         if (o) this.impact.twirl(o, e.color, e.ms);
       } else {
         const target = (e.on === 'portals' ? this.portals : this.impact) as unknown as Record<string, (...a: number[]) => void> | null;
@@ -465,12 +465,12 @@ export class ResultsScene extends Phaser.Scene {
   }
 
   /** @param since ms since frame `ra` was recorded (for the spawn hologram's clock) */
-  private drawRobot(i: number, ra: RobotFrame, rb: RobotFrame, f: number, dtMs: number, zoom: number, since: number): void {
-    const robot = this.robots[i];
+  private drawKubot(i: number, ra: KubotFrame, rb: KubotFrame, f: number, dtMs: number, zoom: number, since: number): void {
+    const kubot = this.kubotz[i];
     const tag = this.tags[i];
     const owner = this.owners[i];
     if (!ra.visible) {
-      robot.visible = false;
+      kubot.visible = false;
       tag.setVisible(false);
       this.impact.swing(owner, null, 0);
       return;
@@ -482,10 +482,10 @@ export class ResultsScene extends Phaser.Scene {
     const both = rb.visible;
     const L = (x: number, y: number) => (both ? x + (y - x) * f : x);
     const pose = both ? mixPoses(ra.pose, rb.pose, f) : ra.pose;
-    robot.visible = true;
+    kubot.visible = true;
     const x = L(ra.x, rb.x);
     const bottom = L(ra.bottom, rb.bottom);
-    robot.update(pose, ra.maps, x, bottom, L(ra.yaw, rb.yaw), {
+    kubot.update(pose, ra.maps, x, bottom, L(ra.yaw, rb.yaw), {
       dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha * (out ? OUT_ALPHA : 1), flash: ra.flash && !out,
       glitch: ra.glitch, shield: ra.shield, snap: this.snap, shade: out ? OUT_SHADE : undefined,
     });
@@ -503,10 +503,10 @@ export class ResultsScene extends Phaser.Scene {
     for (const key of ra.auras ?? []) this.impact.aura(owner, key, POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;
-      holoRobot(robot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
+      holoKubot(kubot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
       drawSpawn(this.holoG, this.holoAdd, hx, feet, age + since, this.tau);
       this.impact.aura(owner, 'hologram', HOLO_COLOR);
-    } else clearHolo(robot.view);
+    } else clearHolo(kubot.view);
   }
 
   /** The recorded images: each on a pooled image, moving smoothly when the next frame has it too. */

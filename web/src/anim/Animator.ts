@@ -2,7 +2,7 @@ import { CLIPS, mixPoses, sampleClip, type Clip } from './Clips';
 import type { Pose, Rig } from './Rig';
 
 /**
- * Plays the clips of one robot: time, the blend from the previous pose on each
+ * Plays the clips of one Kubot: time, the blend from the previous pose on each
  * switch, keeping the boots on the ground, and the forward travel of strikes
  * (handed to the game as root motion so the body really moves).
  */

@@ -8,7 +8,7 @@ import { host, store } from './Host';
 import { Config } from '../config';
 import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
-import { MAX_MAP_LIGHTS, npcStocks, warpExit, type ArenaData, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
+import { MAX_MAP_LIGHTS, npcRecharges, warpExit, type ArenaData, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
 import { MUSIC } from '../audio/Sounds';
 import { addMusic } from '../game/Settings';
 import { ROOM_CHOICES } from '../fx/Backdrops';
@@ -370,7 +370,7 @@ export function installDevHud(game: Phaser.Game): void {
           choose('Behaviour', 'What the NPC does. It fights back when hit whatever it does.', [['attack', 'Attack: goes for the nearest Kubot'], ['flee', 'Flee: keeps away from Kubotz'], ['idle', 'Idle: stands its ground']], npc.behaviour, (val) => editArena((x) => { x.npcs![p.index].behaviour = val as NpcBehaviour; })),
           choose('Level', 'How good it is, like a CPU in the setup screen: how fast it reacts.', Array.from({ length: 9 }, (_, i) => [String(i + 1), `${i + 1}${i === 0 ? ' (easiest)' : i === 4 ? ' (normal)' : i === 8 ? ' (hardest)' : ''}`] as [string, string]), String(npc.level ?? 5), (val) => editArena((x) => { x.npcs![p.index].level = Number(val); })),
           h('div', { cls: 'dev-grid' },
-            num('Stocks (<0: infinite)', npcStocks(npc), (n) => editArena((x) => { const q = x.npcs![p.index]; delete q.respawn; q.stocks = Math.round(n); }), 1),
+            num('Recharges (<0: infinite)', npcRecharges(npc), (n) => editArena((x) => { const q = x.npcs![p.index]; delete q.respawn; q.recharges = Math.round(n); }), 1),
             num('Respawn after ms', npc.respawnMs ?? Config.RESPAWN_DELAY, (n) => editArena((x) => { x.npcs![p.index].respawnMs = Math.max(0, n); }), 100)),
           choose('Helmet', 'Its helmet (it is painted black).', ['flame', 'terminator', 'big buff', 'skull'].map((l, i) => [String(i), l] as [string, string]), String(npc.helmet ?? 3), (val) => editArena((x) => { x.npcs![p.index].helmet = Number(val); })),
         );
@@ -486,8 +486,8 @@ export function installDevHud(game: Phaser.Game): void {
       build();
     };
     game.events.on(Phaser.Core.Events.POST_STEP, ready);
-    // Infinite stocks: a K.O. never ends the match (and the editing with it).
-    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', stocks: -1, editor: true });
+    // Infinite recharges: a K.O. never ends the match (and the editing with it).
+    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', recharges: -1, editor: true });
   };
 
   // The DEV button shows in matches only; the panel closes when the match ends.

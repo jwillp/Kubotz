@@ -1,7 +1,7 @@
 import { Config } from '../config';
 
 /**
- * Movement "feel" presets: the robots' run, walk, air control, gravity, fall
+ * Movement "feel" presets: the Kubotz' run, walk, air control, gravity, fall
  * speeds and jumps, either the Kubot's own or those of a Super Smash Bros.
  * Ultimate fighter converted to Kubotz units (docs/ultimate-reference: speeds
  * x 60 x s, accelerations x 3600 x s, with s = 0.1333 Kubotz units per Ultimate
@@ -55,7 +55,7 @@ let currentKey = fromUrl && FEELS[fromUrl] ? fromUrl : (() => {
   try { const k = localStorage.getItem(KEY); return k && FEELS[k] ? k : 'kubot'; } catch { return 'kubot'; }
 })();
 
-/** The feel the robots move with now. */
+/** The feel the Kubotz move with now. */
 export const feel = (): Feel => FEELS[currentKey];
 
 export function setFeel(key: string): Feel {

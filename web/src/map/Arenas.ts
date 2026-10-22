@@ -13,7 +13,7 @@ export type Rect = [x: number, y: number, w: number, h: number];
 
 /**
  * A portal: its rectangle, and where it leads (the exit point, units: where a
- * robot's middle comes out, keeping its speed). Without an exit, two portals
+ * Kubot's middle comes out, keeping its speed). Without an exit, two portals
  * lead to each other (the left one out in front of the right one and back).
  */
 export type Warp = [x: number, y: number, w: number, h: number, exitX?: number, exitY?: number];
@@ -45,7 +45,7 @@ export interface ArenaDef {
   spawns: [x: number, y: number][];
   /** Centres. */
   bonus: [x: number, y: number][];
-  /** How far past the map's edges a robot can go before it is out (units): left, top, right, bottom. */
+  /** How far past the map's edges a Kubot can go before it is out (units): left, top, right, bottom. */
   blast?: [l: number, t: number, r: number, b: number];
   /** Tiles painted over the automatic ones. */
   tiles?: TilePaint[];
@@ -80,14 +80,14 @@ export type NpcBehaviour = 'attack' | 'flee' | 'idle';
 /**
  * An NPC: where its feet are (units), what it does (attack the nearest
  * Kubot, keep away from Kubotz, stand still), how good it is (CPU level 1
- * to 9, default 5), its stocks (below 0, the default: infinite), how long
+ * to 9, default 5), its recharges (below 0, the default: infinite), how long
  * after a K.O. it comes back (ms, default the game's) and its helmet (HEADS
- * index). `respawn: false` (older files) means one stock.
+ * index). `respawn: false` (older files) means one recharge.
  */
-export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; level?: number; stocks?: number; respawnMs?: number; respawn?: boolean; helmet?: number }
+export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; level?: number; recharges?: number; respawnMs?: number; respawn?: boolean; helmet?: number }
 
-/** An NPC's stocks: below 0 is infinite. */
-export const npcStocks = (n: MapNpc): number => n.stocks ?? (n.respawn === false ? 1 : -1);
+/** An NPC's recharges: below 0 is infinite. */
+export const npcRecharges = (n: MapNpc): number => n.recharges ?? (n.respawn === false ? 1 : -1);
 
 /** The NPCs' team and colour: one team for every map NPC, hostile to the players. */
 export const NPC_TEAM = 99;

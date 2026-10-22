@@ -1,5 +1,5 @@
 import { CLIPS } from './Clips';
-import type { Robot2D } from './Robot2D';
+import type { Kubot2D } from './Kubot2D';
 import type { ParticleHandle } from '../fx/ParticleEffect';
 
 /**
@@ -12,7 +12,7 @@ import type { ParticleHandle } from '../fx/ParticleEffect';
 export interface ClipEvent {
   t: number;
   effect: string;
-  /** A part of kubotz.scml (see PARTS), or "ground" for under the robot's feet. */
+  /** A part of kubotz.scml (see PARTS), or "ground" for under the Kubot's feet. */
   part: string;
   x: number;
   y: number;
@@ -35,10 +35,10 @@ export const PARTS: Record<string, string> = {
   thigh_sha: 'back thigh',
 };
 
-/** Starts an effect at a world point; `flip` mirrors it for a robot facing left (effects are made facing right). */
+/** Starts an effect at a world point; `flip` mirrors it for a Kubot facing left (effects are made facing right). */
 export type PlayEffect = (effect: string, x: number, y: number, flip: boolean) => ParticleHandle | null;
 
-/** Plays one robot's clip events as its clips run. */
+/** Plays one Kubot's clip events as its clips run. */
 export class EventPlayer {
   private clip = '';
   private last = -1;
@@ -54,16 +54,16 @@ export class EventPlayer {
   }
 
   /** Where an event's effect starts now. */
-  static where(e: ClipEvent, robot: Robot2D, feet: { x: number; y: number }): { x: number; y: number } {
-    return e.part === 'ground' ? feet : robot.pointOnPart(e.part, e.x, e.y) ?? feet;
+  static where(e: ClipEvent, kubot: Kubot2D, feet: { x: number; y: number }): { x: number; y: number } {
+    return e.part === 'ground' ? feet : kubot.pointOnPart(e.part, e.x, e.y) ?? feet;
   }
 
   /**
-   * After the robot is drawn: fires the events passed since the last call
+   * After the Kubot is drawn: fires the events passed since the last call
    * (a loop or a restart fires them again), moves the ones that follow, and
    * keeps the charge events going while `charging`.
    */
-  update(clipName: string, progress: number, robot: Robot2D, feet: { x: number; y: number }, charging: boolean, flip = false): void {
+  update(clipName: string, progress: number, kubot: Kubot2D, feet: { x: number; y: number }, charging: boolean, flip = false): void {
     if (clipName !== this.clip) { this.clip = clipName; this.last = -1; this.following = []; this.stopCharge(); }
     const events = CLIPS[clipName]?.events ?? [];
     const wrapped = progress < this.last;
@@ -71,21 +71,21 @@ export class EventPlayer {
       if (e.charge) continue;
       const passed = wrapped ? e.t > this.last || e.t <= progress : e.t > this.last && e.t <= progress;
       if (!passed) continue;
-      const at = EventPlayer.where(e, robot, feet);
+      const at = EventPlayer.where(e, kubot, feet);
       const handle = this.play(e.effect, at.x, at.y, flip);
       if (handle && e.follow) this.following.push({ event: e, handle });
     }
     this.last = progress;
     this.following = this.following.filter(({ event, handle }) => {
       if (handle.done) return false;
-      const at = EventPlayer.where(event, robot, feet);
+      const at = EventPlayer.where(event, kubot, feet);
       handle.moveTo(at.x, at.y);
       return true;
     });
     if (!charging) { this.stopCharge(); return; }
     for (const e of events) {
       if (!e.charge) continue;
-      const at = EventPlayer.where(e, robot, feet);
+      const at = EventPlayer.where(e, kubot, feet);
       let h = this.charging.get(e);
       if (!h || h.done) { h = this.play(e.effect, at.x, at.y, flip) ?? undefined; if (h) this.charging.set(e, h); }
       h?.moveTo(at.x, at.y);

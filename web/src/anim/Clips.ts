@@ -3,7 +3,7 @@ import { DATA_FILES, fromFiles } from '../game/DataFiles';
 import type { ClipEvent } from './ClipEvents';
 
 /**
- * The robots' animation set: keyed poses (see Rig.ts for how a pose reads:
+ * The Kubotz' animation set: keyed poses (see Rig.ts for how a pose reads:
  * bone directions facing right, 0 = forwards, 90 = up), kept in
  * src/data/clips (one file each) so the editor can change them. Strikes wind up, snap out
  * and hold before settling back; every clip blends into the next
@@ -21,7 +21,7 @@ export interface Clip {
   loop: boolean;
   /** Lifted so that the lowest boot stays on the ground (y then adds a hop). */
   planted: boolean;
-  /** Forward motion moves the robot itself (root motion) instead of only its drawing. */
+  /** Forward motion moves the Kubot itself (root motion) instead of only its drawing. */
   rootMotion?: boolean;
   keys: Key[];
   /** Particle effects started along the clip (see ClipEvents.ts). */

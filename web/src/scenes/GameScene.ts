@@ -8,14 +8,14 @@ import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type RobotFrame } from '../game/Match';
+import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx, type ParticleHandle } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcStocks, warpExit, type LightEffect } from '../map/Arenas';
+import { ARENAS, DEFAULT_BLAST, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -75,7 +75,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** How finely the arena is baked: 1 in a match, less for the setup screen's preview (shown small and blurred) so switching arenas does not stall. */
   private bakeScale = 1;
   private perspective: ArenaPerspective | null = null;
-  /** Ledges robots can hang from (top corners of solid blocks). */
+  /** Ledges Kubotz can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
   private nav!: Nav;
   private debris!: DebrisField;
@@ -109,7 +109,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   arena = 0;
   /** How this match was started (the in-game editor restarts it as it was). */
   setup?: MatchSetup;
-  /** The robots' specs from the setup screen, by fighter index. */
+  /** The Kubotz' specs from the setup screen, by fighter index. */
   specs: FighterSpec[] = [];
   /** The winning team, null for a draw; undefined while the match runs. */
   winnerTeam: number | null | undefined;
@@ -117,13 +117,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   clock = 0;
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
   startedAt: number = Config.COUNTDOWN;
-  /** Lives each robot starts with, and the match length in ms (0: no limit). */
-  stocks: number = Config.NB_LIVES;
+  /** Lives each Kubot starts with, and the match length in ms (0: no limit). */
+  recharges: number = Config.NB_LIVES;
   timeLimit = 0;
   private countdownStep = -1;
-  /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every robot's spawn is shown). */
+  /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every Kubot's spawn is shown). */
   private countdownAt = 0;
-  /** Match intro: when each robot starts its spawn, by fighter index; the spawn sound plays on each. */
+  /** Match intro: when each Kubot starts its spawn, by fighter index; the spawn sound plays on each. */
   private introAt: number[] = [];
   private introSounded = 0;
   paused = false;
@@ -171,7 +171,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.setup = setup;
     this.specs = setup.fighters.slice(0, 4);
-    this.stocks = setup.stocks ?? Config.NB_LIVES;
+    this.recharges = setup.recharges ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -199,7 +199,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
-    // Each robot forms as a hologram while the camera is on it and waits; once
+    // Each Kubot forms as a hologram while the camera is on it and waits; once
     // all are shown the countdown starts, and they materialize together during
     // it, let go on "Fight".
     this.countdownAt = setup.editor ? -Config.COUNTDOWN - 1000 : this.specs.length * INTRO_FOCUS_MS;
@@ -227,7 +227,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
       // Below 0: infinite (the editor's own arena match, so a K.O. never ends it).
-      k.lives = this.stocks < 0 ? Infinity : this.stocks;
+      k.lives = this.recharges < 0 ? Infinity : this.recharges;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
@@ -241,7 +241,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.addNpcs(rig, setup);
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
-    // The camera starts on the first robot's spawn (updateCamera follows the intro).
+    // The camera starts on the first Kubot's spawn (updateCamera follows the intro).
     const cam = this.cameras.main;
     const first = this.introFocus() ?? this.centerOfFighters();
     this.camTarget.set(first.x, first.y);
@@ -289,7 +289,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       laserSmoke.mode = LASER_SMOKE_MODES[(LASER_SMOKE_MODES.indexOf(laserSmoke.mode) + 1) % LASER_SMOKE_MODES.length];
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Laser smoke: ${laserSmoke.mode}`, 0xffffff);
     });
-    // Debug mode (F3): K knocks out the nearest robot that isn't P1, to see the K.O. smoke.
+    // Debug mode (F3): K knocks out the nearest Kubot that isn't P1, to see the K.O. smoke.
     kb.on('keydown-K', () => {
       if (!this.debugState.on) return;
       const p1 = this.fighters[0];
@@ -299,7 +299,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
-      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn robots' : 'Clean robots', 0xffffff);
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn Kubotz' : 'Clean Kubotz', 0xffffff);
     });
     // Debug mode; the function keys are kept from the browser while the game has the keyboard.
     kb.addCapture([Phaser.Input.Keyboard.KeyCodes.F3, Phaser.Input.Keyboard.KeyCodes.F4, Phaser.Input.Keyboard.KeyCodes.F6,
@@ -451,8 +451,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
     this.ledges = findLedges(this.blocks);
-    // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
-    // at (8, 7)): add mirrored and central spawns so up to four robots start apart.
+    // The original map has a single PLAYER_SPAWN (the second Kubot was hard-coded
+    // at (8, 7)): add mirrored and central spawns so up to four Kubotz start apart.
     if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
     this.playerSpawns.push(
@@ -626,9 +626,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const k = new Kubotz(this, this.fighters.length, controller, NPC_COLOR, rig, spot.x, spot.y, this, this.physicsWorld, { team: NPC_TEAM, helmet: n.helmet ?? 3 });
       controller.agent = k;
       k.home = { x: spot.x, y: spot.y, respawnMs: n.respawnMs };
-      // Its stocks (below 0: infinite); it never counts to win either way.
-      const stocks = npcStocks(n);
-      k.lives = stocks < 0 ? Infinity : Math.max(1, stocks);
+      // Its recharges (below 0: infinite); it never counts to win either way.
+      const recharges = npcRecharges(n);
+      k.lives = recharges < 0 ? Infinity : Math.max(1, recharges);
       k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
       this.fighters.push(k);
       // In the editor's rebuilds an NPC is simply there (no hologram).
@@ -776,7 +776,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return best;
   }
 
-  /** A free ledge whose top is level with the robot's hands, on the side the robot is (edge hogging: one robot per ledge). */
+  /** A free ledge whose top is level with the Kubot's hands, on the side the Kubot is (edge hogging: one Kubot per ledge). */
   ledgeNear(k: Kubotz): Ledge | null {
     for (const l of this.ledges) {
       const out = (k.x - l.x) * l.dir;
@@ -835,19 +835,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkDeaths(now);
     this.checkTime(now);
     this.updateBonusSpawns(now);
-    const drawn = new Map<Kubotz, Partial<RobotFrame>>();
+    const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
       k.render(now, dtMs);
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
       const arc = k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null;
       this.impact.swing(k, arc, k.look.color);
-      // Invincibility and shield: the orb's motes keep circling the robot while they last.
+      // Invincibility and shield: the orb's motes keep circling the Kubot while they last.
       const auras: string[] = [];
       if (k.isAlive() && k.invincible) auras.push('invincibility');
       if (k.isAlive() && k.shield > 0) auras.push('shield');
       for (const key of auras) this.impact.aura(k, key, POWER_UPS[key as 'shield'].color);
-      // What the replays draw with the robot.
+      // What the replays draw with the Kubot.
       const b = k.isAlive() ? k.blade() : null;
       drawn.set(k, {
         ...(b ? { blade: [b.x1, b.y1, b.x2, b.y2] as [number, number, number, number] } : {}),
@@ -873,7 +873,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.drawSabers(now);
     const amb = this.lights.ambientColor;
     this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now), {
-      robot: (k) => drawn.get(k) ?? {},
+      kubot: (k) => drawn.get(k) ?? {},
       props: [
         ...this.debris.props(now),
         ...this.orbs.flatMap((o) => o.props()),
@@ -993,7 +993,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   // -------------------------------------------------------------- lights
   /**
-   * Light2D over the arena and robots (their normal maps are generated at
+   * Light2D over the arena and Kubotz (their normal maps are generated at
    * boot): a warm key light from the upper front, a cool rim light from
    * behind, both following the camera, and a pool of coloured point lights.
    */
@@ -1071,7 +1071,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
   private updateCountdown(now: number): void {
-    if (now < this.countdownAt || this.setup?.editor) return; // the intro is still showing the robots (the editor's restarts have none)
+    if (now < this.countdownAt || this.setup?.editor) return; // the intro is still showing the Kubotz (the editor's restarts have none)
     const step = Math.min(3, Math.floor((now - this.countdownAt) / 1000));
     if (step === this.countdownStep) return;
     this.countdownStep = step;
@@ -1080,7 +1080,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
   }
 
-  /** What the attacker's hits and bolts can land on: robots of the other teams (teammates are passed through). */
+  /** What the attacker's hits and bolts can land on: Kubotz of the other teams (teammates are passed through). */
   private damageablesFor(attacker: Kubotz): Damageable[] {
     return this.fighters.filter((f) => canHurt(attacker, f) && f.isAlive() && !f.intangible);
   }
@@ -1121,7 +1121,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
-  /** Robots running into a power-up ball kick it along. */
+  /** Kubotz running into a power-up ball kick it along. */
   private kickOrbs(now: number): void {
     for (const orb of this.orbs) {
       if (now < orb.kickedUntil) continue;
@@ -1211,14 +1211,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * WARP_ZONE objects (unused in the original) wrap robots and laser bullets
+   * WARP_ZONE objects (unused in the original) wrap Kubotz and laser bullets
    * across the arena, so a shot fired into a portal comes back from the other
    * side. Falling out of the arena kills.
    */
   private checkBoundsAndWarps(_now: number): void {
     const mapW = this.map.width * UNIT;
     const mapH = this.map.height * UNIT;
-    // The blast zone: how far past each edge a robot can go (the arena's file can set it).
+    // The blast zone: how far past each edge a Kubot can go (the arena's file can set it).
     const [left, top, right, bottom] = ARENAS[this.arena]?.blast ?? DEFAULT_BLAST;
     for (const k of this.fighters) {
       if (!k.isAlive()) continue;
@@ -1226,7 +1226,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         k.health = 0;
         continue;
       }
-      // A robot going through makes the rift's whoosh (in replays too: playSfx records it).
+      // A Kubot going through makes the rift's whoosh (in replays too: playSfx records it).
       this.warp(k, k.x, k.y, k.body.vx, k.body.vy, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
     }
     // Everything else that moves goes through the portals too: laser bolts,
@@ -1321,7 +1321,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const f of this.fighters) if (!f.eliminated && f.team === winner) f.celebrating = true;
   }
 
-  /** The robots of a team. */
+  /** The Kubotz of a team. */
   teamOf(team: number): Kubotz[] {
     return this.fighters.filter((f) => f.team === team);
   }
@@ -1351,7 +1351,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), k.home.y);
       return;
     }
-    // Prefer the spawn point farthest from the other robots.
+    // Prefer the spawn point farthest from the other Kubotz.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
     const spawn = [...this.playerSpawns].sort((p, q) => {
       const d = (v: Phaser.Math.Vector2) => Math.min(...others.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
@@ -1364,10 +1364,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // ------------------------------------------------------------------ camera
-  /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
+  /** What the camera keeps in view: the Kubotz still fighting, and the power-ups on offer. */
   private focusPoints(): { x: number; y: number }[] {
     const alive = this.fighters.filter((f) => f.isAlive() && !f.home); // the map's NPCs are not followed
-    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the robots.
+    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
     return alive.length === 0 ? [] : [...alive, ...fresh];
   }
@@ -1380,15 +1380,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
-  /** Match intro: the robot whose spawn the camera is showing (its spawn point), or null once all are shown. */
+  /** Match intro: the Kubot whose spawn the camera is showing (its spawn point), or null once all are shown. */
   private introFocus(): { x: number; y: number } | null {
     const i = Math.floor(this.clock / INTRO_FOCUS_MS);
     const k = this.fighters[i];
-    // A little low, so the projector under the robot shows above the HUD cards.
+    // A little low, so the projector under the Kubot shows above the HUD cards.
     return this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
   }
 
-  /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
+  /** CameraSystem: lerp to the centre of all Kubotz (and new power-ups), zoom to fit them. */
   private updateCamera(dt: number): void {
     const pts = this.focusPoints();
     // The intro moves faster: close on each spawn in turn, then back out to the fight.
@@ -1495,9 +1495,9 @@ const SHAKE_DECAY = 1.8;
 const PAUSE_MUSIC = 0.3;
 
 /**
- * Match intro: the robots appear as holograms one after the other, the
+ * Match intro: the Kubotz appear as holograms one after the other, the
  * camera on each for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while
- * the camera takes INTRO_RETURN_MS back out to the fight view; the robots
+ * the camera takes INTRO_RETURN_MS back out to the fight view; the Kubotz
  * materialize during the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how
  * much of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much faster than in
  * the fight the camera moves meanwhile.

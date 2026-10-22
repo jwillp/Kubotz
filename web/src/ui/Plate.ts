@@ -10,7 +10,7 @@ import { liveCameras, screenScan, tvCut } from '../fx/ScreenScan';
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
  * Hard-edged gunmetal like the Kube's walls, two opposite corners cut at 45°
- * like the robots' helmets, lit by cyan strips like the arenas' block edges.
+ * like the Kubotz' helmets, lit by cyan strips like the arenas' block edges.
  */
 export const METAL_TOP = 0x2a3a50;
 export const METAL = 0x0d1520;

@@ -36,7 +36,7 @@ export class CpuController implements Controller {
   readonly debug: { mode: string; dest: { x: number; y: number } | null; path: Link[] } = { mode: '', dest: null, path: [] };
   /**
    * A map NPC's behaviour (arena files): 'attack' plays like any CPU, 'flee'
-   * keeps away from the robots near it, 'idle' stands its ground (it still
+   * keeps away from the Kubotz near it, 'idle' stands its ground (it still
    * hits back at whoever comes in reach). Players' CPUs leave it unset.
    */
   behaviour?: 'attack' | 'flee' | 'idle';
@@ -86,13 +86,13 @@ export class CpuController implements Controller {
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
     const alive = this.world.enemiesOf(me).filter((e) => e.isAlive());
-    // Hitting an invincible robot does nothing: fight the others, keep away from it.
+    // Hitting an invincible Kubot does nothing: fight the others, keep away from it.
     const enemies = alive.filter((e) => !e.invincible);
     const untouchable = alive.filter((e) => e.invincible && manhattan(me, e) < 6);
 
     let enemy: Kubotz | null = null;
     for (const e of enemies) if (!enemy || manhattan(me, e) < manhattan(me, enemy)) enemy = e;
-    // An idle NPC only strikes at a robot right in front of it; a fleeing one runs from any robot nearby.
+    // An idle NPC only strikes at a Kubot right in front of it; a fleeing one runs from any Kubot nearby.
     if (this.behaviour === 'idle') {
       this.debug.mode = 'idle (NPC)';
       if (enemy && Math.abs(enemy.x - me.x) < 1.3 * UNIT && Math.abs(enemy.y - me.y) < 1.5 * UNIT) {
@@ -171,7 +171,7 @@ export class CpuController implements Controller {
           pad.up = true; // the up tilt, or now and then the up smash
           if (Math.random() < 0.3) pad.smash = true;
         } else if (Math.random() < 0.06 && Math.sign(dx) === me.facing) {
-          // Special moves now and then: the Ion Punch on a robot still reeling, else the Plasma Kick.
+          // Special moves now and then: the Ion Punch on a Kubot still reeling, else the Plasma Kick.
           pad.attack = false;
           pad.special = true;
           if (!(enemy.tumbling || enemy.health < 30)) pad.down = true;
@@ -217,7 +217,7 @@ export class CpuController implements Controller {
       default: break;
     }
 
-    // Never run off the edge after a robot flying over the void.
+    // Never run off the edge after a Kubot flying over the void.
     const mine = me.body.grounded ? this.world.nav.surfaceAt(me.x, me.body.bottom, UNIT) : null;
     if (mine && !this.world.nav.surfaceAt(dest.x, dest.bottom)) {
       const safeX = Math.min(mine.x2 - UNIT, Math.max(mine.x1 + UNIT, dest.x));
@@ -249,7 +249,7 @@ export class CpuController implements Controller {
     const me = this.agent;
     const nav = this.world.nav;
     const grounded = me.body.grounded;
-    // (Standing on another robot is not on a surface: carry on as in the air.)
+    // (Standing on another Kubot is not on a surface: carry on as in the air.)
     const mine = grounded ? nav.surfaceAt(me.x, me.body.bottom, UNIT) : null;
     if (mine) {
       const goal = nav.surfaceAt(dest.x, dest.bottom);
@@ -276,7 +276,7 @@ export class CpuController implements Controller {
       return 'here';
     }
     const steer = (x: number, dead: number) => {
-      // Brake in time: robots keep their speed in the air and slide on the ground.
+      // Brake in time: Kubotz keep their speed in the air and slide on the ground.
       const dx = x - me.x;
       const v = me.body.vx;
       const stop = (v * v) / (2 * Config.RUN_ACCELERATION * UNIT);
@@ -292,8 +292,8 @@ export class CpuController implements Controller {
     let fromMax = l.fromMax;
     let toX = l.toX;
     if (l.kind === 'jump' && target.soft && fromMax - fromMin > UNIT) {
-      // Jumping up through a platform: not right under the robot standing on
-      // it, robots bump into each other.
+      // Jumping up through a platform: not right under the Kubot standing on
+      // it, Kubotz bump into each other.
       const sides = [dest.x - 2 * UNIT, dest.x + 2 * UNIT].map((x) => clampTo(x, fromMin, fromMax));
       const aim = Math.abs(sides[0] - dest.x) >= Math.abs(sides[1] - dest.x) ? sides[0] : sides[1];
       if (Math.abs(aim - dest.x) > UNIT) {
@@ -344,7 +344,7 @@ export class CpuController implements Controller {
    * Knocked out over the void: steer back towards the nearest surface and
    * jump when falling below it.
    */
-  /** Holding a robot: pummel for a moment, then throw it, mostly towards the nearer edge. */
+  /** Holding a Kubot: pummel for a moment, then throw it, mostly towards the nearer edge. */
   private grabbing(pad: PadState, now: number): PadState {
     const me = this.agent;
     if (!this.holdSince) { this.holdSince = now; this.pummelFor = Math.random() < 0.4 ? 0 : 300 + Math.random() * 700; }
