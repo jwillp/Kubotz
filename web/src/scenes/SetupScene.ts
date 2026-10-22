@@ -40,7 +40,8 @@ const CENTER_W = 300;
 const STOCKS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
-const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull'];
+const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
+  'Diver', 'Mantis', 'Sentinel', 'Tank', 'Astro', 'Brute'];
 /** Rows in a slot: who drives it, its helmet, its team. */
 const FIELDS = ['input', 'helmet', 'team'] as const;
 type Field = typeof FIELDS[number];

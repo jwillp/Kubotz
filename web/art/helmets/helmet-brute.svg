@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="260" viewBox="0 0 250 260">
+<defs>
+ <linearGradient id="blk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2c2c2c"/><stop offset="1" stop-color="#111"/></linearGradient>
+ <linearGradient id="blkv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#262626"/><stop offset="1" stop-color="#0e0e0e"/></linearGradient>
+ <linearGradient id="neck" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0c0c0c"/><stop offset="1" stop-color="#000"/></linearGradient>
+ <linearGradient id="met" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#bdbdbd"/><stop offset="1" stop-color="#7a7a7a"/></linearGradient>
+ <linearGradient id="metv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8b8b8"/><stop offset="1" stop-color="#6e6e6e"/></linearGradient>
+ <linearGradient id="metd" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7c7c7c"/><stop offset="1" stop-color="#4a4a4a"/></linearGradient>
+ <radialGradient id="dome" cx="0.36" cy="0.3" r="0.78"><stop offset="0" stop-color="#d6d6d6"/><stop offset="0.55" stop-color="#a2a2a2"/><stop offset="1" stop-color="#6a6a6a"/></radialGradient>
+ <linearGradient id="acc" x1="0" y1="0" x2="1" y2="0.5"><stop offset="0" stop-color="#2a9bff"/><stop offset="0.5" stop-color="#0a5cf0"/><stop offset="1" stop-color="#0016e0"/></linearGradient>
+ <linearGradient id="accv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3aa6ff"/><stop offset="0.5" stop-color="#0a5cf0"/><stop offset="1" stop-color="#0014d0"/></linearGradient>
+ <radialGradient id="lens" cx="0.4" cy="0.38" r="0.65"><stop offset="0" stop-color="#47b0ff"/><stop offset="0.6" stop-color="#0a5cf0"/><stop offset="1" stop-color="#0018b0"/></radialGradient>
+ <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#2a8cff" stop-opacity="0.75"/><stop offset="1" stop-color="#2a8cff" stop-opacity="0"/></radialGradient>
+ <radialGradient id="disc" cx="0.38" cy="0.35" r="0.7"><stop offset="0" stop-color="#d2d2d2"/><stop offset="0.7" stop-color="#9c9c9c"/><stop offset="1" stop-color="#787878"/></radialGradient>
+ <linearGradient id="smoke" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#30353d"/><stop offset="1" stop-color="#08090b"/></linearGradient>
+ <linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="glh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d4d4d4"/><stop offset="0.5" stop-color="#9a9a9a"/><stop offset="1" stop-color="#5c5c5c"/></linearGradient>
+ <linearGradient id="ringi" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cfcfcf"/><stop offset="1" stop-color="#555"/></linearGradient>
+ <linearGradient id="depth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#001060" stop-opacity="0.55"/><stop offset="0.45" stop-color="#001060" stop-opacity="0"/></linearGradient>
+ <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+ <linearGradient id="slat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#1c1c1c"/></linearGradient>
+</defs>
+<path d="M128,182 L206,182 L206,256 L116,256 Z" fill="url(#neck)"/>
+<g transform="translate(206 256) scale(0.795) translate(-206 -256)">
+<path d="M24,120 Q30,40 120,24 Q206,16 230,92 L234,170 L212,196 L142,204 L124,242 L30,248 Q12,200 24,120 Z" fill="url(#blk)"/>
+<path d="M150,60 L156,200" stroke="#070707" stroke-width="2"/>
+<path d="M70,32 Q150,18 212,58 L198,66 Q142,34 80,46 Z" fill="url(#acc)"/>
+<path d="M70,32 Q150,18 212,58 L210,60 Q150,24 74,36 Z" fill="#fff" fill-opacity="0.22"/>
+<path d="M12,96 Q60,70 152,70 L156,98 Q80,92 18,118 Z" fill="url(#metv)"/>
+<path d="M12,96 Q60,70 152,70 L152,74 Q62,74 14,100 Z" fill="#e0e0e0"/>
+<path d="M18,118 Q80,92 156,98 L156,106 Q80,102 22,128 Z" fill="url(#shade)"/>
+<circle cx="30" cy="96" r="3.4" fill="#262626"/><circle cx="29" cy="95" r="1.2" fill="#6a6a6a"/>
+<circle cx="140" cy="80" r="3.4" fill="#262626"/><circle cx="139" cy="79" r="1.2" fill="#6a6a6a"/>
+<path d="M26,114 L82,107 L80,123 L28,130 Z" fill="#0a0a0a"/>
+<ellipse cx="54" cy="118" rx="28" ry="12" fill="url(#glow)"/>
+<path d="M30,116 L78,110 L77,119 L31,125 Z" fill="url(#acc)"/>
+<path d="M6,152 L132,136 L142,196 L124,246 L22,250 Q4,210 6,152 Z" fill="url(#met)"/>
+<path d="M6,152 L132,136 L132,140 L7,156 Z" fill="#e0e0e0"/>
+<path d="M142,196 L124,246 L22,250 L20,242 L120,238 L136,194 Z" fill="#000" fill-opacity="0.18"/>
+<g fill="url(#slat)"><rect x="24" y="174" width="10" height="56" rx="2"/><rect x="44" y="172" width="10" height="60" rx="2"/><rect x="64" y="170" width="10" height="62" rx="2"/><rect x="84" y="168" width="10" height="64" rx="2"/><rect x="104" y="166" width="10" height="64" rx="2"/></g>
+<g fill="#d8d8d8"><rect x="24" y="230" width="10" height="1.5"/><rect x="44" y="232" width="10" height="1.5"/><rect x="64" y="232" width="10" height="1.5"/><rect x="84" y="232" width="10" height="1.5"/><rect x="104" y="230" width="10" height="1.5"/></g>
+<circle cx="16" cy="162" r="3.4" fill="#262626"/><circle cx="15" cy="161" r="1.2" fill="#6a6a6a"/>
+<circle cx="124" cy="148" r="3.4" fill="#262626"/><circle cx="123" cy="147" r="1.2" fill="#6a6a6a"/>
+<circle cx="26" cy="240" r="3.4" fill="#262626"/><circle cx="25" cy="239" r="1.2" fill="#6a6a6a"/>
+<circle cx="120" cy="236" r="3.4" fill="#262626"/><circle cx="119" cy="235" r="1.2" fill="#6a6a6a"/>
+<circle cx="184" cy="118" r="39" fill="#141414"/><circle cx="184" cy="118" r="32" fill="url(#acc)"/><circle cx="184" cy="118" r="26" fill="#1a1a1a"/><circle cx="184" cy="118" r="23" fill="url(#ring)"/><circle cx="184" cy="118" r="19" fill="url(#disc)"/><ellipse cx="178" cy="110" rx="10" ry="6" fill="url(#gl)"/>
+</g></svg>
