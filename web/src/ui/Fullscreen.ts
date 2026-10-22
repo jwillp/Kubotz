@@ -29,23 +29,27 @@ export function gamepads(): Gamepad[] {
 }
 
 /**
- * The element shown fullscreen is the game's parent, which a page may size
- * for the window (a fixed width, a border): while fullscreen it fills the
- * screen, black around the game, and gets its own look back after.
+ * Fullscreen moves the canvas into a screen-sized element, but the game is
+ * still fitted to its parent, which a page may size for the window (a fixed
+ * width, a border): while fullscreen the parent takes the screen's size too,
+ * and gets its own look back after.
  */
 function fillScreen(game: Phaser.Game, on: boolean): void {
-  const el = (on ? document.fullscreenElement : game.scale.fullscreenTarget) as HTMLElement | null;
+  const el = game.scale.parent as HTMLElement | null;
   if (!el) return;
   if (on) {
     el.dataset.windowStyle ??= el.getAttribute('style') ?? '';
     Object.assign(el.style, {
-      width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', aspectRatio: 'auto',
+      // Fixed, so a flex or grid layout around it cannot shrink it.
+      position: 'fixed', left: '0', top: '0', width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', aspectRatio: 'auto',
       margin: '0', border: '0', boxShadow: 'none', background: '#000',
     });
   } else if (el.dataset.windowStyle !== undefined) {
     el.setAttribute('style', el.dataset.windowStyle);
     delete el.dataset.windowStyle;
   }
+  // refresh() keeps the parent size it last measured: measure it again first.
+  game.scale.getParentBounds();
   game.scale.refresh();
 }
 
