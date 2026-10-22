@@ -235,14 +235,14 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
  */
 export function shutter(scene: Phaser.Scene, swap: () => void): void {
   if (vfx() <= 0) { swap(); return; }
-  const game = scene.game;
-  const host = game.scene.getScene('Shutter') ?? game.scene.add('Shutter', ShutterScene, false);
-  game.scene.run('Shutter', { swap });
-  game.scene.bringToTop(host.scene.key);
+  // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
+  // called from a scene's update (the scene manager defers adds made while it steps the scenes).
+  scene.game.scene.run('Shutter', { swap });
+  scene.game.scene.bringToTop('Shutter');
 }
 
 /** Draws the shutter over every scene (its own scene, so it survives the scene swap). */
-class ShutterScene extends Phaser.Scene {
+export class ShutterScene extends Phaser.Scene {
   constructor() { super('Shutter'); }
 
   create({ swap }: { swap: () => void }): void {
