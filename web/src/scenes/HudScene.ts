@@ -91,9 +91,9 @@ export class HudScene extends Phaser.Scene {
     this.pauseMenu = new MenuInput({
       move: (dx, dy) => this.selectPause((this.pauseSelected + (dx || dy) + PAUSE_ITEMS.length) % PAUSE_ITEMS.length),
       confirm: () => this.choosePause(this.pauseSelected),
-      // Esc and Start already toggle the pause in the match: B (bottom face) resumes here.
+      // Esc and Start already toggle the pause in the match: B resumes here.
       back: () => { if (this.game_.paused) this.game_.togglePause(); },
-    }, false, { back: [0] });
+    }, false, { back: ['B'] });
 
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);

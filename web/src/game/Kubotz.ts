@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
+import { feel } from './Feel';
 import { Animator } from '../anim/Animator';
 import type { Rig } from '../anim/Rig';
 import { ART_SCALE, Robot2D } from '../anim/Robot2D';
@@ -66,7 +67,22 @@ const ANIM = {
 const ANIM_TURN = 'turn';
 export const ROOT_MOTION_GAIN = 3;
 /** Walking (a tilted stick) tops out at this share of the run. */
-const WALK_FACTOR = 0.45;
+/**
+ * Starting to run on the ground (SSB's initial dash): the robot is at its
+ * dash speed at once for the first frames (about 10 in Ultimate), then runs.
+ * Run, dash, walk, air and jump speeds come from the feel preset (game/Feel.ts).
+ */
+const INITIAL_DASH_MS = 160;
+/** Letting go on the ground: stops from full speed in about 0.3 s (Ultimate: ~20 frames of traction). */
+const GROUND_FRICTION = 60;
+/**
+ * Input buffer (Ultimate: 9 frames): an attack, special or jump pressed while
+ * the robot cannot act yet (an attack's end lag, landing, hitstun, a roll)
+ * still comes out on the first frame it can.
+ */
+const INPUT_BUFFER_MS = 150;
+/** Shield and a direction pressed within this of each other (either first) roll (6 frames). */
+const ROLL_WINDOW_MS = 100;
 /** Smash-style jump squat before a grounded jump; let go of jump within it for a short hop of this height. */
 const JUMP_SQUAT_MS = 50;
 export const SHORT_HOP = 0.68;
@@ -365,6 +381,14 @@ export class Kubotz implements Damageable, Teamed {
   private nextGhostAt = 0;
   /** Input edges, for smash flicks and charging. */
   private attackHeld = false;
+  /** Input buffer: when attack, special and jump were last pressed (see INPUT_BUFFER_MS), and whether they were held. */
+  private pressedAt = { attack: -1e9, special: -1e9, jump: -1e9 };
+  private rawHeld = { attack: false, special: false, jump: false };
+  /** The initial dash lasts until then. */
+  private dashUntil = 0;
+  /** For the roll window: when the guard was pressed and when the held direction was. */
+  private guardPressedAt = -1e9;
+  private dirPressedAtGround = -1e9;
   private specialHeld = false;
   /** After the up special: no jumps, attacks or specials until landing or a ledge. */
   helpless = false;
@@ -556,6 +580,13 @@ export class Kubotz implements Damageable, Teamed {
     if (now < this.materializeUntil) { this.pad = emptyPad(); this.body.enable = false; return; }
     if (!this.body.enable) this.body.enable = true; // let go by the spawn hologram: it drops
     const read = this.controller.read();
+    // Buffered presses, for people (not while shielding: no attacks out of shield).
+    const buffers = this.controller.label !== 'CPU';
+    for (const k of ['attack', 'special', 'jump'] as const) {
+      const down = !!read[k];
+      if (down && !this.rawHeld[k] && buffers && controls && !this.guarding) this.pressedAt[k] = now;
+      this.rawHeld[k] = down;
+    }
     const pad = this.pad = controls && !this.celebrating && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
     // Grabs and ledges take over the controls while they last.
@@ -579,20 +610,23 @@ export class Kubotz implements Damageable, Teamed {
     } else if (this.charging) {
       // Charging a smash: rooted, sliding to a stop.
       this.move(emptyPad(), now, dt);
-      this.handleActions(pad, now);
+      this.act(pad, now);
     } else if (this.dodging) {
       this.updateDodge(now, dt);
     } else {
       this.move(pad, now, dt);
-      this.handleActions(pad, now);
+      this.act(pad, now);
     }
     this.updateSpecial(now);
     // Heavy on the way down: past the apex gravity pulls much harder, up to a
     // terminal speed (the fast-fall speed when fast-falling). Hitstun and the
     // specials' bursts keep their speed (spikes, dive kicks), easing back after.
+    const f = feel();
+    // The feel's gravity, over the world's (which every body falls under).
+    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity - Config.GRAVITY) * UNIT * dt;
     if (!this.grounded && this.body.vy > 0 && !this.dodging) {
-      this.body.vy += Config.GRAVITY * Config.FALL_GRAVITY_BONUS * UNIT * dt;
-      const cap = (this.fastFalling ? Config.FAST_FALL_SPEED : Config.MAX_FALL_SPEED) * UNIT;
+      this.body.vy += (f.fallGravity - f.gravity) * UNIT * dt;
+      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT;
       if (this.body.vy > cap && now >= this.hitstunUntil && !this.currentMove?.burst) {
         this.body.vy = Math.max(cap, this.body.vy - 90 * UNIT * dt);
       }
@@ -662,6 +696,8 @@ export class Kubotz implements Damageable, Teamed {
     const dx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
     const newDir = dx !== 0 && dx !== this.guardDir;
     this.guardDir = dx;
+    if (pressed) this.guardPressedAt = now;
+    if (newDir) this.dirPressedAtGround = now;
     if (this.dodging) {
       // Mid-dodge: the guard comes back up after it if still held.
       this.guarding = false;
@@ -671,7 +707,10 @@ export class Kubotz implements Damageable, Teamed {
     // Guard + left / right on the ground (a direction pressed with the guard up,
     // or both at once; running into a guard just guards): the dodge roll, the
     // ground version of the air dodge.
-    if (pad.guard && newDir && this.grounded && now >= this.rollReadyAt && !this.helpless && (this.guarding || pressed)) {
+    // Either order counts within ROLL_WINDOW_MS: a direction then the guard, or the guard then a direction.
+    const rollInput = (newDir && (this.guarding || now - this.guardPressedAt <= ROLL_WINDOW_MS))
+      || (pressed && dx !== 0 && now - this.dirPressedAtGround <= ROLL_WINDOW_MS);
+    if (pad.guard && rollInput && this.grounded && now >= this.rollReadyAt && !this.helpless) {
       this.startRoll(dx > 0 ? 1 : -1, now);
       return;
     }
@@ -752,15 +791,33 @@ export class Kubotz implements Damageable, Teamed {
     const b = this.body;
     let vx = b.vx / UNIT;
     let vy = b.vy / UNIT; // y-down
-    const accel = Config.RUN_ACCELERATION * this.speedFactor() * dt;
     const grounded = this.grounded;
+    const f = feel();
+    const accel = (grounded ? Config.RUN_ACCELERATION : f.airAccel) * this.speedFactor() * dt;
 
     if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; }
 
     // Aerials keep the robot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
-    // A tilted stick walks; pushed (or a key), the robot dashes and runs.
-    const top = Config.MAX_SPEED * (pad.walk && grounded ? WALK_FACTOR : 1);
+    // A light stick tilt walks, as fast as the tilt; pushed all the way (or a
+    // key) the robot runs. On the ground, starting off from (near) standing
+    // dashes: at speed at once (Ultimate's initial dash), for people only (the
+    // CPU, which turns often while following a path, eases in). Turning round
+    // out of a run skids to a near stop first, then dashes the other way.
+    const dir = pad.left ? -1 : pad.right ? 1 : 0;
+    const run = f.run * this.speedFactor();
+    const walking = !!pad.walk && grounded;
+    const human = this.controller.label !== 'CPU';
+    if (dir && grounded && Math.sign(vx) === -dir && Math.abs(vx) > 0.25 * run) {
+      vx += dir * GROUND_FRICTION * 1.5 * dt; // the skid
+    } else if (dir && human && grounded && !walking && !this.attack && !this.charging && Math.abs(vx) < 0.25 * run) {
+      this.dashUntil = now + INITIAL_DASH_MS;
+      vx = dir * f.dash * this.speedFactor();
+    }
+    if (walking) this.dashUntil = 0;
+    const top = !grounded ? f.air * this.speedFactor()
+      : walking ? f.walk * this.speedFactor() * (pad.walkAmount ?? 1)
+      : now < this.dashUntil ? Math.max(run, f.dash * this.speedFactor()) : run;
     if (pad.left) {
       vx = vx < -top ? Math.min(vx + accel, -top) : Math.max(vx - accel, -top);
       if (canTurn) this.turnTo(-1, now, grounded);
@@ -768,25 +825,26 @@ export class Kubotz implements Damageable, Teamed {
       vx = vx > top ? Math.max(vx - accel, top) : Math.min(vx + accel, top);
       if (canTurn) this.turnTo(1, now, grounded);
     } else if (grounded) {
-      vx = vx > 0 ? Math.max(vx - accel, 0) : Math.min(vx + accel, 0);
+      const stop = GROUND_FRICTION * dt;
+      vx = vx > 0 ? Math.max(vx - stop, 0) : Math.min(vx + stop, 0);
     }
 
     // Jumps: the jump button, or pushing up all the way (tap jump). People jump
     // on the press (after a short jump squat on the ground: let go within it
     // for a short hop); the CPU holds up and jumps again after a cooldown.
-    const human = this.controller.label !== 'CPU';
     // (The CPU holds up to aim its up attacks and specials: no jump then.)
     const jumpInput = !!pad.jump || (pad.up && !pad.walk && (human || (!pad.attack && !pad.special)));
-    const jumpPress = human ? jumpInput && !this.jumpHeld : jumpInput;
+    const jumpPress = human ? (jumpInput && !this.jumpHeld) || this.buffered('jump', now) : jumpInput;
     this.jumpHeld = jumpInput;
     if (this.jumpSquatUntil > 0 && now >= this.jumpSquatUntil) {
       this.jumpSquatUntil = 0;
-      if (grounded) vy = this.jump(now, true, jumpInput ? 1 : SHORT_HOP);
+      if (grounded) vy = this.jump(now, true, jumpInput ? 1 : f.shortHop);
     }
     if (pad.up && !jumpPress) {
       // Up tilted (or held after a jump): no jump, just the direction.
     } else if (jumpPress) {
       if (this.jumps < this.maxJumps && now >= this.jumpReadyAt && this.jumpSquatUntil === 0 && !this.helpless) {
+        this.pressedAt.jump = -1e9; // used
         if (grounded && human) this.jumpSquatUntil = now + JUMP_SQUAT_MS;
         else vy = this.jump(now, grounded, 1);
       }
@@ -802,7 +860,7 @@ export class Kubotz implements Damageable, Teamed {
         b.dropTop = b.platformTop;
       }
       // Fast fall (Melee): down past the apex drops straight to the fast-fall speed.
-      if (!grounded && vy > 0) vy = Math.max(vy, Config.FAST_FALL_SPEED);
+      if (!grounded && vy > 0) vy = Math.max(vy, feel().fastFall);
     }
 
     if (now >= this.dropUntil) b.dropTop = null;
@@ -837,7 +895,7 @@ export class Kubotz implements Damageable, Teamed {
       this.hooks.airJump(this.x, this.body.bottom, this.look.color);
       if (!this.attack) this.anim.play(ANIM.FLIP, { restart: true, fade: 40 });
     }
-    return -Config.JUMP_VELOCITY * height;
+    return -feel().jump * height;
   }
 
   private turnTo(dir: 1 | -1, now: number, grounded: boolean): void {
@@ -851,20 +909,40 @@ export class Kubotz implements Damageable, Teamed {
     }
   }
 
+  /** A press of `k` still in the input buffer. */
+  private buffered(k: 'attack' | 'special' | 'jump', now: number): boolean {
+    return now - this.pressedAt[k] <= INPUT_BUFFER_MS;
+  }
+
   private speedFactor(): number {
     return this.powerUps.some((p) => p.type === 'speed') ? 1.1 : 1;
   }
 
   // ----------------------------------------------------------------- actions
+  /** handleActions, then: a buffered press that started something is used up.
+   * (A jab combo's next hit is queued by the press itself, so it keeps the buffer until it starts.) */
+  private act(pad: PadState, now: number): void {
+    const before = { move: this.currentMove, charging: this.charging, attack: this.attack, lock: this.lockUntil };
+    this.handleActions(pad, now);
+    // Started: a new move, attack or charge (not one ending), or a commitment such as a taunt.
+    const started = (this.currentMove && this.currentMove !== before.move) || (this.charging && this.charging !== before.charging)
+      || (this.attack && this.attack !== before.attack) || this.lockUntil > before.lock;
+    if (started) {
+      this.pressedAt.attack = -1e9;
+      this.pressedAt.special = -1e9;
+    }
+  }
+
   private handleActions(pad: PadState, now: number): void {
     const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
     const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
     // Edges: the attack press, and a direction newly pressed (for smash flicks).
-    const attackPressed = pad.attack && !this.attackHeld;
+    // A press now, or one buffered while the robot could not act.
+    const attackPressed = (pad.attack && !this.attackHeld) || this.buffered('attack', now);
     const attackReleased = !pad.attack && this.attackHeld;
     this.attackHeld = pad.attack;
-    if (attackPressed) this.attackPressedAt = now;
-    const specialPressed = !!pad.special && !this.specialHeld;
+    if (attackPressed) this.attackPressedAt = Math.max(this.pressedAt.attack, now - INPUT_BUFFER_MS);
+    const specialPressed = (!!pad.special && !this.specialHeld) || this.buffered('special', now);
     this.specialHeld = !!pad.special;
     const prev = this.prevPad;
     // On the keyboard a newly pressed direction counts as a flick; on a stick only a real flick does.
@@ -979,7 +1057,7 @@ export class Kubotz implements Damageable, Teamed {
         } else if (dir === 'down') {
           this.comboStep = 0;
           this.strike(moves.dtilt, now);
-        } else if (dir === 'forward' && Math.abs(this.body.vx) > 0.45 * Config.MAX_SPEED * UNIT) {
+        } else if (dir === 'forward' && Math.abs(this.body.vx) > 0.55 * feel().run * UNIT) {
           this.comboStep = 0;
           this.strike(moves.dash, now);
         } else if (dir === 'forward' || dir === 'back') {
@@ -1323,7 +1401,7 @@ export class Kubotz implements Damageable, Teamed {
     const away = l.dir === 1 ? 'right' : 'left';
     if (fresh('up')) {
       this.releaseLedge(now);
-      this.body.setVelocity(-l.dir * 2 * UNIT, -Config.JUMP_VELOCITY * 1.05 * UNIT);
+      this.body.setVelocity(-l.dir * 2 * UNIT, -feel().jump * 1.05 * UNIT);
       this.lastJumpAt = now;
       this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
       this.ledgeSafeUntil = Math.min(this.ledgeSafeUntil, now + 150);
@@ -1544,7 +1622,7 @@ export class Kubotz implements Damageable, Teamed {
     }
     const tt = Math.min(1, (now - this.turnAt) / this.turnMs);
     this.yaw = this.turnFrom + (this.yawTo - this.turnFrom) * tt * tt * (3 - 2 * tt);
-    const vx = this.body.vx / (Config.MAX_SPEED * UNIT);
+    const vx = this.body.vx / (feel().run * UNIT);
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
@@ -1611,7 +1689,7 @@ export class Kubotz implements Damageable, Teamed {
     } else if (Math.abs(vx) > 4) {
       a.play(ANIM.RUN, { fade: 90 });
       // The stride follows the speed.
-      a.setRate(Phaser.Math.Clamp(Math.abs(vx) / (Config.MAX_SPEED * UNIT), 0.6, 1.2));
+      a.setRate(Phaser.Math.Clamp(Math.abs(vx) / (feel().run * UNIT), 0.6, 1.4));
     } else if (now < this.landUntil) a.play(ANIM.LAND, { fade: 40 });
     else if (this.pad.down) a.play(ANIM.CROUCH, { fade: 90 });
     else if (a.name !== ANIM.LAND || a.finished) a.play(ANIM.IDLE, { fade: 140 });

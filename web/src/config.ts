@@ -26,7 +26,9 @@ export const Config = {
 
   // Running / jumping (PhysicsComponent + KubotzFactory acceleration (0.5, 20))
   RUN_ACCELERATION: 0.5 * 60, // 0.5 u/s added every 60 Hz frame
-  MAX_SPEED: 18,
+  MAX_SPEED: 18, // in the air
+  // On the ground (Ultimate: Mario runs 1.76 u/f, about 7 body heights a second).
+  RUN_SPEED: 14,
   JUMP_VELOCITY: 20.5, // was 20; keeps the jump near its old height under the heavier gravity
   JUMP_COOLDOWN: 500,
   NB_JUMPS: 3, // new JumpComponent(3)
@@ -36,8 +38,11 @@ export const Config = {
   PUNCH_DURATION: 500,
   PUNCH_COOLDOWN: 80,
   PUNCH_KNOCKBACK: 9, // original passed 0; the owner wants hits to push
-  // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (damage taken / max health), SSB-like.
-  KNOCKBACK_GROWTH: 2,
+  // Knockback multiplier = 1 + KNOCKBACK_GROWTH x (health lost / max health), as in Ultimate:
+  // health runs from 100 % down to 0 % (when the robot explodes), and 0 % stands for Ultimate's
+  // practical 300 %. Ultimate's knockback formula (Mario's forward smash) launches about 3x
+  // harder at 100 % than at 0 %, 4x at 150 % and 7x at 300 %, close to 1 + 6.2 x (% / 300).
+  KNOCKBACK_GROWTH: 6.2,
   // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT, like SSB's 0.4 x knockback;
   // past TUMBLE_HITSTUN the robot tumbles, bouncing off walls and ceilings.
   HITSTUN_BASE: 120,
@@ -74,11 +79,12 @@ export const Config = {
   AIR_DODGE_DURATION: 350, // intangible: attacks and bullets pass through
   // Guard + left / right on the ground: dodge roll (SSB), intangible for most of it,
   // passing through robots.
+  // Timed like Ultimate's (Mario): intangible frames 4-15, over by frame 31.
   ROLL_DISTANCE: 3.4, // units
   ROLL_DURATION: 330, // ms of travel
-  ROLL_END_LAG: 110, // ms after it, no actions
-  ROLL_SAFE_FROM: 30, // ms: intangible from here...
-  ROLL_SAFE_UNTIL: 300, // ...to here
+  ROLL_END_LAG: 187, // ms after it, no actions (330 + 187 = 517 ms, 31 frames)
+  ROLL_SAFE_FROM: 50, // ms: intangible from here (frame 4)...
+  ROLL_SAFE_UNTIL: 250, // ...to here (frame 15)
   ROLL_COOLDOWN: 150, // ms after the end lag before the next roll
 
   // Match start: narrator counts 3, 2, 1, Fight! while inputs are off.

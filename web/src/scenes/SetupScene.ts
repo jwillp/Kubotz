@@ -14,13 +14,14 @@ import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
-import { MenuInput } from './MenuInput';
+import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
 import { uiSound } from '../audio/Sounds';
 
 /**
  * What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody.
- * 'PAD' is a gamepad not seen yet (browsers only show a pad once a button is pressed): the next pad to press A takes the slot.
+ * 'PAD' is a gamepad not seen yet (browsers only show a pad once a button is pressed): the next pad to press A takes the slot,
+ * and it already counts as a player (the match gives it the first free pad).
  */
 type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 
@@ -51,8 +52,8 @@ const JOIN_KEYS: Record<'K1' | 'K2', { join: string[]; leave: string[] }> = {
   K1: { join: ['KeyO', 'KeyJ'], leave: ['KeyP'] },
   K2: { join: ['Comma', 'Numpad1'], leave: ['KeyN', 'Numpad4'] },
 };
-/** Standard gamepad mapping, Smash layout: A right face (join / confirm), B bottom face (leave), shoulders. */
-const PAD = { B: 0, A: 1, L: 4, R: 5 } as const;
+/** Shoulders in the standard gamepad mapping (A and B go by the pad's labels: faceButtons). */
+const PAD = { L: 4, R: 5 } as const;
 
 const deviceLabel = (s: Seat): string => {
   const d = s.device;
@@ -433,13 +434,14 @@ export class SetupScene extends Phaser.Scene {
     this.slots[slot]?.anim.play('taunt', { restart: true, ms: 700, fade: 60 });
   }
 
-  /** The slots in the match (a slot still waiting for a pad is not). */
-  private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF' && s.device !== 'PAD'); }
+  /** The slots in the match (a slot still waiting for a pad is one). */
+  private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF'); }
 
-  private problem(): string | null {
+  /** Why START is greyed out, if it is: too few robots (the grey button says it), or everyone on one team. */
+  private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
-    if (seats.length < 2) return 'Two robots needed';
-    if (new Set(seats.map((s) => s.team)).size < 2) return 'Everyone is on one team';
+    if (seats.length < 2) return 'few';
+    if (new Set(seats.map((s) => s.team)).size < 2) return 'one team';
     return null;
   }
 
@@ -498,8 +500,9 @@ export class SetupScene extends Phaser.Scene {
       const now = new Set(p.buttons.filter((b) => b.pressed).map((b) => b.index));
       const pressed = (b: number) => now.has(b) && !before.has(b);
       const seated = this.state.seats.some((s) => s.device === p.index);
-      if (pressed(PAD.A)) { if (seated) this.confirm(); else this.join(p.index); }
-      if (pressed(PAD.B)) { if (seated) this.leave(p.index); else this.back(); }
+      const { A, B } = faceButtons(p);
+      if (pressed(A)) { if (seated) this.confirm(); else this.join(p.index); }
+      if (pressed(B)) { if (seated) this.leave(p.index); else this.back(); }
       if (pressed(PAD.L)) this.jumpSlot(-1);
       if (pressed(PAD.R)) this.jumpSlot(1);
       this.padDown.set(p.index, now);
@@ -560,7 +563,7 @@ export class SetupScene extends Phaser.Scene {
     const problem = this.problem();
     this.start.setSelected(on('start'));
     this.start.setReady(!problem);
-    this.status.setText(problem ?? '');
+    this.status.setText(problem === 'one team' ? 'Everyone is on one team' : '');
     this.registry.set('setup', structuredClone(s));
     this.registry.set('arena', s.arena);
     this.registry.set('bonuses', s.bonuses);
@@ -625,11 +628,14 @@ export class SetupScene extends Phaser.Scene {
   /** The fighters for the match: humans keep their keyboard set or pad. */
   private fighters(): FighterSpec[] {
     let humans = 0;
+    // A slot still waiting for its pad gets the first pad no other slot has (the next one the browser shows).
+    const taken = new Set(this.state.seats.map((s) => s.device).filter((d) => typeof d === 'number'));
+    const freePad = () => { let i = 0; while (taken.has(i)) i++; taken.add(i); return i; };
     return this.seats().map((s): FighterSpec => {
       if (s.device === 'CPU') return { input: 'CPU', team: s.team, helmet: s.helmet, cpuLevel: s.level };
       const n = humans++;
       if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team: s.team, helmet: s.helmet };
-      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device as number, team: s.team, helmet: s.helmet };
+      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team: s.team, helmet: s.helmet };
     });
   }
 

@@ -4,6 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
+import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
@@ -240,6 +241,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
+    // Movement feel presets (game/Feel.ts): 1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus, 6 the classic Kubot.
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
+      const f = setFeel(FEEL_ORDER[i]);
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Feel: ${f.name}`, 0xffffff);
+    }));
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn robots' : 'Clean robots', 0xffffff);
@@ -641,7 +647,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         // Repair: its own sound, a longer twirl and the health regained.
         this.playSfx('orb-heal', 0.55);
         this.impact.twirl(kubotz, orb.color, 2100);
-        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)} HP`, def.color);
+        this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)}% HP`, def.color);
       } else {
         this.playSfx('orb-pickup', 0.5);
         this.impact.twirl(kubotz, orb.color, 1500);

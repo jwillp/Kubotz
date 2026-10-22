@@ -21,6 +21,8 @@ export interface PadState {
   taunt?: boolean;
   /** An analog stick tilted, not pushed: walk instead of dash, strong attacks instead of smashes, no tap jump. */
   walk?: boolean;
+  /** Walking: how far the stick is tilted sideways (0..1 of a full walk), so the walk speed follows it (Ultimate). */
+  walkAmount?: number;
   /** The direction came from an analog stick (flicks and tilts apply). */
   analog?: boolean;
   /** Stick only: a direction slammed from the centre this frame (a flick: dash, smash, drop through). */
@@ -59,12 +61,15 @@ export const PLAYER_2_KEYS: KeyBinding = {
 };
 
 /**
- * Gamepad buttons by position (the browser's standard mapping), as on the
- * Smash Ultimate card for a Switch Pro Controller: right face A = attack,
- * bottom face B = special, top and left (X, Y) = jump, L = grab, R / ZL / ZR =
- * shield, D-pad = taunt; left stick moves, right stick smashes.
+ * Gamepad buttons by position (the browser's standard mapping), named as on
+ * an Xbox-style pad (the owner's GameSir T4n Lite): A (bottom) = attack
+ * (fists), X (left) = special (legs), B (right) and Y (top) = jump, LB / RB =
+ * grab, LT / RT = shield, D-pad = taunt; left stick moves, right stick
+ * smashes. A Nintendo pad gets the same positions.
  */
-const BTN = { B: 0, A: 1, Y: 2, X: 3, L: 4, R: 5, ZL: 6, ZR: 7, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
+const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
+/** The triggers are analog: a light pull counts (past 0.5 felt late). */
+const TRIGGER = 0.15;
 /** Stick: below DEAD is centred, past TILT a direction, past FULL pushed; a flick goes from centred to FULL within FLICK_MS. */
 const DEAD = 0.25;
 const TILT = 0.3;
@@ -130,16 +135,22 @@ export class HumanController implements Controller {
     if (mx > TILT || my > TILT) {
       s.left ||= ax < -TILT; s.right ||= ax > TILT;
       s.up ||= ay < -TILT; s.down ||= ay > TILT;
-      // Tilted: walking (unless flicked into a dash), and no tap jump short of a full push up.
-      if (!this.dashing && !(ay < -FULL)) s.walk = true;
+      // Tilted, not pushed all the way (or flicked): a walk as fast as the tilt
+      // (Ultimate), tilt attacks instead of smashes, and no tap jump short of a
+      // full push up. Pushed all the way, it dashes and runs at once.
+      if (!this.dashing && mx < FULL && !(ay < -FULL)) {
+        s.walk = true;
+        s.walkAmount = Phaser.Math.Clamp((mx - TILT) / (FULL - TILT), 0.25, 1);
+      }
       s.analog = true;
       if (flick) s.flick = true;
     }
+    const trigger = (i: number) => (pad.buttons[i]?.value ?? 0) > TRIGGER;
     s.attack ||= btn(BTN.A);
-    s.special ||= btn(BTN.B);
-    s.jump ||= btn(BTN.X) || btn(BTN.Y);
-    s.guard ||= btn(BTN.R) || btn(BTN.ZL) || btn(BTN.ZR);
-    const grab = btn(BTN.L);
+    s.special ||= btn(BTN.X);
+    s.jump ||= btn(BTN.B) || btn(BTN.Y);
+    s.guard ||= trigger(BTN.LT) || trigger(BTN.RT);
+    const grab = btn(BTN.LB) || btn(BTN.RB);
     s.grab ||= grab && !this.prevPad.grab;
     const taunt = btn(BTN.UP) || btn(BTN.DOWN) || btn(BTN.LEFT) || btn(BTN.RIGHT);
     s.taunt ||= taunt && !this.prevPad.taunt;
