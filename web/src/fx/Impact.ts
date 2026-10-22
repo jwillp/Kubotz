@@ -91,6 +91,8 @@ export class ImpactFx {
   private readonly laserDef?: EffectDef;
   /** Rim colour -> body colour of the laserSmoke puffs. */
   private readonly laserBody = new Map<number, number>();
+  /** The laserSmoke puffs' flat layers (rims, bodies, highlights): pooled tinted discs, drawn in a few batches. */
+  private readonly celLayers: { view: Phaser.GameObjects.Container; pool: Phaser.GameObjects.Image[] }[];
 
   constructor(scene: Phaser.Scene) {
     // Twirl motes passing behind a robot are drawn under it.
@@ -100,7 +102,13 @@ export class ImpactFx {
     // The K.O. smoke, glitched as one (made up front: the results scene sorts new objects onto its cameras once).
     this.wispG = scene.add.graphics();
     this.smokeG = scene.add.graphics();
-    this.smokeView = scene.add.container(0, 0, [this.wispG, this.smokeG]).setDepth(10.6);
+    if (!scene.textures.exists('cel-disc')) {
+      const g = scene.make.graphics({}, false);
+      g.fillStyle(0xffffff, 1).fillCircle(32, 32, 32).generateTexture('cel-disc', 64, 64);
+      g.destroy();
+    }
+    this.celLayers = [0, 1, 2].map(() => ({ view: scene.make.container({}, false), pool: [] }));
+    this.smokeView = scene.add.container(0, 0, [this.wispG, ...this.celLayers.map((l) => l.view), this.smokeG]).setDepth(10.6);
     this.laser = new ParticleFx(scene, 'pe:', 0, undefined, true);
     this.laserDef = (scene.registry.get('effects') as Record<string, EffectDef> | undefined)?.laserSmoke;
   }
@@ -510,13 +518,23 @@ export class ImpactFx {
     }
     // The laserSmoke behind the puffs, in the same flat layers but small and many:
     // each swells and shrinks with the file's opacity curve.
-    const bits: { x: number; y: number; r: number; deep: number; body: number }[] = [];
+    const [rims, bodies, lights] = this.celLayers;
+    const used = [0, 0, 0];
+    const disc = (layer: number, x: number, y: number, w: number, h: number, color: number) => {
+      const l = this.celLayers[layer];
+      let img = l.pool[used[layer]];
+      if (!img) { img = this.smokeG.scene.make.image({ key: 'cel-disc' }, false); l.pool.push(img); l.view.add(img); }
+      used[layer]++;
+      img.setVisible(true).setPosition(x, y).setDisplaySize(w, h).setTint(color);
+    };
     this.laser.each((x, y, size, alpha, tint) => {
-      if (alpha > 0.05) bits.push({ x, y, r: (size / 2) * alpha, deep: tint, body: this.laserBody.get(tint) ?? tint });
+      if (alpha <= 0.05) return;
+      const r = (size / 2) * alpha;
+      disc(0, x, y, r * 2, r * 2, tint);
+      disc(1, x - r * 0.16, y - r * 0.2, r * 1.4, r * 1.4, this.laserBody.get(tint) ?? tint);
+      if (r > 0.12 * UNIT) disc(2, x - r * 0.34, y - r * 0.4, r * 0.45, r * 0.27, 0xfffbe6);
     });
-    for (const b of bits) g.fillStyle(b.deep, 1).fillCircle(b.x, b.y, b.r);
-    for (const b of bits) g.fillStyle(b.body, 1).fillCircle(b.x - b.r * 0.16, b.y - b.r * 0.2, b.r * 0.7);
-    for (const b of bits) if (b.r > 0.12 * UNIT) g.fillStyle(0xfffbe6, 1).fillEllipse(b.x - b.r * 0.34, b.y - b.r * 0.4, b.r * 0.45, b.r * 0.27);
+    for (const [i, l] of [rims, bodies, lights].entries()) for (let k = used[i]; k < l.pool.length && l.pool[k].visible; k++) l.pool[k].setVisible(false);
     const smoke = laserAlone() ? [] : this.particles.filter((p) => p.kind === 'smoke');
     const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };
