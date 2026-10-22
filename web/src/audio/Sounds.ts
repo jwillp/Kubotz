@@ -49,6 +49,8 @@ export async function makeSynthSounds(scene: Phaser.Scene, pause: () => Promise<
         if (e.data.done) { worker.terminate(); resolve(); } else if (e.data.key && e.data.data) add(e.data.key, e.data.data);
       };
       worker.onerror = (err) => { worker.terminate(); reject(err); };
+      // A page that blocks workers may never answer: then make them here.
+      setTimeout(() => { worker.terminate(); reject(new Error('synth worker timed out')); }, 10000);
       worker.postMessage({ rate: ctx.sampleRate });
     });
   } catch {
