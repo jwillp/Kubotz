@@ -16,7 +16,7 @@ import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
-import { HOLO_COLOR, HoloSpawns, introRelease } from '../fx/Hologram';
+import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -170,8 +170,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
-    // Every robot is let go together, a beat after the camera has shown the last one.
-    const releaseAt = this.specs.length * INTRO_FOCUS_MS + INTRO_RELEASE_MS;
+    // Once the camera has shown every projector the countdown starts, and all
+    // the robots materialize together during it (solid on "1", then they drop).
+    this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
       const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
@@ -197,15 +198,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.lives = this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
-      // The intro: one robot after the other, each hidden in its beam until its turn,
-      // then held as a hologram so all of them are let go together.
+      // The intro: one projector after the other, each hidden until its turn.
       const at = i * INTRO_FOCUS_MS;
       this.introAt.push(at);
       k.appearAt = at;
-      this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, releaseAt - at - introRelease(0));
+      this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
-    // The projectors fly off as the camera pulls back, then the countdown.
-    this.countdownAt = releaseAt + INTRO_RETURN_MS;
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
     // The camera starts on the first robot's spawn (updateCamera follows the intro).
@@ -1181,7 +1179,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private updateCamera(dt: number): void {
     const pts = this.focusPoints();
     // The intro moves faster: close on each spawn in turn, then back out to the fight.
-    const intro = this.winnerTeam === undefined && this.clock < this.countdownAt ? INTRO_CAMERA_PACE : 1;
+    const intro = this.winnerTeam === undefined && this.clock < this.countdownAt + INTRO_RETURN_MS ? INTRO_CAMERA_PACE : 1;
     const focus = this.winnerTeam === undefined ? this.introFocus() : null;
     if (focus) {
       this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, INTRO_VIEW_WIDTH, Math.min(1, Config.CAMERA_ZOOM_SPEED * intro * dt));
@@ -1265,16 +1263,14 @@ const SHAKE_DECAY = 1.8;
 const PAUSE_MUSIC = 0.3;
 
 /**
- * Match intro: the robots spawn one after the other, the camera on each for
- * INTRO_FOCUS_MS (not the whole spawn), then back out to the fight view; all
- * are let go together INTRO_RELEASE_MS after the last one is shown (at least
- * the 450 ms an intro spawn needs from a full hologram), and the 3-2-1
- * countdown starts INTRO_RETURN_MS later, once the projectors have flown off. INTRO_VIEW_WIDTH is how much
- * of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much
- * faster than in the fight the camera moves meanwhile.
+ * Match intro: the projectors arrive one after the other, the camera on each
+ * for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while the camera takes
+ * INTRO_RETURN_MS back out to the fight view; the robots materialize during
+ * the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how much of the arena
+ * (units) shows round a projector; INTRO_CAMERA_PACE how much faster than in
+ * the fight the camera moves meanwhile.
  */
 const INTRO_FOCUS_MS = 750;
-const INTRO_RELEASE_MS = 450;
 const INTRO_RETURN_MS = 600;
 const INTRO_VIEW_WIDTH = 14;
 const INTRO_CAMERA_PACE = 3;

@@ -26,26 +26,26 @@ export const RELEASE_AT = 1750;
 /** How far above its spawn point the robot hangs in the beam. */
 export const HOVER = 1.1 * UNIT;
 /**
- * The match intro's spawns: drawn twice as fast up to a full hologram
- * (FAST_UNTIL ms, the sequence's HOLO_AT), held there for a while, then the
- * rest of the sequence as usual.
+ * The match intro's spawns: the projector flies in and its beam shows the
+ * robot's faint outline (to WAIT_AT in the sequence), it waits there, then
+ * the robot is drawn and solidifies (WAIT_AT to SOLID_AT) over
+ * INTRO_MATERIALIZE_MS, and the rest goes as usual.
  */
-const HOLO_AT = 1300;
-const FAST_UNTIL = HOLO_AT / 2;
+const WAIT_AT = 420;
+const SOLID_AT = 1720;
+export const INTRO_MATERIALIZE_MS = 2000;
 
 /**
  * Where in the spawn sequence (its usual timing) a spawn is `age` ms after it
- * started; with `hold` (the intro) it is drawn faster and held as a hologram
- * for `hold` ms.
+ * started; an intro spawn waits `hold` ms before it materializes (slower).
  */
 export function spawnAge(age: number, hold?: number): number {
-  if (hold === undefined) return age;
-  if (age < FAST_UNTIL) return age * 2;
-  return age < FAST_UNTIL + hold ? HOLO_AT : HOLO_AT + age - FAST_UNTIL - hold;
+  if (hold === undefined || age < WAIT_AT) return age;
+  const t = age - WAIT_AT - hold;
+  if (t < 0) return WAIT_AT;
+  if (t < INTRO_MATERIALIZE_MS) return WAIT_AT + (t * (SOLID_AT - WAIT_AT)) / INTRO_MATERIALIZE_MS;
+  return SOLID_AT + t - INTRO_MATERIALIZE_MS;
 }
-
-/** How long after it starts an intro spawn (`hold`) lets its robot go. */
-export const introRelease = (hold: number): number => FAST_UNTIL + hold + RELEASE_AT - HOLO_AT;
 
 /** A debris piece's scan-out (ms). */
 export const DISSOLVE_MS = 650;
@@ -319,12 +319,13 @@ export class HoloSpawns {
 
   /**
    * Starts a robot's spawn at `now`: it is raised by HOVER and held until
-   * RELEASE_AT. The intro passes `hold`: drawn faster, held as a hologram
-   * that much longer (spawnAge).
+   * RELEASE_AT. The intro passes `materializeAt`: the projector waits with
+   * an outline until then, and the robot is solid INTRO_MATERIALIZE_MS later.
    */
-  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, hold?: number): void {
+  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, materializeAt?: number): void {
     lift(k.x, y - HOVER);
-    k.materializeUntil = now + (hold === undefined ? RELEASE_AT : introRelease(hold));
+    const hold = materializeAt === undefined ? undefined : Math.max(0, materializeAt - now - WAIT_AT);
+    k.materializeUntil = now + (hold === undefined ? RELEASE_AT : WAIT_AT + hold + INTRO_MATERIALIZE_MS + RELEASE_AT - SOLID_AT);
     this.active.set(k, { at: now, x: k.x, feet: k.body.bottom, hold });
   }
 
