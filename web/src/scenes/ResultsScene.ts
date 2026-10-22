@@ -377,7 +377,7 @@ export class ResultsScene extends Phaser.Scene {
     robot.visible = true;
     const bottom = L(ra.bottom, rb.bottom);
     robot.update(pose, ra.maps, L(ra.x, rb.x), bottom, L(ra.yaw, rb.yaw), {
-      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch,
+      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch, shield: ra.shield,
     });
     tag.setVisible(true).setPosition(L(ra.x, rb.x), bottom - 2.9 * UNIT).setScale(1 / zoom);
     if (ra.holo) {

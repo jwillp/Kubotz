@@ -20,6 +20,16 @@ interface Particle {
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
 interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
 
+/** A puff of the K.O. smoke: a soft cloud image that billows out, rises, darkens and fades. */
+interface Smoke {
+  img: Phaser.GameObjects.Image;
+  x: number; y: number; vx: number; vy: number;
+  age: number; life: number;
+  size: number; grow: number; // radius at the start, and gained over the life (px)
+  spin: number; // radians/s
+  hot: number; cold: number; // colour at the start and at the end
+}
+
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
 
 /** Orb motes spiralling round a robot: once after a pick-up, or lasting while a power-up runs. */
@@ -31,6 +41,9 @@ const TWIRL_FADE = 300;
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const FLASH_MS = 160;
+/** K.O. smoke puffs drawn at once at most (the image pool). */
+const SMOKE_POOL = 64;
+const SMOKE_TEXTURES = 3;
 
 const mix = (a: number, b: number, f: number) => {
   const ca = Phaser.Display.Color.IntegerToColor(a);
@@ -54,6 +67,8 @@ export class ImpactFx {
   private flashes: Flash[] = [];
   private twirls: Twirl[] = [];
   private readonly behind: Phaser.GameObjects.Graphics;
+  private readonly smokeImages: Phaser.GameObjects.Image[] = [];
+  private smoke: Smoke[] = [];
   private now = 0;
 
   constructor(scene: Phaser.Scene) {
@@ -61,6 +76,9 @@ export class ImpactFx {
     this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(Phaser.BlendModes.ADD);
     this.dust = scene.add.graphics().setDepth(14);
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
+    // The K.O. smoke: a pool made up front (the results scene sorts new objects onto its cameras once).
+    smokeTextures(scene.textures);
+    for (let i = 0; i < SMOKE_POOL; i++) this.smokeImages.push(scene.add.image(0, 0, 'smoke-0').setDepth(10.6).setVisible(false));
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -121,6 +139,41 @@ export class ImpactFx {
         color: mix(color, 0xffffff, 0.3), size: 2, life: rand(160, 260), gravity: 10 * UNIT, drag: 0.1,
       });
     }
+  }
+
+  /**
+   * A K.O.: a big explosion of smoke in the robot's team colour. Hot, light
+   * puffs burst out from the robot's middle, slow down, swell and rise,
+   * darkening as they cool, while the flash and a light go off in the core.
+   */
+  koSmoke(x: number, y: number, color: number): void {
+    if (vfx() <= 0) return;
+    const hot = mix(color, 0xffffff, 0.35);
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.9 * UNIT, grow: 0.6 * UNIT, life: 140 });
+    this.add({ kind: 'ring', x, y, color: hot, size: 0.4 * UNIT, grow: 3.2 * UNIT, life: 320 });
+    this.flashes.push({ x, y, color, intensity: 9, at: this.now });
+    const n = Math.round(18 + 22 * vfx());
+    for (let i = 0; i < n; i++) {
+      const img = this.smokeImages.find((m) => !m.visible) ?? this.oldestSmoke();
+      if (!img) break;
+      const core = i < n * 0.3; // the first ones stay in the middle, hot and light
+      const a = rand(0, Math.PI * 2);
+      const speed = (core ? rand(1, 5) : rand(7, 20)) * UNIT;
+      this.smoke = this.smoke.filter((p) => p.img !== img);
+      this.smoke.push({
+        img: img.setTexture(`smoke-${i % SMOKE_TEXTURES}`).setVisible(true).setRotation(rand(0, Math.PI * 2)),
+        x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
+        vx: Math.cos(a) * speed * 1.25, vy: Math.sin(a) * speed * 0.85 - rand(1, 4) * UNIT,
+        age: 0, life: core ? rand(900, 1300) : rand(1200, 2100),
+        size: (core ? rand(0.8, 1.2) : rand(0.6, 1)) * UNIT, grow: (core ? rand(1.2, 1.8) : rand(1.6, 2.8)) * UNIT,
+        spin: rand(-0.8, 0.8),
+        hot: core ? mix(color, 0xffffff, 0.6) : hot, cold: mix(color, 0x0b0d14, 0.35),
+      });
+    }
+  }
+
+  private oldestSmoke(): Phaser.GameObjects.Image | undefined {
+    return this.smoke.reduce<Smoke | undefined>((o, p) => (!o || p.age / p.life > o.age / o.life ? p : o), undefined)?.img;
   }
 
   /** Dust kicked up behind a running robot (`dir`: away from the run). */
@@ -214,6 +267,7 @@ export class ImpactFx {
     this.flashes = this.flashes.filter((f) => now - f.at < FLASH_MS);
     this.twirls = this.twirls.filter((w) => now < w.end);
     this.particles = this.particles.filter((p) => (p.age += dtMs) < p.life);
+    this.updateSmoke(dt, dtMs);
     for (const p of this.particles) {
       const keep = Math.pow(p.drag, dt);
       p.vx *= keep;
@@ -222,6 +276,27 @@ export class ImpactFx {
       p.y += p.vy * dt;
     }
     this.draw();
+  }
+
+  private updateSmoke(dt: number, dtMs: number): void {
+    this.smoke = this.smoke.filter((p) => {
+      if ((p.age += dtMs) < p.life) return true;
+      p.img.setVisible(false);
+      return false;
+    });
+    for (const p of this.smoke) {
+      // Billows out fast and stalls, then drifts up as it cools.
+      const keep = Math.pow(0.02, dt);
+      p.vx *= keep;
+      p.vy = p.vy * keep - 2.2 * UNIT * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      const f = p.age / p.life;
+      const r = p.size + p.grow * (1 - (1 - f) * (1 - f));
+      const alpha = Math.min(1, f / 0.06) * Math.pow(1 - f, 1.4) * 0.9;
+      p.img.setPosition(p.x, p.y).setScale(r / 60).setRotation(p.img.rotation + p.spin * dt)
+        .setTint(mix(p.hot, p.cold, Math.min(1, f * 1.6))).setAlpha(alpha);
+    }
   }
 
   private draw(): void {
@@ -360,8 +435,40 @@ export class ImpactFx {
   }
 
   destroy(): void {
+    for (const img of this.smokeImages) img.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();
+  }
+}
+
+/**
+ * Soft cloud puffs for the K.O. smoke (white, lit from above so a tint keeps
+ * some shading): a few lumps of soft circles, one shape per texture.
+ */
+function smokeTextures(textures: Phaser.Textures.TextureManager): void {
+  for (let t = 0; t < SMOKE_TEXTURES; t++) {
+    const key = `smoke-${t}`;
+    if (textures.exists(key)) continue;
+    const tex = textures.createCanvas(key, 128, 128)!;
+    const ctx = tex.getContext();
+    const lumps = 7 + t * 2;
+    for (let i = 0; i < lumps; i++) {
+      const a = (i / lumps) * Math.PI * 2 + t;
+      const d = i === 0 ? 0 : 14 + ((i * 37 + t * 11) % 13);
+      const cx = 64 + Math.cos(a) * d;
+      const cy = 64 + Math.sin(a) * d * 0.9;
+      const r = i === 0 ? 40 : 22 + ((i * 53 + t * 7) % 12);
+      // Lighter at the top of each lump, darker underneath.
+      const g = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.35, 0, cx, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,0.55)');
+      g.addColorStop(0.55, 'rgba(205,205,205,0.35)');
+      g.addColorStop(1, 'rgba(150,150,150,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    tex.refresh();
   }
 }

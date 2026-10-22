@@ -1,6 +1,7 @@
 // Shared match types for the menus (setup, settings, results) and GameScene (phase 11).
 
 import type { Pose } from '../anim/Rig';
+import type { Shield } from '../anim/Robot2D';
 
 /** Who drives a robot: keyboard set 1 or 2 (with any pad), or the computer. */
 export type InputKind = 'P1' | 'P2' | 'CPU';
@@ -59,6 +60,8 @@ export interface RobotFrame {
   visible: boolean;
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
   lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean;
+  /** A raised guard's shield hexagon (anim/Robot2D.ts). */
+  shield?: Shield;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
 }

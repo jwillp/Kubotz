@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { lit } from '../fx/NormalMaps';
+import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 import { ItemBody, PhysicsWorld } from '../physics/Physics';
@@ -119,6 +120,8 @@ function ballTextures(scene: Phaser.Scene): void {
  */
 export class PowerUpOrb {
   readonly sprite: Phaser.GameObjects.Image;
+  /** The ball as drawn (art, shading, highlight), glitched as one on a bounce. */
+  private readonly view: Phaser.GameObjects.Container;
   private readonly glow: Phaser.GameObjects.Image;
   private readonly shade: Phaser.GameObjects.Image;
   private readonly shine: Phaser.GameObjects.Image;
@@ -131,6 +134,9 @@ export class PowerUpOrb {
   lastVx = 0;
   lastVy = 0;
   lastTinkAt = 0;
+  /** The bounce glitch: how hard (0..1) and when it started (match clock). */
+  private glitchPower = 0;
+  private glitchAt = -Infinity;
 
   constructor(scene: Phaser.Scene, physics: PhysicsWorld, x: number, y: number, readonly type: PowerUpType, now: number) {
     const def = POWER_UPS[type];
@@ -139,12 +145,13 @@ export class PowerUpOrb {
     this.body.push(Phaser.Math.Between(-3, 3) * UNIT, 0);
     const size = this.radius * 2;
     this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(size * 2.6, size * 2.6);
-    this.sprite = lit(scene.add.image(x, y, def.image).setDepth(8));
+    this.sprite = lit(scene.add.image(0, 0, def.image));
     const tint = type === 'invincibility' ? 0xffd84d : type === 'energy' ? 0xfff27a : null;
     if (tint !== null) this.sprite.setTint(tint);
     this.sprite.setDisplaySize(size, size);
-    this.shade = scene.add.image(x, y, 'ball-shade').setDepth(8.1).setDisplaySize(size, size);
-    this.shine = scene.add.image(x, y, 'ball-shine').setDepth(8.2).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(size, size);
+    this.shade = scene.add.image(0, 0, 'ball-shade').setDisplaySize(size, size);
+    this.shine = scene.add.image(0, 0, 'ball-shine').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(size, size);
+    this.view = scene.add.container(x, y, [this.sprite, this.shade, this.shine]).setDepth(8);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
   }
 
@@ -157,17 +164,28 @@ export class PowerUpOrb {
     const blink = left < 3000 && Math.floor(now / 120) % 2 === 0; // blink before vanishing
     const a = blink ? 0.35 : 1;
     // The art rolls with the ball; the shading and the highlight stay lit from above.
-    this.sprite.setPosition(this.x, this.y).setRotation(this.body.angle).setAlpha(a);
-    this.shade.setPosition(this.x, this.y).setAlpha(a);
-    this.shine.setPosition(this.x, this.y).setAlpha(a);
-    this.glow.setPosition(this.x, this.y).setAlpha((blink ? 0.2 : 0.45) + 0.12 * Math.sin(now / 180));
+    this.view.setPosition(this.x, this.y).setAlpha(a);
+    this.sprite.setRotation(this.body.angle);
+    // A bounce glitches it like a hit robot (fx/HitGlitch.ts), settling over GLITCH_MS.
+    const f = (now - this.glitchAt) / GLITCH_MS;
+    const k = f >= 0 && f < 1 ? this.glitchPower * (1 - f) * (1 - f) : 0;
+    hitGlitch(this.view, k);
+    // The glow cuts out now and then while it glitches.
+    const cut = k > 0 && Math.random() < 0.4 * k;
+    this.glow.setPosition(this.x, this.y).setAlpha(cut ? 0.05 : (blink ? 0.2 : 0.45) + 0.12 * Math.sin(now / 180));
+  }
+
+  /** A bounce: the ball glitches, harder for a harder bounce (`power` 0..1). */
+  glitch(now: number, power: number): void {
+    const f = (now - this.glitchAt) / GLITCH_MS;
+    const left = f < 1 ? this.glitchPower * (1 - f) * (1 - f) : 0;
+    this.glitchPower = Math.max(left, Phaser.Math.Clamp(power, 0.25, 1));
+    this.glitchAt = now;
   }
 
   destroy(): void {
-    this.sprite.destroy();
+    this.view.destroy();
     this.glow.destroy();
-    this.shade.destroy();
-    this.shine.destroy();
     this.body.destroy();
   }
 }

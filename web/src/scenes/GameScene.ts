@@ -540,7 +540,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
-    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -572,6 +572,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   dust(x: number, y: number): void {
     this.fx('landingDust', x, y);
+  }
+
+  /** Jumping off and landing: the subtle run dust, kicked out to both sides. */
+  footDust(x: number, y: number): void {
+    this.impact.runDust(x, y, -1);
+    this.impact.runDust(x, y, 1);
   }
 
   runDust(x: number, y: number, dir: number): void {
@@ -982,6 +988,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (dv > 3.5 && now - o.lastTinkAt > 70) {
         o.lastTinkAt = now;
         this.playSfx('orb-bounce', Math.min(0.55, 0.1 + dv * 0.025), Phaser.Math.Between(-250, 350));
+        if (vfx() > 0) o.glitch(now, dv / 14);
       }
       o.lastVx = o.body.vx; o.lastVy = o.body.vy;
       this.impact.motes(o.x, o.y, o.color, o.radius, 16);
@@ -1051,7 +1058,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private checkDeaths(now: number): void {
     for (const k of this.fighters) {
       if (!k.isAlive() || k.health > 0) continue;
-      this.fx('deathDust', k.x, k.body.bottom);
+      // A big explosion of smoke in the team colour (replayed in the kill replays).
+      this.impact.koSmoke(k.x, k.y, k.look.color);
       this.shake(0.7);
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) { killer.kills++; killer.stats.kos++; }

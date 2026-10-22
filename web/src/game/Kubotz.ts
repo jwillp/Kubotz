@@ -258,6 +258,8 @@ export interface ArenaHooks {
   shake(amount: number): void;
   dust(x: number, y: number): void;
   runDust(x: number, y: number, dir: number): void;
+  /** Jumping off or landing: the subtle dust of a change of direction, to both sides. */
+  footDust(x: number, y: number): void;
   airJump(x: number, y: number, color: number): void;
 }
 
@@ -811,7 +813,7 @@ export class Kubotz implements Damageable, Teamed {
       const fall = this.prevVy / UNIT;
       if (this.fastFalling && fall > 8) this.hooks.shake(Math.min(0.45, 0.2 + fall / 90));
       else if (fall > 22) this.hooks.shake(Math.min(0.4, (fall - 18) / 40));
-      this.hooks.dust(this.x, b.bottom);
+      this.hooks.footDust(this.x, b.bottom);
       this.squashUntil = now + 160;
       this.landUntil = now + 200;
       if (!this.attack) this.anim.play(ANIM.LAND, { restart: true, fade: 40 });
@@ -825,7 +827,7 @@ export class Kubotz implements Damageable, Teamed {
     this.lastJumpAt = now;
     this.jumpReadyAt = now + (this.controller.label === 'CPU' ? Config.JUMP_COOLDOWN : HUMAN_JUMP_COOLDOWN);
     if (grounded) {
-      this.hooks.dust(this.x, this.body.bottom);
+      this.hooks.footDust(this.x, this.body.bottom);
       if (!this.attack) this.anim.play(ANIM.JUMP, { restart: true, fade: 50 });
     } else {
       this.hooks.airJump(this.x, this.body.bottom, this.look.color);
@@ -1065,7 +1067,7 @@ export class Kubotz implements Damageable, Teamed {
       this.attack = null;
       this.currentMove = null;
       this.attackReadyAt = now + 160;
-      this.hooks.dust(this.x, this.body.bottom);
+      this.hooks.footDust(this.x, this.body.bottom);
       this.hooks.shake(0.15);
     }
     if (m === SPECIALS.dive && t >= 0.5 && !this.grounded) this.helpless = true;
@@ -1563,6 +1565,8 @@ export class Kubotz implements Damageable, Teamed {
       alpha: this.intangible && now >= this.materializeUntil ? 0.55 : 1,
       flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
       glitch: now < this.flashUntil && vfx() > 0,
+      // The guard's shield shrinks as it drains.
+      shield: this.guarding ? { r: UNIT * 1.2 * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX)), above: (this.body.bottom - this.body.top) * 0.62, color: this.look.color } : undefined,
     });
     // Afterimages behind fast moves, dashes, dodges and tumbles.
     const fast = Math.hypot(this.body.vx, this.body.vy) > 17 * UNIT;
@@ -1634,11 +1638,6 @@ export class Kubotz implements Damageable, Teamed {
         if (fill > 0) g.fillStyle(0xff4a4a, 1).fillRect(x + s * seg, by, (seg - px) * fill, h);
       }
       g.fillStyle(this.look.color, 1).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
-    }
-    if (this.guarding) {
-      const r = UNIT * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX));
-      g.fillStyle(this.look.color, 0.35).fillCircle(this.x, this.y, r);
-      g.lineStyle(3, 0xffffff, 0.7).strokeCircle(this.x, this.y, r);
     }
   }
 

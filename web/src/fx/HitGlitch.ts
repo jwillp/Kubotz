@@ -23,6 +23,10 @@ uniform float uTime;
 uniform float uAmount;
 uniform float uSeed;
 uniform float uZoom;
+// A shield hexagon (pointy top): centre and half height in screen pixels, and
+// how hard what shows through it glitches.
+uniform vec3 uHex;
+uniform float uHexAmount;
 varying vec2 outTexCoord;
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -31,8 +35,10 @@ float hash(vec2 p) {
 }
 void main () {
   vec2 uv = outTexCoord;
-  float k = uAmount;
   float y = (1.0 - uv.y) * uRes.y; // screen pixels from the top
+  vec2 q = abs(vec2(uv.x * uRes.x, y) - uHex.xy);
+  float inHex = step(max(q.x * 0.866 + q.y * 0.5, q.y), uHex.z);
+  float k = max(uAmount, uHexAmount * inHex);
   // The picture jumps a few times while it lasts, not every frame.
   float tick = floor(uTime * 30.0) + uSeed;
   // Bands of rows of uneven height tear sideways, the wider the harder the hit.
@@ -69,6 +75,8 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   seed = 0;
   /** The camera it is seen through (else the scene's main camera), for the zoom. */
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
+  /** A shield hexagon in world pixels (centre, half height) and how hard it glitches inside, or null. */
+  hex: HexGlitch | null = null;
 
   constructor(game: Phaser.Game) {
     super({ game, name: HitGlitchPipeline.key, fragShader: FRAGMENT });
@@ -84,20 +92,35 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
     this.set1f('uAmount', this.amount);
     this.set1f('uSeed', this.seed);
     this.set1f('uZoom', Math.max(0.5, zoom));
+    const h = this.hex;
+    if (h && cam) {
+      // World to screen through the camera (scroll, zoom, rotation; its matrix is untyped), then to the target's pixels.
+      const s = target.height / this.renderer.height;
+      const p = (cam as unknown as { matrix: Phaser.GameObjects.Components.TransformMatrix }).matrix.transformPoint(h.x - cam.scrollX, h.y - cam.scrollY);
+      this.set3f('uHex', p.x * s, p.y * s, h.r * cam.zoom * s);
+      this.set1f('uHexAmount', h.amount);
+    } else {
+      this.set3f('uHex', 0, 0, 0);
+      this.set1f('uHexAmount', 0);
+    }
     this.bindAndDraw(target);
   }
 }
 
+/** What glitches inside a raised shield: a hexagon in world pixels (centre, half height) and how hard. */
+export interface HexGlitch { x: number; y: number; r: number; amount: number }
+
 /**
- * Sets how hard `obj` glitches (0 removes the pass). Without WebGL it does
+ * Sets how hard `obj` glitches (0 removes the pass), and optionally how hard
+ * the part of it inside a shield hexagon glitches. Without WebGL it does
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];
-  if (amount <= 0) {
+  if (amount <= 0 && !hex) {
     if (p) obj.removePostPipeline(HitGlitchPipeline.key);
     return;
   }
@@ -108,6 +131,7 @@ export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects
     p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline;
     p.seed = Math.random() * 100;
   }
-  p.amount = amount;
+  p.amount = Math.max(0, amount);
+  p.hex = hex ?? null;
   if (camera) p.camera = camera;
 }

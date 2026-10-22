@@ -29,7 +29,15 @@ export interface DrawState {
   lean: number; squash: number; alpha: number; flash: boolean;
   /** Struck this frame (the white flash of a hit, not a charge blink): it glitches. */
   glitch?: boolean;
+  /** A raised guard: the shield hexagon over the robot. */
+  shield?: Shield;
 }
+
+/** The guard's shield: half height of the hexagon and its centre above the feet (px), and the team colour. */
+export interface Shield { r: number; above: number; color: number }
+
+/** How hard the robot glitches where it shows through a raised shield. */
+const SHIELD_GLITCH = 0.42;
 
 interface Ghost { view: Phaser.GameObjects.Container; born: number; life: number }
 
@@ -50,6 +58,8 @@ export class Robot2D {
   /** How long since the last hit glitch started (ms of frame time, so slow motion slows it), and whether the hit is still on. */
   private glitchAge = Infinity;
   private glitching = false;
+  /** The guard's shield hexagon: a team-coloured fill and a lighter sheen from the art's gradient. */
+  private hex?: { fill: Phaser.GameObjects.Image; sheen: Phaser.GameObjects.Image };
   /** The camera the robot is seen through, when not the scene's main one. */
   camera?: Phaser.Cameras.Scene2D.Camera;
   /** What update() drew last, for the kill replays (game/Replay.ts). */
@@ -70,8 +80,8 @@ export class Robot2D {
    * @param fx extra motion: lean (radians), squash (y scale), alpha, white flash, hit glitch, frame time
    */
   update(pose: Pose, maps: string[], x: number, bottom: number, yaw: number,
-    fx: { lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean; dtMs: number; snap?: boolean }): void {
-    this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash, glitch: fx.glitch };
+    fx: { lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean; shield?: Shield; dtMs: number; snap?: boolean }): void {
+    this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash, glitch: fx.glitch, shield: fx.shield };
     this.parts = this.rig.solve(pose, maps);
     // The art faces left: the container mirrors it, and yaw 180 mirrors it back.
     this.view.setPosition(x, bottom).setScale(-ART_SCALE, fx.squash * ART_SCALE).setRotation(fx.lean).setAlpha(fx.alpha);
@@ -111,16 +121,44 @@ export class Robot2D {
       if (fx.flash) img.setTintFill(0xffffff); else img.clearTint();
       this.view.moveTo(img, depth);
     });
-    this.updateGlitch(!!fx.glitch, fx.dtMs);
+    this.drawShield(fx.shield, fx.squash);
+    this.updateGlitch(!!fx.glitch, fx.dtMs, fx.shield);
     this.updateGhosts();
   }
 
-  /** Each new hit restarts the glitch, which settles over GLITCH_MS. */
-  private updateGlitch(hit: boolean, dtMs: number): void {
+  /**
+   * The guard's shield: the hexagon art (particles/hexa.png) in the team
+   * colour, over the robot and inside its container so it tears with it.
+   */
+  private drawShield(shield: Shield | undefined, squash: number): void {
+    if (!shield) { if (this.hex) { this.hex.fill.setVisible(false); this.hex.sheen.setVisible(false); } return; }
+    if (!this.hex) {
+      this.hex = {
+        fill: this.scene.add.image(0, 0, 'p-hexa'),
+        sheen: this.scene.add.image(0, 0, 'p-hexa').setBlendMode(Phaser.BlendModes.ADD),
+      };
+      this.view.add([this.hex.fill, this.hex.sheen]);
+    }
+    const { fill, sheen } = this.hex;
+    // Container space: mirrored and scaled by ART_SCALE, squashed with the robot.
+    const sy = (2 * shield.r) / fill.height / ART_SCALE;
+    const ly = -shield.above / (ART_SCALE * squash);
+    // A signal that is not quite steady: the hexagon flickers a little.
+    const flicker = Math.random() < 0.12 ? 0.55 : 1;
+    for (const img of [fill, sheen]) img.setVisible(true).setPosition(0, ly).setScale(sy, sy / squash);
+    fill.setTintFill(shield.color).setAlpha(0.3 * flicker);
+    sheen.setTint(0xffffff).setAlpha(0.3 * flicker);
+    this.view.bringToTop(fill);
+    this.view.bringToTop(sheen);
+  }
+
+  /** Each new hit restarts the glitch, which settles over GLITCH_MS; a raised shield keeps what shows through it glitching. */
+  private updateGlitch(hit: boolean, dtMs: number, shield?: Shield): void {
     this.glitchAge = hit && !this.glitching ? 0 : this.glitchAge + dtMs;
     this.glitching = hit;
     const f = this.glitchAge / GLITCH_MS;
-    hitGlitch(this.view, f < 1 ? (1 - f) * (1 - f) * 0.6 + 0.4 * (1 - f) : 0, this.camera);
+    const hex = shield ? { x: this.view.x, y: this.view.y - shield.above, r: shield.r, amount: SHIELD_GLITCH } : null;
+    hitGlitch(this.view, f < 1 ? (1 - f) * (1 - f) * 0.6 + 0.4 * (1 - f) : 0, this.camera, hex);
   }
 
   /** A fading copy of the robot as drawn now, in a colour (afterimages of fast moves). */
@@ -139,7 +177,7 @@ export class Robot2D {
     while (v.list.length < list.length) v.add(this.scene.add.image(0, 0, '__DEFAULT').setBlendMode(Phaser.BlendModes.ADD));
     (v.list as Phaser.GameObjects.Image[]).forEach((copy, i) => {
       const src = list[i];
-      if (!src || !src.visible) { copy.setVisible(false); return; }
+      if (!src || !src.visible || src === this.hex?.fill || src === this.hex?.sheen) { copy.setVisible(false); return; }
       copy.setVisible(true).setTexture(src.texture.key).setOrigin(src.originX, src.originY)
         .setPosition(src.x, src.y).setAngle(src.angle).setScale(src.scaleX, src.scaleY).setTintFill(color);
     });
