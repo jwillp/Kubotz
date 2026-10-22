@@ -7,14 +7,14 @@ import type { Prop } from './Match';
 import { propOf } from './Replay';
 
 /**
- * The balls of the ball games: Kubeball's ball (kicked and struck, never
- * grabbed), Skychase's Core (grabbed, carried, thrown, kicked), its two Hunters (they fly at the Kubotz on their
+ * The balls of the ball games: Kubeball's ball and Skychase's Core (grabbed,
+ * carried, thrown, kicked; no attacks while held, any hit knocks it loose), its two Hunters (they fly at the Kubotz on their
  * own) and the golden Spark (it flies off, caught by a grab).
  */
 export type BallKind = 'kubeball' | 'core' | 'hunter' | 'spark';
 
 const KINDS: Record<BallKind, { radius: number; color: number; grab: boolean; float: boolean }> = {
-  kubeball: { radius: Config.POWERUP_RADIUS, color: 0xdff3ff, grab: false, float: false }, // no hands: kicks and strikes only
+  kubeball: { radius: Config.POWERUP_RADIUS, color: 0xdff3ff, grab: true, float: false },
   core: { radius: Config.POWERUP_RADIUS * 1.1, color: 0xff7a3a, grab: true, float: false },
   hunter: { radius: Config.POWERUP_RADIUS * 1.15, color: 0x2a2d33, grab: false, float: true },
   spark: { radius: Config.POWERUP_RADIUS * 0.6, color: 0xffd84d, grab: true, float: true },

@@ -67,7 +67,7 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'battle',
     name: 'Kubeball',
     tagline: 'Red against blue, one ball, two goals.',
-    rules: ['No hands: run into the ball, strike it, smash it', 'Into the other team\'s goal rift to score', 'Strikes send it along their launch angle', 'Goals or time: you choose'],
+    rules: ['Grab the ball and throw it, or strike it', 'No attacks with it in hand; any hit knocks it loose', 'Goal rifts high on the end walls', 'Goals or time: you choose'],
     ball: 'kubeball',
   },
   skychase: {

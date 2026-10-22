@@ -946,6 +946,8 @@ export class Kubotz implements Damageable, Teamed {
   /** handleActions, then: a buffered press that started something is used up.
    * (A jab combo's next hit is queued by the press itself, so it keeps the buffer until it starts.) */
   private act(pad: PadState, now: number): void {
+    // Ball in hand: no attacks (grab throws it).
+    if (this.ball) pad = { ...pad, attack: false, special: false, smash: false, cstick: undefined };
     const before = { move: this.currentMove, charging: this.charging, attack: this.attack, lock: this.lockUntil };
     this.handleActions(pad, now);
     // Started: a new move, attack or charge (not one ending), or a commitment such as a taunt.

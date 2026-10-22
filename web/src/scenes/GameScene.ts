@@ -710,6 +710,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   landed(victim: Kubotz, attacker: Kubotz, damage: number, chained: boolean, healthBefore: number, speed: number, angle: number): void {
     this.recorder.hit(victim, attacker, damage, chained, this.clock, healthBefore, speed, angle);
+    // Ball games: any hit knocks the ball out of the victim's hands.
+    victim.ball?.release(this.clock, (victim.x - attacker.x > 0 ? 1 : -1) * 5 * UNIT, -7 * UNIT);
     // Sandbox: every hit's damage pops up.
     if (MODES[this.mode].sandbox && damage > 0) this.floatText(victim.x, victim.body.top - 0.4 * UNIT, `${Math.round(damage)}%`, 0xffffff);
   }
@@ -1507,8 +1509,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private grabBall(k: Kubotz, _area: Phaser.Geom.Circle): boolean {
     const now = this.clock;
     if (k.ball) {
-      const vy = k.pad.up ? -17 * UNIT : k.pad.down ? 6 * UNIT : -6 * UNIT;
-      k.ball.release(now, k.facing * (k.pad.up ? 6 : 17) * UNIT + k.body.vx * 0.4, vy);
+      // Up throws high and a little forwards (the goals are high), down drops it, else a long throw. A CPU throws up at a goal above it.
+      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).sort((a, b) => Math.abs(a.centerX - k.x) - Math.abs(b.centerX - k.x))[0];
+      const up = k.pad.up || (k.controller.label === 'CPU' && !!goal && goal.centerY < k.y - 2 * UNIT);
+      const vy = up ? -17 * UNIT : k.pad.down ? 6 * UNIT : -6 * UNIT;
+      k.ball.release(now, k.facing * (up ? 11 : 17) * UNIT + k.body.vx * 0.4, vy);
       this.playSfx('orb-bounce', 0.5, 300);
       return true;
     }
@@ -1638,8 +1643,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         const near = (p: { x: number; y: number }) => Math.hypot(p.x - own.x, p.y - own.y) < 14 * UNIT;
         if (main.carrier && main.carrier.team !== k.team && near(main.carrier)) return { target: main.carrier };
         if (!main.carrier && near(main)) {
-          // A keeper clears the ball away from its goal (Kubeball), or takes it (Skychase).
-          if (main.kind === 'kubeball') return dist(main) < 1.4 * UNIT ? { strike: own.x < main.x ? 1 : -1 } : { goal: { x: main.x, y: main.y }, fightWithin: 1 };
           return { goal: { x: main.x, y: main.y }, fightWithin: 1, grab: dist(main) < 1.6 * UNIT };
         }
         const out = own.x < (this.map.width * UNIT) / 2 ? 1 : -1;
@@ -1648,14 +1651,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     if (main.carrier) {
       return main.carrier.team === k.team ? { goal: { x: main.carrier.x, y: main.carrier.body.bottom }, fightWithin: 4 } : { target: main.carrier };
-    }
-    if (main.kind === 'kubeball') {
-      // No hands: get behind the ball (on the far side from the goal it should go into) and strike it that way.
-      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).map(at)[0];
-      const toward = goal && goal.x > main.x ? 1 : -1;
-      const behind = { x: main.x - toward * 0.9 * UNIT, y: main.y };
-      const placed = Math.abs(k.x - behind.x) < 0.8 * UNIT && Math.abs(k.y - main.y) < 1.5 * UNIT;
-      return placed ? { strike: toward } : { goal: behind, fightWithin: 1.2 };
     }
     return { goal: { x: main.x, y: main.y }, fightWithin: 1.5, grab: dist(main) < 1.6 * UNIT };
   }

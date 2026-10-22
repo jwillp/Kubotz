@@ -106,17 +106,17 @@ export const ARENAS: (ArenaDef | null)[] = [
     portals: [[46, 9, 1, 5], [133, 9, 1, 5], [59, 35, 1, 5], [120, 35, 1, 5]],
   },
   {
-    // Kubeball: a closed pitch, a goal rift in each end wall at head height, a few platforms over the middle.
+    // Kubeball: a closed pitch, a goal rift high in each end wall, platforms to climb to them.
     name: 'The Pitch',
     blurb: 'Kubeball: a goal at each end',
     mode: 'kubeball',
     size: [80, 32],
     walls: [[6, 1, 68, 2], [4, 3, 2, 25], [74, 3, 2, 25], [6, 28, 68, 3]],
-    platforms: [[14, 22, 8, 1], [58, 22, 8, 1], [33, 17, 14, 1], [22, 11, 8, 1], [50, 11, 8, 1]],
+    platforms: [[14, 22, 8, 1], [58, 22, 8, 1], [33, 17, 14, 1], [22, 11, 8, 1], [50, 11, 8, 1], [8, 16, 6, 1], [66, 16, 6, 1]],
     warps: [],
     spawns: [[12, 28], [18, 28], [24, 28], [18, 22], [68, 28], [62, 28], [56, 28], [62, 22]],
     bonus: [[40, 14], [26, 8], [54, 8]],
-    goals: [[0, 6, 20, 1, 7], [1, 73, 20, 1, 7]],
+    goals: [[0, 6, 6, 1, 6], [1, 73, 6, 1, 6]],
     ball: [40, 24],
   },
   {
