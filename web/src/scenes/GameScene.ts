@@ -241,8 +241,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
-    // Movement feel presets (game/Feel.ts): 1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus.
-    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
+    // Movement feel presets (game/Feel.ts): 1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus, 6 the classic Kubot.
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
       const f = setFeel(FEEL_ORDER[i]);
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Feel: ${f.name}`, 0xffffff);
     }));

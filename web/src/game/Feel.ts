@@ -7,8 +7,10 @@ import { Config } from '../config';
  * x 60 x s, accelerations x 3600 x s, with s = 0.1333 Kubotz units per Ultimate
  * unit). Jump speeds are solved so a full hop and a short hop stay in the air
  * as many frames as the fighter's (SH / FH air time) under its gravity and
- * fall speed. Switched in a match with the number keys (1 Kubot, 2 Fox,
- * 3 Falco, 4 Captain Falcon, 5 Samus) or ?feel=fox in the address.
+ * fall speed. The Kubot's own (the default) is Fox's with Falco's jump
+ * heights (owner, 2026-10-22). Switched in a match with the number keys
+ * (1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus, 6 the Kubot's
+ * original feel) or ?feel=fox in the address.
  */
 export interface Feel {
   name: string;
@@ -25,8 +27,12 @@ export interface Feel {
 }
 
 export const FEELS: Record<string, Feel> = {
-  kubot: {
-    name: 'Kubot', walk: 8.4, dash: 15.4, run: Config.RUN_SPEED, air: Config.MAX_SPEED, airAccel: Config.RUN_ACCELERATION,
+  // Fox's movement, falls and air control, with Falco's full and short hop heights (5.8 and 2.2 units)
+  // under Fox's gravity: 35.7 u/s take-off, short hop 0.62 of it (45 / 24 frames in the air).
+  kubot: { name: 'Kubot', walk: 12.2, dash: 16.7, run: 19.2, air: 8.9, airAccel: 43, gravity: 110, fallGravity: 110, fall: 16.8, fastFall: 26.9, jump: 35.7, shortHop: 0.62 },
+  // The Kubot's movement before the presets: slower run, heavy falls, fast air drift.
+  classic: {
+    name: 'Kubot classic', walk: 8.4, dash: 15.4, run: Config.RUN_SPEED, air: Config.MAX_SPEED, airAccel: Config.RUN_ACCELERATION,
     gravity: Config.GRAVITY, fallGravity: Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS),
     fall: Config.MAX_FALL_SPEED, fastFall: Config.FAST_FALL_SPEED, jump: Config.JUMP_VELOCITY, shortHop: 0.68,
   },
@@ -40,8 +46,8 @@ export const FEELS: Record<string, Feel> = {
   samus: { name: 'Samus', walk: 8.9, dash: 15.0, run: 13.2, air: 8.8, airAccel: 43, gravity: 36, fallGravity: 36, fall: 10.6, fastFall: 17.0, jump: 17.3, shortHop: 0.76 },
 };
 
-/** The keys 1 to 5, in order. */
-export const FEEL_ORDER = ['kubot', 'fox', 'falco', 'falcon', 'samus'];
+/** The keys 1 to 6, in order. */
+export const FEEL_ORDER = ['kubot', 'fox', 'falco', 'falcon', 'samus', 'classic'];
 
 const KEY = 'kubotz.feel';
 const fromUrl = new URLSearchParams(location.search).get('feel');
