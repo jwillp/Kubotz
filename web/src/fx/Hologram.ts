@@ -25,6 +25,28 @@ export const SPAWN_MS = 2300;
 export const RELEASE_AT = 1750;
 /** How far above its spawn point the robot hangs in the beam. */
 export const HOVER = 1.1 * UNIT;
+/**
+ * The match intro's spawns: drawn twice as fast up to a full hologram
+ * (FAST_UNTIL ms, the sequence's HOLO_AT), held there for a while, then the
+ * rest of the sequence as usual.
+ */
+const HOLO_AT = 1300;
+const FAST_UNTIL = HOLO_AT / 2;
+
+/**
+ * Where in the spawn sequence (its usual timing) a spawn is `age` ms after it
+ * started; with `hold` (the intro) it is drawn faster and held as a hologram
+ * for `hold` ms.
+ */
+export function spawnAge(age: number, hold?: number): number {
+  if (hold === undefined) return age;
+  if (age < FAST_UNTIL) return age * 2;
+  return age < FAST_UNTIL + hold ? HOLO_AT : HOLO_AT + age - FAST_UNTIL - hold;
+}
+
+/** How long after it starts an intro spawn (`hold`) lets its robot go. */
+export const introRelease = (hold: number): number => FAST_UNTIL + hold + RELEASE_AT - HOLO_AT;
+
 /** A debris piece's scan-out (ms). */
 export const DISSOLVE_MS = 650;
 
@@ -270,7 +292,7 @@ export function spawnLight(x: number, feet: number, age: number): { x: number; y
 
 // ------------------------------------------------------------------ in game
 
-interface Spawning { at: number; x: number; feet: number }
+interface Spawning { at: number; x: number; feet: number; hold?: number }
 
 /** Something that spawns (a Kubotz): its drawing, its feet, and the hold before it drops. */
 export interface Spawner {
@@ -295,17 +317,22 @@ export class HoloSpawns {
     this.g = scene.add.graphics().setDepth(10.5);
   }
 
-  /** Starts a robot's spawn now: it is raised by HOVER and held until RELEASE_AT. */
-  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number): void {
+  /**
+   * Starts a robot's spawn at `now`: it is raised by HOVER and held until
+   * RELEASE_AT. The intro passes `hold`: drawn faster, held as a hologram
+   * that much longer (spawnAge).
+   */
+  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, hold?: number): void {
     lift(k.x, y - HOVER);
-    k.materializeUntil = now + RELEASE_AT;
-    this.active.set(k, { at: now, x: k.x, feet: k.body.bottom });
+    k.materializeUntil = now + (hold === undefined ? RELEASE_AT : introRelease(hold));
+    this.active.set(k, { at: now, x: k.x, feet: k.body.bottom, hold });
   }
 
-  /** How far into its spawn a robot is, and where its projector is (for the replays). */
+  /** How far into its spawn a robot is (in the usual timing), and where its projector is (for the replays). */
   state(k: Spawner, now: number): [number, number, number] | undefined {
     const s = this.active.get(k);
-    return s && now - s.at < SPAWN_MS ? [now - s.at, s.x, s.feet] : undefined;
+    const age = s && spawnAge(now - s.at, s.hold);
+    return s && age! < SPAWN_MS ? [age!, s.x, s.feet] : undefined;
   }
 
   /** After the robots are drawn: their hologram look, and the projectors. */
@@ -313,7 +340,7 @@ export class HoloSpawns {
     this.g.clear();
     this.add.clear();
     for (const [k, s] of this.active) {
-      const age = now - s.at;
+      const age = spawnAge(now - s.at, s.hold);
       if (age >= SPAWN_MS) { this.active.delete(k); clearHolo(k.model.view); continue; }
       holoRobot(k.model.view, age, s.feet, s.feet - 2.15 * UNIT);
       drawSpawn(this.g, this.add, s.x, s.feet, age, this.scene.time.now);
@@ -328,7 +355,7 @@ export class HoloSpawns {
   lights(now: number): { x: number; y: number; color: number; intensity: number }[] {
     const out = [];
     for (const s of this.active.values()) {
-      const l = spawnLight(s.x, s.feet, now - s.at);
+      const l = spawnLight(s.x, s.feet, spawnAge(now - s.at, s.hold));
       if (l) out.push(l);
     }
     return out;

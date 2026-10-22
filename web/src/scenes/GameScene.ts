@@ -16,7 +16,7 @@ import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
-import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
+import { HOLO_COLOR, HoloSpawns, introRelease } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
@@ -170,6 +170,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
+    // Every robot is let go together, a beat after the camera has shown the last one.
+    const releaseAt = this.specs.length * INTRO_FOCUS_MS + INTRO_RELEASE_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
       const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
@@ -195,13 +197,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.lives = this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
-      // The intro: one robot after the other, each hidden in its beam until its turn.
+      // The intro: one robot after the other, each hidden in its beam until its turn,
+      // then held as a hologram so all of them are let go together.
       const at = i * INTRO_FOCUS_MS;
       this.introAt.push(at);
       k.appearAt = at;
-      this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y);
+      this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, releaseAt - at - introRelease(0));
     });
-    this.countdownAt = this.fighters.length * INTRO_FOCUS_MS + INTRO_RETURN_MS;
+    // The projectors fly off as the camera pulls back, then the countdown.
+    this.countdownAt = releaseAt + INTRO_RETURN_MS;
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
     // The camera starts on the first robot's spawn (updateCamera follows the intro).
@@ -1262,12 +1266,15 @@ const PAUSE_MUSIC = 0.3;
 
 /**
  * Match intro: the robots spawn one after the other, the camera on each for
- * INTRO_FOCUS_MS (not the whole spawn), then INTRO_RETURN_MS back out to
- * the fight view before the 3-2-1 countdown. INTRO_VIEW_WIDTH is how much
+ * INTRO_FOCUS_MS (not the whole spawn), then back out to the fight view; all
+ * are let go together INTRO_RELEASE_MS after the last one is shown (at least
+ * the 450 ms an intro spawn needs from a full hologram), and the 3-2-1
+ * countdown starts INTRO_RETURN_MS later, once the projectors have flown off. INTRO_VIEW_WIDTH is how much
  * of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much
  * faster than in the fight the camera moves meanwhile.
  */
 const INTRO_FOCUS_MS = 750;
+const INTRO_RELEASE_MS = 450;
 const INTRO_RETURN_MS = 600;
 const INTRO_VIEW_WIDTH = 14;
 const INTRO_CAMERA_PACE = 3;
