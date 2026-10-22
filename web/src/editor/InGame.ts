@@ -60,6 +60,16 @@ export function installInGameEditor(game: Phaser.Game): void {
       host.close = () => void toggle();
       host.play = (on) => { playing = on; freeze(!on); };
       host.playArena = playArena;
+      // The robot the Animation and Particles tabs work on: one of the match's, frozen (none while it plays).
+      game.registry.set('editorSubject', () => {
+        const g = match();
+        if (!g || playing || !open) return null;
+        const i = Math.min(game.registry.get('editorFighter') ?? 0, g.fighters.length - 1);
+        const k = g.fighters[i];
+        if (!k) return null;
+        const targets = g.fighters.filter((f) => f !== k && f.isAlive()).map((f) => f.hurtbox());
+        return { model: k.model, x: k.body.x, y: k.body.bottom, facing: k.facing, targets };
+      });
       ui = await import('./EditorUI');
       watchArenaEdits(ui.store);
     }

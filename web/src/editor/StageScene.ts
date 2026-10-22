@@ -34,6 +34,9 @@ const HIT = 0xff4d4d;
 const HURT = 0x4aa3ff;
 const EVENT = 0xb18cff;
 
+/** A robot of the match being edited: its drawing, its feet, its facing, and the robots it can hit. */
+export interface Subject { model: Robot2D; x: number; y: number; facing: 1 | -1; targets: Phaser.Geom.Rectangle[] }
+
 export interface StageView { onion: boolean; dummy: boolean; handles: boolean; dummyX: number; helmet: number }
 
 interface Joint { bone: Bone; ox: number; oy: number; tx: number; ty: number; dir: number }
@@ -78,7 +81,34 @@ export class StageScene extends Phaser.Scene {
   playing = false;
   rate = 1;
 
-  constructor() { super('Editor'); }
+  /**
+   * @param overlay inside the game: drawn over the frozen match, on one of
+   * its robots (`subject`), through the match's camera; no stage, robot or
+   * dummy of its own.
+   */
+  constructor(private readonly overlay = false) { super('Editor'); }
+
+  /** Inside the game: the robot being edited and the others' hurtboxes (InGame.ts sets the provider); null while the match plays. */
+  private get subject(): Subject | null {
+    const get = this.overlay ? this.registry.get('editorSubject') as (() => Subject | null) | undefined : undefined;
+    return get?.() ?? null;
+  }
+
+  /** The robot drawn and edited: the match's, or the stage's own. */
+  private get R(): Robot2D { return this.subject?.model ?? this.robot; }
+
+  /** The camera the stage is seen through: the match's, inside the game. */
+  private get cam(): Phaser.Cameras.Scene2D.Camera {
+    return (this.overlay ? this.scene.get('Game')?.cameras.main : null) ?? this.cameras.main;
+  }
+
+  /** Inside the game, this scene's camera shows exactly what the match's does. */
+  private syncCamera(): void {
+    const from = this.cam; const to = this.cameras.main;
+    if (from === to) return;
+    to.setZoom(from.zoom).setScroll(from.scrollX, from.scrollY);
+    to.preRender();
+  }
 
   create(): void {
     this.store = this.registry.get('store') as Store;
@@ -105,7 +135,8 @@ export class StageScene extends Phaser.Scene {
     this.lights.addLight(0, -UNIT, 10 * UNIT, 0x3aa8ff, 1.2);
 
     const cam = this.cameras.main;
-    cam.setBackgroundColor('#0d1015').setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
+    if (this.overlay) { this.robot.visible = false; this.dummy.visible = false; this.lastSubject = null; }
+    else cam.setBackgroundColor('#0d1015').setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
     const onResize = () => this.drawGrid();
     this.scale.on('resize', onResize);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', onResize));
@@ -128,7 +159,7 @@ export class StageScene extends Phaser.Scene {
       const mouseWheel = !e.ctrlKey && e.deltaX === 0 && (e.deltaMode !== 0 || (Number.isInteger(dy) && Math.abs(dy) >= 50));
       if (e.ctrlKey) this.zoomAt(sx, sy, Math.exp(-dy * 0.01));
       else if (mouseWheel) this.zoomAt(sx, sy, dy > 0 ? 0.9 : 1.1);
-      else { cam.scrollX += dx / cam.zoom; cam.scrollY += dy / cam.zoom; this.drawGrid(); }
+      else { const c = this.cam; c.scrollX += dx / c.zoom; c.scrollY += dy / c.zoom; this.syncCamera(); this.drawGrid(); }
     };
     this.game.canvas.addEventListener('wheel', onWheel, { passive: false });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.canvas.removeEventListener('wheel', onWheel));
@@ -137,22 +168,30 @@ export class StageScene extends Phaser.Scene {
 
   /** Zooms by a factor, keeping the stage point under a screen point (canvas pixels) in place. */
   zoomAt(sx: number, sy: number, factor: number): void {
-    const cam = this.cameras.main;
+    const cam = this.cam;
     const before = cam.getWorldPoint(sx, sy);
     cam.setZoom(Phaser.Math.Clamp(cam.zoom * factor, 0.4, 6));
     cam.preRender();
     const after = cam.getWorldPoint(sx, sy);
     cam.scrollX += before.x - after.x; cam.scrollY += before.y - after.y;
+    this.syncCamera();
     this.drawGrid();
   }
 
-  /** Frames the robot again (after a resize or on request). */
+  /** Frames the robot again (after a resize or on request); inside the game, the robot being edited. */
   recentre(): void {
-    this.cameras.main.setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
+    const sub = this.subject;
+    if (sub) this.cam.setZoom(2.2).centerOn(sub.x + sub.facing * 0.6 * UNIT, sub.y - 1.3 * UNIT);
+    else this.cameras.main.setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
+    this.syncCamera();
     this.drawGrid();
   }
+
+  /** The robot edited last inside the game: a new one gets the camera on it. */
+  private lastSubject: Robot2D | null = null;
 
   private drawGrid(): void {
+    if (this.overlay) { this.grid.clear(); return; } // inside the game the match is the stage
     const cam = this.cameras.main;
     const w = cam.width / cam.zoom; const h = cam.height / cam.zoom;
     const x0 = cam.midPoint.x - w; const x1 = cam.midPoint.x + w;
@@ -179,6 +218,12 @@ export class StageScene extends Phaser.Scene {
 
   update(_time: number, dt: number): void {
     const s = this.store;
+    this.syncCamera();
+    if (this.overlay) {
+      const sub = this.subject;
+      if (!sub) { this.over.clear(); for (const o of this.onions) o.visible = false; return; } // the match is playing
+      if (sub.model !== this.lastSubject) { this.lastSubject = sub.model; this.recentre(); }
+    }
     if (this.mode === 'particles') { this.drawPreview(dt); return; }
     if (this.previewing) { this.particles.clear(); this.previewing = null; }
     if (this.playing) {
@@ -189,8 +234,9 @@ export class StageScene extends Phaser.Scene {
     // Effects fire as the time passes their frames (playing or stepping forwards); scrubbing back does not replay them.
     if (!this.playing && s.sel.t < this.lastT) this.clipEvents.seek(s.sel.clip, s.sel.t);
     this.lastT = s.sel.t;
-    const bx = s.clip.rootMotion ? (this.poseAt(s.sel.t).x ?? 0) * ART_SCALE : 0;
-    this.clipEvents.update(s.sel.clip, s.sel.t, this.robot, { x: bx, y: 0 }, this.charging);
+    const { ox, oy, fs } = this.origin();
+    const bx = ox + fs * (s.clip.rootMotion ? (this.poseAt(s.sel.t).x ?? 0) * ART_SCALE : 0);
+    this.clipEvents.update(s.sel.clip, s.sel.t, this.R, { x: bx, y: oy }, this.charging, fs < 0);
     this.particles.update(dt * (this.playing ? this.rate : 1));
   }
 
@@ -201,17 +247,20 @@ export class StageScene extends Phaser.Scene {
     const text = JSON.stringify(s.docs.particles[name] ?? null);
     const p = this.previewing;
     if (p && (p.name !== name || p.text !== text)) { this.particles.clear(); this.previewing = null; }
-    const at = { x: 0, y: -1.2 * UNIT };
+    const sub = this.subject;
+    // Inside the game: in front of the robot being edited, and mirrored the way it faces.
+    const at = sub ? { x: sub.x + sub.facing * 1.2 * UNIT, y: sub.y - 1.2 * UNIT } : { x: 0, y: -1.2 * UNIT };
+    const flip = sub ? sub.facing < 0 : this.preview.flip;
     if (!this.previewing || (this.previewing.handle.done && (this.previewing.again -= dt) <= 0)) {
       const def = this.effect(name);
-      if (def) this.previewing = { name, text, handle: this.particles.play(def, at.x, at.y, undefined, this.preview.flip), again: 350 };
+      if (def) this.previewing = { name, text, handle: this.particles.play(def, at.x, at.y, undefined, flip), again: 350 };
     }
     this.particles.update(dt * (this.rate || 1));
     // The robot for scale, standing to the side; nothing else of the animation stage.
-    this.robot.visible = this.preview.robot;
+    this.robot.visible = this.preview.robot && !this.overlay;
     for (const o of this.onions) o.visible = false;
     this.dummy.visible = false;
-    if (this.preview.robot) {
+    if (this.preview.robot && !this.overlay) {
       const idle = sampleClip(CLIPS.idle, 0);
       this.robot.update({ ...idle, y: (idle.y ?? 0) + this.rig.groundLift(idle) }, this.maps(null), -1.6 * UNIT, 0, 0, { lean: 0, squash: 1, alpha: 0.35, flash: false, dtMs: dt, snap: true });
     }
@@ -260,9 +309,12 @@ export class StageScene extends Phaser.Scene {
     const maps = this.maps(move);
     const pose = this.poseAt(t);
     const fx = { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: 16, snap: true };
+    // Where the robot stands and which way it faces (the stage's own: at 0, 0, facing right).
+    const { ox, oy, fs } = this.origin();
+    const yaw = (fs > 0 ? 0 : 180) + (pose.yaw ?? 0) * fs;
     // The body travels by the clip's x (the game turns it into root motion).
-    this.robot.visible = true;
-    this.robot.update(pose, maps, 0, 0, pose.yaw ?? 0, fx);
+    this.robot.visible = !this.overlay;
+    this.R.update(pose, maps, ox, oy, yaw, fx);
 
     // Onion skins: the keys either side of the current time.
     const keys = s.clipData.keys;
@@ -271,7 +323,7 @@ export class StageScene extends Phaser.Scene {
     [prev, next].forEach((k, i) => {
       const o = this.onions[i];
       o.visible = this.view.onion && !!k;
-      if (k) o.update(this.poseAt(k.t), maps, 0, 0, 0, { ...fx, alpha: 0.16, flash: true });
+      if (k) o.update(this.poseAt(k.t), maps, ox, oy, fs > 0 ? 0 : 180, { ...fx, alpha: 0.16, flash: true });
     });
 
     const g = this.over.clear();
@@ -280,8 +332,8 @@ export class StageScene extends Phaser.Scene {
 
     // The hurtbox, centred on the body and on its feet (a root-motion clip carries the body along).
     const hw = HURTBOX.width * UNIT; const hh = HURTBOX.height * UNIT;
-    const bx = s.clip.rootMotion ? (pose.x ?? 0) * ART_SCALE : 0;
-    g.lineStyle(line(1.5), HURT, 0.9).strokeRect(bx - hw / 2, -hh, hw, hh);
+    const bx = ox + fs * (s.clip.rootMotion ? (pose.x ?? 0) * ART_SCALE : 0);
+    g.lineStyle(line(1.5), HURT, 0.9).strokeRect(bx - hw / 2, oy - hh, hw, hh);
 
     // Hit circles, placed the way Kubotz.currentAttack() does.
     this.circles = [];
@@ -291,9 +343,9 @@ export class StageScene extends Phaser.Scene {
       const sword = move.points[0]?.file === SWORD_FILE;
       const r = (move.radius ?? (sword ? 0.3 : 0.35)) * UNIT;
       const striker = !sword && !move.all;
-      const dir = move.behind ? -1 : 1;
+      const dir = fs * (move.behind ? -1 : 1);
       const setName = s.move()!.points;
-      const at = move.points.map((p, index) => this.robot.pointsOn(p.file, p.x, p.y).map((q) => ({ ...q, index, file: p.file })));
+      const at = move.points.map((p, index) => this.R.pointsOn(p.file, p.x, p.y).map((q) => ({ ...q, index, file: p.file })));
       const placed = striker ? [at.flat().sort((u, v) => dir * (v.x - u.x))[0]] : move.all ? at.flat() : at.map((l) => l[0]);
       const chosen = new Set(placed.filter(Boolean));
       for (const q of at.flat()) {
@@ -309,16 +361,22 @@ export class StageScene extends Phaser.Scene {
       if (c) {
         const a = Phaser.Math.DegToRad(move.launch.angle);
         const len = (0.4 + move.launch.knockback / 20) * UNIT;
-        const ex = c.x + Math.cos(a) * len * (move.behind ? -1 : 1); const ey = c.y - Math.sin(a) * len;
+        const ex = c.x + Math.cos(a) * len * dir; const ey = c.y - Math.sin(a) * len;
         g.lineStyle(line(2), HIT, active ? 1 : 0.35).lineBetween(c.x, c.y, ex, ey);
         if (move.both) g.lineBetween(c.x, c.y, c.x - (ex - c.x), ey);
         g.fillStyle(HIT, active ? 1 : 0.35).fillCircle(ex, ey, line(4));
       }
     }
 
+    // Inside the game: the other robots, outlined red where an active circle reaches them.
+    const sub = this.subject;
+    if (sub) for (const box of sub.targets) {
+      const hit = active && this.circles.some((c) => Phaser.Geom.Intersects.CircleToRectangle(new Phaser.Geom.Circle(c.x, c.y, c.r), box));
+      g.lineStyle(line(hit ? 2.5 : 1), hit ? HIT : HURT, hit ? 1 : 0.5).strokeRect(box.x, box.y, box.width, box.height);
+    }
     // The dummy, flashing when an active circle overlaps its hurtbox.
-    this.dummy.visible = this.view.dummy;
-    if (this.view.dummy) {
+    this.dummy.visible = this.view.dummy && !this.overlay;
+    if (this.view.dummy && !this.overlay) {
       const dx = this.view.dummyX * UNIT;
       const box = new Phaser.Geom.Rectangle(dx - hw / 2, -hh, hw, hh);
       const hit = active && this.circles.some((c) => Phaser.Geom.Intersects.CircleToRectangle(new Phaser.Geom.Circle(c.x, c.y, c.r), box));
@@ -332,15 +390,14 @@ export class StageScene extends Phaser.Scene {
     const tol = FRAME_MS / 2 / s.playMs;
     (s.clipData.events ?? []).forEach((e, index) => {
       if (Math.abs(e.t - t) > tol && !(e.charge && this.charging)) return;
-      const bx = s.clip.rootMotion ? (pose.x ?? 0) * ART_SCALE : 0;
-      const at = EventPlayer.where(e, this.robot, { x: bx, y: 0 });
+      const at = EventPlayer.where(e, this.R, { x: bx, y: oy });
       this.eventPoints.push({ ...at, index });
       const r = line(this.hover === `e${index}` ? 8 : 6);
       g.fillStyle(EVENT, 1).fillPoints([{ x: at.x, y: at.y - r }, { x: at.x + r, y: at.y }, { x: at.x, y: at.y + r }, { x: at.x - r, y: at.y }], true);
     });
 
     // Bone handles: a dot at each joint, a knob at each bone's end to turn it.
-    this.joints = this.solveJoints(pose);
+    this.joints = this.solveJoints(pose, ox, oy, fs);
     if (this.view.handles) {
       for (const j of this.joints) {
         const sel = s.sel.bone === j.bone; const hot = this.hover === j.bone;
@@ -354,10 +411,16 @@ export class StageScene extends Phaser.Scene {
     }
   }
 
+  /** Where the robot's feet are and which way it faces: the match's robot inside the game, else 0, 0 facing right. */
+  private origin(): { ox: number; oy: number; fs: 1 | -1 } {
+    const sub = this.subject;
+    return sub ? { ox: sub.x, oy: sub.y, fs: sub.facing } : { ox: 0, oy: 0, fs: 1 };
+  }
+
   /** Each bone's origin and end on the stage (bones end at their first child; leaves get a short stub). */
-  private solveJoints(pose: Pose): Joint[] {
+  private solveJoints(pose: Pose, ox: number, oy: number, fs: 1 | -1): Joint[] {
     const { world, names } = this.rig.solveBones(pose);
-    const at = (i: number) => ({ x: -ART_SCALE * world[i].x, y: -ART_SCALE * world[i].y });
+    const at = (i: number) => ({ x: ox - fs * ART_SCALE * world[i].x, y: oy - ART_SCALE * world[i].y });
     const out: Joint[] = [];
     names.forEach((bone, i) => {
       const o = at(i);
@@ -369,7 +432,7 @@ export class StageScene extends Phaser.Scene {
         const len = (bone === 'head' ? 0.42 : bone === 'body' ? 0.3 : bone === 'torso' ? 0.55 : 0.28) * UNIT;
         // Facing right: dir 0 is +x, 90 is up (screen -y).
         const a = Phaser.Math.DegToRad(dir - (pose.tilt ?? 0) - (pose.spin ?? 0));
-        tx = o.x + Math.cos(a) * len; ty = o.y - Math.sin(a) * len;
+        tx = o.x + fs * Math.cos(a) * len; ty = o.y - Math.sin(a) * len;
       }
       out.push({ bone, ox: o.x, oy: o.y, tx, ty, dir });
     });
@@ -393,12 +456,13 @@ export class StageScene extends Phaser.Scene {
     }
     for (const e of this.eventPoints) if (near(e.x, e.y, 9)) return `e${e.index}`;
     for (const c of this.circles) if (near(c.x, c.y, 8)) return `p${c.index}`;
-    if (this.view.dummy && Math.abs(x - this.view.dummyX * UNIT) < 0.5 * UNIT && y < 0 && y > -HURTBOX.height * UNIT) return 'dummy';
+    if (this.view.dummy && !this.overlay && Math.abs(x - this.view.dummyX * UNIT) < 0.5 * UNIT && y < 0 && y > -HURTBOX.height * UNIT) return 'dummy';
     return null;
   }
 
   private down(p: Phaser.Input.Pointer): void {
-    const cam = this.cameras.main;
+    const cam = this.cam;
+    if (this.overlay && !this.subject) return; // the match is playing
     if (p.rightButtonDown() || p.middleButtonDown()) {
       this.drag = { kind: 'pan', sx: p.x, sy: p.y, cx: cam.midPoint.x, cy: cam.midPoint.y };
       return;
@@ -441,15 +505,16 @@ export class StageScene extends Phaser.Scene {
     if (d.kind !== 'pan' && this.pressAt && Math.hypot(p.x - this.pressAt.x, p.y - this.pressAt.y) < (p.wasTouch ? 10 : 4)) return;
     this.pressAt = null;
     if (d.kind === 'pan') {
-      const cam = this.cameras.main;
+      const cam = this.cam;
       cam.centerOn(d.cx - (p.x - d.sx) / cam.zoom, d.cy - (p.y - d.sy) / cam.zoom);
+      this.syncCamera();
       this.drawGrid();
       return;
     }
     if (d.kind === 'dummy') { this.view.dummyX = Math.round((p.worldX / UNIT) * 20) / 20; return; }
     if (d.kind === 'event') {
       const e = s.clipData.events?.[d.index];
-      const share = e && e.part !== 'ground' ? this.robot.shareOnPart(e.part, p.worldX, p.worldY) : null;
+      const share = e && e.part !== 'ground' ? this.R.shareOnPart(e.part, p.worldX, p.worldY) : null;
       if (!share) return;
       s.edit('clips', (docs) => {
         const ev = docs.clips[s.sel.clip].events![d.index];
@@ -458,7 +523,7 @@ export class StageScene extends Phaser.Scene {
       return;
     }
     if (d.kind === 'point') {
-      const local = this.robot.pointIn(d.file, p.worldX, p.worldY);
+      const local = this.R.pointIn(d.file, p.worldX, p.worldY);
       if (!local) return;
       s.edit('moves', (docs) => {
         const pt = docs.moves.pointSets[d.set][d.index];
@@ -467,7 +532,7 @@ export class StageScene extends Phaser.Scene {
       return;
     }
     if (d.kind === 'root') {
-      const dx = (p.worldX - d.sx) / ART_SCALE; const dy = -(p.worldY - d.sy) / ART_SCALE;
+      const dx = (this.origin().fs * (p.worldX - d.sx)) / ART_SCALE; const dy = -(p.worldY - d.sy) / ART_SCALE;
       this.editPose((pose) => { pose.x = Math.round(d.x0 + dx); pose.y = Math.round(d.y0 + dy); });
       return;
     }
@@ -487,7 +552,7 @@ export class StageScene extends Phaser.Scene {
   /** A bone direction (pose degrees, facing right) from a joint towards a stage point. */
   private dirTo(j: Joint, x: number, y: number): number {
     const pose = this.poseAt(this.store.sel.t);
-    return Phaser.Math.RadToDeg(Math.atan2(-(y - j.oy), x - j.ox)) + (pose.tilt ?? 0) + (pose.spin ?? 0);
+    return Phaser.Math.RadToDeg(Math.atan2(-(y - j.oy), this.origin().fs * (x - j.ox))) + (pose.tilt ?? 0) + (pose.spin ?? 0);
   }
 
   private up(): void {
@@ -501,7 +566,7 @@ export class StageScene extends Phaser.Scene {
     const a = this.input.pointer1; const b = this.input.pointer2;
     if (!a.isDown || !b.isDown) return false;
     if (this.drag && this.drag.kind !== 'pan') this.store.endDrag();
-    const cam = this.cameras.main;
+    const cam = this.cam;
     const mid = cam.getWorldPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
     this.drag = { kind: 'pinch', dist: Math.max(1, Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y)), zoom: cam.zoom, wx: mid.x, wy: mid.y };
     return true;
@@ -511,11 +576,12 @@ export class StageScene extends Phaser.Scene {
   private pinch(d: Extract<Drag, { kind: 'pinch' }>): void {
     const a = this.input.pointer1; const b = this.input.pointer2;
     if (!a.isDown || !b.isDown) return;
-    const cam = this.cameras.main;
+    const cam = this.cam;
     cam.setZoom(Phaser.Math.Clamp(d.zoom * Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) / d.dist, 0.4, 6));
     cam.preRender();
     const mid = cam.getWorldPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
     cam.scrollX += d.wx - mid.x; cam.scrollY += d.wy - mid.y;
+    this.syncCamera();
     this.drawGrid();
   }
 
