@@ -1423,7 +1423,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (foes >= Math.min(together, this.target - this.defeated) || now < this.nextFoeAt) return;
     this.nextFoeAt = now + 900;
     const n = this.defeated + foes;
-    this.spawnFoe(TRIAL_FOES, SLOT_COLORS[1 + (n % 3)], level, Config.KUBOTZ_HEALTH, [4, 9, 5, 6, 8, 1][n % 6]);
+    this.spawnFoe(TRIAL_FOES, BLACK_COLOR, level, Config.KUBOTZ_HEALTH, [4, 9, 5, 6, 8, 1][n % 6]);
   }
 
   // ---------------------------------------------------------- capture the flag
@@ -1945,8 +1945,8 @@ const WAVE_SPAWN_GAP_MS = 700;
 const BLACK_GOAL = 0xc8d0dc;
 /** Skychase: the Spark comes out this long after "Fight" (ms). */
 const SPARK_AFTER_MS = 60000;
-/** Training: the CPUs' team (they never fight each other). */
-const TRIAL_FOES = 1;
+/** Training: the CPUs' team, the black team (all one colour; they never fight each other). */
+const TRIAL_FOES = BLACK_TEAM;
 /** Horde: the black team's helmet (Skull). */
 const BLACK_HELMET = 3;
 

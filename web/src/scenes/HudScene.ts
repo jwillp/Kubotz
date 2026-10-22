@@ -151,7 +151,7 @@ export class HudScene extends Phaser.Scene {
   private syncCards(): void {
     const { width, height } = this.scale;
     const trial = MODES[this.game_.mode].trial;
-    const shown = this.game_.fighters.filter((k) => (!isBlackTeam(k) || !!MODES[this.game_.mode].ball) && k.role !== 'guardian' && !k.hudless
+    const shown = this.game_.fighters.filter((k) => (!isBlackTeam(k) || !!MODES[this.game_.mode].ball || trial) && k.role !== 'guardian' && !k.hudless
       && !(trial && k.index >= this.game_.specs.length && (k.eliminated || k.appearAt > this.game_.clock)));
     for (const k of shown) if (!this.cards.has(k)) this.cards.set(k, this.makeCard(k, 0, height - CARD_H - 10));
     const left = (width - shown.length * CARD_W - (shown.length - 1) * CARD_GAP) / 2;
