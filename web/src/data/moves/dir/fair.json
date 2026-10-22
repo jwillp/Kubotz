@@ -1,0 +1,9 @@
+{
+  "anim": "fair",
+  "ms": 420,
+  "points": "feet",
+  "damage": 9,
+  "launch": {"knockback":11,"angle":30},
+  "active": [0.25,0.72],
+  "ghosts": true
+}

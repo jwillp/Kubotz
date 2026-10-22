@@ -211,6 +211,33 @@ export class Robot2D {
     return out;
   }
 
+  /** A point of a part (by its name in kubotz.scml) as a share of its image (0..1 from the bottom-left), in world pixels; whatever image the part shows. */
+  pointOnPart(part: string, fx: number, fy: number): { x: number; y: number } | null {
+    const img = this.images.get(part);
+    if (!img || !img.visible) return null;
+    const m = img.getWorldTransformMatrix();
+    const lx = (fx - img.originX) * img.width;
+    const ly = (1 - fy - img.originY) * img.height;
+    return { x: m.getX(lx, ly), y: m.getY(lx, ly) };
+  }
+
+  /** The other way round: a world point as a share of a part's image. */
+  shareOnPart(part: string, wx: number, wy: number): { x: number; y: number } | null {
+    const img = this.images.get(part);
+    if (!img) return null;
+    const l = img.getWorldTransformMatrix().applyInverse(wx, wy);
+    return { x: l.x / img.width + img.originX, y: 1 - (l.y / img.height + img.originY) };
+  }
+
+  /** The other way round: a world point on the first part showing an image, in that image's pixels (from its bottom-left). */
+  pointIn(file: string, wx: number, wy: number): { x: number; y: number } | null {
+    const p = this.parts.find((q) => q.file.name === file);
+    const img = p && this.images.get(p.name);
+    if (!img) return null;
+    const l = img.getWorldTransformMatrix().applyInverse(wx, wy);
+    return { x: l.x + img.originX * img.width, y: img.height - (l.y + img.originY * img.height) };
+  }
+
   pointOn(file: string, px: number, py: number): { x: number; y: number } | null {
     return this.pointsOn(file, px, py)[0] ?? null;
   }

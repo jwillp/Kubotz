@@ -13,6 +13,48 @@ import { vfx, vfxCount } from '../game/Settings';
 
 type Section = Record<string, string>;
 
+/**
+ * A value of an emitter as src/data/particles/*.json stores it: a random
+ * start (`low`, between its two numbers), a random end (`high`) and a curve
+ * of [time 0..1, share 0..1] points from one to the other over a particle's
+ * life (or the emitter's duration). Left out = off (for the optional ones).
+ */
+export interface ValueData { low: [number, number]; high?: [number, number]; relative?: boolean; curve?: [number, number][] }
+
+/** One emitter of an effect, as stored (see ValueData). Distances in units, times in ms, angles in degrees. */
+export interface EmitterData {
+  name: string;
+  /** particles/<image> */
+  image: string;
+  additive?: boolean;
+  /** The particle turns to face where it goes. */
+  aligned?: boolean;
+  delay?: ValueData;
+  duration: ValueData;
+  /** Particles alive at once: at least, at most. */
+  count: [number, number];
+  emission: ValueData;
+  life: ValueData;
+  lifeOffset?: ValueData;
+  xOffset?: ValueData;
+  yOffset?: ValueData;
+  shape: 'point' | 'square' | 'line' | 'ellipse';
+  edges?: boolean;
+  spawnWidth: ValueData;
+  spawnHeight: ValueData;
+  scale: ValueData;
+  velocity?: ValueData;
+  angle?: ValueData;
+  rotation?: ValueData;
+  wind?: ValueData;
+  gravity?: ValueData;
+  /** Colour over life: [time 0..1, r, g, b (0..1)]. */
+  colors: [number, number, number, number][];
+  transparency: ValueData;
+}
+
+export interface EffectData { emitters: EmitterData[] }
+
 /** RangedNumericValue + ScaledNumericValue. */
 class Value {
   readonly active: boolean;
@@ -24,15 +66,12 @@ class Value {
   private readonly scaling: number[] = [];
   private readonly timeline: number[] = [];
 
-  constructor(s: Section | undefined, alwaysActive = false) {
-    s ??= {};
-    const n = (k: string) => parseFloat(s![k] ?? '0');
-    this.active = alwaysActive || s.active !== 'false';
-    this.lowMin = n('lowMin'); this.lowMax = n('lowMax');
-    this.highMin = n('highMin'); this.highMax = n('highMax');
-    this.relative = s.relative === 'true';
-    for (let i = 0; i < n('scalingCount'); i++) this.scaling.push(n(`scaling${i}`));
-    for (let i = 0; i < n('timelineCount'); i++) this.timeline.push(n(`timeline${i}`));
+  constructor(d: ValueData | undefined, alwaysActive = false) {
+    this.active = alwaysActive || d !== undefined;
+    [this.lowMin, this.lowMax] = d?.low ?? [0, 0];
+    [this.highMin, this.highMax] = d?.high ?? [0, 0];
+    this.relative = !!d?.relative;
+    for (const [t, v] of d?.curve ?? []) { this.timeline.push(t); this.scaling.push(v); }
   }
 
   newLow(): number { return Phaser.Math.FloatBetween(this.lowMin, this.lowMax); }
@@ -70,8 +109,8 @@ interface EmitterDef {
 
 export interface EffectDef { emitters: EmitterDef[]; }
 
-/** Parses a .pe text file into emitter definitions. */
-export function parseEffect(text: string): EffectDef {
+/** Reads a LibGDX .pe text file (the originals in public/particles) as effect data. */
+export function effectData(text: string): EffectData {
   const blocks: { name: string; sections: Record<string, Section>; image: string }[] = [];
   let cur: (typeof blocks)[number] | null = null;
   let section = '';
@@ -90,33 +129,65 @@ export function parseEffect(text: string): EffectDef {
     const i = line.indexOf(':');
     if (i > 0) cur.sections[section][line.slice(0, i).trim()] = line.slice(i + 1).trim();
   }
+  const value = (sec: Section | undefined, always = false): ValueData | undefined => {
+    if (!sec || (!always && sec.active === 'false')) return undefined;
+    const n = (k: string) => parseFloat(sec[k] ?? '0');
+    const v: ValueData = { low: [n('lowMin'), n('lowMax')] };
+    if ('highMin' in sec) v.high = [n('highMin'), n('highMax')];
+    if (sec.relative === 'true') v.relative = true;
+    const count = n('timelineCount');
+    if (count) v.curve = Array.from({ length: count }, (_, i) => [n(`timeline${i}`), n(`scaling${i}`)]);
+    return v;
+  };
+  const strip = <T extends object>(o: T): T => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== false)) as T;
   return {
     emitters: blocks.map(({ name, sections: s, image }) => {
       const tint = s.Tint ?? {};
-      const colors: number[][] = [];
-      const timeline: number[] = [];
+      const colors: [number, number, number, number][] = [];
       for (let i = 0; i < parseInt(tint.timelineCount ?? '0', 10); i++) {
-        timeline.push(parseFloat(tint[`timeline${i}`]));
-        colors.push([0, 1, 2].map((c) => parseFloat(tint[`colors${i * 3 + c}`] ?? '1')));
+        colors.push([parseFloat(tint[`timeline${i}`]), ...[0, 1, 2].map((c) => parseFloat(tint[`colors${i * 3 + c}`] ?? '1'))] as [number, number, number, number]);
       }
       const opt = s.Options ?? {};
-      return {
+      return strip({
         name, image,
-        delay: new Value(s.Delay), duration: new Value(s.Duration, true),
-        countMin: parseInt(s.Count?.min ?? '0', 10), countMax: parseInt(s.Count?.max ?? '100', 10),
-        emission: new Value(s.Emission, true), life: new Value(s.Life, true),
-        lifeOffset: new Value(s['Life Offset']), xOffset: new Value(s['X Offset']), yOffset: new Value(s['Y Offset']),
-        shape: s['Spawn Shape']?.shape ?? 'point', edges: s['Spawn Shape']?.edges === 'true',
-        spawnWidth: new Value(s['Spawn Width'], true), spawnHeight: new Value(s['Spawn Height'], true),
-        scale: new Value(s.Scale, true), velocity: new Value(s.Velocity), angle: new Value(s.Angle),
-        rotation: new Value(s.Rotation), wind: new Value(s.Wind), gravity: new Value(s.Gravity),
-        colors: colors.length ? colors : [[1, 1, 1]], colorTimeline: timeline.length ? timeline : [0],
-        transparency: new Value(s.Transparency, true),
-        aligned: opt.aligned === 'true', additive: opt.additive === 'true',
-      };
+        additive: opt.additive === 'true', aligned: opt.aligned === 'true',
+        delay: value(s.Delay), duration: value(s.Duration, true)!,
+        count: [parseInt(s.Count?.min ?? '0', 10), parseInt(s.Count?.max ?? '100', 10)] as [number, number],
+        emission: value(s.Emission, true)!, life: value(s.Life, true)!,
+        lifeOffset: value(s['Life Offset']), xOffset: value(s['X Offset']), yOffset: value(s['Y Offset']),
+        shape: (s['Spawn Shape']?.shape ?? 'point') as EmitterData['shape'], edges: s['Spawn Shape']?.edges === 'true',
+        spawnWidth: value(s['Spawn Width'], true)!, spawnHeight: value(s['Spawn Height'], true)!,
+        scale: value(s.Scale, true)!, velocity: value(s.Velocity), angle: value(s.Angle),
+        rotation: value(s.Rotation), wind: value(s.Wind), gravity: value(s.Gravity),
+        colors: colors.length ? colors : [[0, 1, 1, 1]],
+        transparency: value(s.Transparency, true)!,
+      });
     }),
   };
 }
+
+/** An effect ready to play, from its data. */
+export function effectFromData(data: EffectData): EffectDef {
+  return {
+    emitters: data.emitters.map((d) => ({
+      name: d.name, image: d.image,
+      delay: new Value(d.delay), duration: new Value(d.duration, true),
+      countMin: d.count[0], countMax: d.count[1],
+      emission: new Value(d.emission, true), life: new Value(d.life, true),
+      lifeOffset: new Value(d.lifeOffset), xOffset: new Value(d.xOffset), yOffset: new Value(d.yOffset),
+      shape: d.shape, edges: !!d.edges,
+      spawnWidth: new Value(d.spawnWidth, true), spawnHeight: new Value(d.spawnHeight, true),
+      scale: new Value(d.scale, true), velocity: new Value(d.velocity), angle: new Value(d.angle),
+      rotation: new Value(d.rotation), wind: new Value(d.wind), gravity: new Value(d.gravity),
+      colors: d.colors.map(([, r, g, b]) => [r, g, b]), colorTimeline: d.colors.map(([t]) => t),
+      transparency: new Value(d.transparency, true),
+      aligned: !!d.aligned, additive: !!d.additive,
+    })),
+  };
+}
+
+/** Parses a .pe text file into a playable effect. */
+export function parseEffect(text: string): EffectDef { return effectFromData(effectData(text)); }
 
 interface Particle {
   img: Phaser.GameObjects.Image;
@@ -141,7 +212,8 @@ class RunningEmitter {
   private readonly amount = vfx();
   readonly particles: Particle[] = [];
 
-  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number) {
+  /** @param flip mirrored left-right (an effect started by a robot facing left). */
+  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number, private flip = false) {
     [this.emissionLow, this.emissionDiff] = def.emission.pair();
     [this.lifeLow, this.lifeDiff] = def.life.pair();
     this.duration = def.duration.newLow();
@@ -152,6 +224,12 @@ class RunningEmitter {
   }
 
   get done(): boolean { return this.time >= this.delay + this.duration && this.particles.length === 0; }
+
+  /** Where new particles start (units, y up); those already out stay where they are. */
+  moveTo(x: number, y: number): void { this.x = x; this.y = y; }
+
+  /** Stops emitting; the particles out live their lives. */
+  stop(): void { this.time = Math.max(this.time, this.delay + this.duration); }
 
   update(dtMs: number): void {
     this.time += dtMs;
@@ -188,7 +266,7 @@ class RunningEmitter {
         scale: d.scale.pair(), velocity: d.velocity.pair(), angle: d.angle.pair(),
         rotation: d.rotation.pair(), wind: d.wind.pair(), gravity: d.gravity.pair(), alpha: d.transparency.pair(),
       };
-      let x = this.x + (d.xOffset.active ? d.xOffset.newLow() : 0);
+      let x = this.x + (d.xOffset.active ? d.xOffset.newLow() : 0) * (this.flip ? -1 : 1);
       let y = this.y + (d.yOffset.active ? d.yOffset.newLow() : 0);
       const [wl, wd] = d.spawnWidth.pair();
       const [hl, hd] = d.spawnHeight.pair();
@@ -215,17 +293,18 @@ class RunningEmitter {
     const at = (v: Value, pair: [number, number]) => pair[0] + pair[1] * v.scale(pc);
     let x = p.img.getData('wx') as number;
     let y = p.img.getData('wy') as number;
-    const angle = d.angle.active ? at(d.angle, p.angle) : 0;
+    let angle = d.angle.active ? at(d.angle, p.angle) : 0;
+    if (this.flip) angle = 180 - angle;
     if (d.velocity.active) {
       const v = at(d.velocity, p.velocity) * dt;
       x += v * Math.cos(Phaser.Math.DegToRad(angle));
       y += v * Math.sin(Phaser.Math.DegToRad(angle));
     }
-    if (d.wind.active) x += at(d.wind, p.wind) * dt;
+    if (d.wind.active) x += at(d.wind, p.wind) * dt * (this.flip ? -1 : 1);
     if (d.gravity.active) y += at(d.gravity, p.gravity) * dt;
     p.img.setData('wx', x).setData('wy', y);
 
-    let rotation = d.rotation.active ? at(d.rotation, p.rotation) : 0;
+    let rotation = d.rotation.active ? at(d.rotation, p.rotation) * (this.flip ? -1 : 1) : 0;
     if (d.aligned) rotation += angle;
     const size = at(d.scale, p.scale) * UNIT; // particle width in world units
     const img = p.img;
@@ -249,6 +328,9 @@ class RunningEmitter {
   }
 }
 
+/** A playing effect: move its source (pixels, y down) or stop it emitting. */
+export interface ParticleHandle { moveTo(x: number, y: number): void; stop(): void; readonly done: boolean }
+
 /** Owns every running .pe effect of a scene, with a pool of particle images. */
 export class ParticleFx {
   private running: RunningEmitter[] = [];
@@ -257,10 +339,26 @@ export class ParticleFx {
   /** @param texturePrefix the texture key of image `x.png` is `${texturePrefix}x.png`. */
   constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15) {}
 
-  /** Starts the effect at a world position in pixels (y down). */
-  /** @param tint replaces the effect's own colours (e.g. a laser in the shooter's colour). */
-  play(def: EffectDef, x: number, y: number, tint?: number): void {
-    for (const e of def.emitters) this.running.push(new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint));
+  /**
+   * Starts the effect at a world position in pixels (y down).
+   * @param tint replaces the effect's own colours (e.g. a laser in the shooter's colour).
+   * @param flip mirrors it left-right (made facing right, played facing left).
+   * @returns a handle to move its source (an effect following a fist) or stop it.
+   */
+  play(def: EffectDef, x: number, y: number, tint?: number, flip = false): ParticleHandle {
+    const mine = def.emitters.map((e) => new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint, flip));
+    this.running.push(...mine);
+    return {
+      moveTo: (px, py) => { for (const e of mine) e.moveTo(px / UNIT, -py / UNIT); },
+      stop: () => { for (const e of mine) e.stop(); },
+      get done() { return mine.every((e) => e.done); },
+    };
+  }
+
+  /** Stops and removes every running effect at once. */
+  clear(): void {
+    for (const e of this.running) { e.stop(); for (const p of e.particles) this.release(p.img); e.particles.length = 0; }
+    this.running = [];
   }
 
   update(dtMs: number): void {

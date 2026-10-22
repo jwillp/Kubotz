@@ -1,3 +1,5 @@
+import { ARENAS } from '../map/Arenas';
+
 /**
  * Arena moods (BackdropScene, GameScene): every arena keeps the Kube's
  * out-of-focus room with bokeh and light shafts, in its own palette, and the
@@ -236,9 +238,14 @@ export const BACKDROPS: BackdropTheme[] = [
   },
 ];
 
-/** The mood of an arena (index into ARENA_INFO). */
+/** Room names for the arena files (`room`), in BACKDROPS order. */
+export const ROOMS = ['kube', 'foundry', 'skyDeck', 'pit'];
+
+/** The mood of an arena (index into ARENA_INFO): the room its file names, else the one at its place in the list. */
 export function backdropOf(arena: number | undefined): BackdropTheme {
-  return BACKDROPS[arena ?? 0] ?? BACKDROPS[0];
+  const room = ARENAS[arena ?? 0]?.room;
+  const i = room ? ROOMS.indexOf(room) : arena ?? 0;
+  return BACKDROPS[i] ?? BACKDROPS[0];
 }
 
 /**

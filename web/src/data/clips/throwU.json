@@ -1,0 +1,11 @@
+{
+  "ms": 480,
+  "loop": false,
+  "planted": true,
+  "keys": [
+    {"t":0,"pose":{"body":-96,"torso":82,"head":88,"shoulderF":-2,"armF":6,"handF":22,"shoulderB":8,"armB":14,"handB":-160,"thighF":-38,"legF":-112,"footF":-88,"thighB":-128,"legB":-118,"footB":-96,"tilt":6,"x":14}},
+    {"t":0.3,"ease":"out","pose":{"body":-96,"torso":84,"head":90,"shoulderF":-40,"armF":-10,"handF":22,"shoulderB":-30,"armB":0,"handB":-160,"thighF":-15,"legF":-125,"footF":-95,"thighB":-60,"legB":-150,"footB":-100,"tilt":6}},
+    {"t":0.45,"ease":"snap","pose":{"body":-96,"torso":96,"head":104,"shoulderF":92,"armF":95,"handF":100,"shoulderB":86,"armB":92,"handB":96,"thighF":-70,"legF":-95,"footF":-88,"thighB":-105,"legB":-100,"footB":-96,"tilt":-4,"y":10}},
+    {"t":1,"ease":"inOut","pose":{"body":-96,"torso":86,"head":92,"shoulderF":-74,"armF":46,"handF":57,"shoulderB":-60,"armB":-37,"handB":-12,"thighF":-50,"legF":-108,"footF":-86,"thighB":-98,"legB":-128,"footB":-84}}
+  ]
+}

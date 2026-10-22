@@ -1,0 +1,245 @@
+import { CLIPS, loadClips, type Clip, type ClipData, type Key } from '../anim/Clips';
+import { loadMoves, type MoveData } from '../game/Kubotz';
+import { DATA_FILES, fileTexts, fromFiles, type GameData } from '../game/DataFiles';
+import { loadArenas } from '../map/Arenas';
+import { EDITED_KEY } from '../game/EditedData';
+
+/**
+ * The editor's documents (the clips and the moves, as their data files hold
+ * them), the selection, undo and saving. Every change goes through edit(),
+ * which also pushes it into the game's live tables so the stage draws it.
+ */
+
+export const FPS = 60;
+export const FRAME_MS = 1000 / FPS;
+
+/** A move: which table it is in and its key there (its file is src/data/moves/<table>/<key>.json). */
+export interface MoveRef { table: 'combo' | 'swordCombo' | 'dir' | 'swordDir' | 'specials'; key: string }
+
+export interface ListEntry { group: string; label: string; ref: MoveRef | null; anim: string }
+
+const m = (group: string, label: string, table: MoveRef['table'], key: string): ListEntry => ({ group, label, ref: { table, key }, anim: '' });
+const c = (group: string, label: string, anim: string): ListEntry => ({ group, label, ref: null, anim });
+/** The game's move list (game/MoveList.ts) as the editor shows it: its groups, names and order. */
+const LIST: ListEntry[] = [
+  m('Ground', 'Jab', 'combo', '0'), m('Ground', 'Jab 2 (back fist)', 'combo', '1'), m('Ground', 'Jab 3 (spin kick)', 'combo', '2'),
+  m('Ground', 'Forward tilt', 'dir', 'ftilt'), m('Ground', 'Down tilt', 'dir', 'dtilt'), m('Ground', 'Up tilt', 'dir', 'utilt'), m('Ground', 'Dash attack', 'dir', 'dash'),
+  m('Smash attacks', 'Forward smash', 'dir', 'fsmash'), m('Smash attacks', 'Up smash', 'dir', 'usmash'), m('Smash attacks', 'Down smash', 'dir', 'dsmash'),
+  m('Aerials', 'Neutral air', 'dir', 'nair'), m('Aerials', 'Forward air', 'dir', 'fair'), m('Aerials', 'Back air', 'dir', 'bair'), m('Aerials', 'Up air', 'dir', 'uair'), m('Aerials', 'Down air', 'dir', 'dair'),
+  m('Specials', 'Ion Punch', 'specials', 'ion'), m('Specials', 'Raptor Dash', 'specials', 'raptor'), m('Specials', 'Raptor Dash (air)', 'specials', 'raptorAir'),
+  m('Specials', 'Shadow Dive', 'specials', 'dive'), m('Specials', 'Plasma Kick', 'specials', 'kick'), m('Specials', 'Plasma Kick (air)', 'specials', 'kickAir'),
+  m('Laser sword', 'Sword jab', 'swordCombo', '0'), m('Laser sword', 'Sword jab 2', 'swordCombo', '1'), m('Laser sword', 'Sword jab 3', 'swordCombo', '2'),
+  m('Laser sword', 'Sword forward tilt', 'swordDir', 'ftilt'), m('Laser sword', 'Sword down tilt', 'swordDir', 'dtilt'), m('Laser sword', 'Sword up tilt', 'swordDir', 'utilt'), m('Laser sword', 'Sword dash attack', 'swordDir', 'dash'),
+  m('Laser sword', 'Sword forward smash', 'swordDir', 'fsmash'), m('Laser sword', 'Sword up smash', 'swordDir', 'usmash'), m('Laser sword', 'Sword down smash', 'swordDir', 'dsmash'),
+  m('Laser sword', 'Sword neutral air', 'swordDir', 'nair'), m('Laser sword', 'Sword forward air', 'swordDir', 'fair'), m('Laser sword', 'Sword back air', 'swordDir', 'bair'),
+  m('Laser sword', 'Sword up air', 'swordDir', 'uair'), m('Laser sword', 'Sword down air', 'swordDir', 'dair'),
+  c('Laser gun', 'Shot', 'shoot'),
+  c('Grab and throws', 'Grab', 'grab'), c('Grab and throws', 'Holding', 'grabHold'), c('Grab and throws', 'Pummel', 'pummel'),
+  c('Grab and throws', 'Forward throw', 'throwF'), c('Grab and throws', 'Back throw', 'throwB'), c('Grab and throws', 'Up throw', 'throwU'), c('Grab and throws', 'Down throw', 'throwD'),
+  c('Grab and throws', 'Being held', 'held'),
+  c('Defence and ledges', 'Guard', 'guard'), c('Defence and ledges', 'Air dodge', 'dodge'), c('Defence and ledges', 'Roll forward', 'roll'), c('Defence and ledges', 'Roll back', 'rollBack'),
+  c('Defence and ledges', 'Ledge hang', 'ledge'), c('Defence and ledges', 'Ledge climb', 'climb'), c('Defence and ledges', 'Ledge roll', 'ledgeRoll'), c('Defence and ledges', 'Taunt', 'taunt'),
+  c('Movement', 'Idle', 'idle'), c('Movement', 'Run', 'run'), c('Movement', 'Turn round', 'turn'), c('Movement', 'Crouch', 'crouch'),
+  c('Movement', 'Jump', 'jump'), c('Movement', 'Air jump flip', 'flip'), c('Movement', 'Fall', 'fall'), c('Movement', 'Land', 'land'),
+  c('Getting hit', 'Hit', 'hit'), c('Getting hit', 'Hit (other side)', 'hit2'), c('Getting hit', 'Tumble', 'tumble'), c('Getting hit', 'Knocked down', 'knockdown'),
+  c('Match', 'Victory dance', 'victory'),
+];
+
+export interface Selection {
+  clip: string;
+  /** The move being tuned (its clip is `clip`), if any. */
+  move: MoveRef | null;
+  /** Time through the clip, 0..1. */
+  t: number;
+  /** The bone picked on the stage. */
+  bone: string | null;
+  /** The effect open in the Particles tab. */
+  effect: string;
+  /** The arena open in the Arena tab (its file name), and the piece picked on it. */
+  arena: string;
+  piece: ArenaPiece | null;
+}
+
+/** A piece of an arena: a wall, platform or portal (a rectangle), or a spawn or bonus spot (a point), by its index. */
+export interface ArenaPiece { kind: 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus'; index: number }
+
+type Docs = GameData;
+type Kind = 'clips' | 'moves' | 'particles' | 'arenas';
+type Listener = () => void;
+
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
+export class Store {
+  docs: Docs = clone(fromFiles(DATA_FILES));
+  /** The data files as last saved (or loaded), to write only the ones that changed. */
+  private saved = fileTexts(this.docs);
+  sel: Selection = { clip: 'idle', move: null, t: 0, bone: null, effect: 'hitStars', arena: 'the-foundry', piece: null };
+  /** Files changed since the last save. */
+  dirty = new Set<Kind>();
+  private undoStack: string[] = [];
+  private redoStack: string[] = [];
+  private listeners: Listener[] = [];
+  /** An edit that is still being dragged: one undo step for the whole drag. */
+  private dragging = false;
+
+  on(fn: Listener): void { this.listeners.push(fn); }
+  emit(): void { for (const fn of this.listeners) fn(); }
+
+  get clip(): Clip { return CLIPS[this.sel.clip]; }
+  get clipData(): ClipData { return this.docs.clips[this.sel.clip]; }
+
+  move(ref = this.sel.move): MoveData | null {
+    if (!ref) return null;
+    const table = this.docs.moves[ref.table] as unknown as Record<string, MoveData>;
+    return table[ref.key] ?? null;
+  }
+
+  /** Every move, named and grouped like the game's move list (game/MoveList.ts). */
+  moveList(): ListEntry[] {
+    return LIST.filter((e): e is ListEntry & { ref: MoveRef } => !!e.ref && !!this.move(e.ref))
+      .map((e) => ({ ...e, anim: this.move(e.ref)!.anim }));
+  }
+
+  /**
+   * The whole list: the moves, then the clips no move plays, in the game's
+   * move-list groups where they belong (throws, ledges, guard...).
+   */
+  fullList(): ListEntry[] {
+    const moves = this.moveList();
+    const used = new Set(moves.map((e) => e.anim));
+    const clips = LIST.filter((e) => !e.ref && this.docs.clips[e.anim] && !used.has(e.anim));
+    const listed = new Set([...used, ...clips.map((e) => e.anim)]);
+    const rest = Object.keys(this.docs.clips).filter((n) => !listed.has(n)).map((n) => ({ group: 'Other clips', label: n, ref: null, anim: n }));
+    // Clip entries join their move-list group; groups keep the game's order.
+    const order = [...new Set(LIST.map((e) => e.group)), 'Other clips'];
+    return [...moves, ...clips, ...rest].sort((x, y) => order.indexOf(x.group) - order.indexOf(y.group));
+  }
+
+  /** How many moves use a point set (editing its points changes them all). */
+  pointSetUsers(name: string): number {
+    return this.moveList().filter((e) => this.move(e.ref)?.points === name).length;
+  }
+
+  /** Length the selection plays over: the move's (the game stretches the clip to it), else the clip's. */
+  get playMs(): number { return this.move()?.ms ?? this.clipData.ms; }
+
+  select(patch: Partial<Selection>): void {
+    Object.assign(this.sel, patch);
+    this.emit();
+  }
+
+  /**
+   * Changes the documents. `drag` edits (a handle being dragged) share one
+   * undo step until endDrag().
+   */
+  edit(what: Kind, fn: (d: Docs) => void, drag = false): void {
+    if (!drag || !this.dragging) {
+      this.undoStack.push(JSON.stringify(this.docs));
+      if (this.undoStack.length > 200) this.undoStack.shift();
+      this.redoStack = [];
+    }
+    this.dragging = drag;
+    fn(this.docs);
+    this.dirty.add(what);
+    this.apply(what);
+    this.emit();
+  }
+
+  endDrag(): void { this.dragging = false; }
+
+  undo(): void { this.swap(this.undoStack, this.redoStack); }
+  redo(): void { this.swap(this.redoStack, this.undoStack); }
+
+  private swap(from: string[], to: string[]): void {
+    const prev = from.pop();
+    if (!prev) return;
+    to.push(JSON.stringify(this.docs));
+    this.docs = JSON.parse(prev) as Docs;
+    this.dirty.add('clips').add('moves').add('particles').add('arenas');
+    if (!this.docs.arenas[this.sel.arena]) this.sel.arena = Object.keys(this.docs.arenas)[0] ?? '';
+    this.sel.piece = null;
+    if (!this.docs.clips[this.sel.clip]) this.sel.clip = 'idle';
+    if (!this.docs.particles[this.sel.effect]) this.sel.effect = Object.keys(this.docs.particles)[0] ?? '';
+    if (this.sel.move && !this.move()) this.sel.move = null;
+    this.apply('clips');
+    this.apply('moves');
+    this.apply('arenas');
+    this.emit();
+  }
+
+  /** Pushes a document into the game's tables (what the stage plays). */
+  private apply(what: Kind): void {
+    if (what === 'clips') loadClips(clone(this.docs.clips));
+    else if (what === 'moves') loadMoves(clone(this.docs.moves));
+    else if (what === 'arenas') loadArenas(clone(this.docs.arenas));
+    // Particle effects are read straight from the documents (StageScene rebuilds them when they change).
+  }
+
+  // ------------------------------------------------------------ keys
+  /** The key at the current time (within half a frame), if any. */
+  keyAt(t = this.sel.t): Key | null {
+    const tol = FRAME_MS / 2 / this.playMs;
+    return this.clipData.keys.find((k) => Math.abs(k.t - t) <= tol) ?? null;
+  }
+
+  // ------------------------------------------------------------ files
+  /** Data files whose text differs from the saved one (path under src/data -> text). */
+  changedFiles(): Record<string, string> {
+    const now = fileTexts(this.docs);
+    return Object.fromEntries(Object.entries(now).filter(([path, text]) => this.saved[path] !== text));
+  }
+
+  /** Hands the current (maybe unsaved) data to a game tab opened with ?edited (see game/EditedData.ts). */
+  stash(): void {
+    try { localStorage.setItem(EDITED_KEY, JSON.stringify(this.docs)); } catch { /* no storage: the game plays the saved data */ }
+  }
+
+  /**
+   * Writes the data files that changed: through the dev server into
+   * src/data, or as downloads when there is none (the published build).
+   */
+  async save(): Promise<string> {
+    const files = Object.entries(this.changedFiles());
+    const now = fileTexts(this.docs);
+    const gone = Object.keys(this.saved).filter((p) => !(p in now));
+    if (files.length === 0 && gone.length === 0) { this.dirty.clear(); this.emit(); return 'Nothing changed'; }
+    const names = [...files.map(([p]) => p), ...gone.map((p) => `${p} (deleted)`)];
+    const list = names.length > 3 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ');
+    if (import.meta.env.DEV) {
+      for (const [file, text] of files) {
+        const res = await fetch('/__editor/save', { method: 'POST', body: JSON.stringify({ file, text }) });
+        if (!res.ok) throw new Error(`${file}: ${await res.text()}`);
+        this.saved[file] = text;
+      }
+      for (const file of gone) {
+        const res = await fetch('/__editor/save', { method: 'POST', body: JSON.stringify({ file, delete: true }) });
+        if (!res.ok) throw new Error(`${file}: ${await res.text()}`);
+        delete this.saved[file];
+      }
+      this.dirty.clear();
+      this.emit();
+      return `Saved ${list}`;
+    }
+    // On claude.ai the page asks the viewer through the downloads capability; elsewhere a plain download.
+    // One file per move, so they download flat, named after their path (moves-dir-fsmash.json).
+    type Downloads = { save(r: { filename: string; data: string }): Promise<unknown> };
+    const host = (window as unknown as { claude?: { use(n: string): Promise<Downloads | null> } }).claude;
+    const downloads = host ? await host.use('downloads').catch(() => null) : null;
+    for (const [file, text] of files) {
+      const filename = file.replace(/\//g, '-');
+      if (downloads) await downloads.save({ filename, data: text });
+      else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      this.saved[file] = text;
+    }
+    for (const file of gone) delete this.saved[file];
+    this.dirty.clear();
+    this.emit();
+    return `Downloaded ${list}: each goes in web/src/data at the path its name spells${gone.length ? ` (delete ${gone.join(', ')} there)` : ''}`;
+  }
+}

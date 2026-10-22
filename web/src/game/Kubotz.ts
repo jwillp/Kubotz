@@ -12,6 +12,9 @@ import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
+import type { ParticleHandle } from '../fx/ParticleEffect';
+import { EventPlayer } from '../anim/ClipEvents';
+import { DATA_FILES, fromFiles } from './DataFiles';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -51,12 +54,6 @@ export const SWORD_FILE = 'arms/lazer-sword.png';
 export const GUN_FILE = 'arms/gun-mk1.png';
 export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
 
-/** Points from the sword's hilt to its tip, for the blade hitbox. */
-function bladePoints(): PartPoint[] {
-  const { sword: t, swordBase: b } = PART_TIPS;
-  return [0.25, 0.5, 0.75, 1].map((f) => ({ file: SWORD_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
-}
-
 /** Clips of anim/Clips.ts. */
 const ANIM = {
   IDLE: 'idle', RUN: 'run', CROUCH: 'crouch', JUMP: 'jump', FLIP: 'flip', FALL: 'fall', LAND: 'land',
@@ -91,11 +88,6 @@ export const TAUNT_MS = 1000;
 /** People jump on the press, so they only need a short guard between jumps. */
 const HUMAN_JUMP_COOLDOWN = 140;
 
-/** Front and back fists and feet (the back limbs use the _sha images), near the knuckles and toes. */
-const FISTS: PartPoint[] = [{ file: 'arms/hand.png', x: 36, y: 53 }, { file: 'arms/hand-sha.png', x: 34, y: 34 }];
-/** The fists with the fire gauntlet on (the forward smash swaps the hand image). */
-const FIRE_FISTS: PartPoint[] = [...FISTS, { file: 'arms/fire-fist.png', x: 36, y: 53 }];
-const FEET: PartPoint[] = [{ file: 'feet/foot.png', x: 21, y: 40 }, { file: 'feet/foot-sha.png', x: 24, y: 45 }];
 
 /** A strike: its clip, length, striking points, effect, and the part of it (0..1) that hurts. */
 /** How a hit sends its target: speed (units/s, before damage growth), launch angle (0 forwards, 90 up), fixed hitstun for combo links. */
@@ -110,6 +102,8 @@ export interface Launch { knockback: number; angle: number; growth?: number; stu
  */
 export interface Move {
   anim: string; ms: number; points: PartPoint[]; damage: number; launch: Launch; active: [number, number];
+  /** Hit circle radius (units); unarmed 0.35, sword 0.3 when left out. */
+  radius?: number;
   behind?: boolean; all?: boolean; both?: boolean; maps?: string[]; ghosts?: boolean;
   /** Specials: a velocity (units/s, x forwards; null keeps that axis) held for the first `sustain` share of the move. */
   burst?: [number | null, number | null]; sustain?: number;
@@ -119,65 +113,68 @@ export interface Move {
 type Dir = 'neutral' | 'forward' | 'back' | 'up' | 'down';
 export type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'utilt' | 'fsmash' | 'dsmash' | 'usmash' | 'nair' | 'fair' | 'bair' | 'uair' | 'dair', Move>;
 
-const LIMBS = [...FISTS, ...FEET];
+/** A move as src/data/moves stores it: its striking points name one of the point sets. */
+export type MoveData = Omit<Move, 'points'> & { points: string };
+type ThrowMove = { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 };
+export interface MovesData {
+  /** Points of the striking parts: fists, feet, the blade... */
+  pointSets: Record<string, PartPoint[]>;
+  combo: MoveData[]; swordCombo: MoveData[];
+  dir: Record<keyof DirMoves, MoveData>; swordDir: Record<keyof DirMoves, MoveData>;
+  specials: Record<SpecialName, MoveData>;
+  throws: Record<ThrowKind, ThrowMove>;
+  /** Where a robot can be hit: a box on its feet (units), centred on it. */
+  hurtbox: { width: number; height: number };
+}
+type SpecialName = 'ion' | 'raptor' | 'raptorAir' | 'dive' | 'kick' | 'kickAir';
 
 /**
  * The unarmed ground combo: three presses chain a palm strike, a spinning
  * back fist and a jumping spin kick. The first two push lightly and stun
- * briefly so the next hit connects; the kick launches.
+ * briefly so the next hit connects; the kick launches. The sword has its own.
  */
-export const COMBO: Move[] = [
-  { anim: 'jab', ms: 260, points: FISTS, damage: 3, launch: { knockback: 3, angle: 15, stun: 280 }, active: [0.3, 0.72] },
-  { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [0.4, 0.8], all: true },
-  { anim: 'kick', ms: 460, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.34, 0.76], all: true, ghosts: true },
-];
-export const SWORD_COMBO: Move[] = [
-  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.36, 0.78] },
-  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.28, 0.66] },
-  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.35, 0.8], ghosts: true },
-];
+export const COMBO: Move[] = [];
+export const SWORD_COMBO: Move[] = [];
 /** Directional moves (SSB): dash attack, tilts, smashes (charged) and the five aerials. */
-export const DIR_MOVES: DirMoves = {
-  dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72], ghosts: true },
-  ftilt: { anim: 'ftilt', ms: 380, points: FEET, damage: 6, launch: { knockback: 10, angle: 30 }, active: [0.32, 0.7] },
-  dtilt: { anim: 'dtilt', ms: 340, points: FEET, damage: 5, launch: { knockback: 9, angle: 80 }, active: [0.3, 0.72] },
-  utilt: { anim: 'utilt', ms: 340, points: FISTS, damage: 6, launch: { knockback: 10, angle: 88 }, active: [0.36, 0.72] },
-  usmash: { anim: 'usmash', ms: 520, points: [FEET[0]], damage: 13, launch: { knockback: 16, angle: 88 }, active: [0.4, 0.68], ghosts: true },
-  fsmash: { anim: 'fsmash', ms: 560, points: FIRE_FISTS, damage: 14, launch: { knockback: 17, angle: 32 }, active: [0.42, 0.66], maps: ['gauntlet_fireGauntlet'], ghosts: true },
-  dsmash: { anim: 'dsmash', ms: 480, points: FEET, damage: 11, launch: { knockback: 14, angle: 28 }, active: [0.36, 0.7], all: true, both: true },
-  nair: { anim: 'nair', ms: 420, points: LIMBS, damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], all: true, ghosts: true },
-  fair: { anim: 'fair', ms: 420, points: FEET, damage: 9, launch: { knockback: 11, angle: 30 }, active: [0.25, 0.72], ghosts: true },
-  bair: { anim: 'bair', ms: 440, points: FEET, damage: 10, launch: { knockback: 14, angle: 35 }, active: [0.25, 0.72], behind: true },
-  uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62], ghosts: true },
-  dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true },
-};
-export const SWORD_DIR_MOVES: DirMoves = {
-  dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8], ghosts: true },
-  ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
-  dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
-  utilt: { anim: 'susmash', ms: 400, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 85 }, active: [0.38, 0.75] },
-  usmash: { anim: 'susmash', ms: 560, points: bladePoints(), damage: 15, launch: { knockback: 17, angle: 85 }, active: [0.4, 0.72], ghosts: true },
-  fsmash: { anim: 'sfsmash', ms: 600, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [0.42, 0.68], ghosts: true },
-  dsmash: { anim: 'sdsmash', ms: 520, points: bladePoints(), damage: 12, launch: { knockback: 14, angle: 25 }, active: [0.3, 0.75], both: true, ghosts: true },
-  nair: { anim: 'snair', ms: 420, points: bladePoints(), damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], both: true, ghosts: true },
-  fair: { anim: 'slash2', ms: 360, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 40 }, active: [0.28, 0.66] },
-  bair: { anim: 'sbair', ms: 440, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.25, 0.72], behind: true },
-  uair: { anim: 'suair', ms: 480, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 85 }, active: [0.2, 0.62], ghosts: true },
-  dair: { anim: 'sdair', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: -70 }, active: [0.3, 1], ghosts: true },
-};
+export const DIR_MOVES = {} as DirMoves;
+export const SWORD_DIR_MOVES = {} as DirMoves;
 /**
  * Special moves (B), unarmed whatever the weapon: Captain Falcon flavoured
  * ninja moves. The up special leaves the robot helpless until it lands or
  * catches a ledge; the side and up specials work once per trip in the air.
  */
-export const SPECIALS = {
-  ion: { anim: 'ionPunch', ms: 900, points: FIRE_FISTS, damage: 22, launch: { knockback: 19, angle: 35 }, active: [0.6, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true },
-  raptor: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 9, launch: { knockback: 13, angle: 80 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [22, null], sustain: 0.5 },
-  raptorAir: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 10, launch: { knockback: 12, angle: -55 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [18, 1], sustain: 0.5 },
-  dive: { anim: 'shadowDive', ms: 640, points: FISTS, damage: 9, launch: { knockback: 12, angle: 78 }, active: [0.08, 0.55], ghosts: true, burst: [4, -20], sustain: 0.25 },
-  kick: { anim: 'dash', ms: 560, points: FEET, damage: 12, launch: { knockback: 14, angle: 38 }, active: [0.12, 0.72], ghosts: true, burst: [22, null], sustain: 0.55 },
-  kickAir: { anim: 'airKick', ms: 520, points: FEET, damage: 13, launch: { knockback: 13, angle: 45 }, active: [0.05, 1], ghosts: true, burst: [16, 22], sustain: 1 },
-} satisfies Record<string, Move>;
+export const SPECIALS = {} as Record<SpecialName, Move>;
+/**
+ * Melee-style throws: clip, length, when the robot is let go (0..1), damage
+ * and launch (angle from the horizontal, towards `dir` relative to facing).
+ */
+export const THROWS = {} as Record<ThrowKind, ThrowMove>;
+export const HURTBOX = { width: 1, height: 2.8 };
+
+/**
+ * Loads (or reloads, from the editor) the moves of src/data/moves. Moves are
+ * updated in place, so the game's references to them stay valid.
+ */
+export function loadMoves(data: MovesData): void {
+  const resolve = (m: MoveData): Move => ({ ...m, points: data.pointSets[m.points] ?? [] });
+  const into = (target: Move | undefined, m: MoveData): Move => {
+    const next = resolve(m);
+    if (!target) return next;
+    for (const k of Object.keys(target)) delete (target as unknown as Record<string, unknown>)[k];
+    return Object.assign(target, next);
+  };
+  const list = (out: Move[], src: MoveData[]) => { const old = out.splice(0); src.forEach((m, i) => out.push(into(old[i], m))); };
+  const table = <K extends string>(out: Record<K, Move>, src: Record<K, MoveData>) => {
+    for (const k of Object.keys(src) as K[]) out[k] = into(out[k], src[k]);
+  };
+  list(COMBO, data.combo);
+  list(SWORD_COMBO, data.swordCombo);
+  table(DIR_MOVES, data.dir);
+  table(SWORD_DIR_MOVES, data.swordDir);
+  table(SPECIALS, data.specials);
+  for (const k of Object.keys(data.throws) as ThrowKind[]) THROWS[k] = Object.assign(THROWS[k] ?? {}, data.throws[k]);
+  Object.assign(HURTBOX, data.hurtbox);
+}
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
 
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
@@ -223,17 +220,8 @@ export function partTexture(textures: Phaser.Textures.TextureManager, file: stri
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
 export type ThrowKind = 'forward' | 'back' | 'up' | 'down';
+loadMoves(fromFiles(DATA_FILES).moves);
 
-/**
- * Melee-style throws: clip, length, when the robot is let go (0..1), damage
- * and launch (angle from the horizontal, towards `dir` relative to facing).
- */
-export const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
-  forward: { anim: 'throwF', ms: 440, release: 0.45, damage: 7, launch: { knockback: 13, angle: 40 }, dir: 1 },
-  back: { anim: 'throwB', ms: 520, release: 0.55, damage: 8, launch: { knockback: 14, angle: 40 }, dir: -1 },
-  up: { anim: 'throwU', ms: 480, release: 0.45, damage: 7, launch: { knockback: 14, angle: 90 }, dir: 1 },
-  down: { anim: 'throwD', ms: 480, release: 0.48, damage: 6, launch: { knockback: 10, angle: 75, growth: 0.8 }, dir: 1 },
-};
 
 /** Melee frame data, at 60 frames a second. */
 const FRAME = 1000 / 60;
@@ -279,6 +267,8 @@ export interface ArenaHooks {
   /** Jumping off or landing: the subtle dust of a change of direction, to both sides. */
   footDust(x: number, y: number): void;
   airJump(x: number, y: number, color: number): void;
+  /** Starts a particle effect of src/data/particles at a world point (clip events); null if there is none of that name. */
+  effect(name: string, x: number, y: number, flip: boolean): ParticleHandle | null;
 }
 
 /**
@@ -292,6 +282,8 @@ export class Kubotz implements Damageable, Teamed {
   readonly body: KubotzBody;
   readonly anim: Animator;
   readonly model: Robot2D;
+  /** The particle effects the clips start (anim/ClipEvents.ts). */
+  private readonly events: EventPlayer;
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
   private readonly tag: Phaser.GameObjects.Image;
@@ -456,6 +448,7 @@ export class Kubotz implements Damageable, Teamed {
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
+    this.events = new EventPlayer((name, x, y, flip) => this.hooks.effect(name, x, y, flip));
     // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
     this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
@@ -510,10 +503,11 @@ export class Kubotz implements Damageable, Teamed {
   get grabbing(): boolean { return this.holding !== null || this.throwing !== null; }
   isAlive(): boolean { return !this.dead; }
 
-  /** The physics body plus the head and shoulders drawn above it, so blows that look like they land do. */
+  /** The physics body plus the head and shoulders drawn above it, so blows that look like they land do (size in src/data/moves). */
   hurtbox(): Phaser.Geom.Rectangle {
-    const extra = this.body.height * 0.4;
-    return new Phaser.Geom.Rectangle(this.body.left, this.body.top - extra, this.body.width, this.body.height + extra);
+    const w = HURTBOX.width * UNIT;
+    const h = HURTBOX.height * UNIT;
+    return new Phaser.Geom.Rectangle(this.body.x - w / 2, this.body.bottom - h, w, h);
   }
 
   /** The active melee / sword hitbox, if any, on the striking part of the robot. */
@@ -1174,7 +1168,7 @@ export class Kubotz implements Damageable, Teamed {
     this.attack = {
       circles: [],
       // The blade is covered by circles from hilt to tip; fists and feet by one on the striking one.
-      radius: (sword ? 0.3 : 0.35) * UNIT,
+      radius: (move.radius ?? (sword ? 0.3 : 0.35)) * UNIT,
       points: move.points,
       striker: !sword && !move.all,
       behind: !!move.behind,
@@ -1650,6 +1644,7 @@ export class Kubotz implements Damageable, Teamed {
       // The guard's shield shrinks as it drains.
       shield: this.guarding ? { r: UNIT * 1.2 * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX)), above: (this.body.bottom - this.body.top) * 0.62, color: this.look.color } : undefined,
     });
+    this.events.update(this.anim.name, this.anim.progress, this.model, { x: this.body.x, y: this.body.bottom }, this.charging !== null, this.facing < 0);
     // Afterimages behind fast moves, dashes, dodges and tumbles.
     const fast = Math.hypot(this.body.vx, this.body.vy) > 17 * UNIT;
     if ((this.attack && this.currentMove?.ghosts) || this.dodging || this.tumbling || fast) {

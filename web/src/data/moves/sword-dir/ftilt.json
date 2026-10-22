@@ -1,0 +1,9 @@
+{
+  "anim": "sftilt",
+  "ms": 420,
+  "points": "blade",
+  "damage": 8,
+  "launch": {"knockback":11,"angle":30},
+  "active": [0.3,0.72],
+  "ghosts": true
+}

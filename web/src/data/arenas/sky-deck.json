@@ -1,0 +1,11 @@
+{
+  "order": 2,
+  "name": "Sky Deck",
+  "blurb": "An open stage: fall off and you are out",
+  "room": "skyDeck",
+  "walls": [[10,25,32,3],[14,28,24,2]],
+  "platforms": [[14,19,7,1],[31,19,7,1],[22,13,8,1]],
+  "warps": [],
+  "spawns": [[15,25],[37,25],[17.5,19],[34.5,19]],
+  "bonus": [[26,22],[17.5,16],[34.5,16],[26,10]]
+}

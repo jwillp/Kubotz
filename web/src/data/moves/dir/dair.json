@@ -1,0 +1,9 @@
+{
+  "anim": "airKick",
+  "ms": 420,
+  "points": "feet",
+  "damage": 8,
+  "launch": {"knockback":10,"angle":-70},
+  "active": [0.35,1],
+  "ghosts": true
+}

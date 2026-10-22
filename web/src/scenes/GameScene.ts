@@ -10,11 +10,12 @@ import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
-import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { EffectDef, ParticleFx, type ParticleHandle } from '../fx/ParticleEffect';
 import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
+import { ARENAS, DEFAULT_BLAST } from '../map/Arenas';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -635,6 +636,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.impact.airJump(x, y, color);
   }
 
+  effect(name: string, x: number, y: number, flip: boolean): ParticleHandle | null {
+    const def = (this.effects as Record<string, EffectDef>)[name];
+    return def ? this.particles.play(def, x, y, undefined, flip) : null;
+  }
+
   fireBullet(shooter: Kubotz, damage: number, speed: number, size = 1, power = 1): void {
     const { x, y } = shooter.muzzle();
     const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock, size, power);
@@ -1073,9 +1079,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private checkBoundsAndWarps(_now: number): void {
     const mapW = this.map.width * UNIT;
     const mapH = this.map.height * UNIT;
+    // The blast zone: how far past each edge a robot can go (the arena's file can set it).
+    const [left, top, right, bottom] = ARENAS[this.arena]?.blast ?? DEFAULT_BLAST;
     for (const k of this.fighters) {
       if (!k.isAlive()) continue;
-      if (k.y > mapH + 6 * UNIT || k.y < -20 * UNIT || k.x < -6 * UNIT || k.x > mapW + 6 * UNIT) {
+      if (k.y > mapH + bottom * UNIT || k.y < -top * UNIT || k.x < -left * UNIT || k.x > mapW + right * UNIT) {
         k.health = 0;
         continue;
       }

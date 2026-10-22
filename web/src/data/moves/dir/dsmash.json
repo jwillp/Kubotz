@@ -1,0 +1,10 @@
+{
+  "anim": "dsmash",
+  "ms": 480,
+  "points": "feet",
+  "damage": 11,
+  "launch": {"knockback":14,"angle":28},
+  "active": [0.36,0.7],
+  "all": true,
+  "both": true
+}

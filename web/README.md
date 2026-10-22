@@ -26,6 +26,21 @@ npm run build
 npm run preview    # serves dist/ on http://localhost:4173
 ```
 
+## Editor
+
+```bash
+npm run editor     # opens http://localhost:5173/editor.html
+```
+
+Tune the robots' clips (bone poses, keys and particle events) and the moves
+(hit circles, active frames, damage, launch) on the game's own renderer. Save writes
+the changed files in `src/data/clips` and `src/data/moves` (one per clip and
+one per move); "Test in game" opens the
+game with the current edits, saved or not. The Particles tab edits the
+effects in `src/data/particles`, and the Arena tab the arenas in
+`src/data/arenas` (walls, platforms, portals, spawns, bonus spots, blast
+zone, room and painted tiles); its "Test in game" starts a match there.
+
 ## Play
 
 Pick a mode on the title screen (mouse, arrows + Enter, or keys 1-5).
@@ -52,6 +67,8 @@ the side openings warp you across. Last robot standing wins.
 ```
 web/
   src/main.ts              Phaser game config
+  src/data/                clips, moves, particle effects and arenas (JSON, one file each, written by the editor)
+  src/editor/              the editor (editor.html)
   src/config.ts            tuning values copied from Config.java / Constants.java
   src/spriter/Spriter.ts   small SCML runtime (bones, tweening, character maps)
   src/map/TmxMap.ts        TMX reader (base64 + gzip layers, object layer)

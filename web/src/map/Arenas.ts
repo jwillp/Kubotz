@@ -1,4 +1,5 @@
 import type { MapObject, TileLayer, TmxMap } from './TmxMap';
+import { DATA_FILES, fromFiles } from '../game/DataFiles';
 
 /**
  * More arenas, built from the original map's tiles. Each one is a list of
@@ -8,72 +9,61 @@ import type { MapObject, TileLayer, TmxMap } from './TmxMap';
  * end caps on platforms, and fades on the outer side of the frame.
  */
 
-type Rect = [x: number, y: number, w: number, h: number];
+export type Rect = [x: number, y: number, w: number, h: number];
+
+/** A tile painted over the automatic ones: layer, cell (tiles sit on their cell's bottom edge) and image; '' erases. */
+export type TilePaint = [layer: 'fades' | 'blocks' | 'platforms', x: number, y: number, source: string];
 
 export interface ArenaDef {
   name: string;
   blurb: string;
+  /** Map size in units (default 52 x 38). */
+  size?: [w: number, h: number];
+  /** The room behind it (fx/Backdrops.ts ROOMS); default by the arena's place in the list. */
+  room?: string;
   walls: Rect[];
+  /** Drop-through platforms. */
   platforms: Rect[];
+  /** Portals: none, or two that lead to each other (the left one's robots come out of the right one). */
   warps: Rect[];
   /** Feet positions. */
   spawns: [x: number, y: number][];
   /** Centres. */
   bonus: [x: number, y: number][];
+  /** How far past the map's edges a robot can go before it is out (units): left, top, right, bottom. */
+  blast?: [l: number, t: number, r: number, b: number];
+  /** Tiles painted over the automatic ones. */
+  tiles?: TilePaint[];
 }
 
-const W = 52;
-const H = 38;
+export const DEFAULT_SIZE: [number, number] = [52, 38];
+export const DEFAULT_BLAST: [number, number, number, number] = [6, 20, 6, 6];
 
-/** The original cube's frame: ceiling, side walls with a portal in each, floor. */
-function kube(floor: Rect[] = [[6, 34, 40, 3]]): Pick<ArenaDef, 'walls' | 'warps'> {
-  return {
-    walls: [
-      [6, 1, 40, 2],
-      [4, 3, 2, 13], [1, 16, 5, 2], [1, 23, 5, 2], [4, 25, 2, 11],
-      [46, 3, 2, 13], [46, 16, 5, 2], [46, 23, 5, 2], [46, 25, 2, 11],
-      ...floor,
-    ],
-    warps: [[1, 18, 1, 5], [50, 18, 1, 5]],
-  };
+/** An arena as src/data/arenas/<id>.json stores it: `order` places it in the list (the original map is 0). */
+export type ArenaData = ArenaDef & { order: number };
+
+/** File name (without .json) of each arena, by index; the editor saves under it. */
+export const ARENA_IDS: (string | null)[] = [null];
+
+export const ARENAS: (ArenaDef | null)[] = [null]; // 0: the original map (debug-map.tmx)
+
+/** Names and blurbs for the arena select (index 0 is the original Kube). */
+export const ARENA_INFO: { name: string; blurb: string }[] = [];
+
+/** Loads (or reloads) the arenas, in their order. */
+export function loadArenas(byId: Record<string, ArenaData>): void {
+  const list = Object.entries(byId).sort(([, x], [, y]) => x.order - y.order);
+  ARENAS.length = 1;
+  ARENA_IDS.length = 1;
+  for (const [id, { order: _order, ...def }] of list) { ARENAS.push(def); ARENA_IDS.push(id); }
+  ARENA_INFO.length = 0;
+  ARENA_INFO.push({ name: 'The Kube', blurb: 'The original arena' }, ...ARENAS.slice(1).map((a) => ({ name: a!.name, blurb: a!.blurb })));
 }
-
-export const ARENAS: (ArenaDef | null)[] = [
-  null, // the original map (debug-map.tmx)
-  {
-    name: 'The Foundry',
-    blurb: 'Two pillars and a block in the middle',
-    ...((f) => ({ walls: [...f.walls, [14, 26, 4, 8], [34, 26, 4, 8], [23, 17, 6, 2]] as Rect[], warps: f.warps }))(kube()),
-    platforms: [[20, 29, 12, 1], [7, 20, 7, 1], [38, 20, 7, 1], [18, 12, 6, 1], [28, 12, 6, 1]],
-    spawns: [[8, 34], [44, 34], [16, 26], [36, 26]],
-    bonus: [[10, 17], [41.5, 17], [26, 15], [26, 27]],
-  },
-  {
-    name: 'Sky Deck',
-    blurb: 'An open stage: fall off and you are out',
-    walls: [[10, 25, 32, 3], [14, 28, 24, 2]],
-    platforms: [[14, 19, 7, 1], [31, 19, 7, 1], [22, 13, 8, 1]],
-    warps: [],
-    spawns: [[15, 25], [37, 25], [17.5, 19], [34.5, 19]],
-    bonus: [[26, 22], [17.5, 16], [34.5, 16], [26, 10]],
-  },
-  {
-    name: 'The Pit',
-    blurb: 'Mind the hole in the floor',
-    ...((f) => ({ walls: [...f.walls, [6, 27, 6, 2], [40, 27, 6, 2]] as Rect[], warps: f.warps }))(kube([[6, 34, 13, 3], [33, 34, 13, 3]])),
-    platforms: [[22, 29, 8, 1], [15, 22, 8, 1], [29, 22, 8, 1], [21, 15, 10, 1], [8, 13, 6, 1], [38, 13, 6, 1]],
-    spawns: [[9, 34], [43, 34], [19, 22], [33, 22]],
-    bonus: [[26, 26], [26, 12], [11, 10], [41, 10]],
-  },
-];
-
-export const ARENA_INFO = [
-  { name: 'The Kube', blurb: 'The original arena' },
-  ...ARENAS.slice(1).map((a) => ({ name: a!.name, blurb: a!.blurb })),
-];
+loadArenas(fromFiles(DATA_FILES).arenas);
 
 /** A map like the TMX one, for an arena: same tiles, generated layers and objects. */
 export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
+  const [W, H] = def.size ?? DEFAULT_SIZE;
   const gidOf = new Map<string, number>();
   for (const [gid, t] of base.tileImages) gidOf.set(t.source, gid);
   const layers: Record<'fades' | 'blocks' | 'platforms', number[]> = {
@@ -124,6 +114,12 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
       const n = cx === x ? 1 : cx === x + w - 2 ? 4 : pick(2, 3);
       put('platforms', `platform-0${n}.png`, cx, y);
     }
+  }
+
+  // Then the tiles painted by hand (the editor's tile brush).
+  for (const [layer, x, y, source] of def.tiles ?? []) {
+    if (x < 0 || x >= W || y < 0 || y >= H) continue;
+    layers[layer][y * W + x] = source ? gidOf.get(source) ?? 0 : 0;
   }
 
   const U = base.tileWidth;

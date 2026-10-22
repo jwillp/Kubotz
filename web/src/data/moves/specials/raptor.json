@@ -1,0 +1,11 @@
+{
+  "anim": "raptor",
+  "ms": 560,
+  "points": "fireFists",
+  "damage": 9,
+  "launch": {"knockback":13,"angle":80},
+  "active": [0.2,0.78],
+  "ghosts": true,
+  "burst": [22,null],
+  "sustain": 0.5
+}
