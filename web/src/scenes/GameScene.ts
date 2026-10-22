@@ -100,7 +100,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
   /** The arena being played (index into ARENA_INFO). */
-  private arena = 0;
+  arena = 0;
+  /** How this match was started (the in-game editor restarts it as it was). */
+  setup?: MatchSetup;
   /** The robots' specs from the setup screen, by fighter index. */
   specs: FighterSpec[] = [];
   /** The winning team, null for a draw; undefined while the match runs. */
@@ -157,6 +159,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
+    this.setup = setup;
     this.specs = setup.fighters.slice(0, 4);
     this.stocks = setup.stocks ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
@@ -186,7 +189,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Each robot forms as a hologram while the camera is on it and waits; once
     // all are shown the countdown starts, and they materialize together during
     // it, let go on "Fight".
-    this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
+    this.countdownAt = setup.editor ? -Config.COUNTDOWN - 1000 : this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
       const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
@@ -213,7 +216,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
-      const at = i * INTRO_FOCUS_MS;
+      const at = setup.editor ? 0 : i * INTRO_FOCUS_MS;
       this.introAt.push(at);
       k.appearAt = at;
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
@@ -234,7 +237,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
     this.sound.stopByKey('music-title');
     this.music = addMusic(this, 'music-game', 0.28);
-    this.music.play();
+    if (!setup.editor) this.music.play();
 
     this.scene.launch('Hud');
     this.scene.bringToTop('Hud');
@@ -765,7 +768,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.portals.update(now, dtMs);
-    this.updateCamera(dt);
+    if (!d.holdCamera) this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
     this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now));
@@ -932,7 +935,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
   private updateCountdown(now: number): void {
-    if (now < this.countdownAt) return; // the intro is still showing the robots
+    if (now < this.countdownAt || this.setup?.editor) return; // the intro is still showing the robots (the editor's restarts have none)
     const step = Math.min(3, Math.floor((now - this.countdownAt) / 1000));
     if (step === this.countdownStep) return;
     this.countdownStep = step;

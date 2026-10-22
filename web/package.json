@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "editor": "vite --open /editor.html",
+    "build:editor": "tsc --noEmit && KUBOTZ_EDITOR=1 vite build",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

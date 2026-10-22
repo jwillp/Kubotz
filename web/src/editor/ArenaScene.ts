@@ -41,7 +41,25 @@ export class ArenaScene extends Phaser.Scene {
   private pressAt: { x: number; y: number } | null = null;
   private hover = -1;
 
-  constructor() { super('Arena'); }
+  /**
+   * @param overlay inside the game: drawn over the real arena (no room or
+   * tiles of its own) and moving the match's camera.
+   */
+  constructor(private readonly overlay = false) { super('Arena'); }
+
+  /** The camera the arena is seen through: the match's, inside the game. */
+  private get cam(): Phaser.Cameras.Scene2D.Camera {
+    return (this.overlay ? this.scene.get('Game')?.cameras.main : null) ?? this.cameras.main;
+  }
+
+  /** Inside the game, this scene's camera shows exactly what the match's does. */
+  private syncCamera(): void {
+    if (!this.overlay) return;
+    const from = this.cam; const to = this.cameras.main;
+    if (from === to) return;
+    to.setZoom(from.zoom).setScroll(from.scrollX, from.scrollY);
+    to.preRender();
+  }
 
   create(): void {
     this.store = this.registry.get('store') as Store;
@@ -50,24 +68,28 @@ export class ArenaScene extends Phaser.Scene {
     this.tiles = this.add.container(0, 0).setDepth(1);
     this.grid = this.add.graphics().setDepth(2);
     this.over = this.add.graphics().setDepth(3);
-    this.cameras.main.setBackgroundColor('#0d1015');
+    if (!this.overlay) this.cameras.main.setBackgroundColor('#0d1015');
+    this.room.setVisible(!this.overlay);
     this.input.addPointer(1);
     this.input.mouse?.disableContextMenu();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.down(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.moveTo(p));
     this.input.on('pointerup', () => this.up());
     this.input.on('pointerupoutside', () => this.up());
-    this.game.canvas.addEventListener('wheel', (e) => {
+    // Listeners on the page and the game outlive the scene (it is stopped and started again inside the game): removed on shutdown.
+    const onWheel = (e: WheelEvent) => {
       if (!this.sys.isActive()) return;
       e.preventDefault();
-      const cam = this.cameras.main;
+      const cam = this.cam;
       const r = this.game.canvas.getBoundingClientRect();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : 1);
       const mouseWheel = !e.ctrlKey && e.deltaX === 0 && (e.deltaMode !== 0 || (Number.isInteger(dy) && Math.abs(dy) >= 50));
       if (e.ctrlKey) this.zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-dy * 0.01));
       else if (mouseWheel) this.zoomAt(e.clientX - r.left, e.clientY - r.top, dy > 0 ? 0.9 : 1.1);
       else { cam.scrollX += e.deltaX / cam.zoom; cam.scrollY += dy / cam.zoom; }
-    }, { passive: false });
+    };
+    this.game.canvas.addEventListener('wheel', onWheel, { passive: false });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.canvas.removeEventListener('wheel', onWheel));
     this.recentre();
   }
 
@@ -76,7 +98,7 @@ export class ArenaScene extends Phaser.Scene {
 
   /** Fits the whole arena and its blast zone on screen. */
   recentre(): void {
-    const cam = this.cameras.main;
+    const cam = this.cam;
     const [w, h] = this.size;
     const [l, t, r, b] = this.arena?.blast ?? DEFAULT_BLAST;
     const fw = (w + l + r) * UNIT; const fh = (h + Math.min(t, 8) + b) * UNIT;
@@ -85,25 +107,30 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   zoomAt(sx: number, sy: number, factor: number): void {
-    const cam = this.cameras.main;
+    const cam = this.cam;
     const before = cam.getWorldPoint(sx, sy);
     cam.setZoom(Phaser.Math.Clamp(cam.zoom * factor, 0.08, 4));
     cam.preRender();
     const after = cam.getWorldPoint(sx, sy);
     cam.scrollX += before.x - after.x; cam.scrollY += before.y - after.y;
+    this.syncCamera();
   }
 
   // ------------------------------------------------------------ drawing
   update(): void {
+    this.syncCamera();
     const a = this.arena;
     if (!a) { this.tiles.removeAll(true); this.over.clear(); this.grid.clear(); return; }
     // The tiles and the room are rebuilt only when the arena's shape changes.
     const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, ...shape } = a;
-    const key = JSON.stringify(shape);
-    if (key !== this.builtTiles) { this.builtTiles = key; this.buildTiles(a); }
-    if (a.room !== this.built) { this.built = a.room ?? ''; this.buildRoom(a); }
-    this.room.setVisible(this.view.room);
-    this.tiles.setVisible(this.view.tiles);
+    // Inside the game the match draws the real arena; this scene only adds the pieces.
+    if (!this.overlay) {
+      const key = JSON.stringify(shape);
+      if (key !== this.builtTiles) { this.builtTiles = key; this.buildTiles(a); }
+      if (a.room !== this.built) { this.built = a.room ?? ''; this.buildRoom(a); }
+    }
+    this.room.setVisible(this.view.room && !this.overlay);
+    this.tiles.setVisible(this.view.tiles && !this.overlay);
     this.drawGrid();
     this.drawPieces(a);
   }
@@ -239,7 +266,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private down(p: Phaser.Input.Pointer): void {
-    const cam = this.cameras.main;
+    const cam = this.cam;
     const a = this.pointer2Down() ? null : this.arena;
     if (this.pointer2Down()) {
       if (this.drag && this.drag.kind !== 'pan') this.store.endDrag();
@@ -320,7 +347,7 @@ export class ArenaScene extends Phaser.Scene {
   private moveTo(p: Phaser.Input.Pointer): void {
     const d = this.drag;
     const s = this.store;
-    const cam = this.cameras.main;
+    const cam = this.cam;
     if (!d) return;
     if (d.kind === 'pinch') {
       const q = this.input.pointer1; const r = this.input.pointer2;
@@ -329,9 +356,10 @@ export class ArenaScene extends Phaser.Scene {
       cam.preRender();
       const mid = cam.getWorldPoint((q.x + r.x) / 2, (q.y + r.y) / 2);
       cam.scrollX += d.wx - mid.x; cam.scrollY += d.wy - mid.y;
+      this.syncCamera();
       return;
     }
-    if (d.kind === 'pan') { cam.centerOn(d.cx - (p.x - d.sx) / cam.zoom, d.cy - (p.y - d.sy) / cam.zoom); return; }
+    if (d.kind === 'pan') { cam.centerOn(d.cx - (p.x - d.sx) / cam.zoom, d.cy - (p.y - d.sy) / cam.zoom); this.syncCamera(); return; }
     if (d.kind === 'paint') { this.paint(p); return; }
     if (this.pressAt && Math.hypot(p.x - this.pressAt.x, p.y - this.pressAt.y) < (p.wasTouch ? 10 : 4)) return;
     this.pressAt = null;

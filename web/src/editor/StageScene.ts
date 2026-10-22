@@ -106,7 +106,9 @@ export class StageScene extends Phaser.Scene {
 
     const cam = this.cameras.main;
     cam.setBackgroundColor('#0d1015').setZoom(1.6).centerOn(0.6 * UNIT, -1.3 * UNIT);
-    this.scale.on('resize', () => this.drawGrid());
+    const onResize = () => this.drawGrid();
+    this.scale.on('resize', onResize);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off('resize', onResize));
     this.drawGrid();
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.down(p));
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.moveTo(p));
@@ -115,7 +117,8 @@ export class StageScene extends Phaser.Scene {
     // Two fingers on a touch screen pinch to zoom and move to pan.
     this.input.addPointer(1);
     // Wheel and touchpad: a mouse wheel zooms; a touchpad pinch (ctrl + wheel) zooms, two-finger scrolling pans.
-    this.game.canvas.addEventListener('wheel', (e) => {
+    // Listeners on the page and the game outlive the scene (it is stopped and started again inside the game): removed on shutdown.
+    const onWheel = (e: WheelEvent) => {
       if (!this.sys.isActive()) return;
       e.preventDefault();
       const r = this.game.canvas.getBoundingClientRect();
@@ -126,7 +129,9 @@ export class StageScene extends Phaser.Scene {
       if (e.ctrlKey) this.zoomAt(sx, sy, Math.exp(-dy * 0.01));
       else if (mouseWheel) this.zoomAt(sx, sy, dy > 0 ? 0.9 : 1.1);
       else { cam.scrollX += dx / cam.zoom; cam.scrollY += dy / cam.zoom; this.drawGrid(); }
-    }, { passive: false });
+    };
+    this.game.canvas.addEventListener('wheel', onWheel, { passive: false });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.game.canvas.removeEventListener('wheel', onWheel));
     this.input.mouse?.disableContextMenu();
   }
 

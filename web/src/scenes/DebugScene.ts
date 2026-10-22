@@ -12,6 +12,8 @@ export interface DebugState {
   /** Frames to run while frozen. */
   steps: number;
   nav: boolean;
+  /** The in-game editor moves the camera itself: the match leaves it alone. */
+  holdCamera?: boolean;
 }
 
 const LINK_COLORS = { jump: 0x4da3ff, drop: 0xffd166, fall: 0xff8a1f } as const;

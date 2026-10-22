@@ -59,14 +59,18 @@ function editorSave(): Plugin {
 }
 
 // The game's assets (art, maps, sounds, the Spriter rig) are served from public/.
-// Two pages: the game (index.html) and the editor (editor.html).
-export default defineConfig({
-  base: './',
-  define: { __ASSETS_VERSION__: JSON.stringify(publicHash()) },
-  plugins: [editorSave()],
-  build: {
-    outDir: 'dist',
-    chunkSizeWarningLimit: 2000,
-    rollupOptions: { input: { main: resolve(__dirname, 'index.html'), editor: resolve(__dirname, 'editor.html') } },
-  },
+// The editor (in the game on F2, and editor.html) is in dev and in `npm run build:editor`
+// (KUBOTZ_EDITOR=1, into dist-editor/), never in the production build.
+export default defineConfig(({ mode }) => {
+  const editor = mode === 'development' || process.env.KUBOTZ_EDITOR === '1';
+  return {
+    base: './',
+    define: { __ASSETS_VERSION__: JSON.stringify(publicHash()), __EDITOR__: JSON.stringify(editor) },
+    plugins: [editorSave()],
+    build: {
+      outDir: editor ? 'dist-editor' : 'dist',
+      chunkSizeWarningLimit: 2000,
+      rollupOptions: { input: { main: resolve(__dirname, 'index.html'), ...(editor ? { editor: resolve(__dirname, 'editor.html') } : {}) } },
+    },
+  };
 });

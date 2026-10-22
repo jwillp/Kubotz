@@ -32,6 +32,9 @@ const game = new Phaser.Game({
 
 installFullscreen(game);
 
+// The editor, in dev builds (and `npm run build:editor`): F2 opens it over the match. The production build leaves it out.
+if (__EDITOR__) void import('./editor/InGame').then((m) => m.installInGameEditor(game));
+
 // Handy for debugging from the browser console.
 (window as unknown as { kubotz: Phaser.Game }).kubotz = game;
 

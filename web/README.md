@@ -28,9 +28,16 @@ npm run preview    # serves dist/ on http://localhost:4173
 
 ## Editor
 
+In a dev build (`npm run dev`), press **F2** during a match: the match freezes
+and the editor docks round it; **Play** lets it run with your changes, F2
+again closes it. The same editor also opens on a page of its own:
+
 ```bash
-npm run editor     # opens http://localhost:5173/editor.html
+npm run editor        # http://localhost:5173/editor.html
+npm run build:editor  # a build with the editor in, in dist-editor/
 ```
+
+`npm run build` (production) leaves the editor out.
 
 Tune the robots' clips (bone poses, keys and particle events) and the moves
 (hit circles, active frames, damage, launch) on the game's own renderer. Save writes

@@ -119,6 +119,8 @@ export interface MatchSetup {
    * Setup screen preview: no robots, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
+  /** Started from the in-game editor: no intro, countdown or music, the robots straight in. */
+  editor?: boolean;
   preview?: {
     x: number; y: number; width: number; height: number;
     /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */

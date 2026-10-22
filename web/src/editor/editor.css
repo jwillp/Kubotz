@@ -104,3 +104,8 @@ details.section > :not(summary) { margin: 0 10px 10px; }
 .swatch.on { border-color: var(--accent); }
 .note.warn { color: #ffb08a; }
 .fields.one { grid-template-columns: minmax(0, 1fr); }
+
+/* Inside the game: the editor docks round the match, which fills the stage. */
+#editor.in-game { position: fixed; inset: 0; z-index: 10; background: var(--bg); }
+#editor.in-game #stage > #game { position: absolute; inset: 0; width: 100%; height: 100%; }
+#editor.in-game #stage { overflow: hidden; }

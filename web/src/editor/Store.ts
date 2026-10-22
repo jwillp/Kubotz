@@ -145,7 +145,15 @@ export class Store {
     this.emit();
   }
 
-  endDrag(): void { this.dragging = false; }
+  /** A drag (or a typed value) is done: listeners hear it (the in-game editor then rebuilds the arena). */
+  endDrag(): void {
+    if (!this.dragging) return;
+    this.dragging = false;
+    this.emit();
+  }
+
+  /** A drag (or a field being typed in) is still going on. */
+  get busy(): boolean { return this.dragging; }
 
   undo(): void { this.swap(this.undoStack, this.redoStack); }
   redo(): void { this.swap(this.redoStack, this.undoStack); }
