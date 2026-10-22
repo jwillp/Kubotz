@@ -4,6 +4,8 @@ import { lit } from '../fx/NormalMaps';
 import { UNIT } from '../config';
 import { DebrisBody, PhysicsWorld } from '../physics/Physics';
 import type { Kubotz } from './Kubotz';
+import type { Prop } from './Match';
+import { propOf } from './Replay';
 import { canHurt } from './Match';
 
 const LIFETIME = 3200; // ms, the longest a piece lasts
@@ -85,6 +87,11 @@ export class DebrisField {
     for (const p of this.pieces.filter((q) => now >= q.end)) this.remove(p);
     this.pieces = this.pieces.filter((q) => now < q.end);
     this.flashes = this.flashes.filter((f) => now - f.born < 600);
+  }
+
+  /** The pieces as drawn, with how far each is into its scan-out (for the replays). */
+  props(now: number): Prop[] {
+    return this.pieces.map((p) => propOf(p.image, { holo: Phaser.Math.Clamp(1 - (p.end - now) / DISSOLVE_MS, 0, 1) }));
   }
 
   /** Physics circles of the pieces, for the debug view. */

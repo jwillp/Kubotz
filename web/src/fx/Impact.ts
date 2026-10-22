@@ -82,6 +82,8 @@ export class ImpactFx {
   private readonly smokeG: Phaser.GameObjects.Graphics;
   /** The arena's walls and platforms (world pixels), which smoke particles do not pass. */
   solids: Phaser.Geom.Rectangle[] = [];
+  /** The camera the smoke's glitch is sized for (default: the scene's main camera). */
+  camera?: Phaser.Cameras.Scene2D.Camera;
   /** All of the K.O. smoke, glitched and scan-lined as one (fx/HitGlitch.ts). */
   private readonly smokeView: Phaser.GameObjects.Container;
   private lastKoAt = -Infinity;
@@ -415,7 +417,7 @@ export class ImpactFx {
     // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
     const since = this.now - this.lastKoAt;
     const live = this.wisps.length > 0 || this.laser.live || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
-    hitGlitch(this.smokeView, live && !laserAlone() ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
+    hitGlitch(this.smokeView, live && !laserAlone() ? Math.max(0.95, 1.35 - since / 900) : 0, this.camera, null, 3, 0.55, 0.86); // a touch see-through
   }
 
   private draw(): void {
@@ -607,11 +609,32 @@ export class ImpactFx {
     return particle;
   }
 
+  /** Drops every running effect (a replay starting over or skipping to the next). */
+  clear(): void {
+    this.particles = [];
+    this.trails.clear();
+    this.flashes = [];
+    this.twirls = [];
+    this.wisps = [];
+    this.lastKoAt = -Infinity;
+    this.laser.clear();
+  }
+
   destroy(): void {
     this.smokeView.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();
+  }
+}
+
+/** A laser blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core. */
+export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number): void {
+  const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
+  const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
+  for (const [w, col, a] of strokes) {
+    g.lineStyle(w, col, a).lineBetween(x1, y1, x2, y2);
+    g.fillStyle(col, a).fillCircle(x2, y2, w / 2);
   }
 }
 

@@ -21,14 +21,15 @@ export class PortalFx {
   private readonly portals: Portal[];
   private readonly halos: Phaser.GameObjects.Image[];
 
-  constructor(scene: Phaser.Scene, zones: Phaser.Geom.Rectangle[]) {
+  /** @param lit false: no lights of its own (a replay sets the recorded ones). */
+  constructor(scene: Phaser.Scene, zones: Phaser.Geom.Rectangle[], lit = true) {
     // Behind the robots, so they step out of the rift.
     this.back = scene.add.graphics().setDepth(9.3);
     this.glow = scene.add.graphics().setDepth(9.4).setBlendMode(Phaser.BlendModes.ADD);
     const sorted = [...zones].sort((p, q) => p.x - q.x);
     this.portals = sorted.map((zone) => {
       // A strong light: it washes the walls, floor and robots round the portal.
-      const light = scene.lights.addLight(zone.centerX, zone.centerY, UNIT * 11, COLOR, 4);
+      const light = scene.lights.addLight(zone.centerX, zone.centerY, UNIT * 11, COLOR, 4).setVisible(lit);
       return { zone, color: COLOR, core: CORE, motes: [], light, burstAt: -1e9, burstY: zone.centerY };
     });
     // A bright halo round each rift, over the scenery.

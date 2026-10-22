@@ -3,6 +3,8 @@ import { lit } from '../fx/NormalMaps';
 import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
+import type { Prop } from './Match';
+import { propOf } from './Replay';
 import { ItemBody, PhysicsWorld } from '../physics/Physics';
 
 /** PowerUpEffect.java subclasses. */
@@ -173,6 +175,12 @@ export class PowerUpOrb {
     // The glow cuts out now and then while it glitches.
     const cut = k > 0 && Math.random() < 0.4 * k;
     this.glow.setPosition(this.x, this.y).setAlpha(cut ? 0.05 : (blink ? 0.2 : 0.45) + 0.12 * Math.sin(now / 180));
+  }
+
+  /** The ball as drawn: glow, art, shading, highlight (for the replays). */
+  props(): Prop[] {
+    const at = { x: this.x, y: this.y, alpha: this.view.alpha, depth: this.view.depth };
+    return [propOf(this.glow), propOf(this.sprite, at), propOf(this.shade, { ...at, rotation: 0 }), propOf(this.shine, { ...at, rotation: 0 })];
   }
 
   /** A bounce: the ball glitches, harder for a harder bounce (`power` 0..1). */

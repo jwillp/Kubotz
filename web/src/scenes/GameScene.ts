@@ -8,14 +8,14 @@ import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
+import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type RobotFrame } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
-import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
+import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ImpactFx, LASER_SMOKE_MODES, laserSmoke } from '../fx/Impact';
+import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
@@ -27,7 +27,7 @@ import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
 import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
-import { ReplayRecorder } from '../game/Replay';
+import { ReplayRecorder, propOf } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
@@ -172,9 +172,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
+    this.recorder.setArena(this.map.width * UNIT, this.map.height * UNIT);
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
     this.portals = new PortalFx(this, this.warpZones);
+    this.recorder.watch(this.portals, ['burst'], 'portals');
     this.holo = new HoloSpawns(this);
 
     if (setup.preview) { this.createPreview(setup.preview); return; }
@@ -538,20 +540,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * Plain additive blending (ONE, ONE). Phaser's ADD scales what is below by
-   * its alpha, which lifts translucent layers under a full-arena glow (the
-   * outer hull showed the glow's rectangle).
-   */
-  private pureAdd(): number {
-    const r = this.sys.renderer;
-    if (!(r instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return Phaser.BlendModes.ADD;
-    const gl = r.gl;
-    return (GameScene.pureAddMode ??= r.addBlendMode([gl.ONE, gl.ONE], gl.FUNC_ADD));
-  }
-
-  private static pureAddMode?: number;
-
-  /**
    * The emissive layer: the saturated blue pixels of the arena art, sharp and
    * blurred twice, drawn additively over the lit arena and breathing slowly,
    * like the 3D version's glowing platforms.
@@ -585,7 +573,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     g.globalAlpha = 0.8;
     g.drawImage(mask, 0, 0);
     glow.refresh();
-    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setScale(1 / s).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setScale(1 / s).setDepth(2.5).setBlendMode(pureAdd(this)).setAlpha(0.85);
     this.arenaLayers.push(layer);
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
@@ -599,7 +587,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
     this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
-    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -609,6 +597,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private fx(name: ParticleName, x: number, y: number, tint?: number): void {
     this.particles.play(this.effects[name], x, y, tint);
+    this.recorder.particles(name, x, y, tint);
   }
 
   // -------------------------------------------------------------- ArenaHooks
@@ -643,6 +632,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.impact.runDust(x, y, dir);
   }
 
+  landed(victim: Kubotz, attacker: Kubotz, damage: number, chained: boolean, healthBefore: number, speed: number, angle: number): void {
+    this.recorder.hit(victim, attacker, damage, chained, this.clock, healthBefore, speed, angle);
+  }
+
   airJump(x: number, y: number, color: number): void {
     this.impact.airJump(x, y, color);
   }
@@ -666,10 +659,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         // Repair: its own sound, a longer twirl and the health regained.
         this.playSfx('orb-heal', 0.55);
         this.impact.twirl(kubotz, orb.color, 2100);
+        this.recorder.twirl(kubotz.index, orb.color, 2100);
         this.floatText(kubotz.x, kubotz.body.top - 40, `+${Math.round(kubotz.health - hp)}% HP`, def.color);
       } else {
         this.playSfx('orb-pickup', 0.5);
         this.impact.twirl(kubotz, orb.color, 1500);
+        this.recorder.twirl(kubotz.index, orb.color, 1500);
         this.floatText(kubotz.x, kubotz.body.top - 40, def.label, def.color);
       }
       orb.destroy();
@@ -751,14 +746,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkDeaths(now);
     this.checkTime(now);
     this.updateBonusSpawns(now);
+    const drawn = new Map<Kubotz, Partial<RobotFrame>>();
     for (const k of this.fighters) {
       k.render(now, dtMs);
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
-      this.impact.swing(k, k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null, k.look.color);
+      const arc = k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null;
+      this.impact.swing(k, arc, k.look.color);
       // Invincibility and shield: the orb's motes keep circling the robot while they last.
-      if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
-      if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
+      const auras: string[] = [];
+      if (k.isAlive() && k.invincible) auras.push('invincibility');
+      if (k.isAlive() && k.shield > 0) auras.push('shield');
+      for (const key of auras) this.impact.aura(k, key, POWER_UPS[key as 'shield'].color);
+      // What the replays draw with the robot.
+      const b = k.isAlive() ? k.blade() : null;
+      drawn.set(k, {
+        ...(b ? { blade: [b.x1, b.y1, b.x2, b.y2] as [number, number, number, number] } : {}),
+        ...(arc ? { swing: [arc.ox, arc.oy, arc.ix, arc.iy] as [number, number, number, number] } : {}),
+        ...(auras.length ? { auras } : {}),
+      });
       // Materializing: the same motes swirl round it in the hologram's cyan.
       if (k.isAlive() && (this.holo.state(k, now)?.[0] ?? -1) >= 0) this.impact.aura(k, 'hologram', HOLO_COLOR);
       // A charging gun draws sparks into its barrel.
@@ -774,7 +780,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
-    this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now));
+    const amb = this.lights.ambientColor;
+    this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now), {
+      robot: (k) => drawn.get(k) ?? {},
+      props: [
+        ...this.debris.props(now),
+        ...this.orbs.flatMap((o) => o.props()),
+        ...this.bullets.filter((b) => !b.dead).map((b) => propOf(b.sprite)),
+        ...this.glows.filter((g) => g.visible).map((g) => propOf(g)),
+      ],
+      ambient: Phaser.Display.Color.GetColor(amb.r * 255, amb.g * 255, amb.b * 255),
+    });
     this.updateAfterMatch(now);
   }
 
@@ -796,7 +812,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.winnerTeam === undefined || !this.promptShown || !this.scene.isActive()) return;
     const result: MatchResult = {
       ...this.result(),
-      replays: this.recorder.flush(),
+      highlights: this.recorder.flush(),
     };
     this.scene.start('Results', result);
   }
@@ -819,16 +835,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const g = this.sabers.clear();
     for (const k of this.fighters) {
       const b = k.blade();
-      if (!b) continue;
-      const c = k.look.color;
-      const flicker = 0.9 + 0.1 * Math.sin(now * 0.09 + k.x);
-      const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
-      // Wide soft halo, the coloured blade, then the white core.
-      const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
-      for (const [w, col, a] of strokes) {
-        g.lineStyle(w, col, a).lineBetween(b.x1, b.y1, b.x2, b.y2);
-        g.fillStyle(col, a).fillCircle(b.x2, b.y2, w / 2);
-      }
+      if (b) drawBlade(g, b.x1, b.y1, b.x2, b.y2, k.look.color, 0.9 + 0.1 * Math.sin(now * 0.09 + k.x));
     }
   }
 
@@ -1129,8 +1136,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) { killer.kills++; killer.stats.kos++; }
       k.stats.falls++;
-      const blow = k.lastAttacker && now - k.lastAttacker.at < 3000 ? k.lastAttacker.at : now;
-      this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, blow);
+      // The match point: this K.O. leaves one team (or nobody) standing.
+      const final = this.winnerTeam === undefined && k.lives <= 1 && teamsLeft(this.fighters.filter((f) => f !== k || f.lives > 1)).length <= 1;
+      this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, final);
       this.debris.explode(k, now);
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
@@ -1174,9 +1182,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       names: this.fighters.map((k) => k.name),
       colors: this.fighters.map((k) => k.look.color),
       tags: this.fighters.map((k) => k.tagKey),
-      replays: [],
+      highlights: [],
       hull: this.warpZones.length > 0,
       blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
+      arena: this.arena,
+      warpZones: this.warpZones.map(({ x, y, width, height }) => ({ x, y, width, height })),
     };
   }
 
