@@ -20,12 +20,12 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   gladiator: {
     name: 'Gladiator',
     tagline: 'The classic: last team standing wins.',
-    rules: ['Free for all or teams', 'Weapons come from power-ups', 'Lose every life and you are out'],
+    rules: ['Free for all or teams', 'Weapons come from power-ups', 'Use up every recharge and you are out'],
   },
   horde: {
     name: 'Horde',
     tagline: 'Everyone together against the black team.',
-    rules: ['All players fight on one team', 'Survive 10 waves of black-team Kubotz', 'Each wave brings more, and tougher'],
+    rules: ['All players fight on one team', 'Survive 10 waves of black-team Kubotz', 'Each wave brings more, and tougher', 'Every 5 waves cleared: +1 recharge for everyone'],
     horde: true,
   },
   blasters: {
@@ -47,6 +47,8 @@ export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blade
 /** Horde: waves to survive, and the players' team. */
 export const HORDE_WAVES = 10;
 export const HORDE_TEAM = 0;
+/** Horde: every this many waves cleared, each player gets one more recharge (an eliminated one comes back). */
+export const HORDE_BONUS_EVERY = 5;
 
 /** At most this many black-team Kubotz at once: 4 more than the players, never more than 8. */
 export const hordeCap = (players: number): number => Math.min(players + 4, 8);

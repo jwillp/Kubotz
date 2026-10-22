@@ -29,7 +29,7 @@ type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 interface Seat { device: Device; team: number; helmet: number; level: number }
 
 /** The setup screen's choices, kept in the registry so a rematch from the title keeps them. */
-interface SetupState { seats: Seat[]; arena: number; stocks: number; minutes: number; bonuses: BonusRate }
+interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate }
 
 const SLOTS = 4;
 const SLOT_W = 282;
@@ -39,7 +39,7 @@ const SLOT_TOP = 398;
 /** The chosen arena's frame, top centre. */
 const CAROUSEL_Y = 212;
 const CENTER_W = 300;
-const STOCKS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const RECHARGES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
 const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
@@ -76,7 +76,7 @@ const deviceBlurb = (s: Seat): string => {
 };
 
 /** A focusable thing: a rule at the top, a field of a slot, or START. */
-type Focus = { kind: 'arena' | 'stocks' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
+type Focus = { kind: 'arena' | 'recharges' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
 
 interface Row {
   label: Phaser.GameObjects.Text;
@@ -161,7 +161,7 @@ class StartButton extends Phaser.GameObjects.Container {
 /**
  * The setup screen: arena, rules and Kubotz on one page (it replaced the
  * join screen and the arena select). The chosen arena fills the background,
- * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
+ * dimmed and soft, and shows whole in the frame at the top, both rendered live; recharges, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.
  *
  * One cursor (arrows / WASD, any gamepad's D-pad or stick) moves up and down
@@ -184,7 +184,7 @@ export class SetupScene extends Phaser.Scene {
   private arenaFrame!: Phaser.GameObjects.Graphics;
   private arenaName!: HeadingText;
   private arenaBlurb!: Phaser.GameObjects.Text;
-  private rules: Record<'stocks' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
+  private rules: Record<'recharges' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
   private start!: StartButton;
   private status!: Phaser.GameObjects.Text;
   /** The battle mode picked on the mode screen. */
@@ -210,7 +210,7 @@ export class SetupScene extends Phaser.Scene {
         { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL },
       ],
       arena: (this.registry.get('arena') as number | undefined) ?? 0,
-      stocks: Config.NB_LIVES,
+      recharges: Config.NB_LIVES,
       minutes: 0,
       bonuses: (this.registry.get('bonuses') as BonusRate | undefined) ?? 'normal',
     };
@@ -295,10 +295,10 @@ export class SetupScene extends Phaser.Scene {
     this.arenaBlurb = this.add.text(width / 2, CAROUSEL_Y + h / 2 + 53, '', body(14, { fontStyle: '500', color: '#9fe3ff' })).setOrigin(0.5);
   }
 
-  /** Stocks and time on the right of the arena, power-ups on the left. */
+  /** Recharges and time on the right of the arena, power-ups on the left. */
   private makeRules(): void {
     const { width } = this.scale;
-    const rule = (key: 'stocks' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
+    const rule = (key: 'recharges' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
       const glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
       const g = this.add.graphics();
       const box = new Phaser.Geom.Rectangle(x - 80, y - 36, 160, 72);
@@ -311,7 +311,7 @@ export class SetupScene extends Phaser.Scene {
       this.rules[key] = { value, glow, box };
     };
     const right = width - 136;
-    rule('stocks', right, CAROUSEL_Y - 50, 'STOCKS', (d) => this.change({ kind: 'stocks' }, d));
+    rule('recharges', right, CAROUSEL_Y - 50, 'RECHARGES', (d) => this.change({ kind: 'recharges' }, d));
     rule('time', right, CAROUSEL_Y + 50, 'TIME', (d) => this.change({ kind: 'time' }, d));
     rule('bonuses', 136, CAROUSEL_Y + 50, 'POWER-UPS', (d) => this.change({ kind: 'bonuses' }, d));
     // The mode picked on the previous screen, above the power-ups (Back changes it).
@@ -375,7 +375,7 @@ export class SetupScene extends Phaser.Scene {
     const s = this.state;
     switch (f.kind) {
       case 'arena': this.pickArena(d); return;
-      case 'stocks': s.stocks = STOCKS[(STOCKS.indexOf(s.stocks) + d + STOCKS.length) % STOCKS.length]; break;
+      case 'recharges': s.recharges = RECHARGES[(RECHARGES.indexOf(s.recharges) + d + RECHARGES.length) % RECHARGES.length]; break;
       case 'time': if (this.horde) return; s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
       case 'bonuses': s.bonuses = RATE_ORDER[(RATE_ORDER.indexOf(s.bonuses) + d + RATE_ORDER.length) % RATE_ORDER.length]; break;
       case 'start': return;
@@ -468,7 +468,7 @@ export class SetupScene extends Phaser.Scene {
     const seat = this.state.seats[slot];
     const fields: Field[] = seat.device === 'OFF' ? ['input'] : FIELDS.filter((f) => f !== 'team' || !this.horde);
     return [
-      { kind: 'arena' }, { kind: 'stocks' }, { kind: 'time' }, { kind: 'bonuses' },
+      { kind: 'arena' }, { kind: 'recharges' }, { kind: 'time' }, { kind: 'bonuses' },
       ...fields.map((field): Focus => ({ kind: 'slot', slot, field })),
       { kind: 'start' },
     ];
@@ -577,10 +577,10 @@ export class SetupScene extends Phaser.Scene {
     const f = this.focus;
     const on = (k: Focus['kind']) => f.kind === k;
     // Rules: values, and the focused one glows.
-    this.rules.stocks.value.setText(String(s.stocks));
+    this.rules.recharges.value.setText(String(s.recharges));
     this.rules.time.value.setText(s.minutes && !this.horde ? `${s.minutes}:00` : '∞');
     this.rules.bonuses.value.setText(BONUS_RATES[s.bonuses].label).setFontSize(s.bonuses === 'frequent' ? 20 : 24);
-    for (const k of ['stocks', 'time', 'bonuses'] as const) {
+    for (const k of ['recharges', 'time', 'bonuses'] as const) {
       const r = this.rules[k];
       r.glow.clear();
       if (on(k)) drawGlow(r.glow, r.box.x, r.box.y, r.box.width, r.box.height, { cut: 12 });
@@ -686,7 +686,7 @@ export class SetupScene extends Phaser.Scene {
     this.leaving = true;
     const s = this.state;
     const setup: MatchSetup = {
-      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, stocks: s.stocks, minutes: this.horde ? 0 : s.minutes,
+      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, recharges: s.recharges, minutes: this.horde ? 0 : s.minutes,
     };
     shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }

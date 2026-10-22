@@ -132,7 +132,7 @@ export interface HexGlitch { x: number; y: number; r: number; amount: number }
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image | Phaser.GameObjects.Text, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];

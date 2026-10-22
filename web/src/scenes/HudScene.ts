@@ -4,6 +4,8 @@ import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
 import { HORDE_WAVES, MODES } from '../game/Modes';
+import { hitGlitch } from '../fx/HitGlitch';
+import { vfx } from '../game/Settings';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
@@ -18,6 +20,10 @@ const CARD_GAP = 14;
 /** The helmet-colour slab holding the P1 / CPU tag. */
 const SLAB = 64;
 const SEGMENTS = 12;
+/** The big titles' glitch (as on the title's logo): one step of the flicker (ms), and a burst's length coming in and going out. */
+const FLICKER_MS = 45;
+const GLITCH_IN_MS = 380;
+const GLITCH_OUT_MS = 240;
 
 interface Card {
   container: Phaser.GameObjects.Container;
@@ -31,7 +37,7 @@ interface Card {
 
 /**
  * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
- * slab in its helmet colour, segmented health, guard, stock pips, K.O.s),
+ * slab in its helmet colour, segmented health, guard, recharge pips, K.O.s),
  * a status chip above each card, and the match timer plate top centre.
  */
 export class HudScene extends Phaser.Scene {
@@ -49,6 +55,8 @@ export class HudScene extends Phaser.Scene {
   private pauseItems: PlateButton[] = [];
   private pauseSelected = 0;
   private pauseMenu!: MenuInput;
+  /** Big titles glitching now: the title, when the burst started and the strength of each flicker step. */
+  private glitches: { obj: Phaser.GameObjects.Image | Phaser.GameObjects.Text; at: number; steps: number[] }[] = [];
 
   constructor() { super('Hud'); }
 
@@ -112,10 +120,13 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
     this.game_.events.on('wave', this.onWave, this);
     this.game_.events.on('wave-cleared', this.onWaveCleared, this);
+    this.game_.events.on('bonus-recharge', this.onBonusRecharge, this);
+    this.glitches = [];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME);
       this.game_.events.off('wave', this.onWave, this);
       this.game_.events.off('wave-cleared', this.onWaveCleared, this);
+      this.game_.events.off('bonus-recharge', this.onBonusRecharge, this);
       this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
@@ -148,6 +159,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   update(): void {
+    this.updateGlitches();
     const g = this.game_;
     if (!g?.fighters) return;
     if (g.paused) this.pauseMenu.update(this.time.now);
@@ -172,6 +184,7 @@ export class HudScene extends Phaser.Scene {
     const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, final ? 'FINAL WAVE' : `WAVE ${wave}`, 96).setDepth(20).setScale(1.5).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 240, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 1100, duration: 400, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 1100);
   }
 
   private onWaveCleared(wave: number): void {
@@ -179,6 +192,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(0.5).setShadow(0, 3, '#02060c', 0, false, true).setDepth(20).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: t.y - 12, duration: 260, ease: 'Quad.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 1500);
   }
 
   private drawCard(k: Kubotz, card: Card, time: number): void {
@@ -201,10 +215,10 @@ export class HudScene extends Phaser.Scene {
     const stunned = time < k.stunnedUntil;
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
-    // Stock: cube pips in the helmet colour.
-    const stocks = this.game_.stocks;
-    const step = Math.min(16, (w - 70) / Math.max(1, stocks - 1));
-    for (let s = 0; s < stocks; s++) {
+    // Recharge: cube pips in the helmet colour.
+    const recharges = Math.max(this.game_.recharges, k.lives); // Horde's bonus recharges add pips
+    const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
+    for (let s = 0; s < recharges; s++) {
       const cx = x0 + 6 + s * step;
       const pip = new Phaser.Geom.Polygon([cx, 50, cx + 6, 56, cx, 62, cx - 6, 56]);
       if (s < k.lives) b.fillStyle(k.look.color, 1).fillPoints(pip.points, true).lineStyle(1, 0xffffff, 0.55).strokePoints(pip.points, true);
@@ -245,6 +259,46 @@ export class HudScene extends Phaser.Scene {
     const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 650);
+  }
+
+  /**
+   * A big title glitches like the title screen's logo (tearing, RGB split,
+   * scan lines): a hard burst as it comes in that settles, and a short one
+   * as it goes, `outAt` ms later.
+   */
+  private glitchTitle(obj: Phaser.GameObjects.Image | Phaser.GameObjects.Text, outAt: number): void {
+    const burst = (ms: number, first: number) => {
+      const n = Math.ceil(ms / FLICKER_MS);
+      const steps = Array.from({ length: n }, (_, i) => (Math.random() < 0.25 ? 0 : Phaser.Math.FloatBetween(0.35, 1)) * (1 - 0.6 * (i / n)));
+      steps[0] = first;
+      this.glitches.push({ obj, at: this.time.now, steps });
+      hitGlitch(obj, 0); // a new seed, so no two bursts tear alike
+    };
+    burst(GLITCH_IN_MS, 1);
+    this.time.delayedCall(outAt, () => { if (obj.active) burst(GLITCH_OUT_MS, 0.8); });
+  }
+
+  private updateGlitches(): void {
+    const now = this.time.now;
+    this.glitches = this.glitches.filter((gl) => {
+      if (!gl.obj.active) return false;
+      const t = now - gl.at;
+      const amount = gl.steps[Math.floor(t / FLICKER_MS)] ?? 0;
+      hitGlitch(gl.obj, amount * vfx());
+      // Sideways jolts on the hardest steps.
+      if (amount > 0.6) gl.obj.x = this.scale.width / 2 + Phaser.Math.Between(-6, 6) * amount;
+      else gl.obj.x = this.scale.width / 2;
+      return t < gl.steps.length * FLICKER_MS;
+    });
+  }
+
+  /** Horde: every few waves, one more recharge for everyone. */
+  private onBonusRecharge(): void {
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 + 30, 'BONUS RECHARGE', 64).setDepth(20).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, duration: 200 });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1700, duration: 400, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 1700);
   }
 
   private onMatchOver(winnerTeam: number | null): void {

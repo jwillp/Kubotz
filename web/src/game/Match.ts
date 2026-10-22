@@ -153,7 +153,7 @@ export interface MatchSetup {
   arena: number;
   bonuses: BonusRate;
   /** Lives per Kubot (default Config.NB_LIVES). */
-  stocks?: number;
+  recharges?: number;
   /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
   minutes?: number;
   /**

@@ -9,7 +9,7 @@ import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../g
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
-import { HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
+import { HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -110,7 +110,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
   startedAt: number = Config.COUNTDOWN;
   /** Lives each Kubot starts with, and the match length in ms (0: no limit). */
-  stocks: number = Config.NB_LIVES;
+  recharges: number = Config.NB_LIVES;
   timeLimit = 0;
   /** The battle mode (game/Modes.ts). */
   mode: MatchMode = 'gladiator';
@@ -169,7 +169,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.mode = setup.mode ?? 'gladiator';
     this.specs = setup.fighters.slice(0, 4);
-    this.stocks = setup.stocks ?? Config.NB_LIVES;
+    this.recharges = setup.recharges ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -222,7 +222,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
-      k.lives = this.stocks;
+      k.lives = this.recharges;
       // Blasters, Blades: the mode's weapon from the start, for the whole match.
       k.armed = k.weapon = MODES[this.mode].armed ?? 'none';
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
@@ -1240,6 +1240,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // Cleared: a short breather before the next wave.
       this.nextWaveAt = now + WAVE_BREAK_MS;
       if (this.wave > 0) this.events.emit('wave-cleared', this.wave);
+      if (this.wave > 0 && this.wave % HORDE_BONUS_EVERY === 0) this.bonusRecharge(now);
       return;
     }
     if (now < this.nextWaveAt) return;
@@ -1248,6 +1249,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const w = hordeWave(this.wave, this.specs.length);
     for (let i = 0; i < w.count; i++) this.waveQueue.push({ at: now + 500 + i * WAVE_SPAWN_GAP_MS, level: w.level, health: w.health });
     this.events.emit('wave', this.wave, w.count);
+  }
+
+  /** Horde: every player gets one more recharge; an eliminated one comes back in at once. */
+  private bonusRecharge(now: number): void {
+    for (const k of this.fighters) {
+      if (isBlackTeam(k)) continue;
+      k.lives++;
+      if (k.eliminated) { k.eliminated = false; k.respawnAt = now; }
+      else this.floatText(k.x, k.y - UNIT, '+1 RECHARGE', k.look.color);
+    }
+    this.events.emit('bonus-recharge');
+    this.playSfx('holo-spawn', 0.5);
   }
 
   /**
