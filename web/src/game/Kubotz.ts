@@ -798,17 +798,23 @@ export class Kubotz implements Damageable, Teamed {
     // Aerials keep the robot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
     // A light stick tilt walks, as fast as the tilt; pushed all the way (or a
-    // key) the robot runs. On the ground, starting off or turning round to run
-    // dashes: at speed at once (Ultimate's initial dash).
+    // key) the robot runs. On the ground, starting off from (near) standing
+    // dashes: at speed at once (Ultimate's initial dash), for people only (the
+    // CPU, which turns often while following a path, eases in). Turning round
+    // out of a run skids to a near stop first, then dashes the other way.
     const dir = pad.left ? -1 : pad.right ? 1 : 0;
-    const run = Config.MAX_SPEED * this.speedFactor();
+    const run = Config.RUN_SPEED * this.speedFactor();
     const walking = !!pad.walk && grounded;
-    if (dir && grounded && !walking && !this.attack && !this.charging && (Math.sign(vx) !== dir || Math.abs(vx) < 0.5 * run)) {
+    const human = this.controller.label !== 'CPU';
+    if (dir && grounded && Math.sign(vx) === -dir && Math.abs(vx) > 0.25 * run) {
+      vx += dir * GROUND_FRICTION * 1.5 * dt; // the skid
+    } else if (dir && human && grounded && !walking && !this.attack && !this.charging && Math.abs(vx) < 0.25 * run) {
       this.dashUntil = now + INITIAL_DASH_MS;
       vx = dir * run * INITIAL_DASH;
     }
     if (walking) this.dashUntil = 0;
-    const top = Config.MAX_SPEED * (walking ? WALK_SPEED * (pad.walkAmount ?? 1) : grounded && now < this.dashUntil ? INITIAL_DASH : 1);
+    const top = (grounded ? run : Config.MAX_SPEED * this.speedFactor())
+      * (walking ? WALK_SPEED * (pad.walkAmount ?? 1) : grounded && now < this.dashUntil ? INITIAL_DASH : 1);
     if (pad.left) {
       vx = vx < -top ? Math.min(vx + accel, -top) : Math.max(vx - accel, -top);
       if (canTurn) this.turnTo(-1, now, grounded);
@@ -823,7 +829,6 @@ export class Kubotz implements Damageable, Teamed {
     // Jumps: the jump button, or pushing up all the way (tap jump). People jump
     // on the press (after a short jump squat on the ground: let go within it
     // for a short hop); the CPU holds up and jumps again after a cooldown.
-    const human = this.controller.label !== 'CPU';
     // (The CPU holds up to aim its up attacks and specials: no jump then.)
     const jumpInput = !!pad.jump || (pad.up && !pad.walk && (human || (!pad.attack && !pad.special)));
     const jumpPress = human ? (jumpInput && !this.jumpHeld) || this.buffered('jump', now) : jumpInput;

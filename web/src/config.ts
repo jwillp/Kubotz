@@ -26,7 +26,9 @@ export const Config = {
 
   // Running / jumping (PhysicsComponent + KubotzFactory acceleration (0.5, 20))
   RUN_ACCELERATION: 0.5 * 60, // 0.5 u/s added every 60 Hz frame
-  MAX_SPEED: 18,
+  MAX_SPEED: 18, // in the air
+  // On the ground (Ultimate: Mario runs 1.76 u/f, about 7 body heights a second).
+  RUN_SPEED: 14,
   JUMP_VELOCITY: 20.5, // was 20; keeps the jump near its old height under the heavier gravity
   JUMP_COOLDOWN: 500,
   NB_JUMPS: 3, // new JumpComponent(3)
