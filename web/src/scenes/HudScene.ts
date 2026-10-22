@@ -8,7 +8,7 @@ import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 
-const PAUSE_ITEMS = ['Resume', 'Settings', 'Quit to title'];
+const PAUSE_ITEMS = ['Resume', 'Settings', 'Controls', 'Quit to title'];
 
 /** Fighter card size, and the gap between cards along the bottom edge. */
 const CARD_W = 270;
@@ -71,15 +71,15 @@ export class HudScene extends Phaser.Scene {
     this.hint = this.add.text(0, 58, '', body(20, { color: '#cfe9ff', fontStyle: '500' })).setOrigin(0.5);
     this.banner.add([this.bannerPlate, this.bannerText, this.hint]);
 
-    this.pause = this.add.container(width / 2, height / 2).setVisible(false).setDepth(10);
+    this.pause = this.add.container(width / 2, height / 2 - 30).setVisible(false).setDepth(10);
     // A light dim: the paused match behind stays readable, its scan lines heavier and colours richer (fx/Grade.ts uPause).
-    const dim = this.add.rectangle(0, 0, width, height, 0x02050c, 0.3);
+    const dim = this.add.rectangle(0, 30, width, height, 0x02050c, 0.3);
     const pg = this.add.graphics();
-    drawPlate(pg, -170, -190, 340, 384, { cut: 24 });
-    drawStrip(pg, -170, -166, -170, 194, NEON, 4);
+    drawPlate(pg, -170, -190, 340, 446, { cut: 24 });
+    drawStrip(pg, -170, -166, -170, 256, NEON, 4);
     drawStrip(pg, -140, -92, 140, -92, NEON, 2);
     const title = heading(this, 0, -140, 'PAUSED', 54);
-    const keys = this.add.text(0, 166, 'Esc / Start / B resume  ·  Q / Select quit', body(14, { fontStyle: '500', color: '#8fb6d8' })).setOrigin(0.5);
+    const keys = this.add.text(0, 228, 'Esc / Start / B resume  ·  Q / Select quit', body(14, { fontStyle: '500', color: '#8fb6d8' })).setOrigin(0.5);
     this.pause.add([dim, pg, title, keys]);
     PAUSE_ITEMS.forEach((label, i) => {
       const b = new PlateButton(this, 0, -36 + i * 62, 280, 48, label, { size: 22 });
@@ -248,7 +248,8 @@ export class HudScene extends Phaser.Scene {
   private choosePause(i: number): void {
     if (!this.game_.paused) return;
     if (i === 0) this.game_.togglePause();
-    else if (i === 1) this.game_.openSettings();
+    else if (i === 1) this.game_.openOverlay('Settings');
+    else if (i === 2) this.game_.openOverlay('Controls');
     else this.game_.backToTitle();
   }
 

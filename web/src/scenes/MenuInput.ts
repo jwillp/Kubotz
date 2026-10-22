@@ -4,7 +4,7 @@ import { gamepads } from '../ui/Fullscreen';
  * The one input layer for menus and match commands (title, settings, setup,
  * pause, and the match's pause / quit / continue): arrows / WASD, the D-pad or
  * left stick of any gamepad, with key repeat while held; confirm (Enter,
- * Space, pad A), back (Esc, Backspace, pad B, Start), pause (Esc, P, pad
+ * Space, pad A), back (Esc, Backspace, pad B, Start), pause (Esc, pad
  * Start) and quit (Q, pad Select). Keyboard and pads go through the same
  * buttons, so a command never works on one and not the other.
  *
@@ -42,7 +42,7 @@ function listen(): void {
 const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   confirm: ['Enter', 'NumpadEnter', 'Space'], back: ['Escape', 'Backspace'],
-  pause: ['Escape', 'KeyP'], quit: ['KeyQ'],
+  pause: ['Escape'], quit: ['KeyQ'],
 };
 /**
  * A pad's A and B face buttons in the browser's standard mapping, by their

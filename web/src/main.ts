@@ -8,6 +8,7 @@ import { BackdropScene } from './scenes/BackdropScene';
 import { DebugScene } from './scenes/DebugScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { MoveListScene } from './scenes/MoveListScene';
+import { ControlsScene } from './scenes/ControlsScene';
 import { ResultsScene } from './scenes/ResultsScene';
 import { ShutterScene } from './ui/Plate';
 import { installFullscreen } from './ui/Fullscreen';
@@ -22,7 +23,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
   render: { antialias: true, maxLights: 36 },
-  scene: [BootScene, TitleScene, SetupScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, MoveListScene, ResultsScene, ShutterScene],
+  scene: [BootScene, TitleScene, SetupScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, ControlsScene, MoveListScene, ResultsScene, ShutterScene],
 });
 
 installFullscreen(game);

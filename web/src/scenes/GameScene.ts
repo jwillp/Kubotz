@@ -241,7 +241,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const kb = this.input.keyboard!;
     // Pause, quit and continue: one input layer for the keyboard and every pad (MenuInput).
     this.commands = new MenuInput({
-      pause: () => this.togglePause(), // Esc, P, pad Start
+      pause: () => this.togglePause(), // Esc, pad Start (not P: it is P1's special)
       quit: () => { if (this.paused) this.backToTitle(); }, // from the pause: Q, pad Select
       confirm: () => this.continueAfterMatch(), // after the match: Enter, Space, pad A, B or Start
     }, false, { confirm: ['A', 'B', 9] });
@@ -285,6 +285,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.perspective = null;
       offSettings();
       this.scene.stop('Settings');
+      this.scene.stop('Controls');
       this.music?.destroy();
       this.scene.stop('Hud');
       this.scene.stop('Debug');
@@ -1267,14 +1268,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.events.emit('pause', this.paused);
   }
 
-  /** From the pause menu: the settings screen over the paused match; back to the pause after. */
-  openSettings(): void {
+  /** From the pause menu: the settings or controls screen over the paused match; back to the pause after. */
+  openOverlay(key: 'Settings' | 'Controls'): void {
     if (!this.paused) return;
     uiSound(this, 'confirm');
     this.scene.pause('Hud');
     this.scene.pause();
-    this.scene.launch('Settings', { resume: ['Game', 'Hud'] });
-    this.scene.bringToTop('Settings');
+    this.scene.launch(key, { resume: ['Game', 'Hud'] });
+    this.scene.bringToTop(key);
   }
 
   backToTitle(): void {
