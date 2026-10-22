@@ -4,8 +4,8 @@ import { BACKDROPS } from '../fx/Backdrops';
 import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
 import { body, heading, HeadingText, NEON } from './Type';
-import { uiSound } from '../audio/Sounds';
-import { screenScan } from '../fx/ScreenScan';
+import { scanSound, uiSound } from '../audio/Sounds';
+import { screenScan, tvCut } from '../fx/ScreenScan';
 
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
@@ -237,9 +237,10 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
 }
 
 /**
- * The menu transition: two plates close from the sides onto a cyan seam,
- * `swap` runs while the screen is covered, then they open. With visual
- * effects off, `swap` runs at once. It plays the confirm (or back) menu sound.
+ * The menu transition, an old TV changing stations: the picture breaks up
+ * and rolls away into snow, `swap` runs while the screen is covered, then
+ * the next screen locks on. With visual effects off, `swap` runs at once.
+ * It plays the confirm (or back) menu sound.
  */
 export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' = 'confirm'): void {
   uiSound(scene, sound);
@@ -250,33 +251,47 @@ export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' 
   scene.game.scene.bringToTop('Shutter');
 }
 
-/** Draws the shutter over every scene (its own scene, so it survives the scene swap). */
+/** The screen change's timings (ms): breaking up, held in snow, locking on. */
+const CUT_IN = 230;
+const CUT_HOLD = 70;
+const CUT_OUT = 380;
+
+/** Runs the screen change over every scene (its own scene, so it survives the scene swap). */
 export class ShutterScene extends Phaser.Scene {
   constructor() { super('Shutter'); }
 
   create({ swap }: { swap: () => void }): void {
     const { width, height } = this.scale;
-    const half = width / 2;
-    const leaf = (side: -1 | 1) => {
-      const g = this.add.graphics();
-      drawPlate(g, side < 0 ? -half : 0, -4, half, height + 8, { cut: 0, alpha: 1 });
-      drawStrip(g, side < 0 ? -2 : 2, 0, side < 0 ? -2 : 2, height, NEON, 3);
-      g.setPosition(side < 0 ? -half : width + half, 0);
-      return g;
+    // The screen between two stations: dark, under the snow and scanlines of the pass.
+    const cover = this.add.rectangle(width / 2, height / 2, width, height, 0x05080f).setAlpha(0);
+    const roll = Math.random() < 0.5 ? 1 : -1;
+    // Time as the frames show it: a long frame (the next screen building) does not skip the lock-on.
+    let t = 0;
+    let swapped = false;
+    const cams = new Set<Phaser.Cameras.Scene2D.Camera>();
+    scanSound(this, 0.8);
+    const step = (_now: number, delta: number) => {
+      t += Math.min(delta, 34);
+      // In: the picture breaks up and rolls away into snow; hold while the next screen builds; out: it locks on.
+      let k: number;
+      let a: number;
+      if (t < CUT_IN) { const u = t / CUT_IN; k = u; a = u * u; }
+      else if (t < CUT_IN + CUT_HOLD || !swapped) {
+        k = 1; a = 1;
+        if (!swapped) { swapped = true; swap(); this.scene.bringToTop(); }
+      } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
+      cover.setAlpha(a);
+      const live = new Set<Phaser.Cameras.Scene2D.Camera>();
+      for (const s of this.game.scene.getScenes(true)) live.add(s.cameras.main);
+      for (const cam of cams) if (!live.has(cam)) tvCut(cam, 0, 0);
+      cams.clear();
+      for (const cam of live) { tvCut(cam, k, roll * 0.35 * k * k); cams.add(cam); }
+      if (swapped && t >= CUT_IN + CUT_HOLD + CUT_OUT) {
+        for (const cam of cams) tvCut(cam, 0, 0);
+        this.events.off(Phaser.Scenes.Events.UPDATE, step);
+        this.scene.stop();
+      }
     };
-    const left = leaf(-1);
-    const right = leaf(1);
-    this.tweens.add({
-      targets: left, x: half, duration: 170, ease: 'Quad.in',
-    });
-    this.tweens.add({
-      targets: right, x: half, duration: 170, ease: 'Quad.in',
-      onComplete: () => {
-        swap();
-        this.scene.bringToTop();
-        this.tweens.add({ targets: left, x: -half, delay: 60, duration: 190, ease: 'Quad.out' });
-        this.tweens.add({ targets: right, x: width + half, delay: 60, duration: 190, ease: 'Quad.out', onComplete: () => this.scene.stop() });
-      },
-    });
+    this.events.on(Phaser.Scenes.Events.UPDATE, step);
   }
 }

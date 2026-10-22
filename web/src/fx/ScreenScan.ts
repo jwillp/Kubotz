@@ -54,14 +54,14 @@ void main () {
 
 /** The scanline pass on a camera. */
 export class ScanPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
-  static readonly key = 'ScreenScan';
+  static readonly key: string = 'ScreenScan';
   /** 0..1: how strong the lines are now. */
   amount = 0;
   /** How far the picture has rolled, in screen heights. */
   roll = 0;
 
-  constructor(game: Phaser.Game) {
-    super({ game, name: ScanPipeline.key, fragShader: FRAGMENT });
+  constructor(game: Phaser.Game, name = ScanPipeline.key) {
+    super({ game, name, fragShader: FRAGMENT });
   }
 
   onDraw(target: Phaser.Renderer.WebGL.RenderTarget): void {
@@ -128,4 +128,27 @@ export function screenScan(scene: Phaser.Scene): void {
     scene.events.off(Phaser.Scenes.Events.UPDATE, onUpdate);
     clear();
   });
+}
+
+/** The same look for the screen change (ui/Plate.ts ShutterScene), as its own pass so it never fights the menu's. */
+export class TvCutPipeline extends ScanPipeline {
+  static readonly key = 'TvCut';
+  constructor(game: Phaser.Game) { super(game, TvCutPipeline.key); }
+}
+
+/** Puts the screen-change TV look on a camera at `amount` (0 takes it off), rolled by `roll` screen heights. */
+export function tvCut(cam: Phaser.Cameras.Scene2D.Camera, amount: number, roll: number): void {
+  const renderer = cam.scene?.sys.renderer;
+  if (!renderer || renderer.type !== Phaser.WEBGL) return;
+  if (amount <= 0) { cam.removePostPipeline(TvCutPipeline.key); return; }
+  const pipelines = (renderer as Phaser.Renderer.WebGL.WebGLRenderer).pipelines;
+  if (!pipelines.postPipelineClasses.has(TvCutPipeline.key)) pipelines.addPostPipeline(TvCutPipeline.key, TvCutPipeline);
+  let p = cam.getPostPipeline(TvCutPipeline.key) as TvCutPipeline | TvCutPipeline[] | undefined;
+  if (Array.isArray(p)) p = p[0];
+  if (!p) {
+    cam.setPostPipeline(TvCutPipeline.key);
+    p = cam.getPostPipeline(TvCutPipeline.key) as TvCutPipeline;
+  }
+  p.amount = amount;
+  p.roll = roll;
 }
