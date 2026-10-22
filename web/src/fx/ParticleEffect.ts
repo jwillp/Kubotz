@@ -118,6 +118,21 @@ export function parseEffect(text: string): EffectDef {
   };
 }
 
+/** How a play() differs from the file: sizes, speeds and lives scaled, an emitter riding along, collisions. */
+export interface PlayOptions {
+  /** Replaces the effect's own colours (e.g. a laser in the shooter's colour). */
+  tint?: number;
+  size?: number;
+  speed?: number;
+  life?: number;
+  /** Emission rate multiplier. */
+  rate?: number;
+  /** The emitter rides along this point (world pixels); emission stops when it returns null. */
+  follow?: () => { x: number; y: number } | null;
+  /** Walls and platforms (world pixels) the particles do not pass. */
+  solids?: Phaser.Geom.Rectangle[];
+}
+
 interface Particle {
   img: Phaser.GameObjects.Image;
   life: number; age: number;
@@ -141,9 +156,15 @@ class RunningEmitter {
   private readonly amount = vfx();
   readonly particles: Particle[] = [];
 
-  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number) {
+  private stopped = false;
+  private readonly tint?: number;
+
+  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private opts: PlayOptions = {}) {
+    this.tint = opts.tint;
     [this.emissionLow, this.emissionDiff] = def.emission.pair();
     [this.lifeLow, this.lifeDiff] = def.life.pair();
+    this.emissionLow *= opts.rate ?? 1; this.emissionDiff *= opts.rate ?? 1;
+    this.lifeLow *= opts.life ?? 1; this.lifeDiff *= opts.life ?? 1;
     this.duration = def.duration.newLow();
     this.delay = def.delay.active ? def.delay.newLow() : 0;
     this.countMin = vfxCount(def.countMin);
@@ -151,12 +172,16 @@ class RunningEmitter {
     if (this.delay === 0) this.add(this.countMin);
   }
 
-  get done(): boolean { return this.time >= this.delay + this.duration && this.particles.length === 0; }
+  get done(): boolean { return (this.stopped || this.time >= this.delay + this.duration) && this.particles.length === 0; }
 
   update(dtMs: number): void {
     this.time += dtMs;
+    if (this.opts.follow && !this.stopped) {
+      const at = this.opts.follow();
+      if (at) { this.x = at.x / UNIT; this.y = -at.y / UNIT; } else this.stopped = true;
+    }
     const t = this.time - this.delay;
-    if (t >= 0 && t < this.duration) {
+    if (!this.stopped && t >= 0 && t < this.duration) {
       const percent = t / this.duration;
       if (this.particles.length < this.countMin) this.add(this.countMin - this.particles.length);
       const perSecond = (this.emissionLow + this.emissionDiff * this.def.emission.scale(percent)) * this.amount;
@@ -218,16 +243,26 @@ class RunningEmitter {
     const angle = d.angle.active ? at(d.angle, p.angle) : 0;
     if (d.velocity.active) {
       const v = at(d.velocity, p.velocity) * dt;
-      x += v * Math.cos(Phaser.Math.DegToRad(angle));
-      y += v * Math.sin(Phaser.Math.DegToRad(angle));
+      const speed = this.opts.speed ?? 1;
+      x += v * speed * Math.cos(Phaser.Math.DegToRad(angle));
+      y += v * speed * Math.sin(Phaser.Math.DegToRad(angle));
     }
     if (d.wind.active) x += at(d.wind, p.wind) * dt;
     if (d.gravity.active) y += at(d.gravity, p.gravity) * dt;
+    // Out of any wall or platform by the nearest side (so it slides along it).
+    for (const r of this.opts.solids ?? []) {
+      const px = x * UNIT; const py = -y * UNIT;
+      if (px <= r.left || px >= r.right || py <= r.top || py >= r.bottom) continue;
+      const outs = [px - r.left, r.right - px, py - r.top, r.bottom - py];
+      const side = outs.indexOf(Math.min(...outs));
+      if (side === 0) x = r.left / UNIT; else if (side === 1) x = r.right / UNIT;
+      else if (side === 2) y = -r.top / UNIT; else y = -r.bottom / UNIT;
+    }
     p.img.setData('wx', x).setData('wy', y);
 
     let rotation = d.rotation.active ? at(d.rotation, p.rotation) : 0;
     if (d.aligned) rotation += angle;
-    const size = at(d.scale, p.scale) * UNIT; // particle width in world units
+    const size = at(d.scale, p.scale) * UNIT * (this.opts.size ?? 1); // particle width in world units
     const img = p.img;
     img.setPosition(x * UNIT, -y * UNIT).setAngle(-rotation).setScale(size / img.width);
     img.setAlpha(Phaser.Math.Clamp(at(d.transparency, p.alpha), 0, 1));
@@ -254,14 +289,19 @@ export class ParticleFx {
   private running: RunningEmitter[] = [];
   private pool: Phaser.GameObjects.Image[] = [];
 
-  /** @param texturePrefix the texture key of image `x.png` is `${texturePrefix}x.png`. */
-  constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15) {}
+  /**
+   * @param texturePrefix the texture key of image `x.png` is `${texturePrefix}x.png`.
+   * @param parent particles go in this container (e.g. to be glitched with it) instead of the scene.
+   */
+  constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15, private parent?: Phaser.GameObjects.Container) {}
 
-  /** Starts the effect at a world position in pixels (y down). */
-  /** @param tint replaces the effect's own colours (e.g. a laser in the shooter's colour). */
-  play(def: EffectDef, x: number, y: number, tint?: number): void {
-    for (const e of def.emitters) this.running.push(new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint));
+  /** Starts the effect at a world position in pixels (y down); a number is a tint. */
+  play(def: EffectDef, x: number, y: number, opts?: number | PlayOptions): void {
+    const o = typeof opts === 'number' ? { tint: opts } : opts;
+    for (const e of def.emitters) this.running.push(new RunningEmitter(e, this, x / UNIT, -y / UNIT, o));
   }
+
+  get live(): boolean { return this.running.length > 0; }
 
   update(dtMs: number): void {
     for (const e of this.running) e.update(dtMs);
@@ -270,7 +310,11 @@ export class ParticleFx {
 
   acquire(image: string, additive: boolean): Phaser.GameObjects.Image {
     const key = this.texturePrefix + image;
-    const img = this.pool.pop() ?? this.scene.add.image(0, 0, key);
+    let img = this.pool.pop();
+    if (!img) {
+      img = this.parent ? this.scene.make.image({ x: 0, y: 0, key }, false) : this.scene.add.image(0, 0, key);
+      this.parent?.add(img);
+    }
     return img.setTexture(key).setVisible(true).setDepth(this.depth)
       .setBlendMode(additive ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
   }

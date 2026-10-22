@@ -15,7 +15,7 @@ import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ImpactFx } from '../fx/Impact';
+import { ImpactFx, LASER_SMOKE_MODES, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
@@ -246,6 +246,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const f = setFeel(FEEL_ORDER[i]);
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Feel: ${f.name}`, 0xffffff);
     }));
+    kb.on('keydown-L', () => {
+      laserSmoke.mode = LASER_SMOKE_MODES[(LASER_SMOKE_MODES.indexOf(laserSmoke.mode) + 1) % LASER_SMOKE_MODES.length];
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Laser smoke: ${laserSmoke.mode}`, 0xffffff);
+    });
+    // Exploration: K knocks out the nearest robot that isn't P1, to see the K.O. smoke.
+    kb.on('keydown-K', () => {
+      const p1 = this.fighters[0];
+      const target = this.fighters.filter((k) => k !== p1 && k.isAlive())
+        .sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y))[0];
+      if (target) target.health = 0;
+    });
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn robots' : 'Clean robots', 0xffffff);
