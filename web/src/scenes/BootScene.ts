@@ -31,7 +31,7 @@ const PHASES = [0.45, 0.75] as const;
 /** The longest the boot work holds the page before it lets the load screen draw a frame (ms). */
 const PACE_MS = 12;
 
-/** Loads the original assets: Spriter file + its images, TMX map + tiles, HUD. */
+/** Loads the original assets: Spriter file + its images, TMX map + tiles, particles, sounds. */
 export class BootScene extends Phaser.Scene {
   private ident?: TvIdent;
   /** 0 while the first files load, 1 for the robot parts and tiles. */
@@ -51,16 +51,8 @@ export class BootScene extends Phaser.Scene {
     this.load.text('scml', KUBOTZ_SCML);
     this.load.text('tmx', MAIN_MAP);
     this.load.image('bg', 'maps/background.jpg');
-    this.load.image('hud-badge', 'hud-multi-badge.png');
-    this.load.image('hud-bars', 'hud-multi-bars.png');
-    this.load.image('hud-timer', 'hud-multi-timer.png');
     loadHeadingFont(this);
-    this.load.image('dash-orb', 'dash-orb.png');
-    this.load.image('p-star', 'particles/star.png');
-    this.load.image('p-star2', 'particles/star2.png');
-    this.load.image('p-dust', 'particles/particle001.png');
     this.load.image('p-hexa', 'particles/hexa.png');
-    this.load.image('p-flame', 'particles/flameche.png');
     for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) this.load.image(`bonus-${b}`, `entities/bonus-${b}.png`);
     this.load.image('bullet', 'entities/bullet.png');
     // LibGDX particle effects (full-on-scripting branch) and their images.
