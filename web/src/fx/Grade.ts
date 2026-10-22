@@ -42,7 +42,7 @@ vec3 grain(vec3 rgb, float l) {
 /**
  * The mood pass over the arena (no bloom): a vignette, a touch of contrast and
  * a cool shadows / warm highlights split tone, like the 3D version's grade,
- * then the grain. uGrade 0 (the colour grade setting off) leaves the colours alone.
+ * then the grain. uGrade 0 (the post-processing setting off) leaves the colours alone.
  */
 const GRADE = GRAIN + /* glsl */ `
 void main () {
@@ -79,7 +79,7 @@ class TimedPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
     this.set1f('uPause', (this.game.registry.get('pauseFx') as number | undefined) ?? 0);
     this.set1f('uGrain', fx().grain ? 1 : 0);
-    this.set1f('uGrade', fx().grade ? 1 : 0);
+    this.set1f('uGrade', fx().postFx ? 1 : 0);
   }
 }
 
@@ -130,11 +130,11 @@ export function setPass(
 }
 
 /**
- * The screen effects the player wants: the colour grade or the film grain
+ * The screen effects the player wants: post-processing or film grain
  * (each pass reads which of the two is on), off with ?lowfx.
  */
 export function wantScreenFx(): boolean {
-  return (fx().grade || fx().grain) && !new URLSearchParams(location.search).has('lowfx');
+  return (fx().postFx || fx().grain) && !new URLSearchParams(location.search).has('lowfx');
 }
 
 /**

@@ -82,7 +82,7 @@ export class ScanPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline
  * Now and then the menu screen catches a blip of interference, like an
  * old 70s/80s TV: for a split second thick scanlines, oversaturated
  * bleeding colour, snow, the rows wobbling and the picture jumping (the
- * screen changes use the full look, ShutterScene). The pass sits on every camera on screen, driven together; off with the old TV setting.
+ * screen changes use the full look, ShutterScene). The pass sits on every camera on screen, driven together; off with screen transitions.
  */
 export function screenScan(scene: Phaser.Scene): void {
   if (scene.sys.renderer.type !== Phaser.WEBGL) return;
@@ -112,12 +112,12 @@ export function screenScan(scene: Phaser.Scene): void {
       // Just a blip of interference: far shorter and softer than a screen change.
       burst = { at: now, ms: Phaser.Math.Between(120, 220), strength: Phaser.Math.FloatBetween(0.4, 0.6), roll: Math.random() < 0.5 ? 1 : -1 };
       next = now + burst.ms + Phaser.Math.Between(...GAP);
-      if (fx().tv) scanSound(scene, burst.strength * 0.5, 2.6);
+      if (fx().transitions) scanSound(scene, burst.strength * 0.5, 2.6);
     }
     const u = burst ? (now - burst.at) / burst.ms : 1;
     if (u >= 1) burst = null;
     // Quick in, quick out.
-    const amount = u < 1 ? (burst?.strength ?? 0) * Math.min(1, u / 0.2, (1 - u) / 0.5) * (fx().tv ? 1 : 0) : 0;
+    const amount = u < 1 ? (burst?.strength ?? 0) * Math.min(1, u / 0.2, (1 - u) / 0.5) * (fx().transitions ? 1 : 0) : 0;
     if (amount <= 0) { if (passes.size) clear(); return; }
     // Every camera on screen: the menu's, the room behind and an arena previewed in it.
     const live = liveCameras(scene.game);

@@ -37,23 +37,22 @@ interface Row {
 const SOUND_ROWS: RowDef[] = [
   { kind: 'slider', key: 'music', label: 'Music', hint: 'Title and arena music.' },
   { kind: 'slider', key: 'sfx', label: 'Sound effects', hint: 'Hits, lasers, footsteps, the narrator.' },
-  { kind: 'graphics', label: 'Graphics', hint: 'Sets every effect at once, from Minimal (lightest) to High (all on). Change one effect and it reads Custom.' },
+  { kind: 'graphics', label: 'Graphics quality', hint: 'Sets every effect at once, from Low (lightest) to Ultra (all on). Change one effect and it reads Custom.' },
 ];
 const EFFECT_ROWS: RowDef[] = [
-  { kind: 'particles', label: 'Particles', hint: 'Sparks, debris bits, motes and portal motes: how many.' },
-  { kind: 'toggle', key: 'shake', label: 'Screen shake', hint: 'The camera shakes on strong hits, hard landings and K.O.s.' },
-  { kind: 'toggle', key: 'hitFlash', label: 'Hit flash', hint: 'A Kubot flashes white when struck.' },
-  { kind: 'toggle', key: 'glitch', label: 'Glitch', hint: 'Tearing and RGB split on struck Kubotz, bouncing orbs and the title logo.' },
-  { kind: 'toggle', key: 'glow', label: 'Glow and shine', hint: 'Light thrown by hits and explosions, the shine sweeping over menu buttons.' },
-  { kind: 'toggle', key: 'koSmoke', label: 'K.O. smoke', hint: 'The cel-shaded smoke burst when a Kubot is knocked out.' },
-  { kind: 'toggle', key: 'grade', label: 'Colour grade', hint: 'Vignette, contrast and cool/warm tones over the arena; the soft arena behind the match setup.' },
+  { kind: 'particles', label: 'Particle quality', hint: 'Sparks, debris, motes and the K.O. smoke: how many (Off removes them).' },
+  { kind: 'toggle', key: 'shake', label: 'Camera shake', hint: 'The camera shakes on strong hits, hard landings and K.O.s.' },
+  { kind: 'toggle', key: 'flashes', label: 'Flash effects', hint: 'A Kubot flashes white when struck. Off is easier on the eyes.' },
+  { kind: 'toggle', key: 'distortion', label: 'Distortion', hint: 'Glitch tearing and RGB split on struck Kubotz, bouncing orbs and the title logo.' },
+  { kind: 'toggle', key: 'lights', label: 'Dynamic lights', hint: 'Light thrown by hits and explosions, the shine sweeping over menu buttons.' },
+  { kind: 'toggle', key: 'postFx', label: 'Post-processing', hint: 'Vignette, contrast and colour grading over the arena; the blurred arena behind the match setup.' },
   { kind: 'toggle', key: 'grain', label: 'Film grain', hint: 'Fine grain and faint scanlines over the whole screen.' },
-  { kind: 'toggle', key: 'tv', label: 'Old TV', hint: 'Screen changes like an old TV switching stations, and the menus\' blips of interference.' },
+  { kind: 'toggle', key: 'transitions', label: 'Screen transitions', hint: 'Screen changes like an old TV switching stations, and the menus\' blips of interference.' },
 ];
 const ROWS = [...SOUND_ROWS, ...EFFECT_ROWS];
 
 const PARTICLES = [{ v: 0, label: 'Off' }, { v: 0.35, label: 'Low' }, { v: 0.65, label: 'Medium' }, { v: 1, label: 'High' }];
-const GRAPHICS_LABEL: Record<Graphics | 'custom', string> = { minimal: 'Minimal', low: 'Low', medium: 'Medium', high: 'High', custom: 'Custom' };
+const GRAPHICS_LABEL: Record<Graphics | 'custom', string> = { low: 'Low', medium: 'Medium', high: 'High', ultra: 'Ultra', custom: 'Custom' };
 const STEP = 0.05;
 const TRACK_W = 200;
 const BLUE = 0x29abe2;
@@ -100,7 +99,7 @@ export class SettingsScene extends Phaser.Scene {
     const section = (x: number, text: string) => this.add.text(x, 146, text, {
       fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '15px', color: '#9fe3ff', letterSpacing: 3,
     }).setOrigin(0, 0.5);
-    section(96, 'SOUND AND GRAPHICS');
+    section(96, 'AUDIO AND GRAPHICS');
     section(656, 'EFFECTS');
     SOUND_ROWS.forEach((def, i) => this.addRow(def, 90, 202 + i * 88, 520, 76));
     EFFECT_ROWS.forEach((def, i) => this.addRow(def, 650, 190 + i * 46, 540, 40));
@@ -236,8 +235,8 @@ export class SettingsScene extends Phaser.Scene {
     let next: Effects | undefined;
     if (def.kind === 'graphics') {
       const at = GRAPHICS_LEVELS.indexOf(graphicsOf(s.fx) as Graphics);
-      // From Custom: right goes to High, left to Minimal.
-      const g = at < 0 ? (dir > 0 ? 'high' : 'minimal') : step(GRAPHICS_LEVELS, at);
+      // From Custom: right goes to Ultra, left to Low.
+      const g = at < 0 ? (dir > 0 ? 'ultra' : 'low') : step(GRAPHICS_LEVELS, at);
       if (g) next = { ...GRAPHICS[g] };
     } else if (def.kind === 'particles') {
       const at = PARTICLES.reduce((best, p, j) => (Math.abs(p.v - s.fx.particles) < Math.abs(PARTICLES[best].v - s.fx.particles) ? j : best), 0);

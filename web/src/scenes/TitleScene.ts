@@ -101,9 +101,9 @@ export class TitleScene extends Phaser.Scene {
     hitGlitch(this.brand, 0); // a new pass: a new seed, so no two bursts tear alike
   }
 
-  /** The logo's random glitches (the hit glitch's tearing, RGB split and scan lines), off with the glitch setting. */
+  /** The logo's random glitches (the hit glitch's tearing, RGB split and scan lines), off with distortion. */
   private updateGlitch(time: number): void {
-    if (!fx().glitch) { hitGlitch(this.brand, 0); return; }
+    if (!fx().distortion) { hitGlitch(this.brand, 0); return; }
     if (time >= this.nextBurst) this.glitch();
     const t = time - this.burst.at;
     const amount = t >= 0 && t < this.burst.ms ? (this.burst.steps[Math.floor(t / FLICKER_MS)] ?? 0) : 0;

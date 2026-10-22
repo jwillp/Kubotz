@@ -152,7 +152,7 @@ class RunningEmitter {
   private lifeDiff: number;
   private readonly duration: number;
   private readonly delay: number;
-  /** The file's particle counts and emission, scaled by the particles setting. */
+  /** The file's particle counts and emission, scaled by the particle quality. */
   private readonly countMin: number;
   private readonly countMax: number;
   private readonly amount = fx().particles;
