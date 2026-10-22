@@ -3,7 +3,7 @@ import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
 
-type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke';
+type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
 interface Particle {
   kind: Kind;
@@ -176,6 +176,28 @@ export class ImpactFx {
         age: 0, life: rand(450, 750), color: deep,
       });
     }
+    // Soft smoke round the cartoon puffs, lingering after them as it rises.
+    const haze = mix(deep, bright, 0.4);
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(2, 9) * UNIT;
+      this.add({
+        kind: 'haze', collide: true, x: x + Math.cos(a) * rand(0, 0.8) * UNIT, y: y + Math.sin(a) * rand(0, 0.6) * UNIT,
+        vx: Math.cos(a) * v * 1.3, vy: Math.sin(a) * v * 0.7 - rand(1, 3) * UNIT,
+        color: haze, size: rand(0.5, 0.9) * UNIT, grow: rand(1.2, 2.2) * UNIT,
+        life: rand(1400, 2200), drag: 0.08, gravity: -1.8 * UNIT,
+      });
+    }
+    // Hit sparks flying out of the blast, like a big hit's.
+    for (let i = 0; i < 26; i++) {
+      const a = rand(0, Math.PI * 2);
+      const speed = rand(9, 26) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
+        color: i % 3 === 0 ? 0xffffff : mix(bright, 0xffffff, rand(0, 0.5)),
+        size: rand(2, 3.5), life: rand(260, 520), gravity: 30 * UNIT, drag: 0.08,
+      });
+    }
     // Glitter: motes and sparks in the bright colour and white.
     for (let i = 0; i < 18; i++) {
       const a = rand(0, Math.PI * 2);
@@ -331,8 +353,8 @@ export class ImpactFx {
     // A broken signal over it all: it tears very hard at the blast (past the hits'
     // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
     const since = this.now - this.lastKoAt;
-    const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke');
-    hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3);
+    const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
+    hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
   }
 
   private draw(): void {
@@ -389,6 +411,7 @@ export class ImpactFx {
           d.fillStyle(p.color, 0.35 * fade).fillCircle(p.x, p.y, p.size + p.grow * f);
           break;
         case 'smoke':
+        case 'haze':
           break; // drawSmoke(), in layers
       }
     }
@@ -426,6 +449,12 @@ export class ImpactFx {
    */
   private drawSmoke(): void {
     const g = this.smokeG.clear();
+    // Soft haze behind the puffs, billowing out round them and lingering.
+    for (const p of this.particles) {
+      if (p.kind !== 'haze') continue;
+      const f = p.age / p.life;
+      g.fillStyle(p.color, 0.28 * Math.min(1, f / 0.1) * (1 - f)).fillCircle(p.x, p.y, p.size + p.grow * f);
+    }
     const smoke = this.particles.filter((p) => p.kind === 'smoke');
     const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };

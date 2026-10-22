@@ -25,6 +25,10 @@ uniform float uSeed;
 uniform float uZoom;
 // How much bigger the bands and tears are than the scan lines (1: the same).
 uniform float uCoarse;
+// Scan line spacing (1: every 3 pixels at the robots' scale; never under 2 screen pixels).
+uniform float uScan;
+// Opacity of the whole picture, applied after it is put together (so overlaps don't show).
+uniform float uOpacity;
 // A shield hexagon (pointy top): centre and half height in screen pixels, and
 // how hard what shows through it glitches.
 uniform vec3 uHex;
@@ -58,7 +62,8 @@ void main () {
   if (a < 0.004) { gl_FragColor = vec4(0.0); return; }
   vec3 rgb = vec3(r.r, c.g, b.b);
   // Scan lines every 3 pixels, drifting down.
-  float scan = step(1.0, mod(y - uTime * 60.0, 3.0 * uZoom) / uZoom); // fine lines, whatever the coarseness
+  float period = max(2.0, 3.0 * uZoom * uScan); // fine lines, whatever the coarseness
+  float scan = step(1.0 / 3.0, mod(y - uTime * 60.0, period) / period);
   float keep = mix(1.0, 0.45 + 0.55 * scan, k);
   // A row here and there drops out, another burns bright.
   float row = floor(y / (2.0 * cz));
@@ -66,7 +71,7 @@ void main () {
   float burn = step(1.0 - 0.08 * k, hash(vec2(row, tick + 23.0)));
   keep *= 1.0 - drop;
   rgb += vec3(0.55, 0.9, 1.0) * burn * a;
-  gl_FragColor = vec4(rgb * keep, a * keep);
+  gl_FragColor = vec4(rgb * keep, a * keep) * uOpacity;
 }
 `;
 
@@ -82,6 +87,9 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   hex: HexGlitch | null = null;
   /** How coarse the bands and tears are (1: sized like a robot's); the scan lines stay fine. */
   coarse = 1;
+  /** Scan line spacing (1: as on a hit robot). */
+  scan = 1;
+  opacity = 1;
 
   constructor(game: Phaser.Game) {
     super({ game, name: HitGlitchPipeline.key, fragShader: FRAGMENT });
@@ -98,6 +106,8 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
     this.set1f('uSeed', this.seed);
     this.set1f('uZoom', Math.max(0.5, zoom));
     this.set1f('uCoarse', this.coarse);
+    this.set1f('uScan', this.scan);
+    this.set1f('uOpacity', this.opacity);
     const h = this.hex;
     if (h && cam) {
       // World to screen through the camera (scroll, zoom, rotation; its matrix is untyped), then to the target's pixels.
@@ -122,7 +132,7 @@ export interface HexGlitch { x: number; y: number; r: number; amount: number }
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];
@@ -140,5 +150,7 @@ export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects
   p.amount = Math.max(0, amount);
   p.hex = hex ?? null;
   p.coarse = coarse;
+  p.scan = scan;
+  p.opacity = opacity;
   if (camera) p.camera = camera;
 }
