@@ -19,6 +19,8 @@ export interface Objective {
   fightWithin?: number;
   /** Press grab now (take the ball in reach, throw the one in hand). */
   grab?: boolean;
+  /** Strike now, facing this way (Kubeball: hit the ball towards a goal). */
+  strike?: 1 | -1;
 }
 
 export interface AiWorld {
@@ -124,6 +126,12 @@ export class CpuController implements Controller {
       }
       if (job.goal && !job.target && !(enemy && manhattan(me, enemy) < (job.fightWithin ?? 3))) jobDest = job.goal;
       if (job.grab) { pad.grab = true; this.debug.mode = 'grab (job)'; return pad; }
+      if (job.strike) {
+        if (me.facing !== job.strike) pad[job.strike > 0 ? 'right' : 'left'] = true;
+        else pad.attack = true;
+        this.debug.mode = 'strike (job)';
+        return pad;
+      }
       if (!jobDest && job.leash && !enemy) { this.debug.mode = 'guard post'; return pad; }
     }
 

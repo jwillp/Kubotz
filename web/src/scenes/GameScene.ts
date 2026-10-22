@@ -1095,8 +1095,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
       for (const k of this.fighters) {
         if (!k.isAlive() || !Phaser.Geom.Intersects.CircleToRectangle(ball, k.hurtbox())) continue;
-        // A ball game's ball is only kicked by a Kubot running into it (walking up to it lets it grab it).
-        if (orb instanceof GameBall && Math.abs(k.body.vx) < 4 * UNIT) continue;
+        // A ball that can be grabbed (Skychase's Core) is only kicked by a Kubot running into it: walking up to it lets it grab it.
+        if (orb instanceof GameBall && orb.grabbable && Math.abs(k.body.vx) < 4 * UNIT) continue;
         const away = orb.x < k.x ? -1 : 1;
         const vx = k.body.vx;
         // Faster when running into it; a nudge out of the way when standing.
@@ -1637,13 +1637,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (own) {
         const near = (p: { x: number; y: number }) => Math.hypot(p.x - own.x, p.y - own.y) < 14 * UNIT;
         if (main.carrier && main.carrier.team !== k.team && near(main.carrier)) return { target: main.carrier };
-        if (!main.carrier && near(main)) return { goal: { x: main.x, y: main.y }, fightWithin: 1, grab: dist(main) < 1.6 * UNIT };
+        if (!main.carrier && near(main)) {
+          // A keeper clears the ball away from its goal (Kubeball), or takes it (Skychase).
+          if (main.kind === 'kubeball') return dist(main) < 1.4 * UNIT ? { strike: own.x < main.x ? 1 : -1 } : { goal: { x: main.x, y: main.y }, fightWithin: 1 };
+          return { goal: { x: main.x, y: main.y }, fightWithin: 1, grab: dist(main) < 1.6 * UNIT };
+        }
         const out = own.x < (this.map.width * UNIT) / 2 ? 1 : -1;
         return { leash: { x: own.x + out * 4 * UNIT, y: own.y + 4 * UNIT, r: 7 } };
       }
     }
     if (main.carrier) {
       return main.carrier.team === k.team ? { goal: { x: main.carrier.x, y: main.carrier.body.bottom }, fightWithin: 4 } : { target: main.carrier };
+    }
+    if (main.kind === 'kubeball') {
+      // No hands: get behind the ball (on the far side from the goal it should go into) and strike it that way.
+      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).map(at)[0];
+      const toward = goal && goal.x > main.x ? 1 : -1;
+      const behind = { x: main.x - toward * 0.9 * UNIT, y: main.y };
+      const placed = Math.abs(k.x - behind.x) < 0.8 * UNIT && Math.abs(k.y - main.y) < 1.5 * UNIT;
+      return placed ? { strike: toward } : { goal: behind, fightWithin: 1.2 };
     }
     return { goal: { x: main.x, y: main.y }, fightWithin: 1.5, grab: dist(main) < 1.6 * UNIT };
   }
