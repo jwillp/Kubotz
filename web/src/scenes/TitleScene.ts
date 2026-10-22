@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { addMusic, vfx } from '../game/Settings';
+import { addMusic, fx } from '../game/Settings';
 import { hitGlitch } from '../fx/HitGlitch';
 import { footer, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
@@ -101,13 +101,13 @@ export class TitleScene extends Phaser.Scene {
     hitGlitch(this.brand, 0); // a new pass: a new seed, so no two bursts tear alike
   }
 
-  /** The logo's random glitches (the hit glitch's tearing, RGB split and scan lines), off at VFX 0. */
+  /** The logo's random glitches (the hit glitch's tearing, RGB split and scan lines), off with the glitch setting. */
   private updateGlitch(time: number): void {
-    if (vfx() <= 0) { hitGlitch(this.brand, 0); return; }
+    if (!fx().glitch) { hitGlitch(this.brand, 0); return; }
     if (time >= this.nextBurst) this.glitch();
     const t = time - this.burst.at;
     const amount = t >= 0 && t < this.burst.ms ? (this.burst.steps[Math.floor(t / FLICKER_MS)] ?? 0) : 0;
-    hitGlitch(this.brand, amount * vfx());
+    hitGlitch(this.brand, amount);
     // The whole sign jolts sideways on the hardest steps.
     this.brand.x = this.scale.width / 2 + (amount > 0.6 ? Phaser.Math.Between(-4, 4) * amount : 0);
   }

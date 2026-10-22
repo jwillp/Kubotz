@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { vfx } from '../game/Settings';
+import { fx } from '../game/Settings';
 
 /**
  * A light film grain, stronger in the shadows, and faint scanlines every 3
@@ -8,7 +8,8 @@ import { vfx } from '../game/Settings';
  * lines, and they line up where the layers overlap. High precision where the
  * GPU has it: the hash falls apart at medium precision. While the match is
  * paused (uPause up to 1) the lines get harder and darker and the colours a
- * little richer, like a frozen frame on an old screen.
+ * little richer, like a frozen frame on an old screen. uGrain 0 (the film
+ * grain setting off) keeps only that paused look.
  */
 const GRAIN = /* glsl */ `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -19,6 +20,8 @@ precision mediump float;
 uniform sampler2D uMainSampler;
 uniform float uTime;
 uniform float uPause;
+uniform float uGrain;
+uniform float uGrade;
 varying vec2 outTexCoord;
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -28,22 +31,23 @@ float hash(vec2 p) {
 vec3 grain(vec3 rgb, float l) {
   rgb = max(mix(vec3(l), rgb, 1.0 + 0.3 * uPause), 0.0);
   float n = hash(floor(gl_FragCoord.xy) + fract(uTime * 0.37) * 517.0) - 0.5;
-  rgb += n * mix(0.05, 0.02, l);
+  rgb += n * mix(0.05, 0.02, l) * uGrain;
   float soft = 0.5 + 0.5 * sin((gl_FragCoord.y + uTime * 18.0) * 2.0944);
   float hard = step(2.0, mod(floor(gl_FragCoord.y + uTime * 18.0), 3.0));
   float line = mix(soft, hard, uPause);
-  return rgb * (1.0 - mix(0.06, 0.4, uPause) * line);
+  return rgb * (1.0 - mix(0.06 * uGrain, 0.4, uPause) * line);
 }
 `;
 
 /**
  * The mood pass over the arena (no bloom): a vignette, a touch of contrast and
  * a cool shadows / warm highlights split tone, like the 3D version's grade,
- * then the grain.
+ * then the grain. uGrade 0 (the colour grade setting off) leaves the colours alone.
  */
 const GRADE = GRAIN + /* glsl */ `
 void main () {
   vec4 c = texture2D(uMainSampler, outTexCoord);
+  vec3 raw = c.rgb;
   float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
   vec3 shadowTint = vec3(0.88, 0.95, 1.12);
   vec3 lightTint = vec3(1.06, 1.0, 0.94);
@@ -52,7 +56,7 @@ void main () {
   vec2 d = outTexCoord - 0.5;
   float v = 1.0 - smoothstep(0.3, 1.0, length(d) * 1.3);
   c.rgb *= mix(0.7, 1.0, v);
-  c.rgb = grain(c.rgb, l);
+  c.rgb = grain(mix(raw, c.rgb, uGrade), l);
   gl_FragColor = c;
 }
 `;
@@ -74,6 +78,8 @@ class TimedPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
   onPreRender(): void {
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
     this.set1f('uPause', (this.game.registry.get('pauseFx') as number | undefined) ?? 0);
+    this.set1f('uGrain', fx().grain ? 1 : 0);
+    this.set1f('uGrade', fx().grade ? 1 : 0);
   }
 }
 
@@ -124,11 +130,11 @@ export function setPass(
 }
 
 /**
- * The screen effects the player wants: off with ?lowfx or a VFX setting
- * under half.
+ * The screen effects the player wants: the colour grade or the film grain
+ * (each pass reads which of the two is on), off with ?lowfx.
  */
 export function wantScreenFx(): boolean {
-  return vfx() >= 0.5 && !new URLSearchParams(location.search).has('lowfx');
+  return (fx().grade || fx().grain) && !new URLSearchParams(location.search).has('lowfx');
 }
 
 /**
