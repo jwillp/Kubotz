@@ -26,8 +26,15 @@ export const PARTICLE_FILES = {
 } as const;
 export type ParticleName = keyof typeof PARTICLE_FILES;
 
+/** Where each part of the boot ends on the load bar: first files, robot parts and tiles, then the made textures. */
+const PHASES = [0.45, 0.75] as const;
+
 /** Loads the original assets: Spriter file + its images, TMX map + tiles, HUD. */
 export class BootScene extends Phaser.Scene {
+  private ident?: TvIdent;
+  /** 0 while the first files load, 1 for the robot parts and tiles. */
+  private loadPhase = 0;
+
   constructor() { super('Boot'); }
 
   preload(): void {
@@ -69,17 +76,27 @@ export class BootScene extends Phaser.Scene {
 
     for (const file of spriter.allFiles()) this.load.image(`kubotz:${file}`, `animations/${file}`);
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-      this.makeTextures();
+    this.loadPhase = 1;
+    this.load.once(Phaser.Loader.Events.COMPLETE, async () => {
+      await this.makeTextures();
       makeSynthSounds(this);
+      this.ident?.setProgress(1);
       // From the load screen's snow to the title, as any screen change.
       void bodyFont.then(() => shutter(this, () => this.scene.start('Title'), null));
     });
     this.load.start();
   }
 
-  /** Player-coloured helmets and CPU labels, and a small spark texture. */
-  private makeTextures(): void {
+  /**
+   * Player-coloured helmets and CPU labels, and a small spark texture. It
+   * pauses for a frame between batches, so the load screen keeps moving and
+   * its bar goes on filling (the last stretch of it).
+   */
+  private async makeTextures(): Promise<void> {
+    const done = async (p: number) => {
+      this.ident?.setProgress(PHASES[1] + (1 - PHASES[1]) * p);
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    };
     // Normal maps so the lights shade the art: robot parts and bonus chips as
     // rounded metal shells, the arena tiles with a flatter bevel.
     const spriter = this.registry.get('spriter') as SpriterData;
@@ -87,6 +104,7 @@ export class BootScene extends Phaser.Scene {
     for (const file of spriter.allFiles()) addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 });
     for (const tile of map.tileImages.values()) addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 });
     for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 });
+    await done(0.15);
     for (const color of SLOT_COLORS) {
       for (const file of HEAD_FILES) {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
@@ -98,6 +116,7 @@ export class BootScene extends Phaser.Scene {
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
       addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
     }
+    await done(0.3);
     // Worn copies of every robot part, helmets and blades in every colour
     // (fx/Surface.ts): the look in play, G switches back to the clean art.
     const parts: [string, string][] = spriter.allFiles().map((f) => [`kubotz:${f}`, f]);
@@ -105,9 +124,10 @@ export class BootScene extends Phaser.Scene {
       for (const file of HEAD_FILES) parts.push([`head:${hex(color)}:${file}`, file]);
       parts.push([`sword:${hex(color)}`, SWORD_FILE]);
     }
-    for (const [key, file] of parts) {
+    for (const [i, [key, file]] of parts.entries()) {
       this.textures.addCanvas(WORN + key, weather(this.textures.get(key).getSourceImage() as HTMLImageElement, file));
       addNormalMap(this.textures, WORN + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {});
+      if (i % 8 === 7) await done(0.3 + 0.7 * (i + 1) / parts.length);
     }
     this.measureWeapons();
     const g = this.make.graphics({}, false);
@@ -200,18 +220,22 @@ export class BootScene extends Phaser.Scene {
    * while it loads, so the ident runs off the game's step.
    */
   private drawLoadingBar(): void {
-    let ident: TvIdent | undefined;
     let progress = 0;
-    const step = () => ident?.update();
+    const step = (_t: number, delta: number) => this.ident?.update(delta);
     this.load.once('filecomplete-svg-logo', () => {
-      ident = new TvIdent(this, 'logo');
-      ident.setProgress(progress);
+      this.ident = new TvIdent(this, 'logo');
+      this.ident.setProgress(progress);
       this.game.events.on(Phaser.Core.Events.STEP, step);
     });
-    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => { progress = p; ident?.setProgress(p); });
+    // The bar is the whole boot: the first files, then the robot parts and tiles, then the textures made from them.
+    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => {
+      progress = this.loadPhase === 0 ? PHASES[0] * p : PHASES[0] + (PHASES[1] - PHASES[0]) * p;
+      this.ident?.setProgress(progress);
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off(Phaser.Core.Events.STEP, step);
-      ident?.destroy();
+      this.ident?.destroy();
+      this.ident = undefined;
     });
   }
 }

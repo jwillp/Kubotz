@@ -69,6 +69,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private blocks: NavBlock[] = [];
   /** 2.5D exploration: the arena's art layers and its perspective blocks (V toggles them). */
   private arenaLayers: Phaser.GameObjects.Image[] = [];
+  /** How finely the arena is baked: 1 in a match, less for the setup screen's preview (shown small and blurred) so switching arenas does not stall. */
+  private bakeScale = 1;
   private perspective: ArenaPerspective | null = null;
   /** Ledges robots can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
@@ -150,6 +152,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
 
     this.arena = setup.arena;
+    this.bakeScale = setup.preview ? PREVIEW_BAKE : 1;
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
@@ -319,25 +322,31 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapH = m.height * m.tileHeight;
     // Colour and normal map canvases of the whole arena, lit like everything else.
     for (const key of ['arena', 'arena-normals']) if (this.textures.exists(key)) this.textures.remove(key);
-    const art = this.textures.createCanvas('arena', mapW, mapH)!;
+    const s = this.bakeScale;
+    const bw = Math.ceil(mapW * s);
+    const bh = Math.ceil(mapH * s);
+    const art = this.textures.addCanvas('arena', cpuCanvas(bw, bh))!;
     const normals = document.createElement('canvas');
-    normals.width = mapW; normals.height = mapH;
-    const nctx = normals.getContext('2d')!;
+    normals.width = bw; normals.height = bh;
+    const nctx = normals.getContext('2d', { willReadFrequently: true })!;
     nctx.fillStyle = 'rgb(128,128,255)';
-    nctx.fillRect(0, 0, mapW, mapH);
+    nctx.fillRect(0, 0, bw, bh);
     const actx = art.getContext();
+    actx.setTransform(s, 0, 0, s, 0, 0);
+    nctx.setTransform(s, 0, 0, s, 0, 0);
     eachTile(this.textures, m, (source, key, x, y) => {
       actx.drawImage(source, x, y);
       nctx.drawImage(normalMapFor(key, source, { bevel: 3, detail: 0.3, strength: 1 }), x, y);
     });
+    actx.setTransform(1, 0, 0, 1, 0, 0);
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
-    this.arenaLayers.push(lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setDepth(2)));
+    this.arenaLayers.push(lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setScale(1 / s).setDepth(2)));
     // The tiles' blue light strips glow on their own, whatever the lights do.
-    this.buildArenaGlow(actx.canvas, mapW, mapH);
+    this.buildArenaGlow(actx.canvas, bw, bh);
     // Then the tiles take the arena's palette (fx/Backdrops.ts).
     const tiles = backdropOf(this.arena).tiles;
-    if (tiles) { tintArt(actx, mapW, mapH, tiles); art.refresh(); }
+    if (tiles) { tintArt(actx, bw, bh, tiles); art.refresh(); }
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -399,7 +408,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Cells the map's own art already covers (the frame and its dark fades) count as frame too.
     const cover = document.createElement('canvas');
     cover.width = mapW / UNIT; cover.height = mapH / UNIT;
-    const cctx = cover.getContext('2d')!;
+    const cctx = cover.getContext('2d', { willReadFrequently: true })!;
     cctx.drawImage(mapArt, 0, 0, cover.width, cover.height);
     const cd = cctx.getImageData(0, 0, cover.width, cover.height).data;
     const covered = new Uint8Array(gw * gh);
@@ -443,12 +452,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         dist[n] = dist[i] + 1; bfs.push(n);
       }
     }
-    const S = UNIT / 2; // half resolution
+    const S = (UNIT / 2) * this.bakeScale; // half resolution (in a match)
     const art = document.createElement('canvas');
     art.width = gw * S; art.height = gh * S;
-    const ctx = art.getContext('2d')!;
+    const ctx = art.getContext('2d', { willReadFrequently: true })!;
     // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
-    const tile = (name: string) => this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement;
+    // Each tile shrunk once to the cell size: scaling the big tile images down for every cell was most of the hull's cost.
+    const tile = (name: string) => {
+      const c = document.createElement('canvas');
+      c.width = c.height = Math.max(1, Math.round(2 * S));
+      c.getContext('2d', { willReadFrequently: true })!.drawImage(this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement, 0, 0, c.width, c.height);
+      return c;
+    };
     const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner-top-left.png'), tile('corner-bottom-left.png')];
     let seed = 11;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
@@ -459,7 +474,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Alpha: solid near the frame, gone some 9 cells out; never over the play space.
     const mask = document.createElement('canvas');
     mask.width = gw; mask.height = gh;
-    const mctx = mask.getContext('2d')!;
+    const mctx = mask.getContext('2d', { willReadFrequently: true })!;
     const md = mctx.createImageData(gw, gh);
     for (let i = 0; i < dist.length; i++) {
       const a = inside[i] === 1 ? 0 : Math.max(0, Math.min(1, 1.15 - (dist[i] - 1) / 8));
@@ -468,7 +483,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     mctx.putImageData(md, 0, 0);
     const soft = document.createElement('canvas');
     soft.width = art.width; soft.height = art.height;
-    const sctx = soft.getContext('2d')!;
+    const sctx = soft.getContext('2d', { willReadFrequently: true })!;
     sctx.filter = `blur(${S * 1.2}px)`;
     sctx.drawImage(mask, 0, 0, soft.width, soft.height);
     const tiles = backdropOf(this.arena).tiles;
@@ -477,7 +492,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     ctx.drawImage(soft, 0, 0);
     if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
     this.textures.addCanvas('arena-hull', art);
-    this.arenaLayers.push(lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9)));
+    this.arenaLayers.push(lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(UNIT / S).setDepth(1.9)));
   }
 
   /**
@@ -502,8 +517,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private buildArenaGlow(art: HTMLCanvasElement, w: number, h: number): void {
     const mask = document.createElement('canvas');
     mask.width = w; mask.height = h;
-    const mctx = mask.getContext('2d')!;
-    const src = art.getContext('2d')!.getImageData(0, 0, w, h);
+    const mctx = mask.getContext('2d', { willReadFrequently: true })!;
+    const src = art.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, w, h);
     const d = src.data;
     for (let i = 0; i < d.length; i += 4) {
       const r = d[i], g = d[i + 1], b = d[i + 2];
@@ -516,18 +531,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const tiles = backdropOf(this.arena).tiles;
     if (tiles) tintArt(mctx, w, h, tiles);
     if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
-    const glow = this.textures.createCanvas('arena-glow', w, h)!;
+    const glow = this.textures.addCanvas('arena-glow', cpuCanvas(w, h))!;
     const g = glow.getContext();
-    g.filter = 'blur(18px)';
+    const s = this.bakeScale;
+    g.filter = `blur(${18 * s}px)`;
     g.drawImage(mask, 0, 0);
     g.drawImage(mask, 0, 0);
-    g.filter = 'blur(5px)';
+    g.filter = `blur(${5 * s}px)`;
     g.drawImage(mask, 0, 0);
     g.filter = 'none';
     g.globalAlpha = 0.8;
     g.drawImage(mask, 0, 0);
     glow.refresh();
-    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
+    const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setScale(1 / s).setDepth(2.5).setBlendMode(this.pureAdd()).setAlpha(0.85);
     this.arenaLayers.push(layer);
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
@@ -1215,6 +1231,20 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     shutter(this, () => this.scene.start('Title'), 'back');
   }
 }
+
+/**
+ * A canvas kept in memory rather than on the GPU: the arena bakes read their
+ * pixels back several times, and each read of a GPU canvas stalls the frame.
+ */
+function cpuCanvas(w: number, h: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d', { willReadFrequently: true });
+  return c;
+}
+
+/** The setup screen's arena preview is baked at this fraction of the match's resolution (a sixteenth of the work at 0.25). */
+const PREVIEW_BAKE = 0.3;
 
 /** The match is over: how long the winners dance before "press to continue" (ms). */
 const CONTINUE_DELAY = 1600;

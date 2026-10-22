@@ -15,6 +15,7 @@ import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
+import { paintRoomOnce } from './BackdropScene';
 import { uiSound } from '../audio/Sounds';
 
 /**
@@ -70,9 +71,6 @@ const deviceBlurb = (s: Seat): string => {
   if (d === 'PAD') return 'Press A on a gamepad\nto take this slot.';
   return 'Press attack or pad A\nto join, or pick a CPU.';
 };
-
-/** How long the arena choice must rest before the live arena is built (ms). */
-const LIVE_DELAY = 450;
 
 /** A focusable thing: a rule at the top, a field of a slot, or START. */
 type Focus = { kind: 'arena' | 'stocks' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
@@ -194,7 +192,6 @@ export class SetupScene extends Phaser.Scene {
   constructor() { super('Setup'); }
 
   create(): void {
-    this.liveTimer = undefined;
     this.slots = [];
     this.leaving = false;
     this.padDown.clear();
@@ -217,6 +214,8 @@ export class SetupScene extends Phaser.Scene {
 
     const { width } = this.scale;
     this.live = this.sys.renderer.type === Phaser.WEBGL;
+    // Every arena's room painted now, while the screen change still covers the screen, not on the first switch to it.
+    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, i));
     kubeBackdrop(this, this.live ? 0 : 0.3);
     // The chosen arena is the menu's background (GameScene behind this scene), dimmed except in its frame.
     this.dim = this.add.graphics();
@@ -386,30 +385,13 @@ export class SetupScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** The live arena waiting for the choice to settle (pickArena). */
-  private liveTimer?: Phaser.Time.TimerEvent;
-
   private pickArena(d: number): void {
     const s = this.state;
     s.arena = (s.arena + d + ARENA_INFO.length) % ARENA_INFO.length;
     if (d) uiSound(this, 'move');
     const { width } = this.scale;
     this.center.setTexture(arenaThumbnail(this, s.arena, CENTER_W));
-    if (this.live && d) {
-      // Building a live arena stalls the screen for a moment, so while browsing the frame shows
-      // the arena's picture at once, and the live one only comes in once the choice settles,
-      // under a blip of TV interference that covers the stall.
-      this.tweens.killTweensOf(this.center);
-      this.center.setX(width / 2 + d * 40).setAlpha(0.3);
-      this.tweens.add({ targets: this.center, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });
-      this.liveTimer?.remove();
-      this.liveTimer = this.time.delayedCall(LIVE_DELAY, () => {
-        this.liveTimer = undefined;
-        this.events.emit('tv-blip');
-        this.showArena();
-        this.tweens.add({ targets: this.center, alpha: 0, delay: 120, duration: 260 });
-      });
-    } else if (this.live) this.showArena();
+    if (this.live) this.showArena();
     else if (d) {
       this.center.setX(width / 2 + d * 40).setAlpha(0.3);
       this.tweens.add({ targets: this.center, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });

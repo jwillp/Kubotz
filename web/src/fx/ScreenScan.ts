@@ -130,8 +130,6 @@ export function screenScan(scene: Phaser.Scene): void {
     }
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);
-  // A blip on demand (the setup screen, as a new arena comes in).
-  scene.events.on('tv-blip', () => { if (!burst) next = 0; });
   // Paused (Settings over the title) or gone: the screen settles.
   scene.events.on(Phaser.Scenes.Events.PAUSE, () => { burst = null; clear(); });
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

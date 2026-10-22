@@ -15,6 +15,8 @@ export class TvIdent {
   private readonly bar: Phaser.GameObjects.Graphics;
   private readonly scale: number;
   private progress = 0;
+  /** The bar as shown: it eases towards the progress, so it fills smoothly. */
+  private shown = 0;
   private readonly start = performance.now();
   /** The load screen's camera (kept: the scene drops its cameras as it shuts down). */
   private readonly cam: Phaser.Cameras.Scene2D.Camera;
@@ -35,10 +37,10 @@ export class TvIdent {
   }
 
   /** How far the loading is, 0..1: the tuning bar's blocks light up. */
-  setProgress(p: number): void { this.progress = p; }
+  setProgress(p: number): void { this.progress = Math.max(this.progress, p); }
 
-  /** Call every frame. */
-  update(): void {
+  /** Call every frame (`delta` in ms). */
+  update(delta = 16): void {
     const { width, height } = this.scene.scale;
     const t = performance.now() - this.start;
     // The signal comes and goes: a flicker, now and then a drop-out, and sideways jumps.
@@ -48,11 +50,13 @@ export class TvIdent {
     this.ghost.setAlpha(0.35 * flicker).setX(width / 2 + jump + 14);
     this.glow.setAlpha(0.8 + 0.2 * Math.sin(t / 300));
     const blocks = 16;
-    const lit = Math.round(blocks * Phaser.Math.Clamp(this.progress, 0, 1));
+    this.shown += (this.progress - this.shown) * Math.min(1, delta / 120);
+    const fill = blocks * Phaser.Math.Clamp(this.shown, 0, 1);
     const g = this.bar.clear();
     const bw = 22;
     const x0 = width / 2 - (blocks * (bw + 6)) / 2;
-    for (let i = 0; i < blocks; i++) g.fillStyle(NEON, i < lit ? 0.95 : 0.18).fillRect(x0 + i * (bw + 6), height - 150, bw, 14);
+    // White blocks, the one being filled partly lit.
+    for (let i = 0; i < blocks; i++) g.fillStyle(0xffffff, 0.14 + 0.81 * Phaser.Math.Clamp(fill - i, 0, 1)).fillRect(x0 + i * (bw + 6), height - 150, bw, 14);
     // The TV look, a little lighter than a screen change at its peak.
     tvCut(this.cam, 0.75, 0);
   }
