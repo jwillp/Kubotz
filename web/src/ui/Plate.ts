@@ -250,9 +250,63 @@ export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' 
   scene.game.scene.bringToTop('Shutter');
 }
 
-/** The screen change's timings (ms): breaking up, held in snow, locking on. */
+/** The channel the TV lands on: it goes up by one at every screen change. */
+let channel = Phaser.Math.Between(2, 9);
+
+/**
+ * What the TV shows between two stations, over the snow: the Kubotz logo
+ * tuning in and out of the signal (flickering, jumping sideways, a cyan
+ * glow behind it) like a station ident, and the set's own on-screen display
+ * in green: the channel number and a tuning bar filling up. All of it sits
+ * under the screen change's TV pass, so it gets the scanlines, bleed and roll.
+ */
+class ChannelIdent {
+  private readonly glow: Phaser.GameObjects.Image;
+  private readonly logo: Phaser.GameObjects.Image;
+  private readonly ghost: Phaser.GameObjects.Image;
+  private readonly osd: Phaser.GameObjects.Text;
+  private readonly bar: Phaser.GameObjects.Graphics;
+  private readonly scale: number;
+
+  constructor(scene: Phaser.Scene) {
+    const { width, height } = scene.scale;
+    channel = channel % 99 + 1;
+    this.glow = scene.add.image(width / 2, height / 2, 'glow').setTint(NEON).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(900, 520).setAlpha(0);
+    const tex = scene.textures.exists('logo') ? 'logo' : '__WHITE';
+    this.scale = 520 / Math.max(1, scene.textures.get(tex).getSourceImage().width);
+    // A faint second image off to the side: the signal's ghost.
+    this.ghost = scene.add.image(width / 2, height / 2, tex).setScale(this.scale).setTint(0xff3a6a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.logo = scene.add.image(width / 2, height / 2, tex).setScale(this.scale).setAlpha(0);
+    this.osd = scene.add.text(width - 70, 54, `CH ${String(channel).padStart(2, '0')}`, body(46, { fontStyle: 'italic 800', color: '#8cff9a' }))
+      .setOrigin(1, 0).setShadow(0, 3, '#0a3a12', 0, false, true).setAlpha(0);
+    this.bar = scene.add.graphics();
+  }
+
+  /** `a`: how far the screen is covered (0..1); `t`: ms into the change. */
+  update(a: number, t: number): void {
+    const { width, height } = this.logo.scene.scale;
+    // The ident only shows once the snow has taken the screen.
+    const on = Phaser.Math.Clamp((a - 0.35) / 0.65, 0, 1);
+    // The signal comes and goes: a flicker, now and then a drop-out, and sideways jumps.
+    const flicker = Math.random() < 0.12 ? 0.25 : 0.75 + 0.25 * Math.random();
+    const jump = Math.random() < 0.2 ? Phaser.Math.Between(-24, 24) : 0;
+    this.logo.setAlpha(on * flicker).setX(width / 2 + jump).setScale(this.scale * (1 + 0.02 * Math.sin(t / 40)), this.scale);
+    this.ghost.setAlpha(on * 0.35 * flicker).setX(width / 2 + jump + 14);
+    this.glow.setAlpha(on * 0.5);
+    this.osd.setAlpha(on);
+    // The tuning bar: green blocks filling as the next station comes in.
+    const blocks = 16;
+    const lit = Math.round(blocks * Phaser.Math.Clamp(t / (CUT_IN + CUT_HOLD), 0, 1));
+    const g = this.bar.clear();
+    const bw = 22;
+    const x0 = width / 2 - (blocks * (bw + 6)) / 2;
+    for (let i = 0; i < blocks; i++) g.fillStyle(0x8cff9a, on * (i < lit ? 0.95 : 0.18)).fillRect(x0 + i * (bw + 6), height - 120, bw, 14);
+  }
+}
+
+/** The screen change's timings (ms): breaking up, held in snow (the Kubotz channel ident), locking on. */
 const CUT_IN = 230;
-const CUT_HOLD = 70;
+const CUT_HOLD = 240;
 const CUT_OUT = 380;
 
 /** Runs the screen change over every scene (its own scene, so it survives the scene swap). */
@@ -263,6 +317,7 @@ export class ShutterScene extends Phaser.Scene {
     const { width, height } = this.scale;
     // The screen between two stations: dark, under the snow and scanlines of the pass.
     const cover = this.add.rectangle(width / 2, height / 2, width, height, 0x05080f).setAlpha(0);
+    const ident = new ChannelIdent(this);
     const roll = Math.random() < 0.5 ? 1 : -1;
     // Time as the frames show it: a long frame (the next screen building) does not skip the lock-on.
     let t = 0;
@@ -280,11 +335,13 @@ export class ShutterScene extends Phaser.Scene {
         if (!swapped) { swapped = true; swap(); this.scene.bringToTop(); }
       } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
       cover.setAlpha(a);
+      ident.update(a, t);
       const live = new Set(liveCameras(this.game));
       live.add(this.cameras.main);
       for (const cam of cams) if (!live.has(cam)) tvCut(cam, 0, 0);
       cams.clear();
-      for (const cam of live) { tvCut(cam, k, roll * 0.35 * k * k); cams.add(cam); }
+      // The screens roll away; the ident only shivers, so it reads.
+      for (const cam of live) { tvCut(cam, k, roll * (cam === this.cameras.main ? 0.015 : 0.35) * k * k); cams.add(cam); }
       if (swapped && t >= CUT_IN + CUT_HOLD + CUT_OUT) {
         for (const cam of cams) tvCut(cam, 0, 0);
         this.events.off(Phaser.Scenes.Events.UPDATE, step);
