@@ -1,3 +1,5 @@
+import { gamepads } from '../ui/Fullscreen';
+
 /**
  * Menu navigation shared by the menus (title, settings, pause): arrows / WASD, the
  * D-pad or left stick of any gamepad, with key repeat while held; confirm
@@ -40,6 +42,28 @@ const PAD = { confirm: [1], back: [0, 9], up: [12], down: [13], left: [14], righ
 /** Which pad buttons confirm and go back, where a menu wants others than A and B / Start. */
 export type PadButtons = Partial<Record<Button, number[]>>;
 
+/**
+ * The D-pad of a pad without the standard mapping (the browser could not
+ * place its buttons): most show it as a pair of axes (6, 7), DirectInput
+ * pads as one "hat" axis (9) stepping round from up (-1) clockwise.
+ */
+function hatDir(p: Gamepad, dir: 'up' | 'down' | 'left' | 'right'): boolean {
+  const ax = (i: number) => p.axes[i] ?? 0;
+  if (p.axes.length >= 8) {
+    const x = ax(6); const y = ax(7);
+    if (dir === 'left' ? x < -0.5 : dir === 'right' ? x > 0.5 : dir === 'up' ? y < -0.5 : y > 0.5) return true;
+  }
+  if (p.axes.length >= 10) {
+    const h = ax(9);
+    if (h > 1.1 || h < -1.1) return false; // centred
+    // Eight steps of 2/7 from up (-1): up, up-right, right, down-right, down, down-left, left, up-left.
+    const step = Math.round((h + 1) / (2 / 7)) % 8;
+    const on = { up: [7, 0, 1], right: [1, 2, 3], down: [3, 4, 5], left: [5, 6, 7] }[dir];
+    return on.includes(step);
+  }
+  return false;
+}
+
 const REPEAT_DELAY = 320;
 const REPEAT_EVERY = 70;
 
@@ -66,13 +90,15 @@ export class MenuInput {
 
   /** What is down now: held keys, keys tapped since the last frame, any pad's buttons and left stick. */
   private read(): { x: number; y: number; confirm: boolean; back: boolean } {
-    const pads = (navigator.getGamepads?.() ?? []).filter((p): p is Gamepad => !!p);
+    const pads = gamepads();
     const key = (codes: string[]) => codes.some((c) => held.has(c) || (presses.get(c) ?? 0) !== (this.seen.get(c) ?? 0));
     const btn = (ids: number[]) => pads.some((p) => ids.some((i) => p.buttons[i]?.pressed));
     const stick = (axis: number, sign: number) => pads.some((p) => (p.axes[axis] ?? 0) * sign > 0.5);
+    const hat = (dir: 'up' | 'down' | 'left' | 'right') => pads.some((p) => p.mapping !== 'standard' && hatDir(p, dir));
+    const dir = (d: 'up' | 'down' | 'left' | 'right', axis: number, sign: number) => key(KEYS[d]) || btn(PAD[d]) || stick(axis, sign) || hat(d);
     return {
-      x: (key(KEYS.right) || btn(PAD.right) || stick(0, 1) ? 1 : 0) - (key(KEYS.left) || btn(PAD.left) || stick(0, -1) ? 1 : 0),
-      y: (key(KEYS.down) || btn(PAD.down) || stick(1, 1) ? 1 : 0) - (key(KEYS.up) || btn(PAD.up) || stick(1, -1) ? 1 : 0),
+      x: (dir('right', 0, 1) ? 1 : 0) - (dir('left', 0, -1) ? 1 : 0),
+      y: (dir('down', 1, 1) ? 1 : 0) - (dir('up', 1, -1) ? 1 : 0),
       confirm: key(KEYS.confirm) || btn(this.pad.confirm),
       back: key(KEYS.back) || btn(this.pad.back),
     };

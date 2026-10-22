@@ -8,9 +8,45 @@ import Phaser from 'phaser';
  */
 let note: HTMLDivElement | undefined;
 
+/** Whether the page may go fullscreen itself (an embedding page can forbid it). */
+const allowed = (game: Phaser.Game) => game.scale.fullscreen.available && document.fullscreenEnabled !== false;
+
 export function toggleFullscreen(game: Phaser.Game): void {
-  if (!game.scale.fullscreen.available || document.fullscreenEnabled === false) { say('Fullscreen is not allowed here: open the game in its own tab, or use the browser\'s full screen (F11)'); return; }
+  if (!allowed(game)) { say('Fullscreen is not allowed here: open the game in its own tab, or use the browser\'s full screen (F11)'); return; }
   game.scale.toggleFullscreen();
+}
+
+/**
+ * The pads the browser shows, or none when it refuses (an embedding page can
+ * forbid the Gamepad API, and some browsers then throw).
+ */
+export function gamepads(): Gamepad[] {
+  try {
+    return (navigator.getGamepads?.() ?? []).filter((p): p is Gamepad => !!p);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The element shown fullscreen is the game's parent, which a page may size
+ * for the window (a fixed width, a border): while fullscreen it fills the
+ * screen, black around the game, and gets its own look back after.
+ */
+function fillScreen(game: Phaser.Game, on: boolean): void {
+  const el = (on ? document.fullscreenElement : game.scale.fullscreenTarget) as HTMLElement | null;
+  if (!el) return;
+  if (on) {
+    el.dataset.windowStyle ??= el.getAttribute('style') ?? '';
+    Object.assign(el.style, {
+      width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none', aspectRatio: 'auto',
+      margin: '0', border: '0', boxShadow: 'none', background: '#000',
+    });
+  } else if (el.dataset.windowStyle !== undefined) {
+    el.setAttribute('style', el.dataset.windowStyle);
+    delete el.dataset.windowStyle;
+  }
+  game.scale.refresh();
 }
 
 /** A short note over the game, gone after a few seconds. */
@@ -32,9 +68,13 @@ const SELECT = 8;
 export function installFullscreen(game: Phaser.Game): void {
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'F11' || e.repeat) return;
+    // Where the page may not go fullscreen itself, F11 stays the browser's own full screen.
+    if (!allowed(game)) return;
     e.preventDefault(); // the game's own fullscreen rather than the browser's
     toggleFullscreen(game);
   });
+  game.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, () => fillScreen(game, true));
+  game.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => fillScreen(game, false));
   game.scale.on(Phaser.Scale.Events.FULLSCREEN_FAILED, () => say('The browser refused fullscreen: press F11 or click the game, then try again'));
   game.scale.on(Phaser.Scale.Events.FULLSCREEN_UNSUPPORTED, () => say('Fullscreen is not supported here'));
 
@@ -43,7 +83,7 @@ export function installFullscreen(game: Phaser.Game): void {
   // the title instead (GameScene).
   let wasDown = false;
   game.events.on(Phaser.Core.Events.POST_STEP, () => {
-    const down = (navigator.getGamepads?.() ?? []).some((p) => p?.buttons[SELECT]?.pressed);
+    const down = gamepads().some((p) => p.buttons[SELECT]?.pressed);
     if (down && !wasDown) {
       const match = game.scene.getScene('Game') as Phaser.Scene & { paused?: boolean } | null;
       if (!(match && game.scene.isActive('Game') && match.paused)) toggleFullscreen(game);
