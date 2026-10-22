@@ -129,7 +129,7 @@ export function installDevHud(game: Phaser.Game): void {
   const bringToolsUp = () => { for (const k of ['Debug', 'Arena']) if (game.scene.isActive(k)) game.scene.bringToTop(k); };
 
   /** Restarts the match in an arena (its edits in), no intro, the camera kept when it is the same arena. */
-  const playArena = (index: number) => {
+  const playArena = (index: number, opts: { edit?: boolean } = {}) => {
     const g = match();
     if (!g?.setup) return;
     const cam = g.cameras.main;
@@ -141,10 +141,19 @@ export function installDevHud(game: Phaser.Game): void {
       if (g.setup === before || !g.sys.isActive()) return;
       game.events.off(Phaser.Core.Events.POST_STEP, ready);
       if (keep) g.cameras.main.setZoom(keep.zoom).setScroll(keep.x, keep.y);
+      // The overlay edits the arena now playing (this runs once the new match exists, so its arena is the new one).
+      const id = ARENA_IDS[g.arena];
+      if (opts.edit) setEditing(true);
+      else if (editing && id) store.select({ arena: id, piece: null });
+      // A different arena: while editing, show all of it (the match's camera is held, so it would stay on the first spawn).
+      if (!keep && editing) { g.cameras.main.preRender(); arena().recentre(); }
       // The debug views and time as they were.
-      Object.assign(g.debugState, { frozen: was.frozen, steps: was.frozen ? 45 : 0, timeScale: was.timeScale, show: was.show, holdCamera: editing });
+      Object.assign(g.debugState, { frozen: was.frozen || !!opts.edit, steps: was.frozen || opts.edit ? 45 : 0, timeScale: was.timeScale, show: was.show, holdCamera: editing });
       if (was.on) { g.debugState.on = true; g.scene.launch('Debug'); }
       bringToolsUp();
+      // The panel shows the arena now playing.
+      shape = '';
+      build();
     };
     game.events.on(Phaser.Core.Events.POST_STEP, ready);
     g.scene.restart({ ...g.setup, arena: index, editor: true });
@@ -230,7 +239,7 @@ export function installDevHud(game: Phaser.Game): void {
     });
     store.select({ arena: id, piece: null });
     const i = ARENA_IDS.indexOf(id);
-    if (i > 0) { playArena(i); setEditing(true); }
+    if (i > 0) playArena(i, { edit: true });
   };
 
   // ---------------------------------------------------------------- the panel
