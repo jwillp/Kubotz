@@ -31,6 +31,7 @@ import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
+import { MenuInput } from './MenuInput';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -117,6 +118,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private introAt: number[] = [];
   private introSounded = 0;
   paused = false;
+  private quitting = false;
+  /** The frame the pause last toggled on. */
+  private toggledFrame = -1;
+  /** Pause, quit and continue, from the keyboard or any pad. */
+  private commands?: MenuInput;
   private music?: Phaser.Sound.BaseSound;
   /** Post-match (phase 11 D): kill replays, when the match ended, humans' attack last frame (a fresh press continues). */
   private recorder = new ReplayRecorder();
@@ -137,6 +143,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.blocks = [];
     this.winnerTeam = undefined;
     this.paused = false;
+    this.quitting = false;
+    this.commands = undefined;
     this.clock = 0;
     this.countdownStep = -1;
     this.introAt = [];
@@ -231,8 +239,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.scene.bringToTop('Hud');
 
     const kb = this.input.keyboard!;
-    kb.on('keydown-ESC', () => this.togglePause());
-    kb.on('keydown-P', () => this.togglePause());
+    // Pause, quit and continue: one input layer for the keyboard and every pad (MenuInput).
+    this.commands = new MenuInput({
+      pause: () => this.togglePause(), // Esc, P, pad Start
+      quit: () => { if (this.paused) this.backToTitle(); }, // from the pause: Q, pad Select
+      confirm: () => this.continueAfterMatch(), // after the match: Enter, Space, pad A, B or Start
+    }, false, { confirm: ['A', 'B', 9] });
     kb.on('keydown-V', () => {
       look25.on = !look25.on;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, look25.on ? '2.5D on' : '2.5D off', 0xffffff);
@@ -266,15 +278,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupScreenFx();
     this.setupLights();
-    kb.on('keydown-ENTER', () => this.continueAfterMatch());
-    kb.on('keydown-SPACE', () => this.continueAfterMatch());
-    // From the pause: Q quits to the title screen.
-    kb.on('keydown-Q', () => { if (this.paused) this.backToTitle(); });
-    this.input.gamepad?.on('down', (_pad: Phaser.Input.Gamepad.Gamepad, button: Phaser.Input.Gamepad.Button) => {
-      if (button.index === 0 || button.index === 1 || button.index === 9) this.continueAfterMatch(); // B, A, Start after the match
-      if (button.index === 9) this.togglePause(); // Start
-      if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
-    });
     // The settings screen (opened from the pause) applies its VFX level live.
     const offSettings = onSettingsChange(() => this.setScreenFx(wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -692,7 +695,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // ------------------------------------------------------------------ update
-  update(_time: number, deltaMs: number): void {
+  update(time: number, deltaMs: number): void {
+    if (!this.preview) this.commands?.update(time);
     if (this.paused) return;
     if (this.preview) { this.updatePreview(deltaMs); return; }
     // Debug time controls: slow motion, or frozen and stepped frame by frame.
@@ -1253,6 +1257,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   togglePause(): void {
     if (this.winnerTeam !== undefined) return;
+    // Esc both pauses (here) and goes back in the pause menu (Hud): once a frame.
+    if (this.toggledFrame === this.game.loop.frame) return;
+    this.toggledFrame = this.game.loop.frame;
     this.paused = !this.paused;
     uiSound(this, this.paused ? 'confirm' : 'back');
     if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
@@ -1271,6 +1278,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   backToTitle(): void {
+    if (this.quitting) return;
+    this.quitting = true;
     shutter(this, () => this.scene.start('Title'), 'back');
   }
 }

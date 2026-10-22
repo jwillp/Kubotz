@@ -1,9 +1,12 @@
 import { gamepads } from '../ui/Fullscreen';
 
 /**
- * Menu navigation shared by the menus (title, settings, pause): arrows / WASD, the
- * D-pad or left stick of any gamepad, with key repeat while held; confirm
- * (Enter, Space, pad A) and back (Esc, Backspace, pad B, Start).
+ * The one input layer for menus and match commands (title, settings, setup,
+ * pause, and the match's pause / quit / continue): arrows / WASD, the D-pad or
+ * left stick of any gamepad, with key repeat while held; confirm (Enter,
+ * Space, pad A), back (Esc, Backspace, pad B, Start), pause (Esc, P, pad
+ * Start) and quit (Q, pad Select). Keyboard and pads go through the same
+ * buttons, so a command never works on one and not the other.
  *
  * It polls the keyboard (through its own window listeners) and
  * `navigator.getGamepads()` directly instead of a scene's input plugins, so
@@ -16,6 +19,9 @@ export interface MenuHandlers {
   move?(dx: number, dy: number): void;
   confirm?(): void;
   back?(): void;
+  /** Match commands (only read when given). */
+  pause?(): void;
+  quit?(): void;
 }
 
 const held = new Set<string>();
@@ -36,6 +42,7 @@ function listen(): void {
 const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   confirm: ['Enter', 'NumpadEnter', 'Space'], back: ['Escape', 'Backspace'],
+  pause: ['Escape', 'KeyP'], quit: ['KeyQ'],
 };
 /**
  * A pad's A and B face buttons in the browser's standard mapping, by their
@@ -50,7 +57,10 @@ export function faceButtons(p: { id: string }): { A: number; B: number } {
 /** A pad button: by its label (A, B, see faceButtons) or its index in the standard mapping. */
 type PadButton = 'A' | 'B' | number;
 // D-pad by position; A confirms, B or Start goes back.
-const PAD = { confirm: ['A'] as PadButton[], back: ['B', 9] as PadButton[], up: [12], down: [13], left: [14], right: [15] };
+const PAD = {
+  confirm: ['A'] as PadButton[], back: ['B', 9] as PadButton[], pause: [9] as PadButton[], quit: [8] as PadButton[],
+  up: [12], down: [13], left: [14], right: [15],
+};
 /** Which pad buttons confirm and go back, where a menu wants others than A and B / Start. */
 export type PadButtons = Partial<Record<Button, PadButton[]>>;
 
@@ -79,7 +89,8 @@ function hatDir(p: Gamepad, dir: 'up' | 'down' | 'left' | 'right'): boolean {
 const REPEAT_DELAY = 320;
 const REPEAT_EVERY = 70;
 
-type Button = 'confirm' | 'back';
+type Button = 'confirm' | 'back' | 'pause' | 'quit';
+const BUTTONS: Button[] = ['confirm', 'back', 'pause', 'quit'];
 
 export class MenuInput {
   private dir = { x: 0, y: 0 };
@@ -89,19 +100,20 @@ export class MenuInput {
   /** Per button: down last frame, and whether it was seen up since the menu opened. */
   private state: Record<Button, { down: boolean; armed: boolean }> = {
     confirm: { down: true, armed: false }, back: { down: true, armed: false },
+    pause: { down: true, armed: false }, quit: { down: true, armed: false },
   };
   private readonly pad: Record<Button, PadButton[]>;
   /** The key press counts as of the last frame. */
   private seen = new Map<string, number>();
   /** Confirm / back fire when the button is let go (so the scene behind never gets the press). */
   constructor(private handlers: MenuHandlers, private onRelease = false, pad: PadButtons = {}) {
-    this.pad = { confirm: pad.confirm ?? PAD.confirm, back: pad.back ?? PAD.back };
+    this.pad = { confirm: pad.confirm ?? PAD.confirm, back: pad.back ?? PAD.back, pause: pad.pause ?? PAD.pause, quit: pad.quit ?? PAD.quit };
     listen();
     this.reset();
   }
 
   /** What is down now: held keys, keys tapped since the last frame, any pad's buttons and left stick. */
-  private read(): { x: number; y: number; confirm: boolean; back: boolean } {
+  private read(): { x: number; y: number } & Record<Button, boolean> {
     const pads = gamepads();
     const key = (codes: string[]) => codes.some((c) => held.has(c) || (presses.get(c) ?? 0) !== (this.seen.get(c) ?? 0));
     const btn = (ids: PadButton[]) => pads.some((p) => ids.some((i) => p.buttons[typeof i === 'number' ? i : faceButtons(p)[i]]?.pressed));
@@ -113,12 +125,15 @@ export class MenuInput {
       y: (dir('down', 1, 1) ? 1 : 0) - (dir('up', 1, -1) ? 1 : 0),
       confirm: key(KEYS.confirm) || btn(this.pad.confirm),
       back: key(KEYS.back) || btn(this.pad.back),
+      pause: !!this.handlers.pause && (key(KEYS.pause) || btn(this.pad.pause)),
+      quit: !!this.handlers.quit && (key(KEYS.quit) || btn(this.pad.quit)),
     };
   }
 
   /** Call every frame. */
   update(time: number): void {
-    const { x, y, confirm, back } = this.read();
+    const now = this.read();
+    const { x, y } = now;
     this.seen = new Map(presses);
     this.frames++;
     if (x !== this.dir.x || y !== this.dir.y) {
@@ -132,8 +147,7 @@ export class MenuInput {
       this.handlers.move?.(x, y);
     }
 
-    this.button('confirm', confirm, () => this.handlers.confirm?.());
-    this.button('back', back, () => this.handlers.back?.());
+    for (const b of BUTTONS) this.button(b, now[b], () => this.handlers[b]?.());
   }
 
   private button(name: Button, down: boolean, fire: () => void): void {
@@ -152,8 +166,7 @@ export class MenuInput {
   reset(): void {
     this.seen = new Map(presses);
     const now = this.read();
-    this.state.confirm = { down: now.confirm, armed: !now.confirm };
-    this.state.back = { down: now.back, armed: !now.back };
+    for (const b of BUTTONS) this.state[b] = { down: now[b], armed: !now[b] };
     this.dir = { x: now.x, y: now.y };
   }
 }
