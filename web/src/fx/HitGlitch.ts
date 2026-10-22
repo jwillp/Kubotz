@@ -23,6 +23,8 @@ uniform float uTime;
 uniform float uAmount;
 uniform float uSeed;
 uniform float uZoom;
+// How much bigger the bands and tears are than the scan lines (1: the same).
+uniform float uCoarse;
 // A shield hexagon (pointy top): centre and half height in screen pixels, and
 // how hard what shows through it glitches.
 uniform vec3 uHex;
@@ -42,12 +44,13 @@ void main () {
   // The picture jumps a few times while it lasts, not every frame.
   float tick = floor(uTime * 30.0) + uSeed;
   // Bands of rows of uneven height tear sideways, the wider the harder the hit.
-  float band = floor(y / (uZoom * mix(3.0, 9.0, hash(vec2(floor(y / (12.0 * uZoom)), tick)))));
+  float cz = uZoom * uCoarse;
+  float band = floor(y / (cz * mix(3.0, 9.0, hash(vec2(floor(y / (12.0 * cz)), tick)))));
   float tear = step(1.0 - 0.45 * k, hash(vec2(band, tick)));
-  float shift = tear * (hash(vec2(band + 3.0, tick)) - 0.5) * 2.0 * 18.0 * uZoom * k;
+  float shift = tear * (hash(vec2(band + 3.0, tick)) - 0.5) * 2.0 * 18.0 * cz * k;
   uv.x += shift / uRes.x;
   // Red and blue pulled apart sideways.
-  float split = (2.0 + 4.0 * k) * uZoom * k / uRes.x;
+  float split = (2.0 + 4.0 * k) * cz * k / uRes.x;
   vec4 c = texture2D(uMainSampler, uv);
   vec4 r = texture2D(uMainSampler, uv + vec2(split, 0.0));
   vec4 b = texture2D(uMainSampler, uv - vec2(split, 0.0));
@@ -55,10 +58,10 @@ void main () {
   if (a < 0.004) { gl_FragColor = vec4(0.0); return; }
   vec3 rgb = vec3(r.r, c.g, b.b);
   // Scan lines every 3 pixels, drifting down.
-  float scan = step(1.0, mod(y - uTime * 60.0, 3.0 * uZoom) / uZoom);
+  float scan = step(1.0, mod(y - uTime * 60.0, 3.0 * uZoom) / uZoom); // fine lines, whatever the coarseness
   float keep = mix(1.0, 0.45 + 0.55 * scan, k);
   // A row here and there drops out, another burns bright.
-  float row = floor(y / (2.0 * uZoom));
+  float row = floor(y / (2.0 * cz));
   float drop = step(1.0 - 0.12 * k, hash(vec2(row, tick + 11.0)));
   float burn = step(1.0 - 0.08 * k, hash(vec2(row, tick + 23.0)));
   keep *= 1.0 - drop;
@@ -77,7 +80,7 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
   /** A shield hexagon in world pixels (centre, half height) and how hard it glitches inside, or null. */
   hex: HexGlitch | null = null;
-  /** How coarse the bands and scan lines are (1: sized like a robot's). */
+  /** How coarse the bands and tears are (1: sized like a robot's); the scan lines stay fine. */
   coarse = 1;
 
   constructor(game: Phaser.Game) {
@@ -93,7 +96,8 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
     this.set1f('uAmount', this.amount);
     this.set1f('uSeed', this.seed);
-    this.set1f('uZoom', Math.max(0.5, zoom) * this.coarse);
+    this.set1f('uZoom', Math.max(0.5, zoom));
+    this.set1f('uCoarse', this.coarse);
     const h = this.hex;
     if (h && cam) {
       // World to screen through the camera (scroll, zoom, rotation; its matrix is untyped), then to the target's pixels.
