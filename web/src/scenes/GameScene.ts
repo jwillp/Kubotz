@@ -540,6 +540,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The original LibGDX particle effects (.pe files), as the full-on-scripting branch plays them.
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
+    this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
     this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.

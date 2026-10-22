@@ -164,6 +164,7 @@ export class ResultsScene extends Phaser.Scene {
     // Hit sparks, rings and dust replayed from the match's calls.
     const before = new Set(this.children.list);
     this.impact = new ImpactFx(this);
+    this.impact.solids = (r.blocks ?? []).map((b) => new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height));
     for (const o of this.children.list) if (!before.has(o)) this.only(this.worldCam, o);
 
     this.buildStats();
