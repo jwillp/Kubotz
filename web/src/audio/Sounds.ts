@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { sfxVolume } from '../game/Settings';
 import {
   crystalBounceBuffer, healChimeBuffer, holoSpawnBuffer, metalStepBuffer, pickupChimeBuffer, portalWarpBuffer,
-  sciFiExplosionBuffer, uiSoundBuffer, type UiSoundKind,
+  sciFiExplosionBuffer, uiSoundBuffer, scanBuffer, type UiSoundKind,
 } from './Synth';
 
 /**
@@ -39,6 +39,7 @@ const SYNTH: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {
   'ui-tick': (ctx) => uiSoundBuffer(ctx, 'tick'),
   'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),
   'ui-back': (ctx) => uiSoundBuffer(ctx, 'back'),
+  'ui-scan': scanBuffer, // the menu screen like a TV changing stations
 };
 
 /** Queues the recorded sounds on the loader. */
@@ -72,4 +73,9 @@ export function uiSound(scene: Phaser.Scene, kind: UiSoundKind): void {
   if (kind === 'move' && Math.min(since('confirm'), since('back')) < 200) return;
   lastAt.set(kind, now);
   scene.sound.play(key, { volume: sfxVolume(UI_VOLUME[kind]) });
+}
+
+/** The menu screen like a TV changing stations, louder for a stronger one. */
+export function scanSound(scene: Phaser.Scene, strength: number): void {
+  if (scene.cache.audio.exists('ui-scan')) scene.sound.play('ui-scan', { volume: sfxVolume(0.3 * strength) });
 }

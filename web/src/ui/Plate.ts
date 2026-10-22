@@ -5,6 +5,7 @@ import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
 import { body, heading, HeadingText, NEON } from './Type';
 import { uiSound } from '../audio/Sounds';
+import { screenScan } from '../fx/ScreenScan';
 
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
@@ -178,7 +179,8 @@ export function menuArena(scene: Phaser.Scene): number {
 /**
  * An arena's backdrop behind a menu, as in a match (the blurred room, bokeh,
  * light shafts, haze), under a dim of `dim`, with the match's screen effects
- * over it all (menuScreenFx). Stops with the scene.
+ * over it all (menuScreenFx), turning like an old TV changing stations now
+ * and then (screenScan). Stops with the scene.
  */
 export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
   const { width, height } = scene.scale;
@@ -187,6 +189,7 @@ export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scene.stop('Backdrop'));
   scene.add.rectangle(width / 2, height / 2, width, height, 0x050b18, dim);
   menuScreenFx(scene);
+  screenScan(scene);
 }
 
 /**

@@ -285,3 +285,36 @@ export function portalWarpBuffer(ctx: BaseAudioContext): AudioBuffer {
   reverb(d, rate, 0.35);
   return buf;
 }
+
+/**
+ * An old TV changing stations: a click of the dial, a burst of static hiss
+ * that swells and dies, a whistle of the tuner sliding past a carrier and a
+ * low buzz of the tube, in a little reverb.
+ */
+export function scanBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 1.3), rate);
+  const d = buf.getChannelData(0);
+  const len = 1.05;
+  // Static: noise through a gentle high-pass, swelling then dying.
+  let prev = 0;
+  for (let i = 0; i < Math.floor(rate * len); i++) {
+    const u = i / (rate * len);
+    const noise = Math.random() * 2 - 1;
+    const hp = noise - prev * 0.6;
+    prev = noise;
+    const env = Math.min(1, u * 14) * Math.pow(1 - u, 1.5);
+    // Grainy: it chatters a little.
+    const chatter = 0.75 + 0.25 * Math.sin(u * 2 * Math.PI * 23);
+    d[i] += hp * 0.11 * env * chatter;
+  }
+  // The tuner whistle sliding past a station.
+  glide(d, rate, 0.08, 0.6, (u) => 2600 - 1700 * u + 300 * Math.sin(u * 9), (u) => 0.03 * Math.sin(Math.PI * u));
+  // The tube's buzz.
+  glide(d, rate, 0, len, () => 60, (u) => 0.06 * Math.min(1, u * 10) * (1 - u));
+  glide(d, rate, 0, len, () => 180, (u) => 0.025 * Math.min(1, u * 10) * (1 - u));
+  // The dial's click.
+  ping(d, rate, 0, 900, 0.05);
+  reverb(d, rate, 0.15);
+  return buf;
+}
