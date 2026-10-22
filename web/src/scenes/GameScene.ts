@@ -15,7 +15,7 @@ import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM, warpExit } from '../map/Arenas';
+import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM, npcStocks, warpExit } from '../map/Arenas';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -617,9 +617,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       controller.behaviour = n.behaviour;
       const k = new Kubotz(this, this.fighters.length, controller, NPC_COLOR, rig, spot.x, spot.y, this, this.physicsWorld, { team: NPC_TEAM, helmet: n.helmet ?? 3 });
       controller.agent = k;
-      k.home = { x: spot.x, y: spot.y };
-      // Back at its spot after each K.O., or gone after one (it never counts to win either way).
-      k.lives = n.respawn === false ? 1 : Infinity;
+      k.home = { x: spot.x, y: spot.y, respawnMs: n.respawnMs };
+      // Its stocks (below 0: infinite); it never counts to win either way.
+      const stocks = npcStocks(n);
+      k.lives = stocks < 0 ? Infinity : Math.max(1, stocks);
       k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
       this.fighters.push(k);
       const at = setup.editor ? 0 : this.countdownAt;
@@ -629,22 +630,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /** The arena's particle emitters, played over and over (see updateMapEmitters). */
-  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; handle: ParticleHandle | null; wait: number }[] = [];
+  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; once: boolean; scale: number; tint?: number; handle: ParticleHandle | null; wait: number; played: boolean }[] = [];
 
   private startMapEmitters(): void {
     this.mapEmitters = (ARENAS[this.arena]?.emitters ?? []).flatMap((e) => {
       const def = (this.effects as Record<string, EffectDef>)[e.effect];
-      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, handle: null, wait: 0 }] : [];
+      const tint = e.tint ? parseInt(e.tint.replace('#', ''), 16) : undefined;
+      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, once: !!e.once, scale: e.scale ?? 1, tint, handle: null, wait: 0, played: false }] : [];
     });
   }
 
-  /** Each emitter starts its effect again `every` ms after the last one ended. */
+  /** Each emitter starts its effect again `every` ms after the last one ended (or plays it once). */
   private updateMapEmitters(dtMs: number): void {
     for (const m of this.mapEmitters) {
       if (m.handle && !m.handle.done) continue;
       if (m.handle) { m.handle = null; m.wait = m.every; }
+      if (m.once && m.played) continue;
       if ((m.wait -= dtMs) > 0) continue;
-      m.handle = this.particles.play(m.def, m.x, m.y, undefined, m.flip);
+      m.handle = this.particles.play(m.def, m.x, m.y, m.tint, m.flip, m.scale);
+      m.played = true;
     }
   }
 
@@ -1226,6 +1230,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
+      // A map NPC comes back after its own delay.
+      if (k.home?.respawnMs !== undefined) k.respawnAt = now + k.home.respawnMs;
       this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
     }
     // Last team standing: the match ends when one team (or nobody) is left.

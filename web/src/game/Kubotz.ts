@@ -407,7 +407,7 @@ export class Kubotz implements Damageable, Teamed {
   appearAt = 0;
   eliminated = false;
   /** A map NPC (black team): the spot it comes back to after a K.O.; undefined for the players' robots. */
-  home?: { x: number; y: number };
+  home?: { x: number; y: number; respawnMs?: number };
   pad: PadState = emptyPad();
   /** Melee grabs: the robot this one holds, or the one holding it. */
   holding: Kubotz | null = null;

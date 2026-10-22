@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
 import { host, store } from './Host';
 import { installDevHud } from './DevHud';
+import { kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
+import { heading } from '../ui/Type';
+import { MenuInput } from '../scenes/MenuInput';
 
 /**
  * The game's dev tools (dev builds only, see main.ts):
- *  - the title's Editor entry opens the Animation and Particles editor over
- *    the game (EditorUI.ts), outside any match;
+ *  - the title's Editor entry opens a menu: Animations and Particles open
+ *    the editor over the game (EditorUI.ts), outside any match; Arena makes
+ *    a new map and starts a match there with the dev HUD in edit mode;
  *  - in a match, the dev HUD (F2 or the DEV button, DevHud.ts) shows time
  *    controls, debug views and the arena tools over the running match.
  * Both are drawn inside the game's container, so they stay on screen in
@@ -44,18 +48,58 @@ function showErrors(root: HTMLElement): void {
 
 let ui: typeof import('./EditorUI') | null = null;
 
-/** The title's Editor entry: opens the editor; its Back button returns to the title. */
+/** The title's Editor entry: a menu of the editors (Animations, Particles, Arena) and Back to the title. */
 class EditorMenuScene extends Phaser.Scene {
+  private items: PlateButton[] = [];
+  private selected = 0;
+  private menu!: MenuInput;
+
   constructor() { super('EditorMenu'); }
 
-  async create(): Promise<void> {
+  create(): void {
     const game = this.game;
-    ui ??= await import('./EditorUI');
+    const { width } = this.scale;
+    this.items = [];
+    kubeBackdrop(this);
+    heading(this, width / 2, 150, 'EDITOR', 64);
+    const entries: [string, () => void][] = [
+      ['Animations', () => void this.openEditor('anim')],
+      ['Particles', () => void this.openEditor('particles')],
+      // A new map from scratch, straight into a match there with the dev HUD in edit mode.
+      ['Arena', () => { this.scene.stop(); host.newArenaMatch?.(); }],
+      ['Back', () => shutter(this, () => this.scene.start('Title'), 'back')],
+    ];
+    entries.forEach(([label, go], i) => {
+      const b = new PlateButton(this, width / 2, 290 + i * 76, 360, 58, label, { size: 34 });
+      b.on('pointerover', () => this.select(i));
+      b.on('pointerdown', go);
+      this.items.push(b);
+    });
+    this.select(0);
+    this.menu = new MenuInput({
+      move: (_dx, dy) => { if (dy) this.select((this.selected + dy + entries.length) % entries.length); },
+      confirm: () => entries[this.selected][1](),
+      back: () => entries[entries.length - 1][1](),
+    });
+    // Back from an editor: the menu again.
     host.close = () => {
-      ui!.editorShown(false);
-      game.scene.stop('EditorMenu');
-      game.scene.start('Title');
+      ui?.editorShown(false);
+      game.scene.resume('EditorMenu');
+      this.menu.reset();
     };
-    ui.editorShown(true);
+  }
+
+  update(time: number): void { this.menu.update(time); }
+
+  private select(i: number): void {
+    this.selected = i;
+    this.items.forEach((t, j) => t.setSelected(j === i));
+  }
+
+  /** Opens the editor on a tab; the menu waits (paused, so its keys do nothing) until Back. */
+  private async openEditor(which: 'anim' | 'particles'): Promise<void> {
+    ui ??= await import('./EditorUI');
+    this.scene.pause();
+    ui.editorShown(true, which);
   }
 }

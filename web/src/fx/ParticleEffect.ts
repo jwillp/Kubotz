@@ -213,7 +213,8 @@ class RunningEmitter {
   readonly particles: Particle[] = [];
 
   /** @param flip mirrored left-right (an effect started by a robot facing left). */
-  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number, private flip = false) {
+  /** @param scale the whole effect bigger or smaller: particle size, speeds and birth area (a map emitter's Size). */
+  constructor(private def: EmitterDef, private fx: ParticleFx, private x: number, private y: number, private tint?: number, private flip = false, private scale = 1) {
     [this.emissionLow, this.emissionDiff] = def.emission.pair();
     [this.lifeLow, this.lifeDiff] = def.life.pair();
     this.duration = def.duration.newLow();
@@ -266,12 +267,12 @@ class RunningEmitter {
         scale: d.scale.pair(), velocity: d.velocity.pair(), angle: d.angle.pair(),
         rotation: d.rotation.pair(), wind: d.wind.pair(), gravity: d.gravity.pair(), alpha: d.transparency.pair(),
       };
-      let x = this.x + (d.xOffset.active ? d.xOffset.newLow() : 0) * (this.flip ? -1 : 1);
-      let y = this.y + (d.yOffset.active ? d.yOffset.newLow() : 0);
+      let x = this.x + (d.xOffset.active ? d.xOffset.newLow() : 0) * (this.flip ? -1 : 1) * this.scale;
+      let y = this.y + (d.yOffset.active ? d.yOffset.newLow() : 0) * this.scale;
       const [wl, wd] = d.spawnWidth.pair();
       const [hl, hd] = d.spawnHeight.pair();
-      const w = wl + wd * d.spawnWidth.scale(percent);
-      const h = hl + hd * d.spawnHeight.scale(percent);
+      const w = (wl + wd * d.spawnWidth.scale(percent)) * this.scale;
+      const h = (hl + hd * d.spawnHeight.scale(percent)) * this.scale;
       if (d.shape === 'square' || d.shape === 'line') {
         x += Math.random() * w - w / 2;
         y += d.shape === 'line' ? 0 : Math.random() * h - h / 2;
@@ -296,17 +297,17 @@ class RunningEmitter {
     let angle = d.angle.active ? at(d.angle, p.angle) : 0;
     if (this.flip) angle = 180 - angle;
     if (d.velocity.active) {
-      const v = at(d.velocity, p.velocity) * dt;
+      const v = at(d.velocity, p.velocity) * dt * this.scale;
       x += v * Math.cos(Phaser.Math.DegToRad(angle));
       y += v * Math.sin(Phaser.Math.DegToRad(angle));
     }
-    if (d.wind.active) x += at(d.wind, p.wind) * dt * (this.flip ? -1 : 1);
-    if (d.gravity.active) y += at(d.gravity, p.gravity) * dt;
+    if (d.wind.active) x += at(d.wind, p.wind) * dt * (this.flip ? -1 : 1) * this.scale;
+    if (d.gravity.active) y += at(d.gravity, p.gravity) * dt * this.scale;
     p.img.setData('wx', x).setData('wy', y);
 
     let rotation = d.rotation.active ? at(d.rotation, p.rotation) * (this.flip ? -1 : 1) : 0;
     if (d.aligned) rotation += angle;
-    const size = at(d.scale, p.scale) * UNIT; // particle width in world units
+    const size = at(d.scale, p.scale) * UNIT * this.scale; // particle width in world units
     const img = p.img;
     img.setPosition(x * UNIT, -y * UNIT).setAngle(-rotation).setScale(size / img.width);
     img.setAlpha(Phaser.Math.Clamp(at(d.transparency, p.alpha), 0, 1));
@@ -343,10 +344,11 @@ export class ParticleFx {
    * Starts the effect at a world position in pixels (y down).
    * @param tint replaces the effect's own colours (e.g. a laser in the shooter's colour).
    * @param flip mirrors it left-right (made facing right, played facing left).
+   * @param scale makes the whole effect bigger or smaller.
    * @returns a handle to move its source (an effect following a fist) or stop it.
    */
-  play(def: EffectDef, x: number, y: number, tint?: number, flip = false): ParticleHandle {
-    const mine = def.emitters.map((e) => new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint, flip));
+  play(def: EffectDef, x: number, y: number, tint?: number, flip = false, scale = 1): ParticleHandle {
+    const mine = def.emitters.map((e) => new RunningEmitter(e, this, x / UNIT, -y / UNIT, tint, flip, scale));
     this.running.push(...mine);
     return {
       moveTo: (px, py) => { for (const e of mine) e.moveTo(px / UNIT, -py / UNIT); },

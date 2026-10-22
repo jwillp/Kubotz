@@ -4,9 +4,11 @@ import { ALL_LAYERS, type DebugLayers } from '../scenes/DebugScene';
 import { ARENA_IDS, ARENA_INFO, DEFAULT_SIZE } from '../map/Arenas';
 import { ArenaScene } from './ArenaScene';
 import { installHelp } from './Help';
-import { store } from './Host';
+import { host, store } from './Host';
+import { Config } from '../config';
+import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
-import { warpExit, type ArenaData, type NpcBehaviour } from '../map/Arenas';
+import { npcStocks, warpExit, type ArenaData, type BlockLook, type NpcBehaviour, type TilePaint } from '../map/Arenas';
 import { ROOMS } from '../fx/Backdrops';
 import './devhud.css';
 
@@ -144,7 +146,7 @@ export function installDevHud(game: Phaser.Game): void {
       // The overlay edits the arena now playing (this runs once the new match exists, so its arena is the new one).
       const id = ARENA_IDS[g.arena];
       if (opts.edit) setEditing(true);
-      else if (editing && id) store.select({ arena: id, piece: null });
+      else if (editing && id && id !== store.sel.arena) store.select({ arena: id, piece: null });
       // A different arena: while editing, show all of it (the match's camera is held, so it would stay on the first spawn).
       if (!keep && editing) { g.cameras.main.preRender(); arena().recentre(); }
       // The debug views and time as they were.
@@ -268,7 +270,7 @@ export function installDevHud(game: Phaser.Game): void {
     const id = g ? ARENA_IDS[g.arena] : null;
     const a = id ? store.docs.arenas[id] : null;
     const piecesNow = a && p ? piecesOf(a, p.kind)[p.index] : null;
-    const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${ARENA_INFO.length}`;
+    const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
     if (next === shape || !open || !g) { refresh(); return; }
     shape = next;
     const editArena = (fn: (x: ArenaData) => void) => store.edit('arenas', (d) => fn(d.arenas[id!]));
@@ -305,12 +307,28 @@ export function installDevHud(game: Phaser.Game): void {
           ? h('button', { cls: 'btn', textContent: 'No exit', help: 'Removes its exit: two portals without exits lead to each other.', onclick: () => editArena((x) => { const q = x.warps[p.index]; x.warps[p.index] = [q[0], q[1], q[2], q[3]]; }) })
           : h('button', { cls: 'btn', textContent: 'Give it an exit', help: 'Adds an exit point a few units away; drag its purple ring where the portal should lead.', onclick: () => editArena((x) => { const q = x.warps[p.index]; x.warps[p.index] = [q[0], q[1], q[2], q[3], q[0] + q[2] + 4, q[1] + q[3] / 2]; }) })));
       }
+      if (p.kind === 'walls' || p.kind === 'platforms') {
+        const look = (a[p.kind][p.index][4] ?? 'auto') as BlockLook;
+        extra.push(choose('Look', 'Which tiles cover it: as the game sees fit (auto), a floor strip, a ceiling strip, side pieces, or none (an invisible block). Tiles can also be painted one by one (Tiles, below).',
+          [['auto', p.kind === 'walls' ? 'Auto' : 'Auto (platform)'], ['floor', 'Floor strip'], ['ceiling', 'Ceiling strip'], ['side', 'Side pieces'], ['none', 'None (invisible)']], look,
+          (val) => editArena((x) => { const q = x[p.kind as 'walls'][p.index]; x[p.kind as 'walls'][p.index] = val === 'auto' ? [q[0], q[1], q[2], q[3]] : [q[0], q[1], q[2], q[3], val as BlockLook]; })));
+      }
       if (p.kind === 'emitters') {
         const em = a.emitters![p.index];
         extra.push(
           choose('Effect', 'Which particle effect (src/data/particles; made in the title\'s Editor, Particles tab).', Object.keys(store.docs.particles).sort().map((n) => [n, n]), em.effect, (val) => editArena((x) => { x.emitters![p.index].effect = val; })),
-          num('Again after ms', em.every ?? 0, (n) => editArena((x) => { x.emitters![p.index].every = Math.max(0, n); }), 50),
+          choose('Plays', 'Over and over (waiting "Again after" between plays), or only once when the match starts.', [['loop', 'over and over'], ['once', 'once']], em.once ? 'once' : 'loop', (val) => editArena((x) => { if (val === 'once') x.emitters![p.index].once = true; else delete x.emitters![p.index].once; })),
+          h('div', { cls: 'dev-grid' },
+            num('Again after ms', em.every ?? 0, (n) => editArena((x) => { x.emitters![p.index].every = Math.max(0, n); }), 50),
+            num('Size %', Math.round((em.scale ?? 1) * 100), (n) => editArena((x) => { const v = Math.max(5, n) / 100; if (v === 1) delete x.emitters![p.index].scale; else x.emitters![p.index].scale = v; }), 10)),
+          (() => {
+            const color = h('input', { type: 'color', value: em.tint ?? '#ffffff' });
+            color.onchange = () => editArena((x) => { x.emitters![p.index].tint = color.value; });
+            const own = h('button', { cls: 'btn', textContent: 'Own colours', help: 'Back to the effect\'s own colours.', onclick: () => editArena((x) => { delete x.emitters![p.index].tint; }) });
+            return h('label', { cls: 'dev-field dev-tint', help: 'Paints the whole effect one colour (its own colours when none is set).' }, h('span', { textContent: em.tint ? 'Colour' : 'Colour (its own)' }), h('div', { cls: 'dev-row' }, color, own));
+          })(),
           check('Mirrored', 'Plays it mirrored left-right.', !!em.flip, (on) => editArena((x) => { if (on) x.emitters![p.index].flip = true; else delete x.emitters![p.index].flip; })),
+          h('p', { cls: 'dev-note', textContent: 'The effect itself (its particles, colours over life, speed...) is edited in the title\'s Editor, Particles.' }),
         );
       }
       if (p.kind === 'npcs') {
@@ -318,7 +336,9 @@ export function installDevHud(game: Phaser.Game): void {
         extra.push(
           choose('Behaviour', 'What the NPC does. It fights back when hit whatever it does.', [['attack', 'Attack: goes for the nearest Kubot'], ['flee', 'Flee: keeps away from Kubotz'], ['idle', 'Idle: stands its ground']], npc.behaviour, (val) => editArena((x) => { x.npcs![p.index].behaviour = val as NpcBehaviour; })),
           choose('Level', 'How good it is, like a CPU in the setup screen: how fast it reacts.', Array.from({ length: 9 }, (_, i) => [String(i + 1), `${i + 1}${i === 0 ? ' (easiest)' : i === 4 ? ' (normal)' : i === 8 ? ' (hardest)' : ''}`] as [string, string]), String(npc.level ?? 5), (val) => editArena((x) => { x.npcs![p.index].level = Number(val); })),
-          check('Comes back after a K.O.', 'On: it reappears at its spot a few seconds after each K.O. Off: once out, it is gone for the match.', npc.respawn !== false, (on) => editArena((x) => { if (on) delete x.npcs![p.index].respawn; else x.npcs![p.index].respawn = false; })),
+          h('div', { cls: 'dev-grid' },
+            num('Stocks (<0: infinite)', npcStocks(npc), (n) => editArena((x) => { const q = x.npcs![p.index]; delete q.respawn; q.stocks = Math.round(n); }), 1),
+            num('Respawn after ms', npc.respawnMs ?? Config.RESPAWN_DELAY, (n) => editArena((x) => { x.npcs![p.index].respawnMs = Math.max(0, n); }), 100)),
           choose('Helmet', 'Its helmet (it is painted black).', ['flame', 'terminator', 'big buff', 'skull'].map((l, i) => [String(i), l] as [string, string]), String(npc.helmet ?? 3), (val) => editArena((x) => { x.npcs![p.index].helmet = Number(val); })),
         );
       }
@@ -331,21 +351,46 @@ export function installDevHud(game: Phaser.Game): void {
     const [w, hh] = a?.size ?? DEFAULT_SIZE;
     panel.replaceChildren(...[
       topBar,
-      section('Show', ...layerBoxes.map((l) => l.el)),
       section('Arena',
         h('div', { cls: 'dev-row dev-arena' }, arenaPick, newBtn),
         a ? h('div', { cls: 'dev-grid' },
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
           choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOMS.map((r) => [r, { kube: 'The Kube (blue)', foundry: 'Foundry (amber)', skyDeck: 'Sky Deck (violet)', pit: 'The Pit (teal)' }[r] ?? r] as [string, string]), a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
         ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, or make a new one.' }),
-        a ? check('Edit this arena', 'Pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map. The camera is yours meanwhile: drag empty space, wheel or pinch to zoom.', editing, (on) => { setEditing(on); shape = ''; build(); }) : null,
+        a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
+          h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
+          h('button', { cls: `btn${editing ? ' on' : ''}`, textContent: 'Edit mode', onclick: () => { setEditing(true); shape = ''; build(); } })) : null,
         editing && a ? h('div', { cls: 'dev-row' }, h('button', { cls: 'btn', textContent: 'Fit', help: 'Shows the whole arena.', onclick: () => arena().recentre() })) : null,
       ),
+      // Edit mode: the elements, then the picked piece's settings right under them, then the tile brush.
       editing && a ? section('Elements', h('p', { cls: 'dev-note', textContent: 'Drag one onto the map (or tap it: it lands in the middle of the view).' }), palette) : null,
       piece,
+      editing && a ? tilesSection() : null,
+      // The debug views last (folded while editing, to leave the room to the arena tools).
+      (() => { const d = section('Show', ...layerBoxes.map((l) => l.el)); d.open = !editing; return d; })(),
       editing && a ? h('p', { cls: 'dev-note', textContent: `${w} x ${hh} units · ${a.walls.length} walls · ${a.platforms.length} platforms · ${a.warps.length} portals · ${a.spawns.length} spawns · ${a.bonus.length} bonus spots · ${a.emitters?.length ?? 0} particles · ${a.npcs?.length ?? 0} NPCs` }) : null,
     ].filter((el): el is HTMLElement => !!el));
     refresh();
+  }
+
+  /** The tile brush: tiles are laid on the blocks automatically; this paints one cell at a time over them (or erases). */
+  function tilesSection(): HTMLElement {
+    const sc = arena();
+    const painting = sc.tool === 'tile' || sc.tool === 'erase';
+    const sources = [...new Set([...(game.registry.get('map') as TmxMap).tileImages.values()].map((t) => t.source))].sort();
+    const mode = (tool: 'select' | 'tile' | 'erase', label: string, help: string) => h('button', { cls: `btn${sc.tool === tool ? ' on' : ''}`, textContent: label, help, onclick: () => { sc.tool = tool; shape = ''; build(); } });
+    return section('Tiles',
+      h('p', { cls: 'dev-note', textContent: 'Blocks get their tiles on their own (see Look on a wall). Paint here to change single cells.' }),
+      h('div', { cls: 'dev-row' },
+        mode('select', 'Move pieces', 'Back to picking and moving pieces.'),
+        mode('tile', 'Paint', 'Paints the chosen tile on the cell under the pointer (drag to paint several).'),
+        mode('erase', 'Erase', 'Clears the tile of the chosen layer on a cell, automatic ones too.')),
+      painting ? choose('Layer', 'Blocks (walls and floors), platforms, or fades (the soft edges).', [['blocks', 'Blocks'], ['platforms', 'Platforms'], ['fades', 'Fades']], sc.brush.layer, (v) => { sc.brush.layer = v as TilePaint[0]; }) : null,
+      painting ? h('div', { cls: 'dev-swatches' }, ...sources.map((src) => {
+        const b = h('button', { cls: `dev-swatch${sc.brush.source === src ? ' on' : ''}`, help: src, onclick: () => { sc.brush.source = src; sc.tool = 'tile'; shape = ''; build(); } }, h('img', { src: `./maps/${src}`, alt: src }));
+        return b;
+      })) : null,
+    );
   }
 
   const deletePiece = () => {
@@ -368,6 +413,32 @@ export function installDevHud(game: Phaser.Game): void {
     for (const l of layerBoxes) l.box.checked = d.on && d.show[l.key];
     speed.value = String(d.timeScale);
   }
+
+  /** The editor menu's Arena: a new arena from scratch, a match there, the HUD open in edit mode. */
+  host.newArenaMatch = () => {
+    let n = 1;
+    while (store.docs.arenas[`arena-${n}`]) n++;
+    const id = `arena-${n}`;
+    const order = Math.max(0, ...Object.values(store.docs.arenas).map((x) => x.order)) + 1;
+    store.edit('arenas', (d) => {
+      d.arenas[id] = { order, name: `New arena ${n}`, blurb: 'Made in the dev HUD', room: 'kube', walls: [[6, 34, 40, 3]], platforms: [], warps: [], spawns: [[12, 34], [40, 34], [20, 34], [32, 34]], bonus: [[26, 30]] };
+    });
+    store.select({ arena: id, piece: null });
+    const index = ARENA_IDS.indexOf(id);
+    const ready = () => {
+      const g = match();
+      if (!g?.sys.isActive() || g.arena !== index) return;
+      game.events.off(Phaser.Core.Events.POST_STEP, ready);
+      setOpen(true);
+      setEditing(true);
+      g.debugState.steps = 45;
+      arena().recentre();
+      shape = '';
+      build();
+    };
+    game.events.on(Phaser.Core.Events.POST_STEP, ready);
+    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', editor: true });
+  };
 
   // The DEV button shows in matches only; the panel closes when the match ends.
   game.events.on(Phaser.Core.Events.POST_STEP, () => {

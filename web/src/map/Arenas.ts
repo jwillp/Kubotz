@@ -24,6 +24,11 @@ export const warpExit = (w: Warp): [number, number] | null => (w.length >= 6 ? [
 /** A tile painted over the automatic ones: layer, cell (tiles sit on their cell's bottom edge) and image; '' erases. */
 export type TilePaint = [layer: 'fades' | 'blocks' | 'platforms', x: number, y: number, source: string];
 
+/** How a block is tiled: as the game sees fit (auto), as a floor strip, a ceiling strip, side pieces, or not at all (invisible). */
+export type BlockLook = 'auto' | 'floor' | 'ceiling' | 'side' | 'none';
+/** A wall or platform (units), and its look (default auto). */
+export type Block = [x: number, y: number, w: number, h: number, look?: BlockLook];
+
 export interface ArenaDef {
   name: string;
   blurb: string;
@@ -31,9 +36,9 @@ export interface ArenaDef {
   size?: [w: number, h: number];
   /** The room behind it (fx/Backdrops.ts ROOMS); default by the arena's place in the list. */
   room?: string;
-  walls: Rect[];
+  walls: Block[];
   /** Drop-through platforms. */
-  platforms: Rect[];
+  platforms: Block[];
   /** Portals (see Warp): each leads to its exit point, or two without exits lead to each other. */
   warps: Warp[];
   /** Feet positions. */
@@ -50,17 +55,25 @@ export interface ArenaDef {
   npcs?: MapNpc[];
 }
 
-/** A particle effect of src/data/particles placed in the map (units): played again `every` ms after it ends (0: at once), mirrored or not. */
-export interface MapEmitter { x: number; y: number; effect: string; every?: number; flip?: boolean }
+/**
+ * A particle effect of src/data/particles placed in the map (units): played
+ * again `every` ms after it ends (0: at once) or only `once`, mirrored or
+ * not, `scale` times its size, in one `tint` colour ('#rrggbb') or its own.
+ */
+export interface MapEmitter { x: number; y: number; effect: string; every?: number; once?: boolean; flip?: boolean; scale?: number; tint?: string }
 
 export type NpcBehaviour = 'attack' | 'flee' | 'idle';
 /**
  * An NPC: where its feet are (units), what it does (attack the nearest
- * robot, keep away from robots, stand still), how good it is (CPU level 1
- * to 9, default 5), whether it comes back after a K.O. (default yes) and its
- * helmet (HEADS index).
+ * Kubot, keep away from Kubotz, stand still), how good it is (CPU level 1
+ * to 9, default 5), its stocks (below 0, the default: infinite), how long
+ * after a K.O. it comes back (ms, default the game's) and its helmet (HEADS
+ * index). `respawn: false` (older files) means one stock.
  */
-export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; level?: number; respawn?: boolean; helmet?: number }
+export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; level?: number; stocks?: number; respawnMs?: number; respawn?: boolean; helmet?: number }
+
+/** An NPC's stocks: below 0 is infinite. */
+export const npcStocks = (n: MapNpc): number => n.stocks ?? (n.respawn === false ? 1 : -1);
 
 /** The NPCs' team and colour: one team for every map NPC, hostile to the players. */
 export const NPC_TEAM = 99;
@@ -118,28 +131,39 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     return out;
   };
 
-  for (const [x, y, w, h] of def.walls) {
+  /** A floor or ceiling strip along a block's top, its end caps at both ends. */
+  const strip = (kind: 'ground' | 'top', x: number, y: number, w: number) => {
+    const xs = along(x, w, 2);
+    xs.forEach((cx, i) => put('blocks', `${kind}-0${i === 0 ? 1 : i === xs.length - 1 ? 4 : pick(2, 3)}.png`, cx, y));
+  };
+  /** Side pieces filling a block. */
+  const sides = (x: number, y: number, w: number, h: number) => {
+    for (const cy of along(y, h, 2)) for (const cx of along(x, w, 2)) put('blocks', `side${pick(3, 4) === 3 ? '03' : '4'}.png`, cx, cy);
+  };
+  for (const [x, y, w, h, look = 'auto'] of def.walls) {
+    if (look === 'none') continue;
+    if (look === 'floor' || look === 'ceiling') { strip(look === 'floor' ? 'ground' : 'top', x, y, w); continue; }
+    if (look === 'side') { sides(x, y, w, h); continue; }
+    // Auto: the way the original map does it, with fades on the outer side of the frame.
     if (w >= h) {
       const ceiling = y <= 3;
-      const xs = along(x, w, 2);
-      xs.forEach((cx, i) => {
-        const n = i === 0 ? 1 : i === xs.length - 1 ? 4 : pick(2, 3);
-        put('blocks', `${ceiling ? 'top' : 'ground'}-0${n}.png`, cx, y);
-      });
+      strip(ceiling ? 'top' : 'ground', x, y, w);
       for (let cx = x; cx + 8 <= x + w + 1; cx += 8) {
         if (ceiling) put('fades', 'top-fade.png', cx, y - 2);
         else if (h >= 3) put('fades', 'bottom-fade.png', cx, y + 2);
       }
     } else {
+      sides(x, y, w, h);
       for (const cy of along(y, h, 2)) {
-        for (const cx of along(x, w, 2)) put('blocks', `side${pick(3, 4) === 3 ? '03' : '4'}.png`, cx, cy);
-        // Fades on the outer side of the frame.
         if (x <= 6) put('fades', `left-fade-0${pick(1, 2)}.png`, x - 2, cy);
         else if (x + w >= W - 6) put('fades', `right-fade-0${pick(1, 2)}.png`, x + w, cy);
       }
     }
   }
-  for (const [x, y, w] of def.platforms) {
+  for (const [x, y, w, h, look = 'auto'] of def.platforms) {
+    if (look === 'none') continue;
+    if (look === 'floor' || look === 'ceiling') { strip(look === 'floor' ? 'ground' : 'top', x, y, w); continue; }
+    if (look === 'side') { sides(x, y, w, h); continue; }
     for (let cx = x; cx <= x + w - 2; cx++) {
       const n = cx === x ? 1 : cx === x + w - 2 ? 4 : pick(2, 3);
       put('platforms', `platform-0${n}.png`, cx, y);

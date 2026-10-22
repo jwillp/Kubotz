@@ -66,7 +66,7 @@ const header = h('header', {},
   h('button', { cls: 'btn', textContent: 'Undo', title: 'Undo the last change (Ctrl+Z).', onclick: () => store.undo() }),
   h('button', { cls: 'btn', textContent: 'Redo', title: 'Redo what was undone (Ctrl+Shift+Z).', onclick: () => store.redo() }),
   ...(host.inGame
-    ? [h('button', { cls: 'btn solid', textContent: 'Back to title', title: 'Leaves the editor. Unsaved changes stay in the game (matches play them) until you reload.', onclick: () => host.close?.() })]
+    ? [h('button', { cls: 'btn solid', textContent: 'Back', title: 'Back to the editor menu. Save keeps your edits in this browser; Export writes them to files.', onclick: () => host.close?.() })]
     : [h('button', { cls: 'btn solid', textContent: 'Test in game', title: 'Opens the game in a new tab with these changes, saved or not', onclick: () => testInGame() })]),
   ...(host.inGame ? [exportBtn] : []),
   saveBtn,
@@ -797,7 +797,8 @@ function fitStage(): void {
 if (host.inGame) new ResizeObserver(() => fitStage()).observe(stageEl);
 
 /** Inside the game: the editor opens (the title's Editor entry) or closes. */
-export function editorShown(on: boolean): void {
+export function editorShown(on: boolean, which?: 'anim' | 'particles'): void {
+  if (which) tab = which;
   root.hidden = !on;
   // A field focused when the editor closes never reports losing focus: give the game its keys back.
   game.input.keyboard!.enabled = true;

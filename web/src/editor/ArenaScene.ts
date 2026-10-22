@@ -249,7 +249,8 @@ export class ArenaScene extends Phaser.Scene {
   private selectedRect(): Rect | null {
     const sel = this.store.sel.piece;
     if (!sel || (POINT_KINDS as string[]).includes(sel.kind)) return null;
-    return this.arena?.[sel.kind as 'walls'][sel.index] ?? null;
+    // The whole piece (a portal's exit and a block's look ride after x, y, w, h and are kept on resize).
+    return (this.arena?.[sel.kind as 'walls'][sel.index] ?? null) as unknown as Rect | null;
   }
 
   private corners([x, y, w, h]: Rect): [number, number][] {
@@ -363,7 +364,7 @@ export class ArenaScene extends Phaser.Scene {
         const hit = this.pieceAt(p.worldX, p.worldY, p.wasTouch);
         if (!hit) { s.select({ piece: null }); pan(); return; }
         s.select({ piece: hit });
-        const start = (POINT_KINDS as string[]).includes(hit.kind) ? pointOf(a, hit.kind as PointKind, hit.index)! : [...a[hit.kind as 'walls'][hit.index]];
+        const start = (POINT_KINDS as string[]).includes(hit.kind) ? pointOf(a, hit.kind as PointKind, hit.index)! : [...a[hit.kind as 'walls'][hit.index]] as number[];
         this.drag = { kind: 'move', piece: hit, ux: p.worldX / UNIT, uy: p.worldY / UNIT, start };
         return;
       }

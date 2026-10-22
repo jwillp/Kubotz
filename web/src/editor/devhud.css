@@ -33,7 +33,7 @@
 .dev-errors pre { margin: 0; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; user-select: text; }
 .dev-errors button { position: absolute; right: 6px; top: 4px; border: 0; background: none; color: #ffd6d6; font: 16px sans-serif; cursor: pointer; }
 #game { position: relative; }
-.dev-top { position: sticky; top: -10px; z-index: 2; margin: -10px -10px 0; padding: 10px; background: rgba(16, 20, 26, 0.98); border-bottom: 1px solid #262c36; display: flex; flex-direction: column; gap: 6px; }
+.dev-top { position: sticky; top: -10px; z-index: 2; margin: -10px -10px 0; padding: 10px; background: #10141a; border-bottom: 1px solid #262c36; display: flex; flex-direction: column; gap: 6px; }
 .dev-top .dev-row { margin-top: 0; }
 .dev-hud .btn.on { border-color: #ffb547; color: #ffb547; }
 .dev-arena { align-items: flex-end; }
@@ -44,3 +44,14 @@
 .dev-walls { border-left: 4px solid #8e99a8; } .dev-platforms { border-left: 4px solid #3fb8a6; } .dev-warps { border-left: 4px solid #a06eff; }
 .dev-spawns { border-left: 4px solid #4aa3ff; } .dev-bonus { border-left: 4px solid #ffd166; } .dev-emitters { border-left: 4px solid #ff7ad9; } .dev-npcs { border-left: 4px solid #000; }
 .dev-ghost { position: absolute; z-index: 70; transform: translate(-50%, -120%); padding: 4px 8px; border-radius: 5px; background: #ffb547; color: #1a1205; font: 700 12px 'Exo 2', system-ui, sans-serif; pointer-events: none; }
+#game canvas { touch-action: none; }
+.dev-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 6px; }
+.dev-mode .btn { border-radius: 0; padding: 8px; font-weight: 600; }
+.dev-mode .btn:first-child { border-radius: 6px 0 0 6px; }
+.dev-mode .btn:last-child { border-radius: 0 6px 6px 0; border-left: 0; }
+.dev-mode .btn.on { background: #2b3a4f; border-color: #ffb547; color: #fff; }
+.dev-swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.dev-swatch { aspect-ratio: 1; padding: 2px; border: 1px solid #2b323d; border-radius: 4px; background: #0b0e12; cursor: pointer; }
+.dev-swatch img { width: 100%; height: 100%; object-fit: contain; }
+.dev-swatch.on { border-color: #ffb547; }
+.dev-tint input[type=color] { width: 44px; height: 28px; padding: 0; border: 1px solid #2b323d; background: none; }
