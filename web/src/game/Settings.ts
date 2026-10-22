@@ -47,9 +47,21 @@ export const sfxVolume = (base: number): number => base * current.sfx;
  */
 export function addMusic(scene: Phaser.Scene, key: string, base: number): Phaser.Sound.BaseSound {
   const sound = scene.sound.add(key, { loop: true, volume: base * current.music });
-  const off = onSettingsChange((s) => (sound as Phaser.Sound.WebAudioSound).setVolume?.(base * s.music));
+  const level = { base, duck: 1 };
+  musicLevels.set(sound, level);
+  const off = onSettingsChange((s) => (sound as Phaser.Sound.WebAudioSound).setVolume?.(level.base * level.duck * s.music));
   sound.once('destroy', off);
   return sound;
+}
+
+const musicLevels = new WeakMap<Phaser.Sound.BaseSound, { base: number; duck: number }>();
+
+/** Lowers a music track to `duck` (0..1) of its level, under the music setting (the pause); 1 restores it. */
+export function duckMusic(sound: Phaser.Sound.BaseSound | undefined, duck: number): void {
+  const level = sound && musicLevels.get(sound);
+  if (!level) return;
+  level.duck = duck;
+  (sound as Phaser.Sound.WebAudioSound).setVolume?.(level.base * duck * current.music);
 }
 
 // ------------------------------------------------------------------ visual effects

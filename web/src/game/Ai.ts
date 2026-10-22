@@ -137,9 +137,9 @@ export class CpuController implements Controller {
         if (Math.random() < (Math.abs(dx) > 6 * UNIT ? 0.25 : 0.1)) this.holdAttackUntil = now + 400 + Math.random() * 900;
       }
       else if (Math.abs(dx) < reach * UNIT && Math.abs(dy) < 1.5 * UNIT) {
-        // A grab beats a raised guard (and mixes things up now and then).
-        if (me.grounded && enemy.grounded && Math.abs(dx) < 1.6 * UNIT && Math.abs(dy) < 0.8 * UNIT && Math.sign(dx) === me.facing
-          && Math.random() < (enemy.guarding ? 0.6 : 0.12)) {
+        // A grab now and then to mix things up (a raised guard can't be grabbed).
+        if (me.grounded && enemy.grounded && !enemy.guarding && Math.abs(dx) < 1.6 * UNIT && Math.abs(dy) < 0.8 * UNIT && Math.sign(dx) === me.facing
+          && Math.random() < 0.12) {
           pad.grab = true;
           return pad;
         }
