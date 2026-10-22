@@ -500,7 +500,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     const s = ra.swing;
     this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color);
-    for (const key of ra.auras ?? []) this.impact.aura(owner, key, POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
+    for (const key of ra.auras ?? []) this.impact.aura(owner, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;
       holoRobot(robot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
