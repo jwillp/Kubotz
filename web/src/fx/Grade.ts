@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { fx } from '../game/Settings';
+import { neon } from './Neon';
 
 /**
  * A light film grain, stronger in the shadows, and faint scanlines every 3
@@ -62,6 +63,48 @@ void main () {
 `;
 
 /**
+ * The neon grade (fx/Neon.ts): a small glow around the brightest saturated
+ * pixels (12 taps in two rings, no bloom on greys so the plates stay crisp),
+ * deep blue-violet shadows and pink-white highlights, more saturation and
+ * contrast, a purple vignette and a faint colour fringe towards the corners.
+ */
+const NEON_GRADE = GRAIN + /* glsl */ `
+uniform vec2 uRes;
+vec3 bright(vec2 uv) {
+  vec3 s = texture2D(uMainSampler, uv).rgb;
+  float mx = max(s.r, max(s.g, s.b));
+  float sat = mx > 0.0 ? (mx - min(s.r, min(s.g, s.b))) / mx : 0.0;
+  return s * smoothstep(0.55, 0.95, mx) * (0.35 + 0.65 * sat);
+}
+void main () {
+  vec2 d = outTexCoord - 0.5;
+  vec2 fringe = d * dot(d, d) * 0.012;
+  vec4 c = texture2D(uMainSampler, outTexCoord);
+  c.r = mix(c.r, texture2D(uMainSampler, outTexCoord + fringe).r, uGrade);
+  c.b = mix(c.b, texture2D(uMainSampler, outTexCoord - fringe).b, uGrade);
+  vec3 raw = c.rgb;
+  vec3 glow = vec3(0.0);
+  vec2 px = 1.0 / uRes;
+  for (int i = 0; i < 6; i++) {
+    float a = float(i) * 1.0472 + 0.3;
+    vec2 o = vec2(cos(a), sin(a)) * px;
+    glow += bright(outTexCoord + o * 4.0) * 0.6 + bright(outTexCoord + o * 11.0) * 0.4;
+  }
+  c.rgb += glow / 6.0 * 0.85;
+  float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+  c.rgb = mix(vec3(l), c.rgb, 1.18);
+  vec3 shadowTint = vec3(0.86, 0.84, 1.2);
+  vec3 lightTint = vec3(1.04, 0.98, 1.02);
+  c.rgb *= mix(shadowTint, lightTint, smoothstep(0.15, 0.75, l));
+  c.rgb = (c.rgb - 0.45) * 1.14 + 0.45;
+  float v = 1.0 - smoothstep(0.3, 1.0, length(d) * 1.3);
+  c.rgb = mix(c.rgb * vec3(0.5, 0.36, 0.7), c.rgb, v);
+  c.rgb = grain(mix(raw, max(c.rgb, 0.0), uGrade), l);
+  gl_FragColor = c;
+}
+`;
+
+/**
  * The grain alone, for the backdrop behind the arena (it has its own look)
  * and over the menus. Only where the layer has paint, so a menu's clear
  * background adds nothing over the room behind it.
@@ -85,8 +128,15 @@ class TimedPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
 
 export class GradePipeline extends TimedPipeline {
   static readonly key = 'Grade';
+  /** Which grade it was built with: the neon one is picked when the pass is put on. */
+  readonly neon = neon.on;
   constructor(game: Phaser.Game) {
-    super({ game, name: GradePipeline.key, fragShader: GRADE });
+    super({ game, name: GradePipeline.key, fragShader: neon.on ? NEON_GRADE : GRADE });
+  }
+
+  onPreRender(): void {
+    super.onPreRender();
+    if (this.neon) this.set2f('uRes', this.renderer.width, this.renderer.height);
   }
 }
 

@@ -12,6 +12,7 @@ import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
+import { NEON, neon, neonColor } from '../fx/Neon';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
 
@@ -216,7 +217,8 @@ export function partTexture(textures: Phaser.Textures.TextureManager, file: stri
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
   else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
   if (!textures.exists(key)) key = `kubotz:${file}`;
-  return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
+  if (surface.worn && textures.exists(WORN + key)) key = WORN + key;
+  return neon.on && textures.exists(NEON + key) ? NEON + key : key;
 }
 
 /** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
@@ -459,7 +461,9 @@ export class Kubotz implements Damageable, Teamed {
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
     // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
-    this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
+    // Neon: a brighter, wider halo in the neon version of that colour.
+    if (neon.on) this.model.view.postFX?.addGlow(neonColor(color), 1.5, 0, false, 0.1, 10);
+    else this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;

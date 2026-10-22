@@ -1,3 +1,5 @@
+import { neon } from './Neon';
+
 /**
  * Arena moods (BackdropScene, GameScene): every arena keeps the Kube's
  * out-of-focus room with bokeh and light shafts, in its own palette, and the
@@ -32,7 +34,7 @@ export interface BackdropTheme {
   glow: number;
   rimLine: number;
   /** The arena tiles recoloured: their light strips take `hue` (degrees), their plates are multiplied by `plates`. */
-  tiles?: { hue: number; plates: [number, number, number] };
+  tiles?: { hue: number; plates: [number, number, number]; neon?: boolean };
 }
 
 /**
@@ -236,9 +238,97 @@ export const BACKDROPS: BackdropTheme[] = [
   },
 ];
 
-/** The mood of an arena (index into ARENA_INFO). */
+/**
+ * The neon arenas (fx/Neon.ts): the same rooms gone dark, their seams in hot
+ * magenta, cyan, acid orange or green, a second neon in the vents and on the
+ * rim light, and the tiles' light strips at full brightness on near-black plates.
+ */
+export const NEON_BACKDROPS: BackdropTheme[] = [
+  {
+    // The Kube: magenta seams, cyan tiles and rim.
+    room: [0xc0b0e8, 0x584a90],
+    paint: paintRoom({
+      top: 0x220844, bottom: 0x060112, line: 0xff2fd0, glow: 0xb000ff, dark: 0x05020c, cell: [180, 120],
+      pillars: [[0.18, 140], [0.64, 190]], beams: [[0.3, 22]], vents: { count: 8, color: 0x00e8ff },
+    }),
+    bokeh: { main: [0xff2fd0, 0x00e5ff, 0xb04dff, 0xff4d9a], accents: [0xfff04d, 0x4dffb0, 0xffffff, 0x4d7bff] },
+    shafts: [0xff3fd8, 0x40e8ff],
+    particles: 'motes',
+    lightning: false,
+    haze: 'rgba(16,2,34,0.9)',
+    ambient: 0x7a7090,
+    key: 0xffc0f0,
+    rim: 0x00e5ff,
+    glow: 0x00e5ff,
+    rimLine: 0xa0faff,
+    tiles: { hue: 186, plates: [0.55, 0.52, 0.78], neon: true },
+  },
+  {
+    // The Foundry: acid orange seams, hot pink vents and rim.
+    room: [0xd8a0d0, 0x4a1a40],
+    paint: paintRoom({
+      top: 0x22041a, bottom: 0x060106, line: 0xff7a00, glow: 0xff2f6a, dark: 0x0a0306, cell: [150, 110],
+      pillars: [[0.14, 150], [0.47, 220], [0.83, 170]], beams: [[0.22, 34], [0.58, 26]], vents: { count: 7, color: 0xff2fa0 },
+    }),
+    bokeh: { main: [0xff8a00, 0xffc000, 0xff2f6a, 0xff5a2a], accents: [0xff2fd0, 0xfff04d, 0x00e5ff, 0xffe0b0] },
+    shafts: [0xff6a3a, 0xffb040],
+    particles: 'embers',
+    lightning: false,
+    haze: 'rgba(40,6,14,0.9)',
+    ambient: 0x806870,
+    key: 0xffd0a0,
+    rim: 0xff2f8a,
+    glow: 0xff9a00,
+    rimLine: 0xffe08a,
+    tiles: { hue: 34, plates: [0.66, 0.5, 0.58], neon: true },
+  },
+  {
+    // Sky Deck: violet seams, hot pink tiles, cyan rim.
+    room: [0xd8c8ff, 0x6050b0],
+    paint: paintRoom({
+      top: 0x26105a, bottom: 0x08041a, line: 0x9a5aff, glow: 0x6a2aff, dark: 0x06031a, cell: [200, 300],
+      pillars: [[0.3, 90], [0.72, 110]], fade: 'down', vents: { count: 5, color: 0x00e5ff },
+    }),
+    bokeh: { main: [0x9a5aff, 0xff3fd8, 0x6a6bff, 0xd060ff], accents: [0x00e5ff, 0xfff04d, 0xff9ad8, 0xffffff] },
+    shafts: [0xa06aff, 0xff7ae8],
+    particles: 'motes',
+    lightning: false,
+    haze: 'rgba(22,6,50,0.9)',
+    ambient: 0x7a7098,
+    key: 0xf8d8ff,
+    rim: 0x40e0ff,
+    glow: 0xff3fd8,
+    rimLine: 0xffc0f4,
+    tiles: { hue: 312, plates: [0.6, 0.5, 0.78], neon: true },
+  },
+  {
+    // The Pit: acid green-teal seams, magenta vents and rim, flashes.
+    room: [0xd0fff8, 0x306860],
+    paint: paintRoom({
+      top: 0x042a30, bottom: 0x01060a, line: 0x00ffc8, glow: 0x00b8a0, dark: 0x020806, cell: [260, 150],
+      pillars: [[0.5, 120]], chasm: 0.3, vents: { count: 7, color: 0xff2fd0 },
+    }),
+    bokeh: { main: [0x00ffb0, 0x3affd0, 0x9aff3a, 0x00d0ff], accents: [0xff2fd0, 0xcfffe8, 0xb04dff, 0xfff04d] },
+    shafts: [0x30f0c0, 0x90ffe0],
+    particles: 'motes',
+    lightning: true,
+    haze: 'rgba(2,20,18,0.92)',
+    ambient: 0x688080,
+    key: 0xd8fff0,
+    rim: 0xff3fd8,
+    glow: 0x00ffb0,
+    rimLine: 0xb0ffe8,
+    tiles: { hue: 158, plates: [0.48, 0.6, 0.62], neon: true },
+  },
+];
+
+/** Every theme, classic then neon: rooms and hazes are keyed by their index here. */
+export const ALL_THEMES: BackdropTheme[] = [...BACKDROPS, ...NEON_BACKDROPS];
+
+/** The mood of an arena (index into ARENA_INFO), neon or classic. */
 export function backdropOf(arena: number | undefined): BackdropTheme {
-  return BACKDROPS[arena ?? 0] ?? BACKDROPS[0];
+  const list = neon.on ? NEON_BACKDROPS : BACKDROPS;
+  return list[arena ?? 0] ?? list[0];
 }
 
 /**
@@ -251,20 +341,23 @@ export function tintArt(ctx: CanvasRenderingContext2D, w: number, h: number, til
   const p = img.data;
   const [pr, pg, pb] = tiles.plates;
   const hue = (((tiles.hue % 360) + 360) % 360) / 60;
+  const lit = tiles.neon ? (v: number) => Math.min(255, v * 1.3 + 30) : (v: number) => v;
   for (let i = 0; i < p.length; i += 4) {
     if (p[i + 3] === 0) continue;
     const r = p[i], g = p[i + 1], b = p[i + 2];
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    const s = max ? (max - min) / max : 0;
+    let s = max ? (max - min) / max : 0;
     if (s < 0.25) {
       p[i] = Math.min(255, r * pr); p[i + 1] = Math.min(255, g * pg); p[i + 2] = Math.min(255, b * pb);
       continue;
     }
-    // HSV to RGB with the new hue.
-    const c = max * s;
+    // HSV to RGB with the new hue (neon: saturated and brighter).
+    if (tiles.neon) s = Math.min(1, s * 1.3 + 0.1);
+    const v = lit(max);
+    const c = v * s;
     const x = c * (1 - Math.abs((hue % 2) - 1));
-    const m = max - c;
+    const m = v - c;
     const [rr, gg, bb] = hue < 1 ? [c, x, 0] : hue < 2 ? [x, c, 0] : hue < 3 ? [0, c, x] : hue < 4 ? [0, x, c] : hue < 5 ? [x, 0, c] : [c, 0, x];
     p[i] = rr + m; p[i + 1] = gg + m; p[i + 2] = bb + m;
   }

@@ -15,6 +15,7 @@ import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
+import { neon, setNeon } from '../fx/Neon';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -132,6 +133,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   constructor() { super('Game'); }
 
+  /** The match as started, for Y to restart it in the other look. */
+  private setup?: MatchSetup;
+
   init(): void {
     this.fighters = [];
     this.orbs = [];
@@ -156,6 +160,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
+    this.setup = setup;
     this.specs = setup.fighters.slice(0, 4);
     this.stocks = setup.stocks ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
@@ -274,6 +279,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const target = this.fighters.filter((k) => k !== p1 && k.isAlive())
         .sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y))[0];
       if (target) target.health = 0;
+    });
+    // Y: the neon look or the classic one (fx/Neon.ts); the arena is rebuilt in it.
+    kb.on('keydown-Y', () => {
+      setNeon(!neon.on);
+      this.scene.restart(this.setup);
     });
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
