@@ -5,6 +5,9 @@ import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, warpExit, type ArenaData, t
 import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
 import { Fingers } from './Fingers';
+import { drawLedges } from '../scenes/DebugScene';
+import { findLedges } from '../scenes/GameScene';
+import type { Ledge } from '../game/Kubotz';
 import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type Store } from './Store';
 
 /**
@@ -240,6 +243,11 @@ export class ArenaScene extends Phaser.Scene {
       g.fillStyle(c, 1).fillCircle(x * UNIT, y * UNIT, px(7));
       g.lineStyle(px(isSel('lights', i) ? 3 : 1.5), isSel('lights', i) ? COLORS.sel : 0xffffff, 1).strokeCircle(x * UNIT, y * UNIT, px(isSel('lights', i) ? 11 : 9));
     });
+    // Where the walls' corners can be caught from below, as the match finds them (see drawLedges).
+    const blocks = [...a.walls.map((b) => ({ b, soft: false })), ...a.platforms.map((b) => ({ b, soft: true }))]
+      .map(({ b: [x, y, bw, bh], soft }) => ({ x: x * UNIT, y: y * UNIT, width: bw * UNIT, height: bh * UNIT, soft }));
+    const blocked: Ledge[] = [];
+    drawLedges(g, findLedges(blocks, blocked), blocked, () => false, (x, y) => ({ x, y }), 1, px(1));
     // Resize handles on the picked rectangle.
     const rect = this.selectedRect();
     if (rect) for (const [cx, cy] of this.corners(rect)) g.fillStyle(0xffffff, 1).fillRect(cx - px(5), cy - px(5), px(10), px(10));

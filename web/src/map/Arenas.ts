@@ -203,3 +203,25 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };
 }
+
+/**
+ * An arena from a Tiled map made like the original (debug-map.tmx): its
+ * WALL, STATIC_PLATFORM and WARP_ZONE objects become walls, platforms and
+ * portals, PLAYER_SPAWN and BONUS_SPAWN the spawns (feet) and bonus spots
+ * (centres), in tiles. Its tile layers are not kept: the arena is tiled
+ * automatically, then by the editor's brush.
+ */
+export function arenaFromTmx(m: TmxMap, name: string): ArenaDef {
+  const U = m.tileWidth;
+  const half = (v: number) => Math.round((v / U) * 2) / 2;
+  const rect = (o: MapObject): [number, number, number, number] => [half(o.x), half(o.y), Math.max(0.5, half(o.width)), Math.max(0.5, half(o.height))];
+  const of = (type: string) => m.objects.filter((o) => o.type === type);
+  return {
+    name, blurb: 'Imported from a Tiled map', size: [m.width, m.height],
+    walls: of('WALL').map(rect),
+    platforms: of('STATIC_PLATFORM').map(rect),
+    warps: of('WARP_ZONE').map(rect),
+    spawns: of('PLAYER_SPAWN').map((o) => [half(o.x + o.width / 2), half(o.y + o.height)]),
+    bonus: of('BONUS_SPAWN').map((o) => [half(o.x + o.width / 2), half(o.y + o.height / 2)]),
+  };
+}

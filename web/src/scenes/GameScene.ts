@@ -77,6 +77,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private perspective: ArenaPerspective | null = null;
   /** Ledges Kubotz can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
+  /** Top corners of solid blocks with no ledge (no room to hang or to climb onto), for the debug view and the editor. */
+  blockedLedges: Ledge[] = [];
   private nav!: Nav;
   private debris!: DebrisField;
   private playerSpawns: Phaser.Math.Vector2[] = [];
@@ -450,7 +452,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
-    this.ledges = findLedges(this.blocks);
+    this.blockedLedges = [];
+    this.ledges = findLedges(this.blocks, this.blockedLedges);
     // The original map has a single PLAYER_SPAWN (the second Kubot was hard-coded
     // at (8, 7)): add mirrored and central spawns so up to four Kubotz start apart.
     if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
@@ -781,7 +784,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const l of this.ledges) {
       const out = (k.x - l.x) * l.dir;
       const below = l.y - k.body.top;
-      if (out < 0.1 * UNIT || out > 1.0 * UNIT || below < -0.45 * UNIT || below > 0.85 * UNIT) continue;
+      if (out < LEDGE_REACH.outMin * UNIT || out > LEDGE_REACH.outMax * UNIT || below < -LEDGE_REACH.below * UNIT || below > LEDGE_REACH.above * UNIT) continue;
       if (this.fighters.some((o) => o !== k && o.ledgeHeld === l)) continue;
       return l;
     }
@@ -1515,7 +1518,20 @@ const ORB_FOCUS_MS = 2000;
  * just inside the corner and room to hang just outside it. Soft platforms
  * have none.
  */
-export function findLedges(blocks: NavBlock[]): Ledge[] {
+/**
+ * Where a falling Kubot catches a ledge: its centre 0.1 to 1 unit out from
+ * the corner, the top of its body from 0.85 unit above the ledge to 0.45
+ * below (ledgeNear). The box the top of its body must reach (pixels), for
+ * the debug view and the editor.
+ */
+export const LEDGE_REACH = { outMin: 0.1, outMax: 1.0, above: 0.85, below: 0.45 };
+export function ledgeZone(l: Ledge): Phaser.Geom.Rectangle {
+  const near = l.x + l.dir * LEDGE_REACH.outMin * UNIT;
+  const far = l.x + l.dir * LEDGE_REACH.outMax * UNIT;
+  return new Phaser.Geom.Rectangle(Math.min(near, far), l.y - LEDGE_REACH.above * UNIT, Math.abs(far - near), (LEDGE_REACH.above + LEDGE_REACH.below) * UNIT);
+}
+
+export function findLedges(blocks: NavBlock[], blocked?: Ledge[]): Ledge[] {
   const solid = blocks.filter((b) => !b.soft);
   const free = (x1: number, y1: number, x2: number, y2: number) =>
     !solid.some((o) => o.x < Math.max(x1, x2) - 1 && o.x + o.width > Math.min(x1, x2) + 1 && o.y < Math.max(y1, y2) - 1 && o.y + o.height > Math.min(y1, y2) + 1);
@@ -1525,6 +1541,7 @@ export function findLedges(blocks: NavBlock[]): Ledge[] {
       const x = dir < 0 ? b.x : b.x + b.width;
       const y = b.y;
       if (free(x, y - 2 * UNIT, x - dir * UNIT, y) && free(x, y - 0.5 * UNIT, x + dir * 1.2 * UNIT, y + 2.2 * UNIT)) out.push({ x, y, dir });
+      else blocked?.push({ x, y, dir });
     }
   }
   return out;

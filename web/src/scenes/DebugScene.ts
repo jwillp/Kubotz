@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { Fixture } from 'planck';
 import { Config, UNIT } from '../config';
 import { CpuController } from '../game/Ai';
-import type { GameScene } from './GameScene';
+import { ledgeZone, type GameScene } from './GameScene';
+import type { Ledge } from '../game/Kubotz';
 
 /** What the debug mode shows and how it runs the game (see GameScene.update). */
 export interface DebugState {
@@ -19,8 +20,34 @@ export interface DebugState {
 }
 
 /** The debug overlay's layers. */
-export interface DebugLayers { bodies: boolean; boxes: boolean; ai: boolean; states: boolean; stats: boolean }
-export const ALL_LAYERS: DebugLayers = { bodies: true, boxes: true, ai: true, states: true, stats: true };
+export interface DebugLayers { bodies: boolean; boxes: boolean; ledges: boolean; ai: boolean; states: boolean; stats: boolean }
+export const ALL_LAYERS: DebugLayers = { bodies: true, boxes: true, ledges: true, ai: true, states: true, stats: true };
+
+/**
+ * The ledges (debug view and the editor's edit mode): each one's grab box,
+ * green (amber while a Kubot holds it), where the top of a falling Kubot's
+ * body must reach to catch it, with a tick on the corner pointing out; a red
+ * cross on each top corner of a solid block that has no ledge (no room to
+ * hang below it, or to stand just inside it). `at` maps world pixels to
+ * where `g` draws, `px` is one screen pixel there.
+ */
+export function drawLedges(g: Phaser.GameObjects.Graphics, ledges: Ledge[], blocked: Ledge[], held: (l: Ledge) => boolean,
+  at: (x: number, y: number) => { x: number; y: number }, z: number, px: number): void {
+  for (const l of ledges) {
+    const r = ledgeZone(l);
+    const p = at(r.x, r.y);
+    const color = held(l) ? 0xffb547 : 0x5cff7a;
+    g.fillStyle(color, 0.16).fillRect(p.x, p.y, r.width * z, r.height * z);
+    g.lineStyle(1.5 * px, color, 0.85).strokeRect(p.x, p.y, r.width * z, r.height * z);
+    const c = at(l.x, l.y);
+    g.lineStyle(3 * px, color, 1).lineBetween(c.x - l.dir * 10 * px, c.y, c.x, c.y).lineBetween(c.x, c.y, c.x + l.dir * 5 * px, c.y - 5 * px);
+  }
+  for (const l of blocked) {
+    const c = at(l.x, l.y);
+    const s = 5 * px;
+    g.lineStyle(2 * px, 0xff4d4d, 0.9).lineBetween(c.x - s, c.y - s, c.x + s, c.y + s).lineBetween(c.x - s, c.y + s, c.x + s, c.y - s);
+  }
+}
 
 const LINK_COLORS = { jump: 0x4da3ff, drop: 0xffd166, fall: 0xff8a1f } as const;
 
@@ -113,6 +140,12 @@ export class DebugScene extends Phaser.Scene {
 
     // Kubotz: hurtbox, attack circles, CPU plan.
     const alive = game.fighters.filter((k) => k.isAlive());
+
+    // Ledges, and the point of each Kubot in the air that catches them (the top of its body).
+    if (show.ledges) {
+      drawLedges(g, game.ledges, game.blockedLedges, (l) => alive.some((k) => k.ledgeHeld === l), (x, y) => ({ x: sx(x), y: sy(y) }), z, 1);
+      for (const k of alive) if (!k.grounded && !k.onLedge) g.fillStyle(0x5cff7a, 1).fillCircle(sx(k.x), sy(k.body.top), 3);
+    }
     for (const k of alive) {
       if (show.boxes) {
         const h = k.hurtbox();

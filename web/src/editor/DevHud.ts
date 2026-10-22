@@ -8,8 +8,9 @@ import { host, store } from './Host';
 import { Config } from '../config';
 import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
-import { MAX_MAP_LIGHTS, npcRecharges, warpExit, type ArenaData, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
+import { MAX_MAP_LIGHTS, arenaFromTmx, npcRecharges, warpExit, type ArenaData, type ArenaDef, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
 import { MUSIC } from '../audio/Sounds';
+import { parseTmx } from '../map/TmxMap';
 import { addMusic } from '../game/Settings';
 import { ROOM_CHOICES } from '../fx/Backdrops';
 import './devhud.css';
@@ -51,6 +52,7 @@ const ELEMENTS: [ArenaPiece['kind'], string, string][] = [
 const LAYERS: [keyof DebugLayers, string, string][] = [
   ['bodies', 'Physics bodies', 'The Box2D bodies: green solid, cyan platforms, yellow Kubotz, white feet sensors, purple portals.'],
   ['boxes', 'Hit and hurt boxes', 'Each Kubot\'s hurtbox (red outline) and its attack circles while they are active.'],
+  ['ledges', 'Ledge grabs', 'Each ledge\'s grab box (green, amber while held): a falling Kubot catches the ledge when the top of its body (green dot) is in it. A red cross marks a block corner with no ledge: no room to hang under it, or to stand just inside it.'],
   ['ai', 'AI paths', 'The navigation graph (surfaces and jump, drop and fall links) and each CPU\'s path and destination.'],
   ['states', 'Kubot states', 'A readout over each Kubot: health, clip and progress, combo, speed, ground or air, stun, AI mode.'],
   ['stats', 'Frame stats', 'FPS, frame time graph, body and object counts.'],
@@ -106,7 +108,7 @@ export function installDevHud(game: Phaser.Game): void {
     const g = match();
     if (!g) return;
     const d = g.debugState;
-    if (!d.on) d.show = { bodies: false, boxes: false, ai: false, states: false, stats: false };
+    if (!d.on) d.show = { bodies: false, boxes: false, ledges: false, ai: false, states: false, stats: false };
     d.show[key] = on;
     const any = Object.values(d.show).some(Boolean);
     if (any && !d.on) { d.on = true; g.scene.launch('Debug'); }
@@ -258,6 +260,40 @@ export function installDevHud(game: Phaser.Game): void {
     if (i > 0) playArena(i, { edit: true });
   };
 
+  /**
+   * Import: an arena file (.json, as Export writes it) or a Tiled map made
+   * like the original (.tmx), added as a new arena (named after the file)
+   * and opened in edit mode.
+   */
+  const importArena = async (file: File) => {
+    const base = file.name.replace(/\.[^.]+$/, '');
+    let def: ArenaDef;
+    try {
+      if (/\.tmx$/i.test(file.name)) def = arenaFromTmx(await parseTmx(await file.text()), base);
+      else {
+        const j = JSON.parse(await file.text()) as Partial<ArenaData>;
+        if (!Array.isArray(j.walls) || !Array.isArray(j.spawns)) throw new Error('no walls or spawns in it');
+        def = { ...j, name: j.name ?? base, blurb: j.blurb ?? 'Imported', walls: j.walls, platforms: j.platforms ?? [], warps: j.warps ?? [], spawns: j.spawns, bonus: j.bonus ?? [] };
+      }
+    } catch (e) {
+      say(`Could not import ${file.name}: ${(e as Error).message}`);
+      return;
+    }
+    if (!def.spawns.length) def.spawns = [[(def.size ?? DEFAULT_SIZE)[0] / 2, 4]];
+    const slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'imported';
+    let id = slug;
+    for (let n = 2; store.docs.arenas[id]; n++) id = `${slug}-${n}`;
+    const order = Math.max(0, ...Object.values(store.docs.arenas).map((a) => a.order)) + 1;
+    store.edit('arenas', (d) => { d.arenas[id] = { ...def, order }; });
+    store.select({ arena: id, piece: null });
+    say(`Imported ${file.name} as "${def.name}". Save keeps it, Export writes its file.`);
+    const i = ARENA_IDS.indexOf(id);
+    if (i > 0) playArena(i, { edit: true });
+  };
+  const importInput = h('input', { type: 'file', accept: '.json,.tmx' });
+  importInput.hidden = true;
+  importInput.onchange = () => { const f = importInput.files?.[0]; importInput.value = ''; if (f) void importArena(f); };
+
   // ---------------------------------------------------------------- the panel
   let shape = '';
   const section = (title: string, ...body: (Node | null | false)[]) => h('details', { cls: 'dev-section', open: true }, h('summary', { textContent: title }), ...body);
@@ -289,6 +325,7 @@ export function installDevHud(game: Phaser.Game): void {
     sel.onchange = () => { const was = !!listening; stopListening(); set(sel.value); if (was && sel.value !== 'none') listen.click(); else listen.textContent = 'Listen'; };
     return h('label', { cls: 'dev-field', help: 'The music the match plays.' }, h('span', { textContent: 'Music' }), h('div', { cls: 'dev-row' }, sel, listen));
   };
+  const clampSize = (n: number, min: number, max: number) => Math.round(Phaser.Math.Clamp(n || min, min, max));
   const check = (label: string, help: string, on: boolean, set: (v: boolean) => void) => {
     const box = h('input', { type: 'checkbox', checked: on });
     box.onchange = () => set(box.checked);
@@ -310,6 +347,7 @@ export function installDevHud(game: Phaser.Game): void {
 
     const arenaPick = choose('Arena', 'Moves the match to another arena (no intro).', ARENA_INFO.map((info, i) => [String(i), info.name]), String(g.arena), (v) => playArena(Number(v)));
     const newBtn = h('button', { cls: 'btn', textContent: 'New arena', help: 'Makes a new arena from scratch (a floor and four spawns) and moves the match there to build it.', onclick: () => newArena() });
+    const importBtn = h('button', { cls: 'btn', textContent: 'Import', help: 'Adds an arena from a file: one Export wrote (.json), or a Tiled map made like the original (.tmx: its WALL, STATIC_PLATFORM, WARP_ZONE, PLAYER_SPAWN and BONUS_SPAWN objects). The match moves there in edit mode.', onclick: () => importInput.click() });
 
     const palette = h('div', { cls: 'dev-palette' }, ...ELEMENTS.map(([kind, label, help]) => {
       const item = h('div', { cls: `dev-element dev-${kind}`, textContent: label, help });
@@ -400,12 +438,16 @@ export function installDevHud(game: Phaser.Game): void {
     panel.replaceChildren(...[
       topBar,
       section('Arena',
-        h('div', { cls: 'dev-row dev-arena' }, arenaPick, newBtn),
+        h('div', { cls: 'dev-row dev-arena' }, arenaPick, newBtn, importBtn, importInput),
         a ? h('div', { cls: 'dev-grid' },
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
           choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
-          musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })),
-        ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, or make a new one.' }),
+        ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, make a new one, or Import maps/debug-map.tmx for a copy to edit.' }),
+        a ? musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })) : null,
+        // The map's size: it grows or shrinks on the right and at the bottom.
+        a ? h('div', { cls: 'dev-grid', help: 'The map\'s size in units (tiles). It grows or shrinks on the right and at the bottom; the blast zone moves with it.' },
+          num('Width', w, (n) => editArena((x) => { x.size = [clampSize(n, 16, 200), (x.size ?? DEFAULT_SIZE)[1]]; })),
+          num('Height', hh, (n) => editArena((x) => { x.size = [(x.size ?? DEFAULT_SIZE)[0], clampSize(n, 12, 160)]; }))) : null,
         a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
           h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
           h('button', { cls: `btn${editing ? ' on' : ''}`, textContent: 'Edit mode', onclick: () => { setEditing(true); shape = ''; build(); } })) : null,
