@@ -52,7 +52,7 @@ export class TitleScene extends Phaser.Scene {
     this.nextBurst = this.time.now + 1200;
 
     ENTRIES.forEach((m, i) => {
-      const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 40 });
+      const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 34 });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.start(i));
       this.items.push(t);

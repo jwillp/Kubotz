@@ -83,16 +83,16 @@ export class SettingsScene extends Phaser.Scene {
       this.draw(row);
     });
 
-    this.back = new PlateButton(this, width / 2 + 130, height / 2 + 196, 220, 48, 'Back', { size: 24, bodyLabel: true });
+    this.back = new PlateButton(this, width / 2 + 130, height / 2 + 196, 220, 48, 'Back', { size: 24 });
     let backDown = false;
     this.back.on('pointerover', () => this.select(ROWS.length));
     this.back.on('pointerdown', () => { backDown = true; });
     this.back.on('pointerup', () => { if (backDown) this.close(); });
     // Fullscreen (also F11 or a pad's Select anywhere); the label follows the screen.
-    this.fullscreen = new PlateButton(this, width / 2 - 130, height / 2 + 196, 220, 48, '', { size: 24, bodyLabel: true });
+    this.fullscreen = new PlateButton(this, width / 2 - 130, height / 2 + 196, 220, 48, '', { size: 24 });
     this.fullscreen.on('pointerover', () => this.select(ROWS.length + 1));
     this.fullscreen.on('pointerdown', () => this.toggleFullscreen());
-    const label = () => (this.fullscreen.label as Phaser.GameObjects.Text).setText(this.scale.isFullscreen ? 'Windowed' : 'Fullscreen');
+    const label = () => this.fullscreen.label.setText(this.scale.isFullscreen ? 'WINDOWED' : 'FULLSCREEN');
     label();
     this.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, label);
     this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, label);
