@@ -40,6 +40,11 @@ export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
 
   preload(): void {
+    // Every asset URL carries the assets' version: a cached copy of a file
+    // that changed since (the rig with new helmets, a redrawn part) is never reused.
+    this.load.on(Phaser.Loader.Events.ADD, (_key: string, _type: string, _loader: Phaser.Loader.LoaderPlugin, file: Phaser.Loader.File) => {
+      if (typeof file.url === 'string' && !file.url.startsWith('data:')) file.url += `${file.url.includes('?') ? '&' : '?'}v=${__ASSETS_VERSION__}`;
+    });
     this.drawLoadingBar();
     // The original logo (logo_SD.png, gh-pages 2015) redrawn as vectors (tools/logo), rasterised sharp at 3x.
     this.load.svg('logo', 'logo.svg', { width: 298 * LOGO_RES, height: 134 * LOGO_RES });
