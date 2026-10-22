@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
+import { hitGlitch } from './HitGlitch';
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote';
 
@@ -79,6 +80,9 @@ export class ImpactFx {
   private wisps: Wisp[] = [];
   /** The K.O. smoke's streaks, under its puffs. */
   private readonly wispG: Phaser.GameObjects.Graphics;
+  /** All of the K.O. smoke, glitched and scan-lined as one (fx/HitGlitch.ts). */
+  private readonly smokeView: Phaser.GameObjects.Container;
+  private lastKoAt = -Infinity;
   private now = 0;
 
   constructor(scene: Phaser.Scene) {
@@ -88,14 +92,20 @@ export class ImpactFx {
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
     // The K.O. smoke: a pool made up front (the results scene sorts new objects onto its cameras once).
     smokeTextures(scene.textures);
-    this.wispG = scene.add.graphics().setDepth(10.55);
-    const layer = (key: string, depth: number) => scene.add.image(0, 0, key).setDepth(depth).setVisible(false);
+    this.wispG = scene.add.graphics();
+    const layer = (key: string) => scene.add.image(0, 0, key).setVisible(false);
     for (let i = 0; i < SMOKE_POOL; i++) {
       this.smokePool.push({
-        rim: layer('smoke-rim-0', 10.6), body: layer('smoke-body-0', 10.61), shine: layer('smoke-shine-0', 10.62),
+        rim: layer('smoke-rim-0'), body: layer('smoke-body-0'), shine: layer('smoke-shine-0'),
         x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 1, size: 0, grow: 0, spin: 0,
       });
     }
+    // Streaks, then every rim, then every body, then the highlights: the bodies
+    // run together inside one outline, like the painted smoke.
+    this.smokeView = scene.add.container(0, 0, [
+      this.wispG,
+      ...this.smokePool.map((p) => p.rim), ...this.smokePool.map((p) => p.body), ...this.smokePool.map((p) => p.shine),
+    ]).setDepth(10.6);
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -165,6 +175,7 @@ export class ImpactFx {
    */
   koSmoke(x: number, y: number, color: number): void {
     if (vfx() <= 0) return;
+    this.lastKoAt = this.now;
     const { deep, bright } = smokeColors(color);
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
     this.add({ kind: 'ring', x, y, color: bright, size: 0.5 * UNIT, grow: 3.6 * UNIT, life: 340 });
@@ -362,6 +373,11 @@ export class ImpactFx {
       }
       g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
     }
+    // A broken signal over it all: it tears hard at the blast, then keeps flickering
+    // with scan lines while it lasts.
+    const since = this.now - this.lastKoAt;
+    const live = this.smoke.length > 0 || this.wisps.length > 0;
+    hitGlitch(this.smokeView, live ? Math.max(0.55, 1 - since / 500) : 0, undefined, null, 2.5);
   }
 
   private draw(): void {
@@ -500,8 +516,7 @@ export class ImpactFx {
   }
 
   destroy(): void {
-    for (const p of this.smokePool) { p.rim.destroy(); p.body.destroy(); p.shine.destroy(); }
-    this.wispG.destroy();
+    this.smokeView.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();

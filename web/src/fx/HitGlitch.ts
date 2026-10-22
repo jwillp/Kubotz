@@ -77,6 +77,8 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
   /** A shield hexagon in world pixels (centre, half height) and how hard it glitches inside, or null. */
   hex: HexGlitch | null = null;
+  /** How coarse the bands and scan lines are (1: sized like a robot's). */
+  coarse = 1;
 
   constructor(game: Phaser.Game) {
     super({ game, name: HitGlitchPipeline.key, fragShader: FRAGMENT });
@@ -91,7 +93,7 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
     this.set1f('uAmount', this.amount);
     this.set1f('uSeed', this.seed);
-    this.set1f('uZoom', Math.max(0.5, zoom));
+    this.set1f('uZoom', Math.max(0.5, zoom) * this.coarse);
     const h = this.hex;
     if (h && cam) {
       // World to screen through the camera (scroll, zoom, rotation; its matrix is untyped), then to the target's pixels.
@@ -116,7 +118,7 @@ export interface HexGlitch { x: number; y: number; r: number; amount: number }
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];
@@ -133,5 +135,6 @@ export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects
   }
   p.amount = Math.max(0, amount);
   p.hex = hex ?? null;
+  p.coarse = coarse;
   if (camera) p.camera = camera;
 }
