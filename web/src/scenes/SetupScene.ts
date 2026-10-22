@@ -218,8 +218,9 @@ export class SetupScene extends Phaser.Scene {
     }
 
     // The original logo top left, ARENA under it.
-    this.add.image(48, 64, 'logo').setOrigin(0, 0.5).setScale(0.62 / LOGO_RES);
-    heading(this, 52, 118, 'A R E N A', 20).setOrigin(0, 0.5);
+    // As on the title, at 0.62 / 1.3 of its size: ARENA centred under the logo.
+    const logo = this.add.image(48, 64, 'logo').setOrigin(0, 0.5).setScale(0.62 / LOGO_RES);
+    heading(this, logo.x + logo.displayWidth / 2, 64 + 108 * 0.62 / 1.3, 'A R E N A', 34 * 0.62 / 1.3);
     this.add.text(width - 40, 40, 'Gamepads: Smash Ultimate layout\nKeyboards: P1 WASD + O / P · P2 Arrows + , / N',
       body(13, { fontStyle: '500', color: '#8fb6d8', align: 'right', lineSpacing: 4 })).setOrigin(1, 0);
 
