@@ -279,6 +279,8 @@ export interface ArenaHooks {
   /** Jumping off or landing: the subtle dust of a change of direction, to both sides. */
   footDust(x: number, y: number): void;
   airJump(x: number, y: number, color: number): void;
+  /** A hit that got through (for the post-match highlights): launch speed in units/s (0 for a light combo hit), angle in degrees. */
+  landed?(victim: Kubotz, attacker: Kubotz, damage: number, chained: boolean, healthBefore: number, speed: number, angle: number): void;
 }
 
 /**
@@ -1496,10 +1498,13 @@ export class Kubotz implements Damageable, Teamed {
       this.body.vx += (pushX / 2) * UNIT;
       return;
     }
-    this.countHit(attacker, Math.min(this.health, amount), prev?.by === attacker && now < Math.max(this.hitstunUntil, this.hitUntil));
+    const chained = prev?.by === attacker && now < Math.max(this.hitstunUntil, this.hitUntil);
+    const healthBefore = this.health;
+    this.countHit(attacker, Math.min(this.health, amount), chained);
     this.health = Math.max(0, this.health - amount);
     let hitstun: number;
     let tumble = false;
+    let speed = 0;
     if (launch.stun) {
       // Light combo hits keep the target on the ground and in reach of the next one.
       this.body.vx = pushX * UNIT;
@@ -1508,7 +1513,7 @@ export class Kubotz implements Damageable, Teamed {
       // Knockback grows with the damage taken (SSB), along the move's launch angle;
       // hitstun follows the launch speed, and a hard launch tumbles.
       const taken = 1 - this.health / Config.KUBOTZ_HEALTH;
-      const speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1));
+      speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1));
       const a = (launch.angle * Math.PI) / 180;
       this.body.setVelocity(dirX * Math.cos(a) * speed * UNIT, -Math.sin(a) * speed * UNIT);
       hitstun = Math.min(Config.HITSTUN_MAX, Config.HITSTUN_BASE + speed * Config.HITSTUN_PER_UNIT);
@@ -1535,6 +1540,7 @@ export class Kubotz implements Damageable, Teamed {
       this.hitAnim = this.hitAnim === ANIM.HIT ? ANIM.HIT_2 : ANIM.HIT;
       this.anim.play(this.hitAnim, { restart: true, fade: 30 });
     }
+    this.hooks.landed?.(this, attacker, Math.min(healthBefore, amount), chained, healthBefore, speed, launch.angle);
   }
 
   /** Stats: a hit that got through (not guarded or shielded); `chained` = landed while the last one still stunned. */

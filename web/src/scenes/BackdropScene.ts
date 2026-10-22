@@ -58,9 +58,13 @@ export class BackdropScene extends Phaser.Scene {
 
   constructor() { super('Backdrop'); }
 
-  create(data?: { arena?: number; menu?: boolean }): void {
+  /** The scene whose camera the room drifts with (and whose ambient light the lightning lifts, under a match). */
+  private host = 'Game';
+
+  create(data?: { arena?: number; menu?: boolean; host?: string }): void {
     const { width, height } = this.scale;
     this.menu = !!data?.menu;
+    this.host = data?.host ?? 'Game';
     const th = this.theme = backdropOf(data?.arena);
     this.rand = seeded(1 + (data?.arena ?? 0) * 97);
     this.makeTextures();
@@ -146,13 +150,13 @@ export class BackdropScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number): void {
-    const game = this.scene.get('Game');
+    const host = this.scene.get(this.host) as Phaser.Scene & { followCam?: Phaser.Cameras.Scene2D.Camera };
     const { width, height } = this.scale;
     const t = time / 1000;
     const dt = delta / 1000;
     // Map is about 3300 x 2400 px; drift the backdrop a little with the camera.
     // Without a match (behind the title), a slow idle sway instead.
-    const cam = game.sys.isActive() ? game.cameras.main : undefined;
+    const cam = host?.sys.isActive() ? host.followCam ?? host.cameras.main : undefined;
     const px = cam ? cam.midPoint.x / 3328 - 0.5 : Math.sin(t * 0.07) * 0.25;
     const py = cam ? cam.midPoint.y / 2432 - 0.5 : Math.sin(t * 0.05 + 1) * 0.15;
     this.bg.setPosition(width / 2 - px * 80, height / 2 - py * 50);
@@ -262,7 +266,7 @@ export class BackdropScene extends Phaser.Scene {
   /** Lifts the match's ambient light towards the lightning's cold white. */
   private setGameAmbient(f: number): void {
     const game = this.scene.get('Game');
-    if (!game?.sys.isActive() || !game.lights?.active) return;
+    if (this.host !== 'Game' || !game?.sys.isActive() || !game.lights?.active) return;
     const a = Phaser.Display.Color.IntegerToColor(this.theme.ambient);
     const to = Phaser.Display.Color.IntegerToColor(this.theme.rimLine);
     const mix = (c: number, t: number) => Math.round(c + (t - c) * f * 0.7);

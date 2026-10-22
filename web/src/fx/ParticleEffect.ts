@@ -312,6 +312,12 @@ export class ParticleFx {
     for (const e of this.running) for (const p of e.particles) fn(p.img.x, p.img.y, p.img.displayWidth, p.img.alpha, p.img.tintTopLeft);
   }
 
+  /** Stops every effect at once (a replay starting over). */
+  clear(): void {
+    for (const e of this.running) for (const p of e.particles) this.release(p.img);
+    this.running = [];
+  }
+
   update(dtMs: number): void {
     for (const e of this.running) e.update(dtMs);
     this.running = this.running.filter((e) => !e.done);

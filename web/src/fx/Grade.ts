@@ -95,6 +95,20 @@ export class GrainPipeline extends TimedPipeline {
  * Puts one pass on a camera or takes it off (WebGL only). Removes the
  * instances themselves, so turning it on again never stacks a second pass.
  */
+let pureAddMode: number | undefined;
+
+/**
+ * Plain additive blending (ONE, ONE). Phaser's ADD scales what is below by
+ * its alpha, which lifts translucent layers under a full-arena glow (the
+ * outer hull showed the glow's rectangle).
+ */
+export function pureAdd(scene: Phaser.Scene): number {
+  const r = scene.sys.renderer;
+  if (!(r instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return Phaser.BlendModes.ADD;
+  const gl = r.gl;
+  return (pureAddMode ??= r.addBlendMode([gl.ONE, gl.ONE], gl.FUNC_ADD));
+}
+
 export function setPass(
   scene: Phaser.Scene, cam: Phaser.Cameras.Scene2D.Camera,
   pass: typeof GradePipeline | typeof GrainPipeline, on: boolean,
