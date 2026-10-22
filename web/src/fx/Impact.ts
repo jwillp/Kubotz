@@ -628,13 +628,13 @@ export class ImpactFx {
   }
 }
 
-/** A laser blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core. */
-export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number): void {
+/** A laser blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core; `alpha` dims it all. */
+export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number, alpha = 1): void {
   const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
   const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
   for (const [w, col, a] of strokes) {
-    g.lineStyle(w, col, a).lineBetween(x1, y1, x2, y2);
-    g.fillStyle(col, a).fillCircle(x2, y2, w / 2);
+    g.lineStyle(w, col, a * alpha).lineBetween(x1, y1, x2, y2);
+    g.fillStyle(col, a * alpha).fillCircle(x2, y2, w / 2);
   }
 }
 
