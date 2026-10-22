@@ -74,7 +74,7 @@ export class TitleScene extends Phaser.Scene {
     this.menu = new MenuInput({
       move: (_dx, dy) => { if (dy) this.select((this.selected + dy + ENTRIES.length) % ENTRIES.length); },
       confirm: () => this.start(this.selected),
-    }, false, { confirm: [1, 9], back: [] });
+    }, false, { confirm: ['A', 9], back: [] });
     // Back from the settings (drawn over the title): the press that closed them must not open anything.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.menu.reset());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME));

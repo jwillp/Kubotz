@@ -14,7 +14,7 @@ import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
-import { MenuInput } from './MenuInput';
+import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
 import { uiSound } from '../audio/Sounds';
 
@@ -52,8 +52,8 @@ const JOIN_KEYS: Record<'K1' | 'K2', { join: string[]; leave: string[] }> = {
   K1: { join: ['KeyO', 'KeyJ'], leave: ['KeyP'] },
   K2: { join: ['Comma', 'Numpad1'], leave: ['KeyN', 'Numpad4'] },
 };
-/** Standard gamepad mapping, Smash layout: A right face (join / confirm), B bottom face (leave), shoulders. */
-const PAD = { B: 0, A: 1, L: 4, R: 5 } as const;
+/** Shoulders in the standard gamepad mapping (A and B go by the pad's labels: faceButtons). */
+const PAD = { L: 4, R: 5 } as const;
 
 const deviceLabel = (s: Seat): string => {
   const d = s.device;
@@ -500,8 +500,9 @@ export class SetupScene extends Phaser.Scene {
       const now = new Set(p.buttons.filter((b) => b.pressed).map((b) => b.index));
       const pressed = (b: number) => now.has(b) && !before.has(b);
       const seated = this.state.seats.some((s) => s.device === p.index);
-      if (pressed(PAD.A)) { if (seated) this.confirm(); else this.join(p.index); }
-      if (pressed(PAD.B)) { if (seated) this.leave(p.index); else this.back(); }
+      const { A, B } = faceButtons(p);
+      if (pressed(A)) { if (seated) this.confirm(); else this.join(p.index); }
+      if (pressed(B)) { if (seated) this.leave(p.index); else this.back(); }
       if (pressed(PAD.L)) this.jumpSlot(-1);
       if (pressed(PAD.R)) this.jumpSlot(1);
       this.padDown.set(p.index, now);

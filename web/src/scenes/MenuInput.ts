@@ -37,10 +37,22 @@ const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'], up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   confirm: ['Enter', 'NumpadEnter', 'Space'], back: ['Escape', 'Backspace'],
 };
-// Standard gamepad mapping, by position: A is the right face button, B the bottom one (Smash layout).
-const PAD = { confirm: [1], back: [0, 9], up: [12], down: [13], left: [14], right: [15] };
+/**
+ * A pad's A and B face buttons in the browser's standard mapping, by their
+ * labels: on Nintendo pads A is the right button and B the bottom one, on
+ * Xbox-style pads (most others, e.g. GameSir, 8BitDo in X mode) A is the
+ * bottom one and B the right one.
+ */
+export function faceButtons(p: { id: string }): { A: number; B: number } {
+  return /nintendo|pro controller|joy-con|vendor: 057e/i.test(p.id) ? { A: 1, B: 0 } : { A: 0, B: 1 };
+}
+
+/** A pad button: by its label (A, B, see faceButtons) or its index in the standard mapping. */
+type PadButton = 'A' | 'B' | number;
+// D-pad by position; A confirms, B or Start goes back.
+const PAD = { confirm: ['A'] as PadButton[], back: ['B', 9] as PadButton[], up: [12], down: [13], left: [14], right: [15] };
 /** Which pad buttons confirm and go back, where a menu wants others than A and B / Start. */
-export type PadButtons = Partial<Record<Button, number[]>>;
+export type PadButtons = Partial<Record<Button, PadButton[]>>;
 
 /**
  * The D-pad of a pad without the standard mapping (the browser could not
@@ -78,7 +90,7 @@ export class MenuInput {
   private state: Record<Button, { down: boolean; armed: boolean }> = {
     confirm: { down: true, armed: false }, back: { down: true, armed: false },
   };
-  private readonly pad: Record<Button, number[]>;
+  private readonly pad: Record<Button, PadButton[]>;
   /** The key press counts as of the last frame. */
   private seen = new Map<string, number>();
   /** Confirm / back fire when the button is let go (so the scene behind never gets the press). */
@@ -92,7 +104,7 @@ export class MenuInput {
   private read(): { x: number; y: number; confirm: boolean; back: boolean } {
     const pads = gamepads();
     const key = (codes: string[]) => codes.some((c) => held.has(c) || (presses.get(c) ?? 0) !== (this.seen.get(c) ?? 0));
-    const btn = (ids: number[]) => pads.some((p) => ids.some((i) => p.buttons[i]?.pressed));
+    const btn = (ids: PadButton[]) => pads.some((p) => ids.some((i) => p.buttons[typeof i === 'number' ? i : faceButtons(p)[i]]?.pressed));
     const stick = (axis: number, sign: number) => pads.some((p) => (p.axes[axis] ?? 0) * sign > 0.5);
     const hat = (dir: 'up' | 'down' | 'left' | 'right') => pads.some((p) => p.mapping !== 'standard' && hatDir(p, dir));
     const dir = (d: 'up' | 'down' | 'left' | 'right', axis: number, sign: number) => key(KEYS[d]) || btn(PAD[d]) || stick(axis, sign) || hat(d);
