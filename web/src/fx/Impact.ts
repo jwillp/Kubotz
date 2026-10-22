@@ -2,6 +2,19 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
+import { EffectDef, ParticleFx } from './ParticleEffect';
+
+/**
+ * The original laserSmoke effect (.pe) layered with the K.O. smoke: 'trails'
+ * streams it behind the flying puffs, 'full' also blooms a cloud of it at the
+ * core. L cycles it in a match; ?laser=off|trails|full.
+ */
+export type LaserSmokeMode = 'off' | 'trails' | 'full';
+export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['full', 'trails', 'off'];
+export const laserSmoke = { mode: ((): LaserSmokeMode => {
+  const q = new URLSearchParams(location.search).get('laser');
+  return LASER_SMOKE_MODES.includes(q as LaserSmokeMode) ? q as LaserSmokeMode : 'full';
+})() };
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
@@ -70,6 +83,11 @@ export class ImpactFx {
   private readonly smokeView: Phaser.GameObjects.Container;
   private lastKoAt = -Infinity;
   private now = 0;
+  /** The laserSmoke layered with the K.O. smoke, glitched like it, behind its puffs. */
+  private readonly laserView: Phaser.GameObjects.Container;
+  private readonly laser: ParticleFx;
+  private readonly laserDef?: EffectDef;
+  private readonly laserOver: boolean;
 
   constructor(scene: Phaser.Scene) {
     // Twirl motes passing behind a robot are drawn under it.
@@ -80,6 +98,11 @@ export class ImpactFx {
     this.wispG = scene.add.graphics();
     this.smokeG = scene.add.graphics();
     this.smokeView = scene.add.container(0, 0, [this.wispG, this.smokeG]).setDepth(10.6);
+    this.laserView = scene.add.container(0, 0).setDepth(10.55);
+    // Exploration: ?laserlayer=over draws it as plain additive glow over the puffs, unglitched.
+    this.laserOver = new URLSearchParams(location.search).get('laserlayer') === 'over';
+    this.laser = this.laserOver ? new ParticleFx(scene, 'pe:', 10.65) : new ParticleFx(scene, 'pe:', 0, this.laserView);
+    this.laserDef = (scene.registry.get('effects') as Record<string, EffectDef> | undefined)?.laserSmoke;
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -154,11 +177,12 @@ export class ImpactFx {
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
     this.add({ kind: 'ring', x, y, color: bright, size: 0.5 * UNIT, grow: 3.6 * UNIT, life: 340 });
     this.flashes.push({ x, y, color: bright, intensity: 10, at: this.now });
+    const puffs: Particle[] = [];
     for (let i = 0; i < 40; i++) {
       const core = i < 12; // the first ones stay in the middle, the biggest
       const a = rand(0, Math.PI * 2);
       const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT;
-      this.add({
+      const puff = this.add({
         kind: 'smoke', collide: true,
         x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
         vx: Math.cos(a) * speed * 1.3, vy: Math.sin(a) * speed * 0.8 - rand(1, 4) * UNIT,
@@ -166,7 +190,9 @@ export class ImpactFx {
         size: (core ? rand(0.8, 1.1) : rand(0.4, 0.7)) * UNIT, grow: (core ? rand(1, 1.5) : rand(0.6, 1.1)) * UNIT,
         color: deep, body: bright,
       });
+      if (puff && !core) puffs.push(puff);
     }
+    this.laserSmoke(x, y, deep, bright, puffs);
     // Streaks whipping out sideways and up, like the trails of the blast.
     for (let i = 0; i < 9; i++) {
       const side = i % 2 ? 1 : -1;
@@ -207,6 +233,27 @@ export class ImpactFx {
         color: i % 2 ? 0xffffff : bright, size: rand(1.6, 3), life: rand(500, 1000), drag: 0.12, gravity: -1.5 * UNIT,
       });
     }
+  }
+
+  /**
+   * The original laserSmoke (a burst of soft, spinning glow) in the team
+   * colours: streaming behind the puffs flung out of the blast while they fly,
+   * and blooming from the core. It stops at walls and platforms like them.
+   */
+  private laserSmoke(x: number, y: number, deep: number, bright: number, puffs: Particle[]): void {
+    const def = this.laserDef;
+    if (!def || laserSmoke.mode === 'off') return;
+    const solids = this.solids;
+    for (const [i, p] of puffs.entries()) {
+      if (i % 2) continue; // every other flung puff
+      this.laser.play(def, p.x, p.y, {
+        tint: i % 4 ? bright : mix(bright, 0xffffff, 0.45), size: 1.5, speed: 0.8, life: 1.3, rate: 0.8, solids,
+        follow: () => (p.age < p.life * 0.85 ? p : null),
+      });
+    }
+    if (laserSmoke.mode !== 'full') return;
+    this.laser.play(def, x, y, { tint: bright, size: 3, speed: 3.6, life: 1.6, rate: 0.8, solids });
+    this.laser.play(def, x, y, { tint: deep, size: 4, speed: 2.2, life: 2, rate: 0.5, solids });
   }
 
   /** Dust kicked up behind a running robot (`dir`: away from the run). */
@@ -308,6 +355,7 @@ export class ImpactFx {
       p.y += p.vy * dt;
       if (p.collide) this.collide(p);
     }
+    this.laser.update(dtMs);
     this.updateWisps(dtMs);
     this.draw();
   }
@@ -355,6 +403,7 @@ export class ImpactFx {
     const since = this.now - this.lastKoAt;
     const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
     hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
+    hitGlitch(this.laserView, live || this.laser.live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86);
   }
 
   private draw(): void {
@@ -519,14 +568,17 @@ export class ImpactFx {
     }
   }
 
-  private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): void {
+  private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): Particle | undefined {
     // VFX setting: the many small bits thin out with it; single flashes, rings and beams stay until it is 0.
-    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return;
-    this.particles.push({ vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p });
+    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return undefined;
+    const particle = { vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p };
+    this.particles.push(particle);
+    return particle;
   }
 
   destroy(): void {
     this.smokeView.destroy();
+    this.laserView.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();
