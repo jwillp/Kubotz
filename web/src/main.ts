@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { TitleScene } from './scenes/TitleScene';
 import { JoinScene } from './scenes/JoinScene';
 import { ArenaScene } from './scenes/ArenaScene';
+import { SetupScene } from './scenes/SetupScene';
 import { GameScene } from './scenes/GameScene';
 import { HudScene } from './scenes/HudScene';
 import { BackdropScene } from './scenes/BackdropScene';
@@ -22,7 +23,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { gamepad: true },
   render: { antialias: true, maxLights: 36 },
-  scene: [BootScene, TitleScene, JoinScene, ArenaScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, MoveListScene, ResultsScene, ShutterScene],
+  scene: [BootScene, TitleScene, SetupScene, JoinScene, ArenaScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, MoveListScene, ResultsScene, ShutterScene],
 });
 
 // Handy for debugging from the browser console.

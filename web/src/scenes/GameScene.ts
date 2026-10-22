@@ -7,7 +7,7 @@ import { CpuController } from '../game/Ai';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, canHurt, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
+import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -103,6 +103,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   clock = 0;
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
   startedAt: number = Config.COUNTDOWN;
+  /** Lives each robot starts with, and the match length in ms (0: no limit). */
+  stocks: number = Config.NB_LIVES;
+  timeLimit = 0;
   private countdownStep = -1;
   paused = false;
   private music?: Phaser.Sound.BaseSound;
@@ -135,6 +138,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.specs = setup.fighters.slice(0, 4);
+    this.stocks = setup.stocks ?? Config.NB_LIVES;
+    this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
     const spriter: SpriterData = this.registry.get('spriter');
@@ -167,7 +172,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
           now: () => this.clock,
           nav: this.nav,
-        });
+        }, cpuReactionMs(spec.cpuLevel));
       } else {
         // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
         humans++;
@@ -179,6 +184,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
+      k.lives = this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       this.holo.start(k, 0, (x, y) => k.teleport(x, y), spawn.y);
@@ -659,6 +665,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
     this.checkDeaths(now);
+    this.checkTime(now);
     this.updateBonusSpawns(now);
     for (const k of this.fighters) {
       k.render(now, dtMs);
@@ -1045,13 +1052,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Last team standing: the match ends when one team (or nobody) is left.
     if (this.winnerTeam === undefined) {
       const left = teamsLeft(this.fighters);
-      if (left.length <= 1) {
-        this.winnerTeam = left[0] ?? null;
-        this.events.emit('match-over', this.winnerTeam);
-        this.overAt = now;
-        for (const f of this.fighters) if (!f.eliminated) f.celebrating = true;
-      }
+      if (left.length <= 1) this.endMatch(left[0] ?? null, now);
     }
+  }
+
+  /** Time up: the team with the most lives left wins (then the most health); a tie is a draw. */
+  private checkTime(now: number): void {
+    if (!this.timeLimit || this.winnerTeam !== undefined || now - this.startedAt < this.timeLimit) return;
+    const score = (team: number) => this.teamOf(team).reduce((s, k) => s + (k.eliminated ? 0 : k.lives * 1000 + Math.max(0, k.health)), 0);
+    const ranked = teamsLeft(this.fighters).map((t) => ({ t, s: score(t) })).sort((a, b) => b.s - a.s);
+    this.endMatch(ranked.length && (ranked.length === 1 || ranked[0].s > ranked[1].s) ? ranked[0].t : null, now);
+  }
+
+  private endMatch(winner: number | null, now: number): void {
+    this.winnerTeam = winner;
+    this.events.emit('match-over', this.winnerTeam);
+    this.overAt = now;
+    for (const f of this.fighters) if (!f.eliminated && f.team === winner) f.celebrating = true;
   }
 
   /** The robots of a team. */

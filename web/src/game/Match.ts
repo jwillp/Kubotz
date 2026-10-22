@@ -13,7 +13,15 @@ export interface FighterSpec {
   team: number;
   /** Helmet: an index into HEADS / HEAD_FILES. */
   helmet: number;
+  /** A CPU's level, 1 to 9 (see cpuReactionMs). */
+  cpuLevel?: number;
 }
+
+/** CPU levels: the highest a CPU can be set to, and the default. */
+export const CPU_LEVELS = 9;
+export const CPU_LEVEL = 5;
+/** How long a CPU takes to react at a level: 140 ms at level 5 (the original tuning), quicker above, slower below. */
+export const cpuReactionMs = (level = CPU_LEVEL): number => Math.round(140 * 1.25 ** (CPU_LEVEL - level));
 
 /** Per-robot numbers collected during a match, shown on the results screen. */
 export interface FighterStats {
@@ -100,6 +108,10 @@ export interface MatchSetup {
   /** Index into ARENA_INFO / ARENAS. */
   arena: number;
   bonuses: BonusRate;
+  /** Lives per robot (default Config.NB_LIVES). */
+  stocks?: number;
+  /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
+  minutes?: number;
   /**
    * Arena select preview: no robots, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.

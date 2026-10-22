@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { ARENA_INFO } from '../map/Arenas';
-import { arenaMap, eachTile } from '../map/ArenaArt';
-import type { TmxMap } from '../map/TmxMap';
+import { arenaThumbnail } from '../map/ArenaThumb';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
@@ -171,44 +170,5 @@ export class ArenaScene extends Phaser.Scene {
     this.scene.bringToTop();
   }
 
-  /**
-   * A picture of the arena (made once per arena): the backdrop, the tile art
-   * drawn small, a lit rim along every block like the game's, and the portals.
-   */
-  private thumbnail(index: number): string {
-    const key = `arena-thumb:${index}`;
-    if (this.textures.exists(key)) return key;
-    const m: TmxMap = arenaMap(index, this.registry.get('map'));
-    const mapW = m.width * m.tileWidth;
-    const mapH = m.height * m.tileHeight;
-    const s = PREVIEW_W / mapW;
-    const tex = this.textures.createCanvas(key, PREVIEW_W, Math.round(mapH * s))!;
-    const ctx = tex.getContext();
-    const bg = this.textures.get('bg').getSourceImage() as HTMLImageElement;
-    ctx.drawImage(bg, 0, 0, tex.width, tex.height);
-    ctx.fillStyle = 'rgba(5, 11, 24, 0.35)';
-    ctx.fillRect(0, 0, tex.width, tex.height);
-    eachTile(this.textures, m, (source, _key, x, y) => ctx.drawImage(source, x * s, y * s, source.width * s, source.height * s));
-    ctx.globalCompositeOperation = 'lighter';
-    for (const o of m.objects) {
-      if (o.type === 'WALL' || o.type === 'STATIC_PLATFORM') {
-        ctx.strokeStyle = 'rgba(41, 171, 226, 0.35)';
-        ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(o.x * s, o.y * s + 1); ctx.lineTo((o.x + o.width) * s, o.y * s + 1); ctx.stroke();
-        ctx.strokeStyle = 'rgba(159, 230, 255, 0.9)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      } else if (o.type === 'WARP_ZONE') {
-        const cx = (o.x + o.width / 2) * s;
-        const cy = (o.y + o.height / 2) * s;
-        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, o.height * s * 0.6);
-        g.addColorStop(0, 'rgba(160, 120, 255, 0.9)');
-        g.addColorStop(1, 'rgba(60, 40, 160, 0)');
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.ellipse(cx, cy, o.width * s * 1.6, o.height * s * 0.6, 0, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-    tex.refresh();
-    return key;
-  }
+  private thumbnail(index: number): string { return arenaThumbnail(this, index, PREVIEW_W); }
 }
