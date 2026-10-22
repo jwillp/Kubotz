@@ -800,7 +800,8 @@ export class Kubotz implements Damageable, Teamed {
       if (tech) { this.wallTech(now, b.x, b.top, 0, 1); return; }
       b.setVelocity(b.vx, -this.prevVy * Config.WALL_BOUNCE);
       this.bounce(now, b.x, b.top);
-    } else if (b.grounded && b.vy >= 0 && tech) {
+    } else if (b.grounded && b.vy >= 0 && tech && !this.floorBounced) {
+      // (A bounce off the floor is the missed tech: the next landing can't tech.)
       this.groundTech(now);
     } else if (b.grounded && this.prevVy > 7 * UNIT && !this.floorBounced) {
       this.floorBounced = true;
