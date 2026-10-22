@@ -12,7 +12,7 @@ import { ARENA_INFO } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
 import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
-import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, PlateButton, shutter } from '../ui/Plate';
+import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
 
@@ -88,6 +88,68 @@ interface Slot {
   color: number;
 }
 
+/** The way into the match: a slanted red plate, "START" in heavy italic Exo 2; selected, it glows and a light sweeps across. */
+class StartButton extends Phaser.GameObjects.Container {
+  private static readonly RED = 0xe8323a;
+  private readonly glow: Phaser.GameObjects.Graphics;
+  private readonly sweep: Phaser.GameObjects.Graphics;
+  private selected = false;
+  private ready?: boolean;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, readonly w: number, readonly h: number, private readonly slant = 20) {
+    super(scene, x, y);
+    const pts = (pad: number) => [
+      new Phaser.Math.Vector2(-w / 2 + slant - pad, -h / 2 - pad), new Phaser.Math.Vector2(w / 2 + pad, -h / 2 - pad),
+      new Phaser.Math.Vector2(w / 2 - slant + pad, h / 2 + pad), new Phaser.Math.Vector2(-w / 2 - pad, h / 2 + pad),
+    ];
+    this.glow = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    for (const [pad, width, alpha] of [[12, 14, 0.08], [8, 10, 0.14], [4.5, 6, 0.24], [2, 3, 0.45]] as const) {
+      this.glow.lineStyle(width, 0xff4a4a, alpha).strokePoints(pts(pad), true);
+    }
+    const g = scene.add.graphics();
+    g.fillStyle(StartButton.RED, 1).fillPoints(pts(0), true);
+    // Lit from above: a brighter band along the top, a darker one along the bottom.
+    g.fillStyle(0xff6a6a, 0.35).fillPoints([pts(0)[0], pts(0)[1],
+      new Phaser.Math.Vector2(w / 2 - slant * 0.3, -h / 2 + h * 0.3), new Phaser.Math.Vector2(-w / 2 + slant * 0.7, -h / 2 + h * 0.3)], true);
+    g.fillStyle(0x7a0c12, 0.35).fillRect(-w / 2 + 4, h / 2 - 6, w - slant - 4, 6);
+    g.lineStyle(1.5, 0xffd0d0, 0.8).lineBetween(-w / 2 + slant, -h / 2, w / 2, -h / 2);
+    this.sweep = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
+    const label = scene.add.text(4, 1, 'START ▶', body(38, { fontStyle: 'italic 800', color: '#ffffff' })).setOrigin(0.5)
+      .setShadow(0, 3, '#5a0008', 0, false, true);
+    this.add([this.glow, g, this.sweep, label]);
+    this.setSize(w, h).setInteractive({ useHandCursor: true });
+    scene.add.existing(this);
+  }
+
+  setSelected(on: boolean): this {
+    if (on === this.selected) return this;
+    this.selected = on;
+    const tweens = this.scene.tweens;
+    tweens.killTweensOf([this.glow, this.sweep]);
+    this.glow.setAlpha(on ? 1 : 0);
+    if (!on) { this.sweep.setVisible(false); return this; }
+    tweens.add({ targets: this.glow, alpha: 0.5, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    const { w, h } = this;
+    const g = this.sweep.clear().setVisible(true).setAlpha(1);
+    g.fillStyle(0xffffff, 0.3).fillPoints([new Phaser.Math.Vector2(-8, -h / 2), new Phaser.Math.Vector2(14, -h / 2),
+      new Phaser.Math.Vector2(-6, h / 2), new Phaser.Math.Vector2(-28, h / 2)], true);
+    g.x = -w / 2 + this.slant;
+    tweens.add({ targets: g, x: w / 2 - 8, alpha: 0, duration: 360, ease: 'Quad.in', onComplete: () => g.setVisible(false) });
+    return this;
+  }
+
+  /** Ready: it beats gently. */
+  setReady(ready: boolean): this {
+    if (ready === this.ready) return this;
+    this.ready = ready;
+    this.setAlpha(ready ? 1 : 0.4);
+    this.scene.tweens.killTweensOf(this);
+    this.setScale(1);
+    if (ready) this.scene.tweens.add({ targets: this, scale: 1.04, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    return this;
+  }
+}
+
 /**
  * The setup screen: arena, rules and robots on one page (it replaces the
  * join screen and the arena select). The arena carousel runs across the top,
@@ -114,7 +176,7 @@ export class SetupScene extends Phaser.Scene {
   private arenaName!: HeadingText;
   private arenaBlurb!: Phaser.GameObjects.Text;
   private rules: Record<'stocks' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
-  private start!: PlateButton;
+  private start!: StartButton;
   private status!: Phaser.GameObjects.Text;
   /** Pad buttons down last frame, per pad, for joins and leaves. */
   private padDown = new Map<number, Set<number>>();
@@ -166,7 +228,7 @@ export class SetupScene extends Phaser.Scene {
     const rig = new Rig(this.registry.get('spriter') as SpriterData);
     for (let i = 0; i < SLOTS; i++) this.slots.push(this.makeSlot(i, rig));
 
-    this.start = new PlateButton(this, width / 2, 692, 320, 52, 'START', { size: 42 });
+    this.start = new StartButton(this, width / 2, 690, 290, 54);
     this.start.on('pointerover', () => this.setFocus({ kind: 'start' }));
     this.start.on('pointerdown', () => this.go());
     this.status = this.add.text(width / 2 + 180, 692, '', body(15, { fontStyle: '600', color: '#ffd27a' })).setOrigin(0, 0.5);
@@ -480,7 +542,7 @@ export class SetupScene extends Phaser.Scene {
 
     const problem = this.problem();
     this.start.setSelected(on('start'));
-    this.start.setAlpha(problem ? 0.45 : 1);
+    this.start.setReady(!problem);
     this.status.setText(problem ?? '');
     this.registry.set('setup', structuredClone(s));
     this.registry.set('arena', s.arena);
