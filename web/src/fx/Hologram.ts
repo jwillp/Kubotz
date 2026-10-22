@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Config, UNIT } from '../config';
+import { UNIT } from '../config';
 
 /**
  * Spawn holograms: at the match start and on every respawn a projector
@@ -27,25 +27,31 @@ export const RELEASE_AT = 1750;
 export const HOVER = 1.1 * UNIT;
 /**
  * The match intro's spawns: the robot is drawn twice as fast into a full
- * hologram (to HOLO_AT in the sequence, while the camera is on it), waits
- * as a hologram, then solidifies and is let go (HOLO_AT to RELEASE_AT) over
- * INTRO_MATERIALIZE_MS (the countdown); the rest goes as usual.
+ * hologram (to HOLO_AT in the sequence, while the camera is on it) and waits
+ * as a hologram. From the countdown's start it solidifies (HOLO_AT to
+ * SOLID_AT) between INTRO_SOLID_FROM and INTRO_SOLID_AT ms (solid on "1"),
+ * stands solid, and is let go INTRO_RELEASE ms in (just before "Fight");
+ * the rest goes as usual.
  */
 const HOLO_AT = 1300;
+const SOLID_AT = 1720;
 const FAST_UNTIL = HOLO_AT / 2;
-export const INTRO_MATERIALIZE_MS = Config.COUNTDOWN;
+const INTRO_SOLID_FROM = 1000;
+const INTRO_SOLID_AT = 2000;
+const INTRO_RELEASE = 2650;
 
 /**
  * Where in the spawn sequence (its usual timing) a spawn is `age` ms after it
- * started; an intro spawn waits `hold` ms as a hologram before it materializes.
+ * started; an intro spawn waits `hold` ms as a hologram before the countdown.
  */
 export function spawnAge(age: number, hold?: number): number {
   if (hold === undefined) return age;
   if (age < FAST_UNTIL) return age * 2;
   const t = age - FAST_UNTIL - hold;
-  if (t < 0) return HOLO_AT;
-  if (t < INTRO_MATERIALIZE_MS) return HOLO_AT + (t * (RELEASE_AT - HOLO_AT)) / INTRO_MATERIALIZE_MS;
-  return RELEASE_AT + t - INTRO_MATERIALIZE_MS;
+  if (t < INTRO_SOLID_FROM) return HOLO_AT;
+  if (t < INTRO_SOLID_AT) return HOLO_AT + ((t - INTRO_SOLID_FROM) * (SOLID_AT - HOLO_AT)) / (INTRO_SOLID_AT - INTRO_SOLID_FROM);
+  if (t < INTRO_RELEASE) return SOLID_AT + ((t - INTRO_SOLID_AT) * (RELEASE_AT - SOLID_AT)) / (INTRO_RELEASE - INTRO_SOLID_AT);
+  return RELEASE_AT + t - INTRO_RELEASE;
 }
 
 /** A debris piece's scan-out (ms). */
@@ -320,13 +326,13 @@ export class HoloSpawns {
 
   /**
    * Starts a robot's spawn at `now`: it is raised by HOVER and held until
-   * RELEASE_AT. The intro passes `materializeAt`: the robot waits as a
-   * hologram until then, and is let go INTRO_MATERIALIZE_MS later.
+   * RELEASE_AT. The intro passes `countdownAt`: the robot waits as a
+   * hologram until then, and materializes during the countdown (spawnAge).
    */
-  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, materializeAt?: number): void {
+  start(k: Spawner, now: number, lift: (x: number, y: number) => void, y: number, countdownAt?: number): void {
     lift(k.x, y - HOVER);
-    const hold = materializeAt === undefined ? undefined : Math.max(0, materializeAt - now - FAST_UNTIL);
-    k.materializeUntil = now + (hold === undefined ? RELEASE_AT : FAST_UNTIL + hold + INTRO_MATERIALIZE_MS);
+    const hold = countdownAt === undefined ? undefined : Math.max(0, countdownAt - now - FAST_UNTIL);
+    k.materializeUntil = now + (hold === undefined ? RELEASE_AT : FAST_UNTIL + hold + INTRO_RELEASE);
     this.active.set(k, { at: now, x: k.x, feet: k.body.bottom, hold });
   }
 
