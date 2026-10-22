@@ -3,13 +3,14 @@ import { Config, UNIT } from '../config';
 import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
-import { CpuController } from '../game/Ai';
+import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
+import { CtfFlag } from '../game/Flag';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
-import { HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
+import { CTF_CAPTURES, CTF_GUARDIANS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -118,6 +119,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   wave = 0;
   private nextWaveAt = Infinity;
   private waveQueue: { at: number; level: number; health: number }[] = [];
+  /** Capture the Flag: the two flags (players', black team's), and the captures of each. */
+  flags: CtfFlag[] = [];
+  private flagStands: Phaser.Math.Vector2[] = [];
+  captures: [number, number] = [0, 0];
+  /** Training: CPUs defeated, how many to defeat, and when the next one may come in. */
+  defeated = 0;
+  target = 10;
+  private nextFoeAt = 0;
   private rig!: Rig;
   private countdownStep = -1;
   /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every Kubot's spawn is shown). */
@@ -163,13 +172,22 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.wave = 0;
     this.nextWaveAt = Infinity;
     this.waveQueue = [];
+    this.flags = [];
+    this.flagStands = [];
+    this.captures = [0, 0];
+    this.defeated = 0;
+    this.nextFoeAt = 0;
   }
 
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.mode = setup.mode ?? 'gladiator';
     this.specs = setup.fighters.slice(0, 4);
-    this.recharges = setup.recharges ?? Config.NB_LIVES;
+    const mode = MODES[this.mode];
+    // Sandbox: a dummy joins (its behaviour is set below); Sandbox and Capture the Flag never run out of recharges.
+    if (mode.sandbox) this.specs = [...this.specs.slice(0, 1), { input: 'CPU', team: 1, helmet: 7, cpuLevel: 5 }];
+    this.recharges = mode.sandbox || mode.ctf ? Infinity : mode.trial ? TRAINING_RECHARGES : setup.recharges ?? Config.NB_LIVES;
+    this.target = setup.target ?? 10;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -180,7 +198,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
 
     this.arena = setup.arena;
-    this.bakeScale = setup.preview ? PREVIEW_BAKE : 1;
+    // A giant arena's art is baked smaller (its full-size canvases would not fit the GPU's textures).
+    this.bakeScale = setup.preview ? PREVIEW_BAKE : this.map.width > 60 ? 0.6 : 1;
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
@@ -210,6 +229,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
           now: () => this.clock,
           nav: this.nav,
+          objective: (k) => this.ctfObjective(k),
         }, cpuReactionMs(spec.cpuLevel));
       } else {
         // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
@@ -219,9 +239,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           ? new HumanController(this, null, spec.input, spec.pad, `P${humans}`)
           : new HumanController(this, keys, spec.input, -1, `P${humans}`);
       }
-      const spawn = this.playerSpawns[i % this.playerSpawns.length];
+      // Capture the Flag: everyone starts at the players' base.
+      const spawns = mode.ctf ? this.teamSpawns(spec.team) : this.playerSpawns;
+      const spawn = spawns[i % spawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
+      if (mode.ctf) k.role = 'striker';
+      // The sandbox's dummy: it stands still to start with, at its spawn.
+      if (mode.sandbox && controller instanceof CpuController) { controller.dummy = 'stand'; controller.dummyHome = { x: spawn.x, y: spawn.y }; }
       k.lives = this.recharges;
       // Blasters, Blades: the mode's weapon from the start, for the whole match.
       k.armed = k.weapon = MODES[this.mode].armed ?? 'none';
@@ -233,6 +258,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.appearAt = at;
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
+    if (mode.ctf) this.setupCtf();
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
     // The camera starts on the first Kubot's spawn (updateCamera follows the intro).
@@ -260,12 +286,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Pause, quit and continue: one input layer for the keyboard and every pad (MenuInput).
     this.commands = new MenuInput({
       pause: () => this.togglePause(), // Esc, pad Start (not P: it is P1's special)
-      quit: () => { if (this.paused) this.backToTitle(); }, // from the pause: Q, pad Select
+      // From the pause: Q, pad Select quits; in the sandbox, unpaused, they change what the dummy does.
+      quit: () => { if (this.paused) this.backToTitle(); else if (MODES[this.mode].sandbox) this.cycleDummy(); },
       confirm: () => this.continueAfterMatch(), // after the match: Enter, Space, pad A, B or Start
     }, false, { confirm: ['A', 'B', 9] });
     // Back from the settings or controls (drawn over the paused match): the Esc or Start that closed them must not unpause too.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.commands?.reset());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME));
+    kb.on('keydown-TAB', (e: KeyboardEvent) => { e.preventDefault(); if (!this.paused && MODES[this.mode].sandbox) this.cycleDummy(); });
     kb.on('keydown-V', () => {
       look25.on = !look25.on;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, look25.on ? '2.5D on' : '2.5D off', 0xffffff);
@@ -327,6 +355,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.debris.destroy();
       this.portals.destroy();
       this.holo.destroy();
+      for (const f of this.flags) f.destroy();
       for (const k of this.fighters) k.destroy();
     });
   }
@@ -415,6 +444,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           break;
         case 'BONUS_SPAWN':
           this.bonusSpawns.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height / 2));
+          break;
+        case 'FLAG_STAND':
+          this.flagStands.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height));
           break;
         case 'WARP_ZONE':
           this.warpZones.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
@@ -650,6 +682,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   landed(victim: Kubotz, attacker: Kubotz, damage: number, chained: boolean, healthBefore: number, speed: number, angle: number): void {
     this.recorder.hit(victim, attacker, damage, chained, this.clock, healthBefore, speed, angle);
+    // Sandbox: every hit's damage pops up.
+    if (MODES[this.mode].sandbox && damage > 0) this.floatText(victim.x, victim.body.top - 0.4 * UNIT, `${Math.round(damage)}%`, 0xffffff);
   }
 
   airJump(x: number, y: number, color: number): void {
@@ -763,6 +797,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkTime(now);
     this.updateBonusSpawns(now);
     this.updateHorde(now);
+    this.updateFlags(now);
+    this.updateTrial(now);
     const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
       k.render(now, dtMs);
@@ -805,6 +841,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         ...this.orbs.flatMap((o) => o.props()),
         ...this.bullets.filter((b) => !b.dead).map((b) => propOf(b.sprite)),
         ...this.glows.filter((g) => g.visible).map((g) => propOf(g)),
+        ...this.flags.flatMap((f) => f.props()),
       ],
       ambient: Phaser.Display.Color.GetColor(amb.r * 255, amb.g * 255, amb.b * 255),
     });
@@ -1159,11 +1196,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         ? (isBlackTeam(k) ? this.wave >= HORDE_WAVES && this.waveQueue.length === 0 && this.blackLeft().length === 1 : teamsLeft(this.fighters.filter((f) => f !== k)).length === 0)
         : teamsLeft(this.fighters.filter((f) => f !== k || f.lives > 1)).length <= 1);
       this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, final);
+      k.carrying?.drop(now, k.body.vx, k.body.vy);
       this.debris.explode(k, now);
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
+      if (MODES[this.mode].trial && k.team !== HORDE_TEAM && k.eliminated) { this.defeated++; this.events.emit('trial', this.defeated); }
       this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} ELIMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
+    }
+    // Sandbox and Capture the Flag: K.O.s never end it. Training: it ends when you are out (or by the count, see updateTrial).
+    if (MODES[this.mode].sandbox || MODES[this.mode].ctf) return;
+    if (MODES[this.mode].trial) {
+      if (this.winnerTeam === undefined && this.fighters[0]?.eliminated) this.endMatch(TRIAL_FOES, now);
+      return;
     }
     // Horde: the players lose when none of them is left (the waves end it the other way, see updateHorde).
     if (MODES[this.mode].horde) {
@@ -1212,6 +1257,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
       arena: this.arena,
       mode: this.mode,
+      ...(MODES[this.mode].ctf ? { score: [...this.captures] as [number, number] } : {}),
+      ...(MODES[this.mode].trial ? { defeated: this.defeated, target: this.target } : {}),
       ...(MODES[this.mode].horde ? { wave: this.winnerTeam === BLACK_TEAM ? this.wave : Math.min(this.wave, HORDE_WAVES) } : {}),
       warpZones: this.warpZones.map(({ x, y, width, height }) => ({ x, y, width, height })),
     };
@@ -1232,7 +1279,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (!MODES[this.mode].horde || this.winnerTeam !== undefined || now < this.startedAt) return;
     while (this.waveQueue.length && now >= this.waveQueue[0].at) {
       const w = this.waveQueue.shift()!;
-      this.spawnBlack(w.level, w.health);
+      this.spawnFoe(BLACK_TEAM, BLACK_COLOR, w.level, w.health, BLACK_HELMET);
     }
     if (this.waveQueue.length || this.blackLeft().length) return;
     if (this.wave >= HORDE_WAVES) { this.endMatch(HORDE_TEAM, now); return; }
@@ -1268,40 +1315,203 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    * players: a K.O.'d one comes back (at the new wave's level), or a new one
    * joins while there are fewer than the wave needs. One life each.
    */
-  private spawnBlack(level: number, health: number): void {
-    const players = this.fighters.filter((f) => !isBlackTeam(f) && f.isAlive());
+  // ---------------------------------------------------------------- training
+  /** Sandbox: the dummy's next behaviour (pad Select, Q or Tab). */
+  private cycleDummy(): void {
+    const c = this.fighters.map((k) => k.controller).find((x): x is CpuController => x instanceof CpuController);
+    if (!c) return;
+    c.dummy = DUMMY_MODES[(DUMMY_MODES.indexOf(c.dummy ?? 'stand') + 1) % DUMMY_MODES.length];
+    this.events.emit('dummy', c.dummy);
+    this.playSfx('holo-spawn', 0.2, 600);
+  }
+
+  /** The sandbox dummy's behaviour (for the HUD). */
+  dummyMode(): string | null {
+    const c = this.fighters.map((k) => k.controller).find((x): x is CpuController => x instanceof CpuController);
+    return c?.dummy ?? null;
+  }
+
+  /**
+   * Training: CPUs come in one at a time, two from a third of the way, on
+   * their own team, tougher as you go; defeating the target wins.
+   */
+  private updateTrial(now: number): void {
+    if (!MODES[this.mode].trial || this.winnerTeam !== undefined || now < this.startedAt + 600) return;
+    if (this.defeated >= this.target) { this.endMatch(HORDE_TEAM, now); return; }
+    const foes = this.fighters.filter((f) => f.team === TRIAL_FOES && !f.eliminated).length;
+    const { together, level } = trainingFoes(this.defeated, this.target);
+    if (foes >= Math.min(together, this.target - this.defeated) || now < this.nextFoeAt) return;
+    this.nextFoeAt = now + 900;
+    const n = this.defeated + foes;
+    this.spawnFoe(TRIAL_FOES, SLOT_COLORS[1 + (n % 3)], level, Config.KUBOTZ_HEALTH, [4, 9, 5, 6, 8, 1][n % 6]);
+  }
+
+  // ---------------------------------------------------------- capture the flag
+  /** The spawn points of a team's base: the half of them nearest its flag stand (players: the first stand). */
+  private teamSpawns(team: number): Phaser.Math.Vector2[] {
+    const stand = this.flagStands[isBlackTeam({ team }) ? 1 : 0];
+    if (!stand) return this.playerSpawns;
+    const near = [...this.playerSpawns].sort((a, b) => Math.abs(a.x - stand.x) - Math.abs(b.x - stand.x));
+    return near.slice(0, Math.max(1, Math.ceil(near.length / 2)));
+  }
+
+  /**
+   * Capture the Flag: the two flags on their stands, two guardians on the
+   * players' team, and the black team: as many strikers as the players'
+   * side, and two guardians. The CPUs appear as the countdown starts.
+   */
+  private setupCtf(): void {
+    if (this.flagStands.length < 2) return;
+    const colors = [SLOT_COLORS[HORDE_TEAM], BLACK_COLOR];
+    const teams = [HORDE_TEAM, BLACK_TEAM];
+    this.flags = teams.map((team, i) => new CtfFlag(this, this.physicsWorld, team, colors[i], this.flagStands[i]));
+    const add = (team: number, role: 'striker' | 'guardian', helmet: number) => {
+      const k = this.spawnFoe(team, team === BLACK_TEAM ? BLACK_COLOR : SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, helmet, Infinity, this.countdownAt);
+      k.role = role;
+    };
+    for (let i = 0; i < CTF_GUARDIANS; i++) add(HORDE_TEAM, 'guardian', 7);
+    for (let i = 0; i < this.specs.length; i++) add(BLACK_TEAM, 'striker', BLACK_HELMET);
+    for (let i = 0; i < CTF_GUARDIANS; i++) add(BLACK_TEAM, 'guardian', 7);
+  }
+
+  /** A team's flag, and the other one. */
+  private flagsOf(team: number): { own: CtfFlag; theirs: CtfFlag } | null {
+    if (this.flags.length < 2) return null;
+    const own = this.flags.find((f) => f.team === team) ?? this.flags[0];
+    return { own, theirs: this.flags.find((f) => f !== own)! };
+  }
+
+  /**
+   * A CPU's job in Capture the Flag. Guardians keep to a circle round their
+   * stand (going after a thief or a loose flag close to it). Strikers bring
+   * a flag they hold home; else half of them chase whoever holds their flag,
+   * a loose flag of theirs gets picked up, a teammate holding the enemy flag
+   * gets an escort, and otherwise they go for the enemy flag.
+   */
+  private ctfObjective(k: Kubotz): Objective | null {
+    const f = this.flagsOf(k.team);
+    if (!f) return null;
+    const { own, theirs } = f;
+    const base = own.home;
+    const near = (p: { x: number; y: number }, units: number) => Math.hypot(p.x - base.x, p.y - base.y) < units * UNIT;
+    const at = (fl: CtfFlag) => (fl.state === 'home' ? fl.home : { x: fl.x, y: fl.y });
+    if (k.role === 'guardian') {
+      if (own.carrier && near(own.carrier, 14)) return { target: own.carrier };
+      if (own.state === 'dropped' && near(own, 14)) return { goal: at(own), fightWithin: 1.5 };
+      // The two guardians stand either side of the stand, not on it (the flag stays in sight).
+      const side = k.index % 2 === 0 ? -1 : 1;
+      return { leash: { x: base.x + side * 3 * UNIT, y: base.y - UNIT, r: 8 } };
+    }
+    if (k.carrying) return { goal: base, fightWithin: 1.2 };
+    if (own.carrier && k.index % 2 === 0) return { target: own.carrier };
+    if (own.state === 'dropped') return { goal: at(own), fightWithin: 2 };
+    if (theirs.carrier) return { goal: { x: theirs.carrier.x, y: theirs.carrier.body.bottom }, fightWithin: 5 };
+    return { goal: at(theirs), fightWithin: 3 };
+  }
+
+  /**
+   * Capture the Flag, every frame: flags taken by touch, dropped when the
+   * carrier is sent tumbling, carried home by their own team, and captured
+   * when a carrier brings the enemy flag to its own stand.
+   */
+  private updateFlags(now: number): void {
+    if (!this.flags.length || this.winnerTeam !== undefined) return;
+    const bottom = (this.map.height + 6) * UNIT;
+    for (const flag of this.flags) {
+      flag.update(bottom);
+      const c = flag.carrier;
+      if (c) {
+        if (c.tumbling) {
+          flag.drop(now, c.body.vx, c.body.vy);
+          this.floatText(c.x, c.y - UNIT, 'FLAG DROPPED', flag.color === BLACK_COLOR ? 0xffffff : flag.color);
+          this.events.emit('flag', flag);
+          continue;
+        }
+        const own = this.flagsOf(c.team)!.own;
+        const home = Math.abs(c.x - own.home.x) < 2.2 * UNIT && Math.abs(c.body.bottom - own.home.y) < 2 * UNIT;
+        if (!home) continue;
+        if (flag === own) {
+          // Its own flag, carried back to its stand.
+          flag.reset();
+          this.floatText(c.x, c.y - UNIT, 'FLAG RETURNED', c.look.color);
+          this.events.emit('flag', flag);
+        } else {
+          this.capture(c, now);
+          return;
+        }
+        continue;
+      }
+      const taker = this.fighters.find((k) => flag.canTake(k, now));
+      if (!taker) continue;
+      flag.take(taker);
+      this.playSfx('holo-spawn', 0.4, 300);
+      this.floatText(taker.x, taker.y - UNIT, taker.team === flag.team ? 'FLAG RECOVERED' : 'FLAG TAKEN', isBlackTeam(taker) ? 0xffffff : taker.look.color);
+      this.events.emit('flag', flag);
+    }
+  }
+
+  /** A capture: the team scores; at CTF_CAPTURES it wins, else every Kubot and both flags go back to the start. */
+  private capture(by: Kubotz, now: number): void {
+    const side = isBlackTeam(by) ? 1 : 0;
+    this.captures[side]++;
+    this.events.emit('capture', side, [...this.captures]);
+    this.shake(0.5);
+    if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.5, 400);
+    if (this.captures[side] >= CTF_CAPTURES) { this.endMatch(isBlackTeam(by) ? BLACK_TEAM : HORDE_TEAM, now); return; }
+    for (const f of this.flags) f.reset();
+    for (const k of this.fighters) {
+      if (!k.isAlive()) continue;
+      const spawn = Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team));
+      k.respawn(spawn.x + Phaser.Math.Between(-12, 12), spawn.y);
+      this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), spawn.y);
+    }
+    this.playSfx('holo-spawn', 0.45);
+  }
+
+  /**
+   * A CPU materializes for a mode (Horde's waves, a training CPU, Capture
+   * the Flag's teams): a K.O.'d one of its team comes back at the new level,
+   * or a new one joins. Horde and training CPUs come in at the spawn point
+   * farthest from the players; Capture the Flag's at their base.
+   */
+  private spawnFoe(team: number, color: number, level: number, health: number, helmet: number, lives = 1, appearAt = this.clock): Kubotz {
+    const players = this.fighters.filter((f) => f.team === HORDE_TEAM && f.isAlive());
     const far = (v: Phaser.Math.Vector2) => Math.min(...players.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
-    const spawn = [...this.playerSpawns].sort((p, q) => far(q) - far(p))[Phaser.Math.Between(0, Math.min(1, this.playerSpawns.length - 1))];
+    const spawn = MODES[this.mode].ctf ? Phaser.Utils.Array.GetRandom(this.teamSpawns(team))
+      : [...this.playerSpawns].sort((p, q) => far(q) - far(p))[Phaser.Math.Between(0, Math.min(1, this.playerSpawns.length - 1))];
     const x = spawn.x + Phaser.Math.Between(-12, 12);
-    let k = this.fighters.find((f) => isBlackTeam(f) && f.eliminated);
+    let k = this.fighters.find((f) => f.team === team && f.eliminated && f.index >= this.specs.length);
     if (k) {
       (k.controller as CpuController).reactionMs = cpuReactionMs(level);
       k.maxHealth = health;
-      k.lives = 1;
+      k.lives = lives;
       k.respawn(x, spawn.y);
     } else {
       const controller = new CpuController({
         enemiesOf: (me) => this.fighters.filter((f) => canHurt(me, f) && !f.eliminated),
-        powerUpPositions: () => [],
+        powerUpPositions: () => (MODES[this.mode].trial ? this.orbs.map((o) => ({ x: o.x, y: o.y })) : []),
         now: () => this.clock,
         nav: this.nav,
+        objective: (me) => this.ctfObjective(me),
       }, cpuReactionMs(level));
-      k = new Kubotz(this, this.fighters.length, controller, BLACK_COLOR, this.rig, x, spawn.y, this, this.physicsWorld, { team: BLACK_TEAM, helmet: BLACK_HELMET });
+      k = new Kubotz(this, this.fighters.length, controller, color, this.rig, x, spawn.y, this, this.physicsWorld, { team, helmet });
       controller.agent = k;
       k.maxHealth = k.health = health;
-      k.lives = 1;
-      k.appearAt = this.clock;
+      k.lives = lives;
+      k.appearAt = appearAt;
       this.fighters.push(k);
     }
     k.facing = x < (this.map.width * UNIT) / 2 ? 1 : -1;
-    this.holo.start(k, this.clock, (hx, hy) => k.teleport(hx, hy), spawn.y);
-    this.playSfx('holo-spawn', 0.35);
+    const kk = k;
+    this.holo.start(kk, appearAt, (hx, hy) => kk.teleport(hx, hy), spawn.y, appearAt > this.clock ? appearAt : undefined);
+    if (appearAt <= this.clock) this.playSfx('holo-spawn', 0.35);
+    return k;
   }
 
   private respawn(k: Kubotz): void {
-    // Prefer the spawn point farthest from the other Kubotz.
+    // Capture the Flag: back at its own base. Otherwise the spawn point farthest from the other Kubotz.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
-    const spawn = [...this.playerSpawns].sort((p, q) => {
+    const spawn = MODES[this.mode].ctf ? Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team)) : [...this.playerSpawns].sort((p, q) => {
       const d = (v: Phaser.Math.Vector2) => Math.min(...others.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
       return d(q) - d(p);
     })[0];
@@ -1314,6 +1524,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ camera
   /** What the camera keeps in view: the Kubotz still fighting, and the power-ups on offer. */
   private focusPoints(): { x: number; y: number }[] {
+    // Capture the Flag (a giant arena): the camera follows the human players only.
+    if (MODES[this.mode].ctf) return this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
     const alive = this.fighters.filter((f) => f.isAlive());
     // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
@@ -1435,6 +1647,8 @@ const PREVIEW_BAKE = 0.3;
 /** Horde: the breather between two waves, and between two Kubotz of a wave coming in (ms). */
 const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
+/** Training: the CPUs' team (they never fight each other). */
+const TRIAL_FOES = 1;
 /** Horde: the black team's helmet (Skull). */
 const BLACK_HELMET = 3;
 

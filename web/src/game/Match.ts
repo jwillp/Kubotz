@@ -59,6 +59,10 @@ export interface MatchResult {
   /** The battle mode; for Horde, the wave reached (the last one cleared when they won). */
   mode?: MatchMode;
   wave?: number;
+  /** Capture the Flag: captures (players, black team). Training: CPUs defeated, of how many. */
+  score?: [number, number];
+  defeated?: number;
+  target?: number;
   warpZones: { x: number; y: number; width: number; height: number }[];
 }
 
@@ -147,6 +151,8 @@ export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 export interface MatchSetup {
   /** The battle mode (default Gladiator). */
   mode?: MatchMode;
+  /** Training: how many CPUs to defeat. */
+  target?: number;
   /** One per Kubot, in slot order (at most 4). */
   fighters: FighterSpec[];
   /** Index into ARENA_INFO / ARENAS. */

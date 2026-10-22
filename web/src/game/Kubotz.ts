@@ -9,6 +9,8 @@ import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { vfx } from './Settings';
 import { BLACK_TAG, BLACK_TEAM, canHurt, type Teamed } from './Match';
+import type { CtfFlag } from './Flag';
+import { flagTexture } from '../fx/Flag';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
@@ -312,6 +314,9 @@ export class Kubotz implements Damageable, Teamed {
   armed: Weapon = 'none';
   /** The health it spawns with (Horde's weaker black-team Kubotz start lower). */
   maxHealth: number = Config.KUBOTZ_HEALTH;
+  /** Capture the Flag: the flag it holds (swung with the sword's moves), and its job on a CPU team. */
+  carrying: CtfFlag | null = null;
+  role?: 'striker' | 'guardian';
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -461,7 +466,9 @@ export class Kubotz implements Damageable, Teamed {
     this.anim = new Animator(rig);
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Kubot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
+    // A flag carrier holds the flag where the laser sword goes.
+    this.model = new Kubot2D(scene, rig, (file) => (file === SWORD_FILE && this.carrying
+      ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     // A soft outer glow in the player's colour, so Kubotz stay apart in a close fight (WebGL only).
     this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
@@ -480,7 +487,7 @@ export class Kubotz implements Damageable, Teamed {
   /** The middle of the laser blade (world pixels), for its light. */
   /** The laser blade's emitter and tip (world pixels), while the sword is out. */
   blade(): { x1: number; y1: number; x2: number; y2: number } | null {
-    if (this.weapon !== 'laserSword' || !this.isAlive()) return null;
+    if (this.weapon !== 'laserSword' || !this.isAlive() || this.carrying) return null;
     const a = this.model.pointOn(SWORD_FILE, 96, 68);
     const b = this.model.pointOn(SWORD_FILE, 298, 216);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
@@ -1463,6 +1470,7 @@ export class Kubotz implements Damageable, Teamed {
   // --------------------------------------------------------------- power ups
   givePowerUp(type: PowerUpType, now: number): void {
     const def = POWER_UPS[type];
+    if (def.weapon && this.carrying) return; // the flag stays in hand
     // A new weapon replaces the current one instead of stacking.
     if (def.weapon) {
       const old = this.powerUps.find((p) => POWER_UPS[p.type].weapon);
@@ -1470,6 +1478,13 @@ export class Kubotz implements Damageable, Teamed {
     }
     def.onStart(this);
     if (def.timed) this.powerUps.push({ type, endsAt: now + Config.POWERUP_DURATION });
+  }
+
+  /** Capture the Flag: takes the flag in hand (it fights with the sword's moves), or lets go of it. */
+  carryFlag(flag: CtfFlag | null): void {
+    if (flag) for (const p of [...this.powerUps]) if (POWER_UPS[p.type].weapon) this.removePowerUp(p);
+    this.carrying = flag;
+    this.weapon = flag ? 'laserSword' : this.dead ? 'none' : this.armed;
   }
 
   private removePowerUp(p: ActivePowerUp): void {

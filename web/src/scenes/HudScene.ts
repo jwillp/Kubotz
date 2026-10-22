@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
-import { BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
-import { HORDE_WAVES, MODES } from '../game/Modes';
+import { BLACK_COLOR, BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
+import { CTF_CAPTURES, HORDE_WAVES, MODES } from '../game/Modes';
 import { hitGlitch } from '../fx/HitGlitch';
 import { vfx } from '../game/Settings';
 import type { GameScene } from './GameScene';
@@ -33,6 +33,8 @@ interface Card {
   status: Phaser.GameObjects.Text;
   /** The status shown (its chip is redrawn only when it changes). */
   shown: string;
+  /** Infinite recharges (Sandbox, Capture the Flag): an ∞ instead of pips. */
+  infinite: Phaser.GameObjects.Text;
 }
 
 /**
@@ -46,6 +48,9 @@ export class HudScene extends Phaser.Scene {
   private timer!: Phaser.GameObjects.Text;
   /** Horde: the wave and the black-team Kubotz left, under the timer. */
   private waveText?: Phaser.GameObjects.Text;
+  /** Capture the Flag: a bubble at the screen's edge for each flag out of view, and its state under it. */
+  private bubbles!: Phaser.GameObjects.Graphics;
+  private bubbleLabels: Phaser.GameObjects.Text[] = [];
   private banner!: Phaser.GameObjects.Container;
   private bannerPlate!: Phaser.GameObjects.Graphics;
   private bannerText!: HeadingText;
@@ -71,14 +76,18 @@ export class HudScene extends Phaser.Scene {
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
     this.timer = this.add.text(width / 2, 18, '0:00', body(22, { fontStyle: '800' })).setOrigin(0.5);
 
+    // The mode's line under the timer: Horde's wave, the sandbox dummy, the training count, the captures.
     this.waveText = undefined;
-    if (MODES[this.game_.mode].horde) {
-      drawPlate(tg, width / 2 - 110, 40, 220, 30, { cut: 10, alpha: 0.85 });
+    const mode = MODES[this.game_.mode];
+    if (mode.horde || mode.sandbox || mode.trial || mode.ctf) {
+      drawPlate(tg, width / 2 - 170, 40, 340, 30, { cut: 10, alpha: 0.85 });
       this.waveText = this.add.text(width / 2, 55, '', body(15, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5);
     }
+    this.bubbles = this.add.graphics().setDepth(15);
+    this.bubbleLabels = this.game_.flags.map(() => this.add.text(0, 0, '', body(11, { fontStyle: '800', color: '#e9f6ff' })).setOrigin(0.5).setDepth(15));
 
-    // One card per Kubot in seat order, centred along the bottom edge; the black team has none.
-    const fighters = this.game_.fighters.filter((k) => !isBlackTeam(k));
+    // One card per Kubot in seat order, centred along the bottom edge; the black team and the guardians have none.
+    const fighters = this.game_.fighters.filter((k) => !isBlackTeam(k) && k.role !== 'guardian');
     const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
     fighters.forEach((k, i) => this.cards.set(k, this.makeCard(k, left + i * (CARD_W + CARD_GAP), height - CARD_H - 10)));
 
@@ -121,12 +130,16 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('wave', this.onWave, this);
     this.game_.events.on('wave-cleared', this.onWaveCleared, this);
     this.game_.events.on('bonus-recharge', this.onBonusRecharge, this);
+    this.game_.events.on('capture', this.onCapture, this);
+    this.game_.events.on('dummy', this.onDummy, this);
     this.glitches = [];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME);
       this.game_.events.off('wave', this.onWave, this);
       this.game_.events.off('wave-cleared', this.onWaveCleared, this);
       this.game_.events.off('bonus-recharge', this.onBonusRecharge, this);
+      this.game_.events.off('capture', this.onCapture, this);
+      this.game_.events.off('dummy', this.onDummy, this);
       this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
@@ -154,8 +167,9 @@ export class HudScene extends Phaser.Scene {
     const kills = this.add.text(CARD_W - 8, 56, 'K.O. 0', body(13, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(1, 0.5);
     const chip = this.add.graphics();
     const status = this.add.text(SLAB + 8, -14, '', body(11, { fontStyle: '800' })).setOrigin(0, 0.5);
-    c.add([g, tag, name, team, bars, kills, chip, status]);
-    return { container: c, bars, kills, chip, status, shown: '' };
+    const infinite = this.add.text(SLAB + 12, 56, '∞', body(20, { fontStyle: '800', color: '#' + hex(color) })).setOrigin(0, 0.5).setVisible(false);
+    c.add([g, tag, name, team, bars, kills, chip, status, infinite]);
+    return { container: c, bars, kills, chip, status, shown: '', infinite };
   }
 
   update(): void {
@@ -172,9 +186,14 @@ export class HudScene extends Phaser.Scene {
       this.timer.setColor(g.timeLimit && shown <= 10 ? '#ff6a5a' : '#ffffff');
     }
     if (this.waveText) {
+      const mode = MODES[g.mode];
       const left = g.fighters.filter((k) => isBlackTeam(k) && !k.eliminated).length;
-      this.waveText.setText(g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
+      this.waveText.setText(mode.sandbox ? `DUMMY: ${(g.dummyMode() ?? '').toUpperCase()}   ·   SELECT / TAB: CHANGE`
+        : mode.trial ? `DEFEATED ${g.defeated} / ${g.target}`
+          : mode.ctf ? `CAPTURES   RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   FIRST TO ${CTF_CAPTURES}`
+            : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
+    this.drawFlagBubbles();
     for (const [k, card] of this.cards) this.drawCard(k, card, time);
   }
 
@@ -217,6 +236,8 @@ export class HudScene extends Phaser.Scene {
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
     // Recharge: cube pips in the helmet colour.
     const recharges = Math.max(this.game_.recharges, k.lives); // Horde's bonus recharges add pips
+    card.infinite.setVisible(!Number.isFinite(recharges));
+    if (!Number.isFinite(recharges)) { card.kills.setText(`K.O. ${k.kills}`); return this.drawStatus(k, card, time, stunned); }
     const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
     for (let s = 0; s < recharges; s++) {
       const cx = x0 + 6 + s * step;
@@ -225,7 +246,11 @@ export class HudScene extends Phaser.Scene {
       else b.lineStyle(1, 0xffffff, 0.2).strokePoints(pip.points, true);
     }
     card.kills.setText(`K.O. ${k.kills}`);
+    this.drawStatus(k, card, time, stunned);
+  }
 
+  /** The status chip above a card, and the card dimmed once eliminated. */
+  private drawStatus(k: Kubotz, card: Card, time: number, stunned: boolean): void {
     // The status chip above the card.
     let status = '';
     let tone = NEON;
@@ -293,6 +318,56 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Capture the Flag: a flag out of view shows as a bubble on the screen's
+   * edge in its direction (as Smash shows a player off screen), the flag
+   * drawn inside, with where it is under it: home, taken or dropped.
+   */
+  private drawFlagBubbles(): void {
+    const g = this.bubbles.clear();
+    const flags = this.game_.flags;
+    const cam = this.game_.cameras.main;
+    const { width, height } = this.scale;
+    flags.forEach((f, i) => {
+      const label = this.bubbleLabels[i];
+      const sx = (f.x - cam.worldView.x) * cam.zoom;
+      const sy = (f.y - cam.worldView.y) * cam.zoom;
+      const inView = sx > 0 && sx < width && sy > 0 && sy < height;
+      label?.setVisible(!inView && this.game_.winnerTeam === undefined);
+      if (inView || this.game_.winnerTeam !== undefined) return;
+      const R = 26;
+      const bx = Phaser.Math.Clamp(sx, 40, width - 40);
+      const by = Phaser.Math.Clamp(sy, 100, height - 140);
+      const ring = f.color === BLACK_COLOR ? 0x8d96a6 : f.color;
+      // A pointer towards the flag, then the bubble.
+      const a = Math.atan2(sy - by, sx - bx);
+      const tip = { x: bx + Math.cos(a) * (R + 12), y: by + Math.sin(a) * (R + 12) };
+      g.fillStyle(ring, 0.95).fillTriangle(tip.x, tip.y, bx + Math.cos(a + 0.5) * R, by + Math.sin(a + 0.5) * R, bx + Math.cos(a - 0.5) * R, by + Math.sin(a - 0.5) * R);
+      g.fillStyle(0x0d1520, 0.92).fillCircle(bx, by, R);
+      g.lineStyle(3, ring, 1).strokeCircle(bx, by, R);
+      // The flag inside: a pole and its cloth.
+      g.lineStyle(3, 0x8d96a6, 1).lineBetween(bx - 7, by + 14, bx - 7, by - 14);
+      g.fillStyle(f.color === BLACK_COLOR ? 0x3a3e46 : f.color, 1).fillTriangle(bx - 6, by - 14, bx + 13, by - 8, bx - 6, by - 1);
+      label?.setPosition(bx, by + R + 10).setText(f.state === 'home' ? 'HOME' : f.state === 'carried' ? 'TAKEN' : 'DROPPED')
+        .setColor(f.state === 'home' ? '#9fe3ff' : '#ffd27a');
+    });
+  }
+
+  /** Capture the Flag: a capture's title, in the scoring team's colour. */
+  private onCapture(side: number): void {
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, side === 0 ? 'RED TEAM SCORES' : 'BLACK TEAM SCORES', 80).setDepth(20).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, duration: 200 });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 1500);
+  }
+
+  /** Sandbox: the dummy's new behaviour, briefly. */
+  private onDummy(mode: string): void {
+    const t = heading(this, this.scale.width / 2, 130, `DUMMY: ${mode.toUpperCase()}`, 40).setDepth(20);
+    this.tweens.add({ targets: t, alpha: 0, delay: 900, duration: 300, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 900);
+  }
+
   /** Horde: every few waves, one more recharge for everyone. */
   private onBonusRecharge(): void {
     const t = heading(this, this.scale.width / 2, this.scale.height / 2 + 30, 'BONUS RECHARGE', 64).setDepth(20).setAlpha(0);
@@ -305,10 +380,13 @@ export class HudScene extends Phaser.Scene {
     // One Kubot: its name; a team of several: the team. Horde: survived, or the wave that ended it.
     const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
-    const horde = MODES[this.game_.mode].horde;
+    const mode = MODES[this.game_.mode];
     const color = winnerTeam === null || winnerTeam === BLACK_TEAM ? NEON : SLOT_COLORS[winnerTeam];
-    this.bannerText.setText(horde ? (winnerTeam === BLACK_TEAM ? `FELL ON WAVE ${this.game_.wave}` : 'HORDE SURVIVED')
-      : winnerTeam === null ? 'DRAW' : `${title} WINS`).setGlow(color);
+    const won = winnerTeam === 0;
+    this.bannerText.setText(mode.horde ? (winnerTeam === BLACK_TEAM ? `FELL ON WAVE ${this.game_.wave}` : 'HORDE SURVIVED')
+      : mode.trial ? (won ? 'TRAINING CLEARED' : `DEFEATED ${this.game_.defeated} OF ${this.game_.target}`)
+        : winnerTeam === BLACK_TEAM ? 'BLACK TEAM WINS'
+          : winnerTeam === null ? 'DRAW' : `${title} WINS`).setGlow(color);
     // A plate band lit in the winner's colour.
     const w = Math.max(560, this.bannerText.displayWidth + 140);
     drawStrip(drawPlate(this.bannerPlate.clear(), -w / 2, -70, w, 150, { cut: 28 }), -w / 2 + 28, -70, w / 2, -70, color, 3);

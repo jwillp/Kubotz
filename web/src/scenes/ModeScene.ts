@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
-import { HEADS, SLOT_COLORS, partTexture } from '../game/Kubotz';
+import { HEADS, SLOT_COLORS, SWORD_FILE, partTexture } from '../game/Kubotz';
+import { flagTexture } from '../fx/Flag';
 import { BLACK_COLOR } from '../game/Match';
 import { MODE_ORDER, MODES, type MatchMode } from '../game/Modes';
 import type { SpriterData } from '../spriter/Spriter';
@@ -11,7 +12,7 @@ import { drawPlate, drawStrip, footer, frameTitle, kubeBackdrop, PlateButton, sh
 import { MenuInput } from './MenuInput';
 
 /** A Kubot on the mode's stage: its colour, helmet, weapon (rig map) and which way it faces. */
-interface Actor { color: number; helmet: number; weapon?: string; face: 1 | -1 }
+interface Actor { color: number; helmet: number; weapon?: string; face: 1 | -1; /** Holds a flag of this colour (on the sword's map). */ flag?: number }
 
 /** Who stands on the stage for each mode. */
 const LINEUPS: Record<MatchMode, Actor[]> = {
@@ -34,11 +35,35 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
     { color: SLOT_COLORS[1], helmet: 2, weapon: 'weapon_laserSword', face: 1 },
     { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', face: -1 },
   ],
+  ctf: [
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', flag: BLACK_COLOR, face: 1 },
+    { color: SLOT_COLORS[0], helmet: 2, face: 1 },
+    { color: BLACK_COLOR, helmet: 3, face: -1 },
+    { color: BLACK_COLOR, helmet: 3, weapon: 'weapon_laserSword', flag: SLOT_COLORS[0], face: -1 },
+  ],
+  sandbox: [
+    { color: SLOT_COLORS[0], helmet: 0, face: 1 },
+    { color: SLOT_COLORS[1], helmet: 7, face: -1 },
+  ],
+  blasterTraining: [
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserGunMkI', face: 1 },
+    { color: SLOT_COLORS[1], helmet: 4, face: -1 },
+    { color: SLOT_COLORS[2], helmet: 9, weapon: 'weapon_laserSword', face: -1 },
+  ],
+  bladeTraining: [
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', face: 1 },
+    { color: SLOT_COLORS[3], helmet: 5, weapon: 'weapon_laserGunMkI', face: -1 },
+    { color: SLOT_COLORS[1], helmet: 6, face: -1 },
+  ],
 };
 
 const BTN_X = 300;
-const BTN_TOP = 236;
-const BTN_STEP = 84;
+/** The two lists: battles, then solo training, each under its heading. */
+const GROUPS: { group: 'battle' | 'training'; label: string; top: number }[] = [
+  { group: 'battle', label: 'B A T T L E', top: 186 },
+  { group: 'training', label: 'T R A I N I N G', top: 498 },
+];
+const BTN_STEP = 56;
 /** The panel describing the selected mode, on the right. */
 const PANEL = { x: 560, y: 168, w: 672, h: 480 };
 const STAGE_Y = 470;
@@ -67,7 +92,7 @@ export class ModeScene extends Phaser.Scene {
     this.actors = [];
     this.leaving = false;
     kubeBackdrop(this);
-    frameTitle(this, 'Battle mode');
+    frameTitle(this, 'Game mode');
     this.rig = new Rig(this.registry.get('spriter') as SpriterData);
     // The Kubotz' parts are lit (normal maps), as on the setup screen: a key light from the top left, a blue rim from below right.
     if (this.sys.renderer.type === Phaser.WEBGL) {
@@ -86,8 +111,13 @@ export class ModeScene extends Phaser.Scene {
     this.tagline = this.add.text(cx, PANEL.y + 102, '', body(20, { fontStyle: '600', color: '#9fe3ff' })).setOrigin(0.5);
     this.rules = this.add.text(PANEL.x + 70, STAGE_Y + 30, '', body(18, { fontStyle: '600', color: '#e9f6ff', lineSpacing: 10 }));
 
+    for (const g of GROUPS) {
+      this.add.text(BTN_X - 200, g.top - 40, g.label, body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5);
+    }
     MODE_ORDER.forEach((m, i) => {
-      const b = new PlateButton(this, BTN_X, BTN_TOP + i * BTN_STEP, 400, 64, MODES[m].name, { size: 34 });
+      const g = GROUPS.find((x) => x.group === MODES[m].group)!;
+      const row = MODE_ORDER.filter((o) => MODES[o].group === g.group).indexOf(m);
+      const b = new PlateButton(this, BTN_X, g.top + row * BTN_STEP, 400, 48, MODES[m].name, { size: 26 });
       b.on('pointerover', () => this.select(i));
       b.on('pointerdown', () => this.pick(i));
       this.items.push(b);
@@ -133,7 +163,8 @@ export class ModeScene extends Phaser.Scene {
     // A new cast on the stage, one taunting.
     for (const a of this.actors) a.kubot.destroy();
     this.actors = LINEUPS[MODE_ORDER[i]].map((actor) => {
-      const kubot = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, actor.color));
+      const kubot = new Kubot2D(this, this.rig, (file) => (actor.flag !== undefined && file === SWORD_FILE
+        ? flagTexture(this, actor.flag) : partTexture(this.textures, file, actor.color)));
       const anim = new Animator(this.rig);
       anim.play('idle', { restart: true });
       return { kubot, anim, actor };

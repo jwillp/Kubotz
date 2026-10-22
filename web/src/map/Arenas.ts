@@ -20,10 +20,14 @@ export interface ArenaDef {
   spawns: [x: number, y: number][];
   /** Centres. */
   bonus: [x: number, y: number][];
+  /** Width and height in units (default one Kube: 52 x 38; the same field as the arena editor's). */
+  size?: [w: number, h: number];
+  /** Capture the Flag only: the flag stands (the pole's foot), the players' first; spawns nearest a stand belong to its team. */
+  flags?: [x: number, y: number][];
 }
 
-const W = 52;
-const H = 38;
+/** One Kube's size in units: the default arena size. */
+export const KUBE_SIZE: [w: number, h: number] = [52, 38];
 
 /** The original cube's frame: ceiling, side walls with a portal in each, floor. */
 function kube(floor: Rect[] = [[6, 34, 40, 3]]): Pick<ArenaDef, 'walls' | 'warps'> {
@@ -65,7 +69,30 @@ export const ARENAS: (ArenaDef | null)[] = [
     spawns: [[9, 34], [43, 34], [19, 22], [33, 22]],
     bonus: [[26, 26], [26, 12], [11, 10], [41, 10]],
   },
+  {
+    // Capture the Flag: two bases at the ends of a long hall, two pits to jump, a raised middle.
+    name: 'The Long Hall',
+    blurb: 'Capture the Flag: a base at each end',
+    size: [120, 40],
+    walls: [
+      [6, 1, 108, 2], [4, 3, 2, 33], [114, 3, 2, 33],
+      [6, 36, 30, 3], [40, 36, 40, 3], [84, 36, 30, 3],
+      [26, 31, 3, 5], [91, 31, 3, 5], [46, 30, 3, 6], [71, 30, 3, 6], [56, 27, 8, 2],
+    ],
+    platforms: [
+      [8, 29, 10, 1], [102, 29, 10, 1], [14, 22, 10, 1], [96, 22, 10, 1],
+      [33, 30, 10, 1], [77, 30, 10, 1], [44, 22, 10, 1], [66, 22, 10, 1], [54, 15, 12, 1],
+      [26, 14, 14, 1], [80, 14, 14, 1],
+    ],
+    warps: [],
+    spawns: [[8, 36], [13, 36], [18, 36], [12, 29], [112, 36], [107, 36], [102, 36], [108, 29]],
+    bonus: [[21, 33], [99, 33], [60, 24], [60, 12]],
+    flags: [[10, 36], [110, 36]],
+  },
 ];
+
+/** The Capture the Flag arena (index into ARENA_INFO): only played in that mode, and the only one it plays. */
+export const CTF_ARENA = ARENAS.findIndex((a) => !!a?.flags);
 
 export const ARENA_INFO = [
   { name: 'The Kube', blurb: 'The original arena' },
@@ -74,6 +101,7 @@ export const ARENA_INFO = [
 
 /** A map like the TMX one, for an arena: same tiles, generated layers and objects. */
 export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
+  const [W, H] = def.size ?? KUBE_SIZE;
   const gidOf = new Map<string, number>();
   for (const [gid, t] of base.tileImages) gidOf.set(t.source, gid);
   const layers: Record<'fades' | 'blocks' | 'platforms', number[]> = {
@@ -135,6 +163,7 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     ...def.warps.map(([x, y, w, h]) => obj('WARP_ZONE', x, y, w, h)),
     ...def.spawns.map(([x, y]) => obj('PLAYER_SPAWN', x - 0.5, y - 1, 1, 1)),
     ...def.bonus.map(([x, y]) => obj('BONUS_SPAWN', x - 0.5, y - 0.5, 1, 1)),
+    ...(def.flags ?? []).map(([x, y]) => obj('FLAG_STAND', x - 0.5, y - 1, 1, 1)),
   ];
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };

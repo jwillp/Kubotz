@@ -2,9 +2,11 @@
 
 import type { Weapon } from './Kubotz';
 
-export type MatchMode = 'gladiator' | 'horde' | 'blasters' | 'blades';
+export type MatchMode = 'gladiator' | 'horde' | 'blasters' | 'blades' | 'ctf' | 'sandbox' | 'blasterTraining' | 'bladeTraining';
 
 export interface ModeInfo {
+  /** Where it is listed on the mode screen: the battles, or the solo training. */
+  group: 'battle' | 'training';
   name: string;
   /** One line under the name. */
   tagline: string;
@@ -14,35 +16,105 @@ export interface ModeInfo {
   armed?: Weapon;
   /** All players on one team against the black team's waves. */
   horde?: boolean;
+  /** Capture the flag: all players on one team against the black team, on the giant arena. */
+  ctf?: boolean;
+  /** Training: one player only. */
+  solo?: boolean;
+  /** Training against a dummy whose behaviour changes mid-match; infinite recharges. */
+  sandbox?: boolean;
+  /** Training: defeat a number of CPUs coming in one or two at a time. */
+  trial?: boolean;
 }
 
 export const MODES: Record<MatchMode, ModeInfo> = {
   gladiator: {
+    group: 'battle',
     name: 'Gladiator',
     tagline: 'The classic: last team standing wins.',
     rules: ['Free for all or teams', 'Weapons come from power-ups', 'Use up every recharge and you are out'],
   },
   horde: {
+    group: 'battle',
     name: 'Horde',
     tagline: 'Everyone together against the black team.',
     rules: ['All players fight on one team', 'Survive 10 waves of black-team Kubotz', 'Each wave brings more, and tougher', 'Every 5 waves cleared: +1 recharge for everyone'],
     horde: true,
   },
   blasters: {
+    group: 'battle',
     name: 'Blasters',
     tagline: 'A laser gun for everyone, for good.',
     rules: ['Every Kubot holds a laser gun all match', 'No sword or gun power-ups', 'Win with fire power alone'],
     armed: 'laserGunMkI',
   },
   blades: {
+    group: 'battle',
     name: 'Blades',
     tagline: 'A laser sword for everyone, for good.',
     rules: ['Every Kubot holds a laser sword all match', 'No sword or gun power-ups', 'Win with the blade alone'],
     armed: 'laserSword',
   },
+  ctf: {
+    group: 'battle',
+    name: 'Capture the Flag',
+    tagline: 'Bring the black team\'s flag home.',
+    rules: ['All players on one team, on a giant arena', 'Grab the black flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; infinite recharges'],
+    ctf: true,
+  },
+  sandbox: {
+    group: 'training',
+    name: 'Sandbox',
+    tagline: 'Practice on a dummy, as long as you like.',
+    rules: ['You against a dummy Kubot, infinite recharges', 'Select / Tab: what the dummy does', 'Stand, walk, jump, guard, dodge or fight back', 'Damage shows on every hit'],
+    solo: true,
+    sandbox: true,
+  },
+  blasterTraining: {
+    group: 'training',
+    name: 'Blaster Training',
+    tagline: 'Your laser gun against everything else.',
+    rules: ['You hold a laser gun all match', 'Defeat 5, 10 or 20 CPUs, one or two at a time', 'They fight with anything, and get tougher', '3 recharges'],
+    solo: true,
+    trial: true,
+    armed: 'laserGunMkI',
+  },
+  bladeTraining: {
+    group: 'training',
+    name: 'Blade Training',
+    tagline: 'Your laser sword against everything else.',
+    rules: ['You hold a laser sword all match', 'Defeat 5, 10 or 20 CPUs, one or two at a time', 'They fight with anything, and get tougher', '3 recharges'],
+    solo: true,
+    trial: true,
+    armed: 'laserSword',
+  },
 };
 
-export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blades'];
+export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blades', 'ctf', 'sandbox', 'blasterTraining', 'bladeTraining'];
+
+/** All players on one team against the black team (Horde, Capture the Flag). */
+export const teamUp = (m: ModeInfo): boolean => !!(m.horde || m.ctf);
+
+/** Sandbox: what the dummy does, cycled with Select / Tab during the match. */
+export type DummyMode = 'stand' | 'walk' | 'jump' | 'guard' | 'dodge' | 'fight';
+export const DUMMY_MODES: DummyMode[] = ['stand', 'walk', 'jump', 'guard', 'dodge', 'fight'];
+
+/** Training: how many CPUs to defeat (picked on the setup screen) and the recharges you get. */
+export const TRAINING_TARGETS = [5, 10, 20];
+export const TRAINING_RECHARGES = 3;
+
+/**
+ * Training: the CPUs at a point of the run (`done` defeated of `target`):
+ * how many are in at once (one, then two from a third of the way) and
+ * their level (2, up to 8 at the end).
+ */
+export function trainingFoes(done: number, target: number): { together: number; level: number } {
+  const f = done / Math.max(1, target);
+  return { together: f < 1 / 3 ? 1 : 2, level: Math.round(2 + 6 * f) };
+}
+
+/** Capture the Flag: captures to win, and guardians per side. */
+export const CTF_CAPTURES = 3;
+export const CTF_GUARDIANS = 2;
 
 /** Horde: waves to survive, and the players' team. */
 export const HORDE_WAVES = 10;

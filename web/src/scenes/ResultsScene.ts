@@ -229,8 +229,11 @@ export class ResultsScene extends Phaser.Scene {
     c.add(this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.82));
     const winners = r.winnerTeam === null ? [] : r.fighters.map((f, i) => (f.team === r.winnerTeam ? i : -1)).filter((i) => i >= 0);
     const winColor = winners.length ? r.colors[winners[0]] : 0x29abe2;
+    const trial = r.mode === 'blasterTraining' || r.mode === 'bladeTraining';
     const title = r.mode === 'horde'
       ? (winners.length ? `Survived ${r.wave} waves!` : `Fell on wave ${r.wave}`)
+      : trial ? (winners.length ? `Training cleared: ${r.defeated} defeated!` : `Defeated ${r.defeated} of ${r.target}`)
+      : r.mode === 'ctf' ? `${winners.length ? 'Red team' : 'Black team'} wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`
       : winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
     c.add(heading(this, width / 2, 70, title.replace(/&/g, 'and'), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
