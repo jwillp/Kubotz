@@ -75,7 +75,7 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   }
 
   onDraw(target: Phaser.Renderer.WebGL.RenderTarget): void {
-    const obj = this.gameObject as Phaser.GameObjects.Container | undefined;
+    const obj = this.gameObject as Phaser.GameObjects.Container | Phaser.GameObjects.Image | undefined;
     const cam = this.camera ?? obj?.scene?.cameras.main;
     // Sizes are in arena pixels, so the glitch keeps its scale as the camera zooms.
     const zoom = (cam?.zoom ?? 1) * (target.height / (cam?.height || target.height));
@@ -90,9 +90,10 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
 
 /**
  * Sets how hard `obj` glitches (0 removes the pass). Without WebGL it does
- * nothing: the white flash alone shows the hit.
+ * nothing: the white flash alone shows the hit. The title logo glitches
+ * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container, amount: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];

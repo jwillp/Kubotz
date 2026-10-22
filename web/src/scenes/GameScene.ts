@@ -10,7 +10,7 @@ import { Bullet } from '../game/Combat';
 import { BONUS_RATES, canHurt, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup } from '../game/Match';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
-import { GradePipeline, GrainPipeline, setPass } from '../fx/Grade';
+import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
@@ -24,6 +24,7 @@ import { arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
+import type { BackdropScene } from './BackdropScene';
 import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
@@ -152,6 +153,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.holo = new HoloSpawns(this);
 
     if (setup.preview) { this.createPreview(setup.preview); return; }
+    // A real match: the title picks a new room behind it when it comes back.
+    this.registry.remove('menuArena');
 
     let humans = 0;
     this.specs.forEach((spec, i) => {
@@ -240,7 +243,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (button.index === 8 && this.paused) this.backToTitle(); // Select: quit from the pause
     });
     // The settings screen (opened from the pause) applies its VFX level live.
-    const offSettings = onSettingsChange(() => this.setScreenFx(this.wantScreenFx()));
+    const offSettings = onSettingsChange(() => this.setScreenFx(wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.perspective?.destroy();
       this.perspective = null;
@@ -250,6 +253,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.scene.stop('Hud');
       this.scene.stop('Debug');
       this.scene.stop('Backdrop');
+      this.registry.set('pauseFx', 0);
       this.debris.destroy();
       this.portals.destroy();
       this.holo.destroy();
@@ -777,15 +781,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    * The grade pass (vignette, split tone, grain, scanlines) on the arena and
    * the same grain and scanlines on the backdrop behind it, so they cover the
    * whole view (WebGL only); off with ?lowfx or a VFX setting under half,
-   * toggled with F. No bloom: the owner preferred the crisper look without it.
+   * toggled with F (here or in the menus). No bloom: the owner preferred the
+   * crisper look without it.
    */
   private setupScreenFx(): void {
     this.gradeOn = false;
-    this.setScreenFx(this.wantScreenFx());
-  }
-
-  private wantScreenFx(): boolean {
-    return vfx() >= 0.5 && !new URLSearchParams(location.search).has('lowfx');
+    this.setScreenFx(screenFxOn(this.game));
   }
 
   private toggleScreenFx(): boolean {
@@ -797,7 +798,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // The backdrop reads this when it starts; once it runs, set its pass here.
     this.registry.set('screenFx', this.gradeOn);
     const backdrop = this.scene.get('Backdrop');
-    if (backdrop.sys.isActive()) setPass(backdrop, backdrop.cameras.main, GrainPipeline, this.gradeOn);
+    if (backdrop.sys.isActive()) (backdrop as BackdropScene).setScreenFx(this.gradeOn);
     return this.gradeOn;
   }
 

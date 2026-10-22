@@ -10,6 +10,8 @@ import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '.
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/DebugMap.tmx';
+/** The logo's texture is this many times the original's 298 x 134. */
+export const LOGO_RES = 3;
 
 /** Particle effects by name: the files the full-on-scripting branch plays. */
 export const PARTICLE_FILES = {
@@ -28,7 +30,8 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     this.drawLoadingBar();
-    this.load.image('logo', 'logo.png'); // the original logo (gh-pages, 2015)
+    // The original logo (logo_SD.png, gh-pages 2015) redrawn as vectors (tools/logo), rasterised sharp at 3x.
+    this.load.svg('logo', 'logo.svg', { width: 298 * LOGO_RES, height: 134 * LOGO_RES });
     this.load.text('scml', KUBOTZ_SCML);
     this.load.text('tmx', MAIN_MAP);
     this.load.image('bg', 'maps/background.jpg');
@@ -203,8 +206,8 @@ export class BootScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const bar = this.add.graphics();
     // The logo is the first file in the queue: show it as soon as it's in.
-    this.load.once('filecomplete-image-logo', () => {
-      this.add.image(width / 2, height / 2 - 80, 'logo').setScale(0.9);
+    this.load.once('filecomplete-svg-logo', () => {
+      this.add.image(width / 2, height / 2 - 80, 'logo').setScale(0.9 / LOGO_RES);
     });
     const text = this.add.text(width / 2, height / 2 + 44, 'Loading', body(18, { color: '#9fe3ff' })).setOrigin(0.5);
     this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => {

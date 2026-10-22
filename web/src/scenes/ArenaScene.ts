@@ -5,7 +5,7 @@ import type { TmxMap } from '../map/TmxMap';
 import { SLOT_COLORS } from '../game/Kubotz';
 import { BONUS_RATES, RATE_ORDER, type BonusRate, type FighterSpec, type MatchSetup } from '../game/Match';
 import { BODY_FAMILY, heading } from '../ui/Type';
-import { drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
+import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
 
 const PREVIEW_W = 600;
 const PREVIEW_Y = 340;
@@ -130,7 +130,9 @@ export class ArenaScene extends Phaser.Scene {
     // The preview set in a Kube plate, lit top left and bottom right.
     const fx = width / 2 - w / 2 - 14;
     const fy = PREVIEW_Y - h / 2 - 14;
-    drawPlate(this.frame.clear(), fx, fy, w + 28, h + 28, { cut: 22, edge: 0x29abe2, alpha: this.live ? 0 : 0.92 });
+    // The chosen arena glows, like a selected button.
+    drawGlow(this.frame.clear(), fx, fy, w + 28, h + 28, { cut: 22, color: 0x29abe2 });
+    drawPlate(this.frame, fx, fy, w + 28, h + 28, { cut: 22, edge: 0x29abe2, alpha: this.live ? 0 : 0.92 });
     drawStrip(this.frame, fx + 22, fy, fx + w * 0.5, fy, 0x29abe2, 3);
     drawStrip(this.frame, fx + w * 0.5, fy + h + 28, fx + w + 6, fy + h + 28, 0x29abe2, 3);
     this.nameText.setText(ARENA_INFO[this.arena].name);

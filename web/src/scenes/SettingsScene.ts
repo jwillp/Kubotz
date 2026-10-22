@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { settings, updateSettings, sfxVolume, type Settings } from '../game/Settings';
 import { MenuInput } from './MenuInput';
-import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
+import { drawGlow, drawPlate, drawStrip, menuScreenFx, PlateButton } from '../ui/Plate';
 import { BODY_FAMILY, heading } from '../ui/Type';
 
 /** What opened the settings: the scenes it paused, resumed when it closes. */
@@ -41,6 +41,8 @@ export class SettingsScene extends Phaser.Scene {
   private resume: string[] = [];
   private dragging?: Row;
   private lastSfxAt = 0;
+  /** The selected row's halo. */
+  private glow!: Phaser.GameObjects.Graphics;
 
   constructor() { super('Settings'); }
 
@@ -54,6 +56,8 @@ export class SettingsScene extends Phaser.Scene {
     const frame = drawPlate(this.add.graphics(), width / 2 - 490, height / 2 - 260, 980, 520, { cut: 28, alpha: 0.95 });
     drawStrip(frame, width / 2 - 490, height / 2 - 232, width / 2 - 490, height / 2 + 260, BLUE, 4);
     heading(this, width / 2, height / 2 - 205, 'Settings', 60);
+    this.glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: this.glow, alpha: 0.55, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     drawStrip(frame, width / 2 - 200, height / 2 - 162, width / 2 + 200, height / 2 - 162, BLUE, 2);
 
     ROWS.forEach((r, i) => {
@@ -98,6 +102,8 @@ export class SettingsScene extends Phaser.Scene {
       back: () => this.close(),
     }, true);
     this.select(0);
+    // The match's grain and scanlines over the panel too (F stays with the scene behind).
+    menuScreenFx(this, { keys: false });
   }
 
   update(time: number): void {
@@ -106,13 +112,17 @@ export class SettingsScene extends Phaser.Scene {
 
   private select(i: number): void {
     this.selected = i;
+    this.glow.clear();
     this.rows.forEach((r, j) => {
       const { width, height } = this.scale;
       const y = height / 2 - 110 + j * 105;
       // Each row on its own plate; the selected one lit like a menu button.
       const g = r.plate.clear();
       drawPlate(g, width / 2 - 460, y - 44, 920, 88, { cut: 14, alpha: j === i ? 0.9 : 0.5, edge: j === i ? BLUE : undefined });
-      if (j === i) drawStrip(g, width / 2 - 460, y - 30, width / 2 - 460, y + 44, BLUE, 3);
+      if (j === i) {
+        drawStrip(g, width / 2 - 460, y - 30, width / 2 - 460, y + 44, BLUE, 3);
+        drawGlow(this.glow, width / 2 - 460, y - 44, 920, 88, { color: BLUE });
+      }
       r.name.setColor(j === i ? '#bfe9ff' : '#ffffff');
       r.knob.setScale(j === i ? 1.15 : 1);
     });

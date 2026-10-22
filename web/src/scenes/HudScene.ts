@@ -72,13 +72,14 @@ export class HudScene extends Phaser.Scene {
     this.banner.add([this.bannerPlate, this.bannerText, this.hint]);
 
     this.pause = this.add.container(width / 2, height / 2).setVisible(false).setDepth(10);
-    const dim = this.add.rectangle(0, 0, width, height, 0x02050c, 0.6);
+    // A light dim: the paused match behind stays readable, its scan lines heavier and colours richer (fx/Grade.ts uPause).
+    const dim = this.add.rectangle(0, 0, width, height, 0x02050c, 0.3);
     const pg = this.add.graphics();
     drawPlate(pg, -170, -190, 340, 384, { cut: 24 });
     drawStrip(pg, -170, -166, -170, 194, NEON, 4);
     drawStrip(pg, -140, -92, 140, -92, NEON, 2);
     const title = heading(this, 0, -140, 'PAUSED', 54);
-    const keys = this.add.text(0, 166, 'Esc resume  ·  Q quit to title', body(14, { fontStyle: '500', color: '#8fb6d8' })).setOrigin(0.5);
+    const keys = this.add.text(0, 166, 'Esc / Start / B resume  ·  Q / Select quit', body(14, { fontStyle: '500', color: '#8fb6d8' })).setOrigin(0.5);
     this.pause.add([dim, pg, title, keys]);
     PAUSE_ITEMS.forEach((label, i) => {
       const b = new PlateButton(this, 0, -36 + i * 62, 280, 48, label, { size: 22, bodyLabel: true });
@@ -90,7 +91,9 @@ export class HudScene extends Phaser.Scene {
     this.pauseMenu = new MenuInput({
       move: (dx, dy) => this.selectPause((this.pauseSelected + (dx || dy) + PAUSE_ITEMS.length) % PAUSE_ITEMS.length),
       confirm: () => this.choosePause(this.pauseSelected),
-    });
+      // Esc and Start already toggle the pause in the match: B (bottom face) resumes here.
+      back: () => { if (this.game_.paused) this.game_.togglePause(); },
+    }, false, { back: [0] });
 
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
@@ -222,6 +225,11 @@ export class HudScene extends Phaser.Scene {
 
   private onPause(paused: boolean): void {
     this.pause.setVisible(paused);
+    // The paused look on the match behind (the Hud's tweens run while the match's are paused).
+    const fx = { k: (this.registry.get('pauseFx') as number | undefined) ?? 0 };
+    this.tweens.killTweensOf(fx);
+    this.tweens.add({ targets: fx, k: paused ? 1 : 0, duration: paused ? 220 : 140, ease: 'Quad.out',
+      onUpdate: () => this.registry.set('pauseFx', fx.k) });
     this.pauseMenu.reset();
     this.pauseItems.forEach((b) => b.setSelected(false));
     this.selectPause(0);
