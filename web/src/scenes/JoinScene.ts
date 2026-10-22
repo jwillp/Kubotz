@@ -6,7 +6,7 @@ import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import { TEAM_NAMES, type FighterSpec } from '../game/Match';
 import type { SpriterData } from '../spriter/Spriter';
 import { BODY_FAMILY, heading } from '../ui/Type';
-import { drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
+import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, shutter } from '../ui/Plate';
 
 /** What drives a seat: keyboard set 1 or 2, a gamepad (its index), or the computer. */
 type Device = 'K1' | 'K2' | number | 'CPU';
@@ -244,7 +244,10 @@ export class JoinScene extends Phaser.Scene {
       // A Kube plate per seat, lit along its top in the seat's colour.
       const left = x - PANEL_W / 2;
       const top = PANEL_Y - PANEL_H / 2;
-      drawPlate(p.frame.clear(), left, top, PANEL_W, PANEL_H, { cut: 24, alpha: seat ? 0.92 : 0.55, edge: seat ? color : undefined });
+      p.frame.clear();
+      // A player's own seat glows in its colour: the one their buttons change.
+      if (seat && seat.device !== 'CPU') drawGlow(p.frame, left, top, PANEL_W, PANEL_H, { cut: 24, color });
+      drawPlate(p.frame, left, top, PANEL_W, PANEL_H, { cut: 24, alpha: seat ? 0.92 : 0.55, edge: seat ? color : undefined });
       if (seat) {
         drawStrip(p.frame, left + 24, top, left + PANEL_W, top, color, 3);
         p.frame.fillStyle(color, 0.22).fillRect(left + 8, top + PANEL_H - 64, PANEL_W - 16, 48);
@@ -270,6 +273,10 @@ export class JoinScene extends Phaser.Scene {
     this.status.setText(problem ?? `${seats.length} robots, ${new Set(seats.map((s) => s.team)).size} teams: Enter / Start for the arena`);
     this.status.setColor(problem ? '#ffd27a' : '#9fffa8');
     this.fight.setAlpha(problem ? 0.35 : 1);
+    // Ready: the way on glows and beats.
+    this.tweens.killTweensOf(this.fight);
+    this.fight.setScale(1).setShadow(0, 0, '#29abe2', problem ? 0 : 14, false, true);
+    if (!problem) this.tweens.add({ targets: this.fight, scale: 1.08, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     this.registry.set('join', structuredClone(this.state));
   }
 

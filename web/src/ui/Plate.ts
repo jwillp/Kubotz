@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
-import { vfx } from '../game/Settings';
+import { onSettingsChange, vfx } from '../game/Settings';
+import { BACKDROPS } from '../fx/Backdrops';
+import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
+import type { BackdropScene } from '../scenes/BackdropScene';
 import { body, heading, HeadingText, NEON } from './Type';
 
 /**
@@ -52,6 +55,19 @@ export function drawPlate(g: Phaser.GameObjects.Graphics, x: number, y: number, 
   return g;
 }
 
+/**
+ * A soft neon halo around a plate's outline, on `g` (drawn additive): the
+ * selected item's glow. `grow` widens it, for a pulse.
+ */
+export function drawGlow(g: Phaser.GameObjects.Graphics, x: number, y: number, w: number, h: number,
+  { cut = 14, color = NEON, grow = 0 }: { cut?: number; color?: number; grow?: number } = {}): Phaser.GameObjects.Graphics {
+  for (const [pad, width, alpha] of [[13, 16, 0.07], [9, 11, 0.12], [5.5, 7, 0.2], [2.5, 3.5, 0.4], [1, 1.5, 0.7]] as const) {
+    const p = pad + grow;
+    g.lineStyle(width + grow, color, alpha).strokePoints(outline(x - p, y - p, w + 2 * p, h + 2 * p, cut + p * 0.41), true);
+  }
+  return g;
+}
+
 /** A lit strip from (x1, y1) to (x2, y2): a bright core in a soft halo. */
 export function drawStrip(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number,
   color = NEON, width = 3): Phaser.GameObjects.Graphics {
@@ -64,11 +80,14 @@ export function drawStrip(g: Phaser.GameObjects.Graphics, x1: number, y1: number
 
 /**
  * A menu button: a plate with a label (Okuba Cloud heading, or Exo 2 when
- * `bodyLabel`), centred on (x, y). Selected, its cyan strip lights up and it
- * slides in a little.
+ * `bodyLabel`), centred on (x, y). Selected, its cyan strip lights up, a
+ * neon halo breathes around it and it slides in a little, with a light
+ * sweeping across it as it takes the selection.
  */
 export class PlateButton extends Phaser.GameObjects.Container {
   private readonly g: Phaser.GameObjects.Graphics;
+  private readonly glow: Phaser.GameObjects.Graphics;
+  private readonly sweep: Phaser.GameObjects.Graphics;
   readonly label: HeadingText | Phaser.GameObjects.Text;
   private selected_ = false;
   private readonly home: number;
@@ -77,11 +96,14 @@ export class PlateButton extends Phaser.GameObjects.Container {
     { size = 32, bodyLabel = false }: { size?: number; bodyLabel?: boolean } = {}) {
     super(scene, x, y);
     this.home = x;
+    this.glow = drawGlow(scene.add.graphics(), -w / 2, -h / 2, w, h, { cut: 16 }).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
     this.g = scene.add.graphics();
+    // A bright bar that runs across the plate when it is selected, clipped to the plate by its own geometry.
+    this.sweep = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
     this.label = bodyLabel
       ? scene.add.text(0, 0, text, body(size, { fontStyle: '800' })).setOrigin(0.5)
       : heading(scene, 0, 2, text, size, { glow: null });
-    this.add([this.g, this.label]);
+    this.add([this.glow, this.g, this.sweep, this.label]);
     this.setSize(w, h).setInteractive({ useHandCursor: true });
     scene.add.existing(this);
     this.draw();
@@ -93,8 +115,23 @@ export class PlateButton extends Phaser.GameObjects.Container {
     if (on === this.selected_) return this;
     this.selected_ = on;
     this.draw();
-    this.scene.tweens.killTweensOf(this);
-    this.scene.tweens.add({ targets: this, x: this.home + (on ? 10 : 0), duration: 120, ease: 'Quad.out' });
+    const tweens = this.scene.tweens;
+    tweens.killTweensOf([this, this.glow, this.sweep]);
+    tweens.add({ targets: this, x: this.home + (on ? 10 : 0), duration: 120, ease: 'Quad.out' });
+    this.sweep.setVisible(false);
+    if (!on) { this.glow.setAlpha(0); return this; }
+    // The halo flares as the button takes the selection, then breathes.
+    this.glow.setAlpha(1).setScale(1.04);
+    tweens.add({ targets: this.glow, scale: 1, duration: 220, ease: 'Quad.out' });
+    tweens.add({ targets: this.glow, alpha: 0.55, duration: 900, delay: 220, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    if (vfx() > 0) {
+      const { w, h } = this;
+      const g = this.sweep.clear().setVisible(true).setAlpha(1);
+      g.fillStyle(0xbfe9ff, 0.22).fillPoints([new Phaser.Math.Vector2(-14, -h / 2), new Phaser.Math.Vector2(10, -h / 2),
+        new Phaser.Math.Vector2(-10, h / 2), new Phaser.Math.Vector2(-34, h / 2)], true);
+      g.x = -w / 2 + 20;
+      tweens.add({ targets: g, x: w / 2 - 4, alpha: 0, duration: 320, ease: 'Quad.in', onComplete: () => g.setVisible(false) });
+    }
     return this;
   }
 
@@ -104,6 +141,8 @@ export class PlateButton extends Phaser.GameObjects.Container {
     const g = this.g.clear();
     drawPlate(g, -w / 2, -h / 2, w, h, { cut: 16, alpha: on ? 0.95 : 0.78, edge: on ? NEON : METAL_EDGE });
     if (on) {
+      // Lit from inside: a cyan wash over the metal.
+      g.fillStyle(NEON, 0.14).fillPoints(outline(-w / 2, -h / 2, w, h, 16), true);
       drawStrip(g, -w / 2 + 1, -h / 2 + 18, -w / 2 + 1, h / 2 - 4, NEON, 4);
       drawStrip(g, w / 2 - 18, h / 2, w / 2 - 2, h / 2, NEON, 2);
     }
@@ -113,15 +152,59 @@ export class PlateButton extends Phaser.GameObjects.Container {
 }
 
 /**
- * The Kube's backdrop behind a menu, as in a match (the blurred room, bokeh,
- * light shafts, haze), under a dim of `dim`. Stops with the scene.
+ * The room behind the menus: one of the arenas' backdrops, picked at random
+ * when the game starts and each time the title comes back after a match
+ * (never the same twice in a row; a match forgets the pick), then kept
+ * through the menus.
+ */
+export function menuArena(scene: Phaser.Scene): number {
+  const reg = scene.registry;
+  let n = reg.get('menuArena') as number | undefined;
+  if (n === undefined) {
+    const last = reg.get('menuArenaLast') as number | undefined;
+    const choices = BACKDROPS.map((_, i) => i).filter((i) => i !== last || BACKDROPS.length < 2);
+    n = Phaser.Utils.Array.GetRandom(choices);
+    reg.set('menuArena', n);
+    reg.set('menuArenaLast', n);
+  }
+  return n;
+}
+
+/**
+ * An arena's backdrop behind a menu, as in a match (the blurred room, bokeh,
+ * light shafts, haze), under a dim of `dim`, with the match's screen effects
+ * over it all (menuScreenFx). Stops with the scene.
  */
 export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
   const { width, height } = scene.scale;
-  scene.scene.launch('Backdrop');
+  scene.scene.launch('Backdrop', { arena: menuArena(scene), menu: true });
   scene.scene.sendToBack('Backdrop');
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scene.stop('Backdrop'));
   scene.add.rectangle(width / 2, height / 2, width, height, 0x050b18, dim);
+  menuScreenFx(scene);
+}
+
+/**
+ * The match's screen effects on a menu: its grain and scanlines over the
+ * menu's own drawing (the room behind takes the whole grade), F toggling
+ * them as in a match unless `keys` is false. Follows the VFX setting live.
+ */
+export function menuScreenFx(scene: Phaser.Scene, { keys = true } = {}): void {
+  const apply = () => {
+    const on = screenFxOn(scene.game);
+    setPass(scene, scene.cameras.main, GrainPipeline, on);
+    const backdrop = scene.scene.get('Backdrop') as BackdropScene;
+    if (backdrop.sys.isActive()) backdrop.setScreenFx(on);
+  };
+  apply();
+  if (keys) {
+    scene.input.keyboard?.on('keydown-F', () => {
+      scene.registry.set('screenFx', !screenFxOn(scene.game));
+      apply();
+    });
+  }
+  const off = onSettingsChange(() => { scene.registry.set('screenFx', wantScreenFx()); apply(); });
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, off);
 }
 
 /** A key-hint bar along the bottom edge: a dark band under a cyan line, one or two lines of Exo 2. */
@@ -152,14 +235,14 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
  */
 export function shutter(scene: Phaser.Scene, swap: () => void): void {
   if (vfx() <= 0) { swap(); return; }
-  const game = scene.game;
-  const host = game.scene.getScene('Shutter') ?? game.scene.add('Shutter', ShutterScene, false);
-  game.scene.run('Shutter', { swap });
-  game.scene.bringToTop(host.scene.key);
+  // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
+  // called from a scene's update (the scene manager defers adds made while it steps the scenes).
+  scene.game.scene.run('Shutter', { swap });
+  scene.game.scene.bringToTop('Shutter');
 }
 
 /** Draws the shutter over every scene (its own scene, so it survives the scene swap). */
-class ShutterScene extends Phaser.Scene {
+export class ShutterScene extends Phaser.Scene {
   constructor() { super('Shutter'); }
 
   create({ swap }: { swap: () => void }): void {

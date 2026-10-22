@@ -1,12 +1,13 @@
 /**
- * Menu navigation shared by the menus (settings, pause): arrows / WASD, the
+ * Menu navigation shared by the menus (title, settings, pause): arrows / WASD, the
  * D-pad or left stick of any gamepad, with key repeat while held; confirm
  * (Enter, Space, pad A) and back (Esc, Backspace, pad B, Start).
  *
  * It polls the keyboard (through its own window listeners) and
  * `navigator.getGamepads()` directly instead of a scene's input plugins, so
  * a menu opened over a paused scene never sees the press that opened it:
- * a button only counts once it has been seen up, then pressed.
+ * a button only counts once it has been seen up, then pressed. A key tapped
+ * between two frames still counts.
  */
 export interface MenuHandlers {
   /** A step in a direction (dx, dy: -1, 0 or 1), repeated while held. */
@@ -16,11 +17,16 @@ export interface MenuHandlers {
 }
 
 const held = new Set<string>();
+/** Presses per key so far: a tap shorter than a frame shows as a new count. */
+const presses = new Map<string, number>();
 let listening = false;
 function listen(): void {
   if (listening) return;
   listening = true;
-  window.addEventListener('keydown', (e) => held.add(e.code));
+  window.addEventListener('keydown', (e) => {
+    held.add(e.code);
+    if (!e.repeat) presses.set(e.code, (presses.get(e.code) ?? 0) + 1);
+  });
   window.addEventListener('keyup', (e) => held.delete(e.code));
   window.addEventListener('blur', () => held.clear());
 }
@@ -31,6 +37,8 @@ const KEYS = {
 };
 // Standard gamepad mapping, by position: A is the right face button, B the bottom one (Smash layout).
 const PAD = { confirm: [1], back: [0, 9], up: [12], down: [13], left: [14], right: [15] };
+/** Which pad buttons confirm and go back, where a menu wants others than A and B / Start. */
+export type PadButtons = Partial<Record<Button, number[]>>;
 
 const REPEAT_DELAY = 320;
 const REPEAT_EVERY = 70;
@@ -46,18 +54,34 @@ export class MenuInput {
   private state: Record<Button, { down: boolean; armed: boolean }> = {
     confirm: { down: true, armed: false }, back: { down: true, armed: false },
   };
+  private readonly pad: Record<Button, number[]>;
+  /** The key press counts as of the last frame. */
+  private seen = new Map<string, number>();
   /** Confirm / back fire when the button is let go (so the scene behind never gets the press). */
-  constructor(private handlers: MenuHandlers, private onRelease = false) { listen(); }
+  constructor(private handlers: MenuHandlers, private onRelease = false, pad: PadButtons = {}) {
+    this.pad = { confirm: pad.confirm ?? PAD.confirm, back: pad.back ?? PAD.back };
+    listen();
+    this.reset();
+  }
+
+  /** What is down now: held keys, keys tapped since the last frame, any pad's buttons and left stick. */
+  private read(): { x: number; y: number; confirm: boolean; back: boolean } {
+    const pads = (navigator.getGamepads?.() ?? []).filter((p): p is Gamepad => !!p);
+    const key = (codes: string[]) => codes.some((c) => held.has(c) || (presses.get(c) ?? 0) !== (this.seen.get(c) ?? 0));
+    const btn = (ids: number[]) => pads.some((p) => ids.some((i) => p.buttons[i]?.pressed));
+    const stick = (axis: number, sign: number) => pads.some((p) => (p.axes[axis] ?? 0) * sign > 0.5);
+    return {
+      x: (key(KEYS.right) || btn(PAD.right) || stick(0, 1) ? 1 : 0) - (key(KEYS.left) || btn(PAD.left) || stick(0, -1) ? 1 : 0),
+      y: (key(KEYS.down) || btn(PAD.down) || stick(1, 1) ? 1 : 0) - (key(KEYS.up) || btn(PAD.up) || stick(1, -1) ? 1 : 0),
+      confirm: key(KEYS.confirm) || btn(this.pad.confirm),
+      back: key(KEYS.back) || btn(this.pad.back),
+    };
+  }
 
   /** Call every frame. */
   update(time: number): void {
-    const pads = (navigator.getGamepads?.() ?? []).filter((p): p is Gamepad => !!p);
-    const key = (codes: string[]) => codes.some((c) => held.has(c));
-    const btn = (ids: number[]) => pads.some((p) => ids.some((i) => p.buttons[i]?.pressed));
-    const stick = (axis: number, sign: number) => pads.some((p) => (p.axes[axis] ?? 0) * sign > 0.5);
-
-    const x = (key(KEYS.right) || btn(PAD.right) || stick(0, 1) ? 1 : 0) - (key(KEYS.left) || btn(PAD.left) || stick(0, -1) ? 1 : 0);
-    const y = (key(KEYS.down) || btn(PAD.down) || stick(1, 1) ? 1 : 0) - (key(KEYS.up) || btn(PAD.up) || stick(1, -1) ? 1 : 0);
+    const { x, y, confirm, back } = this.read();
+    this.seen = new Map(presses);
     this.frames++;
     if (x !== this.dir.x || y !== this.dir.y) {
       this.dir = { x, y };
@@ -70,8 +94,8 @@ export class MenuInput {
       this.handlers.move?.(x, y);
     }
 
-    this.button('confirm', key(KEYS.confirm) || btn(PAD.confirm), () => this.handlers.confirm?.());
-    this.button('back', key(KEYS.back) || btn(PAD.back), () => this.handlers.back?.());
+    this.button('confirm', confirm, () => this.handlers.confirm?.());
+    this.button('back', back, () => this.handlers.back?.());
   }
 
   private button(name: Button, down: boolean, fire: () => void): void {
@@ -83,11 +107,16 @@ export class MenuInput {
     s.down = down;
   }
 
-  /** Forget held buttons, e.g. when a menu shows again: the next press must start fresh. */
+  /**
+   * Forget earlier presses, e.g. when a menu shows again: a button held now
+   * must be let go first, the next press starts fresh.
+   */
   reset(): void {
-    this.state.confirm = { down: true, armed: false };
-    this.state.back = { down: true, armed: false };
-    this.dir = { x: 0, y: 0 };
+    this.seen = new Map(presses);
+    const now = this.read();
+    this.state.confirm = { down: now.confirm, armed: !now.confirm };
+    this.state.back = { down: now.back, armed: !now.back };
+    this.dir = { x: now.x, y: now.y };
   }
 }
 

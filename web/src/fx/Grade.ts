@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
+import { vfx } from '../game/Settings';
 
 /**
  * A light film grain, stronger in the shadows, and faint scanlines every 3
  * pixels drifting slowly: a slightly digital screen. Seeded by the screen
  * pixel and the time, so every layer that runs it gets the same grain and
  * lines, and they line up where the layers overlap. High precision where the
- * GPU has it: the hash falls apart at medium precision.
+ * GPU has it: the hash falls apart at medium precision. While the match is
+ * paused (uPause up to 1) the lines get harder and darker and the colours a
+ * little richer, like a frozen frame on an old screen.
  */
 const GRAIN = /* glsl */ `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
@@ -15,6 +18,7 @@ precision mediump float;
 #endif
 uniform sampler2D uMainSampler;
 uniform float uTime;
+uniform float uPause;
 varying vec2 outTexCoord;
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -22,10 +26,13 @@ float hash(vec2 p) {
   return fract((p3.x + p3.y) * p3.z);
 }
 vec3 grain(vec3 rgb, float l) {
+  rgb = max(mix(vec3(l), rgb, 1.0 + 0.3 * uPause), 0.0);
   float n = hash(floor(gl_FragCoord.xy) + fract(uTime * 0.37) * 517.0) - 0.5;
   rgb += n * mix(0.05, 0.02, l);
-  float line = 0.5 + 0.5 * sin((gl_FragCoord.y + uTime * 18.0) * 2.0944);
-  return rgb * (1.0 - 0.06 * line);
+  float soft = 0.5 + 0.5 * sin((gl_FragCoord.y + uTime * 18.0) * 2.0944);
+  float hard = step(2.0, mod(floor(gl_FragCoord.y + uTime * 18.0), 3.0));
+  float line = mix(soft, hard, uPause);
+  return rgb * (1.0 - mix(0.06, 0.4, uPause) * line);
 }
 `;
 
@@ -50,11 +57,15 @@ void main () {
 }
 `;
 
-/** The grain alone, for the backdrop behind the arena (it has its own look). */
+/**
+ * The grain alone, for the backdrop behind the arena (it has its own look)
+ * and over the menus. Only where the layer has paint, so a menu's clear
+ * background adds nothing over the room behind it.
+ */
 const GRAIN_ONLY = GRAIN + /* glsl */ `
 void main () {
   vec4 c = texture2D(uMainSampler, outTexCoord);
-  c.rgb = grain(c.rgb, dot(c.rgb, vec3(0.299, 0.587, 0.114)));
+  c.rgb = mix(c.rgb, grain(c.rgb, dot(c.rgb, vec3(0.299, 0.587, 0.114))), c.a);
   gl_FragColor = c;
 }
 `;
@@ -62,6 +73,7 @@ void main () {
 class TimedPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
   onPreRender(): void {
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
+    this.set1f('uPause', (this.game.registry.get('pauseFx') as number | undefined) ?? 0);
   }
 }
 
@@ -95,4 +107,21 @@ export function setPass(
     cam.setPostPipeline(pass);
   }
   return on;
+}
+
+/**
+ * The screen effects the player wants: off with ?lowfx or a VFX setting
+ * under half.
+ */
+export function wantScreenFx(): boolean {
+  return vfx() >= 0.5 && !new URLSearchParams(location.search).has('lowfx');
+}
+
+/**
+ * Whether the screen effects are on now: what F last set, in a match or a
+ * menu, else what the player wants.
+ */
+export function screenFxOn(game: Phaser.Game): boolean {
+  const on = game.registry.get('screenFx');
+  return typeof on === 'boolean' ? on : wantScreenFx();
 }

@@ -273,6 +273,8 @@ export class MoveListScene extends Phaser.Scene {
   private scroll = 0;
   private contentH = 0;
   private highlight!: Phaser.GameObjects.Rectangle;
+  /** The selected row's lit edge, left of the highlight. */
+  private highlightEdge!: Phaser.GameObjects.Rectangle;
   private nameText!: Phaser.GameObjects.Text;
   private keysText!: Phaser.GameObjects.Text;
   private padText!: Phaser.GameObjects.Text;
@@ -344,8 +346,11 @@ export class MoveListScene extends Phaser.Scene {
   private buildList(): void {
     drawStrip(drawPlate(this.add.graphics(), LIST.x - 8, LIST.y - 8, LIST.w + 16, LIST.h + 16, { cut: 18 }), LIST.x - 8, LIST.y + 10, LIST.x - 8, LIST.y + LIST.h + 8, 0x29abe2, 3);
     this.list = this.add.container(LIST.x, LIST.y);
-    this.highlight = this.add.rectangle(0, 0, LIST.w, ROW_H, 0x29abe2, 0.28).setOrigin(0);
-    this.list.add(this.highlight);
+    this.highlight = this.add.rectangle(0, 0, LIST.w, ROW_H, 0x29abe2, 0.3).setOrigin(0).setStrokeStyle(1, 0x9fe6ff, 0.6);
+    this.highlightEdge = this.add.rectangle(0, 0, 5, ROW_H, 0xbfefff).setOrigin(0).setBlendMode(Phaser.BlendModes.ADD);
+    this.list.add([this.highlight, this.highlightEdge]);
+    // The selection breathes, like the menus' glowing buttons.
+    this.tweens.add({ targets: this.highlight, fillAlpha: 0.46, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     let y = 0;
     let group = '';
     MOVE_LIST.forEach((e, i) => {
@@ -384,6 +389,7 @@ export class MoveListScene extends Phaser.Scene {
     const row = this.rows[this.selected];
     this.rows.forEach((r) => r.text.setColor(r === row ? '#ffffff' : '#c6d8ea').setFontStyle(r === row ? 'bold' : ''));
     this.highlight.setY(row.y);
+    this.highlightEdge.setY(row.y);
     // Keep the row (and its group header, near the top) in view.
     if (row.y - HEADER_H < this.scroll) this.setScroll(row.y - HEADER_H);
     else if (row.y + ROW_H + 8 > this.scroll + LIST.h) this.setScroll(row.y + ROW_H + 8 - LIST.h);

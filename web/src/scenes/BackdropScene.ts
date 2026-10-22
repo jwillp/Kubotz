@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GrainPipeline, setPass } from '../fx/Grade';
+import { GradePipeline, GrainPipeline, screenFxOn, setPass } from '../fx/Grade';
 import { BACKDROPS, ROOM_H, ROOM_W, backdropOf, paintBolt, seeded, type BackdropTheme, type Room } from '../fx/Backdrops';
 
 interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: number; phase: number; drift: number; base: number; }
@@ -30,11 +30,14 @@ export class BackdropScene extends Phaser.Scene {
   private flash = 0;
   private nextStrike = 0;
   private rand = seeded(1);
+  /** Behind a menu (no arena over it): the room takes the whole grade, not just the grain. */
+  private menu = false;
 
   constructor() { super('Backdrop'); }
 
-  create(data?: { arena?: number }): void {
+  create(data?: { arena?: number; menu?: boolean }): void {
     const { width, height } = this.scale;
+    this.menu = !!data?.menu;
     const th = this.theme = backdropOf(data?.arena);
     this.rand = seeded(1 + (data?.arena ?? 0) * 97);
     this.makeTextures();
@@ -120,8 +123,17 @@ export class BackdropScene extends Phaser.Scene {
     if (th.lightning) this.flashRect = this.add.rectangle(width / 2, height / 2, width, height, th.rimLine, 0).setBlendMode(Phaser.BlendModes.ADD);
 
     // The match's film grain and scanlines, on or off with its screen effects (F).
-    setPass(this, this.cameras.main, GrainPipeline, this.registry.get('screenFx') === true);
+    this.setScreenFx(screenFxOn(this.game));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.setGameAmbient(0));
+  }
+
+  /**
+   * The screen effects on the room: under a match, its grain and scanlines
+   * (the arena has the grade); behind a menu, the whole grade as in a match.
+   */
+  setScreenFx(on: boolean): void {
+    setPass(this, this.cameras.main, GradePipeline, on && this.menu);
+    setPass(this, this.cameras.main, GrainPipeline, on && !this.menu);
   }
 
   update(time: number, delta: number): void {
