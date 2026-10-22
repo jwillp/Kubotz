@@ -33,6 +33,12 @@
         <file id="2" name="head/helmet4.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
         <file id="3" name="head/helmet5.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
         <file id="4" name="head/helmet5-grey.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="5" name="head/helmet-diver.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="6" name="head/helmet-mantis.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="7" name="head/helmet-sentinel.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="8" name="head/helmet-tank.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="9" name="head/helmet-astro.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
+        <file id="10" name="head/helmet-brute.png" width="250" height="260" pivot_x="0" pivot_y="1"/>
     </folder>
     <folder id="5" name="misc">
         <file id="0" name="misc/dash-orb.png" width="500" height="500" pivot_x="0" pivot_y="1"/>
@@ -61,6 +67,24 @@
         </character_map>
         <character_map id="2" name="head_skull">
             <map folder="4" file="0" target_folder="4" target_file="4"/>
+        </character_map>
+        <character_map id="7" name="head_diver">
+            <map folder="4" file="0" target_folder="4" target_file="5"/>
+        </character_map>
+        <character_map id="8" name="head_mantis">
+            <map folder="4" file="0" target_folder="4" target_file="6"/>
+        </character_map>
+        <character_map id="9" name="head_sentinel">
+            <map folder="4" file="0" target_folder="4" target_file="7"/>
+        </character_map>
+        <character_map id="10" name="head_tank">
+            <map folder="4" file="0" target_folder="4" target_file="8"/>
+        </character_map>
+        <character_map id="11" name="head_astro">
+            <map folder="4" file="0" target_folder="4" target_file="9"/>
+        </character_map>
+        <character_map id="12" name="head_brute">
+            <map folder="4" file="0" target_folder="4" target_file="10"/>
         </character_map>
         <character_map id="3" name="weapon_laserSword">
             <map folder="3" file="2"/>

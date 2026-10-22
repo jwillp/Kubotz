@@ -183,9 +183,11 @@ const COMBO_RECOVERY = 220;
 export interface KubotzLook { head: string | null; color: number; }
 
 /** Helmet shapes, one per robot in order (character maps of kubotz.scml). */
-export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull'];
+export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull',
+  'head_diver', 'head_mantis', 'head_sentinel', 'head_tank', 'head_astro', 'head_brute'];
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
-export const HEAD_FILES = ['head/helmet2.png', 'head/helmet3.png', 'head/helmet4.png', 'head/helmet5-grey.png'];
+export const HEAD_FILES = ['head/helmet2.png', 'head/helmet3.png', 'head/helmet4.png', 'head/helmet5-grey.png',
+  'head/helmet-diver.png', 'head/helmet-mantis.png', 'head/helmet-sentinel.png', 'head/helmet-tank.png', 'head/helmet-astro.png', 'head/helmet-brute.png'];
 
 /** Robot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
 export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
