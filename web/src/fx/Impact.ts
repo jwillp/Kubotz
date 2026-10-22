@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
-import { vfx, vfxChance } from '../game/Settings';
+import { fx, particleChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
 import { EffectDef, ParticleFx } from './ParticleEffect';
 
@@ -52,6 +52,7 @@ const TWIRL_FADE = 300;
 
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
+const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -181,7 +182,7 @@ export class ImpactFx {
    * with streaks whipping out of the core and glittering motes.
    */
   koSmoke(x: number, y: number, color: number): void {
-    if (vfx() <= 0) return;
+    if (fx().particles <= 0) return;
     this.lastKoAt = this.now;
     const { deep, bright } = smokeColors(color);
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
@@ -602,8 +603,9 @@ export class ImpactFx {
   }
 
   private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): Particle | undefined {
-    // VFX setting: the many small bits thin out with it; single flashes, rings and beams stay until it is 0.
-    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return undefined;
+    // Particle quality: the many small bits thin out with it; single flashes, rings and beams stay until it is off.
+    // The K.O. smoke stays whole while there are particles at all.
+    if (KO_SMOKE.has(p.kind) || SINGLE.has(p.kind) ? fx().particles <= 0 : !particleChance()) return undefined;
     const particle = { vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p };
     this.particles.push(particle);
     return particle;

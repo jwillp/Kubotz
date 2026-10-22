@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { onSettingsChange, vfx } from '../game/Settings';
+import { fx, onSettingsChange } from '../game/Settings';
 import { BACKDROPS } from '../fx/Backdrops';
 import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
@@ -130,7 +130,7 @@ export class PlateButton extends Phaser.GameObjects.Container {
     this.glow.setAlpha(1).setScale(1.04);
     tweens.add({ targets: this.glow, scale: 1, duration: 220, ease: 'Quad.out' });
     tweens.add({ targets: this.glow, alpha: 0.55, duration: 900, delay: 220, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    if (vfx() > 0) {
+    if (fx().lights) {
       const { w, h } = this;
       const g = this.sweep.clear().setVisible(true).setAlpha(1);
       g.fillStyle(0xbfe9ff, 0.22).fillPoints([new Phaser.Math.Vector2(-14, -h / 2), new Phaser.Math.Vector2(10, -h / 2),
@@ -194,7 +194,7 @@ export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
 /**
  * The match's screen effects on a menu: its grain and scanlines over the
  * menu's own drawing (the room behind takes the whole grade), F toggling
- * them as in a match unless `keys` is false. Follows the VFX setting live.
+ * them as in a match unless `keys` is false. Follows the settings live.
  */
 export function menuScreenFx(scene: Phaser.Scene, { keys = true } = {}): void {
   const apply = () => {
@@ -238,12 +238,12 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
 /**
  * The menu transition, an old TV changing stations: the picture breaks up
  * and rolls away into snow, `swap` runs while the screen is covered, then
- * the next screen locks on. With visual effects off, `swap` runs at once.
+ * the next screen locks on. With screen transitions off, `swap` runs at once.
  * It plays the confirm (or back) menu sound, unless `sound` is null.
  */
 export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' | null = 'confirm'): void {
   if (sound) uiSound(scene, sound);
-  if (vfx() <= 0) { swap(); return; }
+  if (!fx().transitions) { swap(); return; }
   // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
   // called from a scene's update (the scene manager defers adds made while it steps the scenes).
   // A change asked for while one runs (a press during the cut) waits for it, then runs in turn.

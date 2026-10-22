@@ -7,7 +7,7 @@ import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
-import { vfx } from './Settings';
+import { fx } from './Settings';
 import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
@@ -1651,8 +1651,8 @@ export class Kubotz implements Damageable, Teamed {
       dtMs,
       lean, squash,
       alpha: this.intangible && now >= this.materializeUntil ? 0.55 : 1,
-      flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
-      glitch: now < this.flashUntil && vfx() > 0,
+      flash: (now < this.flashUntil && fx().flashes) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
+      glitch: now < this.flashUntil && fx().distortion,
       // The guard's shield shrinks as it drains.
       shield: this.guarding ? { r: UNIT * 1.2 * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX)), above: (this.body.bottom - this.body.top) * 0.62, color: this.look.color } : undefined,
     });

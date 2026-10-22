@@ -26,7 +26,7 @@ import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
-import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
+import { addMusic, duckMusic, fx, onSettingsChange, particleCount, sfxVolume } from '../game/Settings';
 import { ReplayRecorder, propOf } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
@@ -295,7 +295,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupScreenFx();
     this.setupLights();
-    // The settings screen (opened from the pause) applies its VFX level live.
+    // The settings screen (opened from the pause) applies its effects live.
     const offSettings = onSettingsChange(() => this.setScreenFx(wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.perspective?.destroy();
@@ -330,7 +330,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (rect.inset) {
       // The arena behind the whole menu, filling it and soft, and whole again in the inset.
       cam.setZoom(Math.max(rect.width / mapW, rect.height / mapH) * 1.08).centerOn(mapW / 2, mapH / 2);
-      if (vfx() > 0) cam.postFX?.addBlur(0, 1, 1, 0.8);
+      if (fx().postFx) cam.postFX?.addBlur(0, 1, 1, 0.8);
       const r = rect.inset;
       this.cameras.add(r.x, r.y, r.width, r.height).setZoom(fit(r)).centerOn(mapW / 2, mapH / 2);
     } else {
@@ -849,9 +849,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
       }),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
-      // Explosion and hit flashes dim with the VFX setting.
+      // Explosion and hit flashes: off with dynamic lights.
       ...this.holo.lights(this.clock),
-      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: l.intensity * vfx() })),
+      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: fx().lights ? l.intensity : 0 })),
     ].filter((l) => l.intensity > 0);
     // The brightest first, so the pool keeps the hits and lasers when there are many.
     lights.sort((a, b) => b.intensity - a.intensity);
@@ -878,7 +878,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /**
    * The grade pass (vignette, split tone, grain, scanlines) on the arena and
    * the same grain and scanlines on the backdrop behind it, so they cover the
-   * whole view (WebGL only); off with ?lowfx or a VFX setting under half,
+   * whole view (WebGL only); off with ?lowfx or both post-processing and film grain off,
    * toggled with F (here or in the menus). No bloom: the owner preferred the
    * crisper look without it.
    */
@@ -1060,7 +1060,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (dv > 3.5 && now - o.lastTinkAt > 70) {
         o.lastTinkAt = now;
         this.playSfx('orb-bounce', Math.min(0.55, 0.1 + dv * 0.025), Phaser.Math.Between(-250, 350));
-        if (vfx() > 0) o.glitch(now, dv / 14);
+        if (fx().distortion) o.glitch(now, dv / 14);
       }
       o.lastVx = o.body.vx; o.lastVy = o.body.vy;
       this.impact.motes(o.x, o.y, o.color, o.radius, 16);
@@ -1080,7 +1080,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (free.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(free);
     const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
-    this.pickupFx.explode(vfxCount(12), orb.x, orb.y);
+    this.pickupFx.explode(particleCount(12), orb.x, orb.y);
     this.orbs.push(orb);
   }
 
@@ -1266,7 +1266,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    this.trauma = Math.min(1, this.trauma + amount * vfx());
+    if (fx().shake) this.trauma = Math.min(1, this.trauma + amount);
   }
 
   private applyZoom(): void {
