@@ -103,10 +103,15 @@ export class GameBall {
   get x(): number { return this.carrier ? this.carrier.x + this.carrier.facing * 0.55 * UNIT : this.body.x; }
   get y(): number { return this.carrier ? this.carrier.y - 0.15 * UNIT : this.body.y; }
 
-  /** Can `k` take it now (in reach of a grab, not held, not just dropped)? */
-  canTake(k: Kubotz, area: Phaser.Geom.Circle, now: number): boolean {
-    return this.grabbable && !this.carrier && now >= this.pickupAt && k.isAlive() && !k.carrying && !k.ball
-      && Phaser.Geom.Intersects.CircleToCircle(area, new Phaser.Geom.Circle(this.x, this.y, this.radius + 0.25 * UNIT));
+  /**
+   * Can `k` take it now (not held, not just dropped)? A generous reach: a
+   * small ball at the feet or just overhead, in front or right behind.
+   */
+  canTake(k: Kubotz, now: number): boolean {
+    if (!this.grabbable || this.carrier || now < this.pickupAt || !k.isAlive() || k.carrying || k.ball) return false;
+    const dx = (this.x - k.x) * k.facing;
+    const dy = this.y - k.y;
+    return dx > -0.8 * UNIT && dx < 1.9 * UNIT && dy > -2.2 * UNIT && dy < 1.6 * UNIT;
   }
 
   take(k: Kubotz): void {

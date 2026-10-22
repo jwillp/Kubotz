@@ -756,6 +756,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Melee grab reach: an opponent just in front, level with the grabber, that can be caught. */
   grabTarget(k: Kubotz): Kubotz | null {
+    if (k.ball) return null; // with a ball in hand, grab throws it
     let best: Kubotz | null = null;
     let bestD = Infinity;
     for (const o of this.fighters) {
@@ -1094,6 +1095,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
       for (const k of this.fighters) {
         if (!k.isAlive() || !Phaser.Geom.Intersects.CircleToRectangle(ball, k.hurtbox())) continue;
+        // A ball game's ball is only kicked by a Kubot running into it (walking up to it lets it grab it).
+        if (orb instanceof GameBall && Math.abs(k.body.vx) < 4 * UNIT) continue;
         const away = orb.x < k.x ? -1 : 1;
         const vx = k.body.vx;
         // Faster when running into it; a nudge out of the way when standing.
@@ -1501,7 +1504,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /** A grab with a ball in hand throws it (up or down with the stick); else it takes a ball in reach, or catches the Spark. */
-  private grabBall(k: Kubotz, area: Phaser.Geom.Circle): boolean {
+  private grabBall(k: Kubotz, _area: Phaser.Geom.Circle): boolean {
     const now = this.clock;
     if (k.ball) {
       const vy = k.pad.up ? -17 * UNIT : k.pad.down ? 6 * UNIT : -6 * UNIT;
@@ -1509,7 +1512,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.playSfx('orb-bounce', 0.5, 300);
       return true;
     }
-    const ball = this.balls.find((b) => b.canTake(k, area, now));
+    const ball = this.balls.find((b) => b.canTake(k, now));
     if (!ball) return false;
     if (ball.kind === 'spark') { this.score(k.team, SPARK_POINTS, now, 'SPARK CAUGHT', true); return true; }
     ball.take(k);
@@ -1818,8 +1821,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private focusPoints(): { x: number; y: number }[] {
     // Capture the Flag (a giant arena): the camera follows the human players only.
     if (MODES[this.mode].ctf) return this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
-    // Ball games: the Kubotz and the ball.
-    if (MODES[this.mode].ball && this.balls[0]) return [...this.fighters.filter((f) => f.isAlive()), this.balls[0]];
+    // Ball games: the human players and the ball (the CPUs all over the arena would hold the camera wide).
+    if (MODES[this.mode].ball && this.balls[0]) {
+      const humans = this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
+      return [...humans, this.balls[0]];
+    }
     const alive = this.fighters.filter((f) => f.isAlive());
     // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
