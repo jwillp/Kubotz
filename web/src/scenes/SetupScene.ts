@@ -5,11 +5,11 @@ import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Config } from '../config';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import {
-  BONUS_RATES, CPU_LEVEL, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
+  BLACK_COLOR, BLACK_TEAM, BONUS_RATES, CPU_LEVEL, isBlackTeam, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
   type BonusRate, type FighterSpec, type MatchSetup,
 } from '../game/Match';
-import { CTF_CAPTURES, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
-import { ARENA_INFO, CTF_ARENA } from '../map/Arenas';
+import { CTF_CAPTURES, KUBEBALL_GOALS, SKYCHASE_POINTS, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
+import { ARENA_INFO, arenaOf, isModeArena, type ArenaMode } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
 import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
@@ -29,7 +29,7 @@ type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 interface Seat { device: Device; team: number; helmet: number; level: number }
 
 /** The setup screen's choices, kept in the registry so a rematch from the title keeps them. */
-interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate; /** Training: CPUs to defeat. */ target?: number }
+interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate; /** Training: CPUs to defeat. */ target?: number; /** Ball games: the score to reach (0: none), per game. */ score?: Partial<Record<'kubeball' | 'skychase', number>> }
 
 const SLOTS = 4;
 const SLOT_W = 282;
@@ -220,8 +220,8 @@ export class SetupScene extends Phaser.Scene {
     // Training is for one player: slot 1 is a person (the keyboard by default).
     if (this.solo && (this.state.seats[0].device === 'OFF' || this.state.seats[0].device === 'CPU')) this.state.seats[0].device = 'K1';
     // Capture the Flag plays its own arena, and only it does.
-    if (MODES[this.mode].ctf) this.state.arena = CTF_ARENA;
-    else if (this.state.arena === CTF_ARENA) this.state.arena = 0;
+    if (this.modeArena >= 0) this.state.arena = this.modeArena;
+    else if (isModeArena(this.state.arena)) this.state.arena = 0;
     this.focus = { kind: 'start' };
 
     const { width } = this.scale;
@@ -331,10 +331,24 @@ export class SetupScene extends Phaser.Scene {
 
   /** Horde: every Kubot on the players' team against the black team. */
   private get oneTeam(): boolean { return teamUp(MODES[this.mode]) || this.solo; }
+  /** The arena a mode plays only (Capture the Flag, the ball games), or -1. */
+  private get modeArena(): number {
+    const m = MODES[this.mode];
+    return arenaOf((m.ctf ? 'ctf' : m.ball) as ArenaMode | undefined);
+  }
+
+  /** Ball games: the score to reach picked here (0: none). */
+  private ballScore(): number {
+    const ball = MODES[this.mode].ball;
+    if (!ball) return 0;
+    return this.state.score?.[ball] ?? (ball === 'kubeball' ? 5 : 150);
+  }
+
   /** Training: one player, slot 1 only. */
   private get solo(): boolean { return !!MODES[this.mode].solo; }
   /** A seat's team in this mode. */
-  private teamOf(seat: Seat): number { return this.oneTeam ? HORDE_TEAM : seat.team; }
+  /** A seat's team in this mode (ball games: red, or the black team). */
+  private teamOf(seat: Seat): number { return this.oneTeam ? HORDE_TEAM : MODES[this.mode].ball ? (seat.team % 2 === 0 ? 0 : BLACK_TEAM) : seat.team; }
 
   private makeSlot(i: number, rig: Rig): Slot {
     const x = this.slotX(i);
@@ -385,7 +399,15 @@ export class SetupScene extends Phaser.Scene {
     const s = this.state;
     switch (f.kind) {
       case 'arena': this.pickArena(d); return;
-      case 'recharges': if (this.fixedRecharges() !== null) return; s.recharges = RECHARGES[(RECHARGES.indexOf(s.recharges) + d + RECHARGES.length) % RECHARGES.length]; break;
+      case 'recharges': {
+        const ball = MODES[this.mode].ball;
+        if (ball) {
+          const list = ball === 'kubeball' ? KUBEBALL_GOALS : SKYCHASE_POINTS;
+          s.score = { ...s.score, [ball]: list[(list.indexOf(this.ballScore()) + d + list.length) % list.length] };
+          break;
+        }
+      }
+        if (this.fixedRecharges() !== null) return; s.recharges = RECHARGES[(RECHARGES.indexOf(s.recharges) + d + RECHARGES.length) % RECHARGES.length]; break;
       case 'time':
         if (MODES[this.mode].trial) { s.target = TRAINING_TARGETS[(TRAINING_TARGETS.indexOf(s.target ?? 10) + d + TRAINING_TARGETS.length) % TRAINING_TARGETS.length]; break; }
         if (this.oneTeam) return;
@@ -406,7 +428,9 @@ export class SetupScene extends Phaser.Scene {
         } else if (f.field === 'helmet') {
           seat.helmet = (seat.helmet + d + HEADS.length) % HEADS.length;
         } else {
-          seat.team = (seat.team + d + SLOT_COLORS.length) % SLOT_COLORS.length;
+          // Ball games: red or blue.
+          const teams = MODES[this.mode].ball ? 2 : SLOT_COLORS.length;
+          seat.team = ((seat.team % teams) + d + teams) % teams;
           this.taunt(f.slot);
         }
       }
@@ -417,10 +441,10 @@ export class SetupScene extends Phaser.Scene {
 
   private pickArena(d: number): void {
     const s = this.state;
-    if (MODES[this.mode].ctf) d = 0; // its own arena only
+    if (this.modeArena >= 0) d = 0; // its own arena only
     s.arena = (s.arena + d + ARENA_INFO.length) % ARENA_INFO.length;
-    // The Capture the Flag arena is skipped by the other modes.
-    if (s.arena === CTF_ARENA && !MODES[this.mode].ctf) s.arena = (s.arena + (d || 1) + ARENA_INFO.length) % ARENA_INFO.length;
+    // An arena that belongs to one mode is skipped by the others.
+    while (isModeArena(s.arena) && this.modeArena < 0) s.arena = (s.arena + (d || 1) + ARENA_INFO.length) % ARENA_INFO.length;
     if (d) uiSound(this, 'move');
     const { width } = this.scale;
     this.center.setTexture(arenaThumbnail(this, s.arena, CENTER_W));
@@ -478,7 +502,8 @@ export class SetupScene extends Phaser.Scene {
   private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
     // Horde: one Kubot is enough, and everyone is on one team anyway.
-    if (this.oneTeam) return seats.length < 1 ? 'few' : null;
+    // Ball games: CPUs fill both teams.
+    if (this.oneTeam || MODES[this.mode].ball) return seats.length < 1 ? 'few' : null;
     if (seats.length < 2) return 'few';
     if (new Set(seats.map((s) => s.team)).size < 2) return 'one team';
     return null;
@@ -602,7 +627,10 @@ export class SetupScene extends Phaser.Scene {
     const on = (k: Focus['kind']) => f.kind === k;
     // Rules: values, and the focused one glows.
     const fixed = this.fixedRecharges();
-    this.rules.recharges.value.setText(fixed === null ? String(s.recharges) : Number.isFinite(fixed) ? String(fixed) : '∞');
+    const ball = MODES[this.mode].ball;
+    this.rules.recharges.title.setText(ball === 'kubeball' ? 'GOALS' : ball ? 'POINTS' : 'RECHARGES');
+    this.rules.recharges.value.setText(ball ? (this.ballScore() || '∞').toString()
+      : fixed === null ? String(s.recharges) : Number.isFinite(fixed) ? String(fixed) : '∞');
     // The time box: the training's target, Capture the Flag's captures, else the time limit.
     const m = MODES[this.mode];
     this.rules.time.title.setText(m.trial ? 'DEFEAT' : m.ctf ? 'CAPTURES' : 'TIME');
@@ -640,7 +668,7 @@ export class SetupScene extends Phaser.Scene {
   private drawSlot(p: Slot, i: number, seat: Seat, tag: string): void {
     const x = this.slotX(i);
     const off = seat.device === 'OFF';
-    const color = off ? 0x3a4a66 : SLOT_COLORS[this.teamOf(seat)];
+    const color = off ? 0x3a4a66 : isBlackTeam({ team: this.teamOf(seat) }) ? BLACK_COLOR : SLOT_COLORS[this.teamOf(seat)];
     const f = this.focus;
     const focused = f.kind === 'slot' && f.slot === i ? f.field : null;
     p.color = color;
@@ -667,7 +695,7 @@ export class SetupScene extends Phaser.Scene {
     p.blurb.setText(deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
     p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
-    p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[seat.team]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
+    p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)] ?? 'Black'} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(isBlackTeam({ team: this.teamOf(seat) }) ? 0x8d96a6 : color).lighten(18).color));
     for (const field of ['helmet', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
       for (const a of p.rows[field].arrows) a.setVisible(!off && (field !== 'team' || !this.oneTeam));
@@ -718,7 +746,8 @@ export class SetupScene extends Phaser.Scene {
     this.leaving = true;
     const s = this.state;
     const setup: MatchSetup = {
-      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, recharges: s.recharges, minutes: this.oneTeam ? 0 : s.minutes, target: s.target,
+      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, recharges: s.recharges, minutes: this.oneTeam ? 0 : s.minutes,
+      target: MODES[this.mode].ball ? this.ballScore() : s.target,
     };
     shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }

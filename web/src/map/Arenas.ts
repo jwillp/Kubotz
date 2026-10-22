@@ -10,6 +10,9 @@ import type { MapObject, TileLayer, TmxMap } from './TmxMap';
 
 type Rect = [x: number, y: number, w: number, h: number];
 
+/** Modes that play their own arena. */
+export type ArenaMode = 'ctf' | 'kubeball' | 'skychase';
+
 export interface ArenaDef {
   name: string;
   blurb: string;
@@ -26,6 +29,12 @@ export interface ArenaDef {
   flags?: [x: number, y: number][];
   /** Portals inside the arena, in pairs (1st and 2nd, 3rd and 4th...): going into one comes out of the other. */
   portals?: Rect[];
+  /** The one mode this arena is played in (and the only arena that mode plays); others never list it. */
+  mode?: ArenaMode;
+  /** Ball games: goals (rifts on a wall's face) and the team each one belongs to (the other team scores in it). */
+  goals?: [team: number, x: number, y: number, w: number, h: number][];
+  /** Ball games: where the ball is put into play (its centre). */
+  ball?: [x: number, y: number];
 }
 
 /** One Kube's size in units: the default arena size. */
@@ -75,12 +84,15 @@ export const ARENAS: (ArenaDef | null)[] = [
     // Capture the Flag: two bases far apart at the ends of a long hall, six pits between them,
     // a raised middle, and two pairs of portals across the middle: a high lane, and one by the floor.
     name: 'The Long Hall',
+    mode: 'ctf',
     blurb: 'Capture the Flag: a base at each end',
     size: [180, 44],
     walls: [
       [6, 1, 168, 2], [4, 3, 2, 37], [174, 3, 2, 37],
       [6, 40, 26, 3], [36, 40, 16, 3], [57, 40, 14, 3], [75, 40, 30, 3], [109, 40, 14, 3], [128, 40, 16, 3], [148, 40, 26, 3],
       [24, 35, 3, 5], [153, 35, 3, 5], [62, 34, 3, 6], [115, 34, 3, 6], [86, 31, 8, 2],
+      // The portals' walls: each rift sits on a wall's face, as in the Kube.
+      [44, 8, 2, 7], [134, 8, 2, 7], [57, 34, 2, 6], [121, 34, 2, 6],
     ],
     platforms: [
       [30, 34, 8, 1], [142, 34, 8, 1], [50, 33, 9, 1], [121, 33, 9, 1], [70, 34, 7, 1], [103, 34, 7, 1],
@@ -91,12 +103,44 @@ export const ARENAS: (ArenaDef | null)[] = [
     spawns: [[8, 40], [13, 40], [18, 40], [12, 32], [172, 40], [167, 40], [162, 40], [168, 32]],
     bonus: [[20, 37], [160, 37], [90, 28], [90, 15], [55, 30], [125, 30]],
     flags: [[11, 40], [169, 40]],
-    portals: [[46, 9, 1, 5], [133, 9, 1, 5], [58, 36, 1, 4], [121, 36, 1, 4]],
+    portals: [[46, 9, 1, 5], [133, 9, 1, 5], [59, 35, 1, 5], [120, 35, 1, 5]],
+  },
+  {
+    // Kubeball: a closed pitch, a goal rift in each end wall at head height, a few platforms over the middle.
+    name: 'The Pitch',
+    blurb: 'Kubeball: a goal at each end',
+    mode: 'kubeball',
+    size: [80, 32],
+    walls: [[6, 1, 68, 2], [4, 3, 2, 25], [74, 3, 2, 25], [6, 28, 68, 3]],
+    platforms: [[14, 22, 8, 1], [58, 22, 8, 1], [33, 17, 14, 1], [22, 11, 8, 1], [50, 11, 8, 1]],
+    warps: [],
+    spawns: [[12, 28], [18, 28], [24, 28], [18, 22], [68, 28], [62, 28], [56, 28], [62, 22]],
+    bonus: [[40, 14], [26, 8], [54, 8]],
+    goals: [[0, 6, 20, 1, 7], [1, 73, 20, 1, 7]],
+    ball: [40, 24],
+  },
+  {
+    // Skychase: a tall open tower, three ring rifts high on each side wall, a hole in the floor.
+    name: 'The Sky Tower',
+    blurb: 'Skychase: rings high on each side',
+    mode: 'skychase',
+    size: [70, 50],
+    walls: [[6, 1, 58, 2], [4, 3, 2, 44], [64, 3, 2, 44], [6, 47, 20, 3], [44, 47, 20, 3]],
+    platforms: [[14, 39, 8, 1], [48, 39, 8, 1], [30, 31, 10, 1], [19, 22, 7, 1], [44, 22, 7, 1], [31, 13, 8, 1]],
+    warps: [],
+    spawns: [[10, 47], [16, 47], [22, 47], [18, 39], [60, 47], [54, 47], [48, 47], [52, 39]],
+    bonus: [[35, 28], [22, 19], [48, 19]],
+    goals: [[0, 6, 9, 1, 5], [0, 6, 19, 1, 5], [0, 6, 29, 1, 5], [1, 63, 9, 1, 5], [1, 63, 19, 1, 5], [1, 63, 29, 1, 5]],
+    ball: [35, 26],
   },
 ];
 
-/** The Capture the Flag arena (index into ARENA_INFO): only played in that mode, and the only one it plays. */
-export const CTF_ARENA = ARENAS.findIndex((a) => !!a?.flags);
+/** The arena a mode plays (index into ARENA_INFO), or -1 when it plays any of the others. */
+export const arenaOf = (mode: ArenaMode | undefined): number => (mode ? ARENAS.findIndex((a) => a?.mode === mode) : -1);
+/** Arenas that belong to one mode are not offered to the others. */
+export const isModeArena = (i: number): boolean => !!ARENAS[i]?.mode;
+/** The Capture the Flag arena. */
+export const CTF_ARENA = arenaOf('ctf');
 
 export const ARENA_INFO = [
   { name: 'The Kube', blurb: 'The original arena' },
@@ -169,6 +213,8 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     ...def.bonus.map(([x, y]) => obj('BONUS_SPAWN', x - 0.5, y - 0.5, 1, 1)),
     ...(def.flags ?? []).map(([x, y]) => obj('FLAG_STAND', x - 0.5, y - 1, 1, 1)),
     ...(def.portals ?? []).map(([x, y, w, h]) => obj('PORTAL', x, y, w, h)),
+    ...(def.goals ?? []).map(([team, x, y, w, h]) => obj(`GOAL_${team}`, x, y, w, h)),
+    ...(def.ball ? [obj('BALL_SPOT', def.ball[0] - 0.5, def.ball[1] - 0.5, 1, 1)] : []),
   ];
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };

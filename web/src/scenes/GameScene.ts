@@ -8,9 +8,10 @@ import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
+import { GameBall } from '../game/Ball';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
-import { CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
+import { BALL_TEAM_SIZE, CORE_POINTS, SKYCHASE_GRAVITY, SKYCHASE_JUMPS, SPARK_POINTS, CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -126,6 +127,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   flags: CtfFlag[] = [];
   private flagStands: Phaser.Math.Vector2[] = [];
   captures: [number, number] = [0, 0];
+  /** Ball games: the balls (the ball or the Core first), the goals and their teams, and the score to reach (0: none). */
+  balls: GameBall[] = [];
+  private goals: { team: number; zone: Phaser.Geom.Rectangle }[] = [];
+  private ballSpot = new Phaser.Math.Vector2();
+  scoreLimit = 0;
   /** Training: CPUs defeated, how many to defeat, and when the next one may come in. */
   defeated = 0;
   target = 10;
@@ -180,6 +186,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.flags = [];
     this.flagStands = [];
     this.captures = [0, 0];
+    this.balls = [];
+    this.goals = [];
     this.defeated = 0;
     this.nextFoeAt = 0;
   }
@@ -191,8 +199,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mode = MODES[this.mode];
     // Sandbox: a dummy joins (its behaviour is set below); Sandbox and Capture the Flag never run out of recharges.
     if (mode.sandbox) this.specs = [...this.specs.slice(0, 1), { input: 'CPU', team: 1, helmet: 7, cpuLevel: 5 }];
-    this.recharges = mode.sandbox || mode.ctf ? Infinity : mode.trial ? TRAINING_RECHARGES : setup.recharges ?? Config.NB_LIVES;
+    this.recharges = mode.sandbox || mode.ctf || mode.ball ? Infinity : mode.trial ? TRAINING_RECHARGES : setup.recharges ?? Config.NB_LIVES;
     this.target = setup.target ?? 10;
+    this.scoreLimit = mode.ball ? setup.target ?? 0 : 0;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -211,7 +220,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.recorder.setArena(this.map.width * UNIT, this.map.height * UNIT);
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
-    this.portals = new PortalFx(this, [...this.warpZones, ...this.innerPortals]);
+    // Goals are rifts in their team's colour.
+    const goalColors = new Map(this.goals.map((g) => [g.zone, isBlackTeam(g) ? BLACK_GOAL : SLOT_COLORS[g.team]] as const));
+    this.portals = new PortalFx(this, [...this.warpZones, ...this.innerPortals, ...this.goals.map((g) => g.zone)], true, goalColors);
     this.recorder.watch(this.portals, ['burst'], 'portals');
     this.holo = new HoloSpawns(this);
 
@@ -226,7 +237,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
-      const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
+      const color = isBlackTeam(spec) ? BLACK_COLOR : SLOT_COLORS[spec.team % SLOT_COLORS.length];
       if (spec.input === 'CPU') {
         controller = new CpuController({
           // Teammates are friends: a CPU only goes after the other teams.
@@ -234,7 +245,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           powerUpPositions: () => this.orbs.map((o) => ({ x: o.x, y: o.y })),
           now: () => this.clock,
           nav: this.nav,
-          objective: (k) => this.ctfObjective(k),
+          objective: (k) => this.objective(k),
         }, cpuReactionMs(spec.cpuLevel));
       } else {
         // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
@@ -245,7 +256,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           : new HumanController(this, keys, spec.input, -1, `P${humans}`);
       }
       // Capture the Flag: everyone starts at the players' base.
-      const spawns = mode.ctf ? this.teamSpawns(spec.team) : this.playerSpawns;
+      const spawns = mode.ctf || mode.ball ? this.teamSpawns(spec.team) : this.playerSpawns;
       const spawn = spawns[i % spawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
@@ -264,6 +275,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
     if (mode.ctf) this.setupCtf();
+    if (mode.ball) this.setupBallGame();
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
     // The camera starts on the first Kubot's spawn (updateCamera follows the intro).
@@ -361,6 +373,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.portals.destroy();
       this.holo.destroy();
       for (const f of this.flags) f.destroy();
+      for (const b of this.balls) b.destroy();
       for (const k of this.fighters) k.destroy();
     });
   }
@@ -449,6 +462,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           break;
         case 'BONUS_SPAWN':
           this.bonusSpawns.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height / 2));
+          break;
+        case 'GOAL_0': case 'GOAL_1':
+          // The arena's second team is the black team.
+          this.goals.push({ team: o.type === 'GOAL_0' ? 0 : BLACK_TEAM, zone: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height) });
+          break;
+        case 'BALL_SPOT':
+          this.ballSpot.set(o.x + o.width / 2, o.y + o.height / 2);
           break;
         case 'PORTAL':
           this.innerPortals.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
@@ -707,6 +727,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean {
+    // Ball games: a grab throws the ball in hand, or takes a ball (or catches the Spark) in reach.
+    if (this.balls.length && this.grabBall(kubotz, area)) return true;
     let took = false;
     for (const orb of [...this.orbs]) {
       if (!Phaser.Geom.Intersects.CircleToRectangle(area, orb.sprite.getBounds())) continue;
@@ -807,6 +829,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateBonusSpawns(now);
     this.updateHorde(now);
     this.updateFlags(now);
+    this.updateBallGame(now);
     this.updateTrial(now);
     const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
@@ -851,6 +874,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         ...this.bullets.filter((b) => !b.dead).map((b) => propOf(b.sprite)),
         ...this.glows.filter((g) => g.visible).map((g) => propOf(g)),
         ...this.flags.flatMap((f) => f.props()),
+        ...this.balls.flatMap((b) => b.props()),
       ],
       ambient: Phaser.Display.Color.GetColor(amb.r * 255, amb.g * 255, amb.b * 255),
     });
@@ -1044,7 +1068,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
       }
       // Strikes knock the power-up balls away along the move's launch angle.
-      for (const orb of this.orbs) {
+      for (const orb of this.knockables()) {
         if (now < orb.kickedUntil) continue;
         const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
         if (!box.circles.some((c) => Phaser.Geom.Intersects.CircleToCircle(c, ball))) continue;
@@ -1059,8 +1083,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /** Kubotz running into a power-up ball kick it along. */
+  /** What runs and strikes knock about: the power-up balls, and a ball game's loose balls (not the Spark). */
+  private knockables(): (PowerUpOrb | GameBall)[] {
+    return [...this.orbs, ...this.balls.filter((b) => !b.carrier && b.kind !== 'spark')];
+  }
+
   private kickOrbs(now: number): void {
-    for (const orb of this.orbs) {
+    for (const orb of this.knockables()) {
       if (now < orb.kickedUntil) continue;
       const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
       for (const k of this.fighters) {
@@ -1195,12 +1224,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const from = zones[i];
       const to = zones[i % 2 === 0 ? i + 1 : i - 1];
       if (!to) continue;
-      const dir = Math.sign(m.vx) || 1;
+      // Out of the rift's open side (away from the wall it sits on).
+      const dir = this.openSide(to);
       m.teleport(to.centerX + dir * 1.1 * UNIT, to.y + (m.y - from.y));
       this.portalCooldown.set(m.key, now + 700);
       this.portals.burst(to.centerX, m.y, this.clock);
       if (m.key instanceof Kubotz) this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60));
     }
+  }
+
+  /** The side of a portal that is open (1 right, -1 left): away from the wall behind it. */
+  private openSide(zone: Phaser.Geom.Rectangle): 1 | -1 {
+    const wallLeft = this.solids.some((r) => Math.abs(r.right - zone.x) < 0.6 * UNIT && r.bottom > zone.y && r.y < zone.bottom);
+    return wallLeft ? 1 : -1;
   }
 
   private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
@@ -1234,6 +1270,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         : teamsLeft(this.fighters.filter((f) => f !== k || f.lives > 1)).length <= 1);
       this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, final);
       k.carrying?.drop(now, k.body.vx, k.body.vy);
+      k.ball?.release(now, k.body.vx * 0.5, -3 * UNIT);
       this.debris.explode(k, now);
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
@@ -1242,7 +1279,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} ELIMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
     }
     // Sandbox and Capture the Flag: K.O.s never end it. Training: it ends when you are out (or by the count, see updateTrial).
-    if (MODES[this.mode].sandbox || MODES[this.mode].ctf) return;
+    if (MODES[this.mode].sandbox || MODES[this.mode].ctf || MODES[this.mode].ball) return;
     if (MODES[this.mode].trial) {
       if (this.winnerTeam === undefined && this.fighters[0]?.eliminated) this.endMatch(TRIAL_FOES, now);
       return;
@@ -1262,6 +1299,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Time up: the team with the most lives left wins (then the most health); a tie is a draw. */
   private checkTime(now: number): void {
     if (!this.timeLimit || this.winnerTeam !== undefined || now - this.startedAt < this.timeLimit) return;
+    // Ball games: the higher score wins; level, a draw.
+    if (MODES[this.mode].ball) {
+      const [a, b] = this.captures;
+      this.endMatch(a === b ? null : a > b ? 0 : BLACK_TEAM, now);
+      return;
+    }
     const score = (team: number) => this.teamOf(team).reduce((s, k) => s + (k.eliminated ? 0 : k.lives * 1000 + Math.max(0, k.health)), 0);
     const ranked = teamsLeft(this.fighters).map((t) => ({ t, s: score(t) })).sort((a, b) => b.s - a.s);
     this.endMatch(ranked.length && (ranked.length === 1 || ranked[0].s > ranked[1].s) ? ranked[0].t : null, now);
@@ -1294,7 +1337,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
       arena: this.arena,
       mode: this.mode,
-      ...(MODES[this.mode].ctf ? { score: [...this.captures] as [number, number] } : {}),
+      ...(MODES[this.mode].ctf || MODES[this.mode].ball ? { score: [...this.captures] as [number, number] } : {}),
       ...(MODES[this.mode].trial ? { defeated: this.defeated, target: this.target } : {}),
       ...(MODES[this.mode].horde ? { wave: this.winnerTeam === BLACK_TEAM ? this.wave : Math.min(this.wave, HORDE_WAVES) } : {}),
       warpZones: this.warpZones.map(({ x, y, width, height }) => ({ x, y, width, height })),
@@ -1386,6 +1429,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ---------------------------------------------------------- capture the flag
   /** The spawn points of a team's base: the half of them nearest its flag stand (players: the first stand). */
   private teamSpawns(team: number): Phaser.Math.Vector2[] {
+    // Ball games: red at the left end, blue at the right.
+    if (MODES[this.mode].ball) {
+      const mid = (this.map.width * UNIT) / 2;
+      const side = this.playerSpawns.filter((p) => (team === 0 ? p.x < mid : p.x >= mid));
+      return side.length ? side : this.playerSpawns;
+    }
     const stand = this.flagStands[isBlackTeam({ team }) ? 1 : 0];
     if (!stand) return this.playerSpawns;
     const near = [...this.playerSpawns].sort((a, b) => Math.abs(a.x - stand.x) - Math.abs(b.x - stand.x));
@@ -1416,6 +1465,196 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const k of this.fighters) k.damageScale = CTF_DAMAGE;
   }
 
+  // -------------------------------------------------------------- ball games
+  /**
+   * Kubeball and Skychase: CPUs fill red and blue up to BALL_TEAM_SIZE
+   * (no HUD card; one per team keeps goal in Kubeball, chases the Spark in
+   * Skychase), the ball (or the Core) on its spot, and in Skychase the two
+   * Hunters and the Spark; everyone flies a little in Skychase.
+   */
+  private setupBallGame(): void {
+    const sky = MODES[this.mode].ball === 'skychase';
+    const helmets = [8, 2, 4, 6, 9, 5];
+    for (const team of [0, BLACK_TEAM]) {
+      const have = this.specs.filter((sp) => sp.team === team).length;
+      for (let i = have; i < BALL_TEAM_SIZE; i++) {
+        const black = isBlackTeam({ team });
+        const k = this.spawnFoe(team, black ? BLACK_COLOR : SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, black ? BLACK_HELMET : helmets[i % helmets.length], Infinity, this.countdownAt);
+        k.hudless = true;
+        k.role = i === have ? (sky ? 'interceptor' : 'guardian') : 'striker';
+      }
+    }
+    const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
+    this.balls = [new GameBall(this, this.physicsWorld, sky ? 'core' : 'kubeball', spot)];
+    if (sky) {
+      this.balls.push(
+        new GameBall(this, this.physicsWorld, 'hunter', { x: spot.x - 8 * UNIT, y: spot.y - 10 * UNIT }),
+        new GameBall(this, this.physicsWorld, 'hunter', { x: spot.x + 8 * UNIT, y: spot.y - 10 * UNIT }),
+      );
+      for (const k of this.fighters) { k.baseJumps = k.maxJumps = SKYCHASE_JUMPS; k.lowGravity = SKYCHASE_GRAVITY; }
+    }
+  }
+
+  /** A team's goals (where the other team scores). */
+  private goalsOf(team: number): Phaser.Geom.Rectangle[] {
+    return this.goals.filter((g) => g.team === team).map((g) => g.zone);
+  }
+
+  /** A grab with a ball in hand throws it (up or down with the stick); else it takes a ball in reach, or catches the Spark. */
+  private grabBall(k: Kubotz, area: Phaser.Geom.Circle): boolean {
+    const now = this.clock;
+    if (k.ball) {
+      const vy = k.pad.up ? -17 * UNIT : k.pad.down ? 6 * UNIT : -6 * UNIT;
+      k.ball.release(now, k.facing * (k.pad.up ? 6 : 17) * UNIT + k.body.vx * 0.4, vy);
+      this.playSfx('orb-bounce', 0.5, 300);
+      return true;
+    }
+    const ball = this.balls.find((b) => b.canTake(k, area, now));
+    if (!ball) return false;
+    if (ball.kind === 'spark') { this.score(k.team, SPARK_POINTS, now, 'SPARK CAUGHT', true); return true; }
+    ball.take(k);
+    this.playSfx('orb-pickup', 0.45);
+    return true;
+  }
+
+  /** A team scores: the number, a title; Kubeball kicks off again, the Core goes back to its spot; at the limit (or the Spark) it ends. */
+  private score(team: number, points: number, now: number, title: string, ends = false): void {
+    this.captures[team === 0 ? 0 : 1] += points;
+    this.events.emit('goal', team, title);
+    this.shake(0.4);
+    if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.45, 500);
+    const [a, b] = this.captures;
+    if (ends || (this.scoreLimit && Math.max(a, b) >= this.scoreLimit)) {
+      this.endMatch(a === b ? null : a > b ? 0 : BLACK_TEAM, now);
+      return;
+    }
+    const main = this.balls[0];
+    main.reset(now + 1200);
+    if (main.kind === 'kubeball') {
+      // Kickoff: everyone back to their end.
+      for (const k of this.fighters) {
+        if (!k.isAlive()) continue;
+        const spawn = Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team));
+        k.respawn(spawn.x + Phaser.Math.Between(-12, 12), spawn.y);
+        this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), spawn.y);
+      }
+    }
+  }
+
+  /**
+   * Ball games, every frame: a carrier hit hard drops the ball; a ball in a
+   * goal scores for the other team; the Hunters fly at the nearest Kubot and
+   * knock it flying; the Spark darts about, away from whoever comes close.
+   */
+  private updateBallGame(now: number): void {
+    if (!this.balls.length || this.winnerTeam !== undefined) return;
+    const fighting = now >= this.startedAt;
+    // Skychase: the Spark comes out after a while, high over the middle.
+    if (MODES[this.mode].ball === 'skychase' && !this.balls.some((b) => b.kind === 'spark') && now >= this.startedAt + SPARK_AFTER_MS) {
+      this.balls.push(new GameBall(this, this.physicsWorld, 'spark', { x: this.ballSpot.x, y: 6 * UNIT }));
+      this.events.emit('goal', -1, 'THE SPARK IS OUT');
+    }
+    for (const ball of this.balls) {
+      ball.update(now);
+      const c = ball.carrier;
+      if (c && (c.tumbling || !c.isAlive())) ball.release(now, c.body.vx * 0.6, -4 * UNIT);
+      if (!ball.carrier && ball.y > (this.map.height + 4) * UNIT) ball.reset();
+      if (!fighting) { if (ball.kind !== 'kubeball' && ball.kind !== 'core') ball.body.setVelocity(0, 0); continue; }
+      if (ball.kind === 'kubeball' || ball.kind === 'core') {
+        const hit = this.goals.find((g) => Phaser.Geom.Rectangle.Contains(Phaser.Geom.Rectangle.Inflate(Phaser.Geom.Rectangle.Clone(g.zone), ball.radius, 0), ball.x, ball.y));
+        if (hit) {
+          const by = hit.team === 0 ? BLACK_TEAM : 0;
+          this.portals.burst(hit.zone.centerX, ball.y, this.clock);
+          this.score(by, ball.kind === 'core' ? CORE_POINTS : 1, now, ball.kind === 'core' ? `+${CORE_POINTS}` : 'GOAL');
+          return;
+        }
+      } else if (ball.kind === 'hunter') {
+        this.steerHunter(ball, now);
+      } else {
+        this.steerSpark(ball, now);
+      }
+    }
+  }
+
+  private steerHunter(h: GameBall, now: number): void {
+    const alive = this.fighters.filter((k) => k.isAlive() && now >= k.appearAt);
+    const prey = alive.sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
+    if (!prey) return;
+    const dx = prey.x - h.x; const dy = prey.y - h.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    const speed = 9 * UNIT;
+    // Turns towards its prey, never quite stopping.
+    h.body.setVelocity(h.body.vx * 0.96 + (dx / d) * speed * 0.06, h.body.vy * 0.96 + (dy / d) * speed * 0.06);
+    if (d < h.radius + 0.7 * UNIT && now >= h.kickedUntil) {
+      h.kickedUntil = now + 1100;
+      prey.struck(8, Math.sign(dx || 1) * 14 * UNIT, -10 * UNIT);
+      h.body.setVelocity(-dx / d * 10 * UNIT, -dy / d * 10 * UNIT);
+      this.impact.hit(prey.x, prey.y, Math.sign(dx) || 1, 0xff3a3a, 1.2);
+      this.playSfx('punch', 0.5, -200);
+      this.shake(0.3);
+    }
+  }
+
+  private steerSpark(s: GameBall, now: number): void {
+    const W = this.map.width * UNIT; const H = this.map.height * UNIT;
+    const near = this.fighters.filter((k) => k.isAlive() && Math.hypot(k.x - s.x, k.y - s.y) < 7 * UNIT)[0];
+    if (now >= s.wander.until || near) {
+      // A new spot to dart to: away from a Kubot coming close, else anywhere in the upper part of the arena.
+      const x = near ? Phaser.Math.Clamp(s.x + Math.sign(s.x - near.x || 1) * 12 * UNIT, 8 * UNIT, W - 8 * UNIT) : Phaser.Math.FloatBetween(9 * UNIT, W - 9 * UNIT);
+      const y = Phaser.Math.FloatBetween(5 * UNIT, H * 0.7);
+      s.wander = { x, y, until: now + Phaser.Math.Between(700, 1600) };
+    }
+    const dx = s.wander.x - s.x; const dy = s.wander.y - s.y;
+    const d = Math.max(1, Math.hypot(dx, dy));
+    const speed = (near ? 19 : 9) * UNIT;
+    s.body.setVelocity(s.body.vx * 0.9 + (dx / d) * speed * 0.1, s.body.vy * 0.9 + (dy / d) * speed * 0.1);
+  }
+
+  /**
+   * A CPU's job in a ball game. With the ball: to the nearest enemy goal,
+   * throwing it once close. A Kubeball keeper stays by its goal (going for
+   * a ball or a carrier coming near); a Skychase seeker chases the Spark.
+   * Otherwise: escort a teammate with the ball, go after an enemy with it,
+   * or go and get it.
+   */
+  private ballObjective(k: Kubotz): Objective | null {
+    const main = this.balls[0];
+    if (!main) return null;
+    const dist = (p: { x: number; y: number }) => Math.hypot(p.x - k.x, p.y - k.y);
+    const at = (r: Phaser.Geom.Rectangle) => ({ x: r.centerX, y: r.centerY });
+    if (k.ball) {
+      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).map(at).sort((p, q) => dist(p) - dist(q))[0];
+      if (!goal) return null;
+      return { goal, fightWithin: 1.2, grab: dist(goal) < 9 * UNIT && Math.sign(goal.x - k.x) === k.facing };
+    }
+    const spark = this.balls.find((b) => b.kind === 'spark');
+    if (k.role === 'interceptor' && spark) return { goal: { x: spark.x, y: spark.y }, fightWithin: 1, grab: dist(spark) < 1.8 * UNIT };
+    if (k.role === 'guardian') {
+      const own = this.goalsOf(k.team).map(at)[0];
+      if (own) {
+        const near = (p: { x: number; y: number }) => Math.hypot(p.x - own.x, p.y - own.y) < 14 * UNIT;
+        if (main.carrier && main.carrier.team !== k.team && near(main.carrier)) return { target: main.carrier };
+        if (!main.carrier && near(main)) return { goal: { x: main.x, y: main.y }, fightWithin: 1, grab: dist(main) < 1.6 * UNIT };
+        const out = own.x < (this.map.width * UNIT) / 2 ? 1 : -1;
+        return { leash: { x: own.x + out * 4 * UNIT, y: own.y + 4 * UNIT, r: 7 } };
+      }
+    }
+    if (main.carrier) {
+      return main.carrier.team === k.team ? { goal: { x: main.carrier.x, y: main.carrier.body.bottom }, fightWithin: 4 } : { target: main.carrier };
+    }
+    return { goal: { x: main.x, y: main.y }, fightWithin: 1.5, grab: dist(main) < 1.6 * UNIT };
+  }
+
+  /** What the HUD points at when out of view: the flags, a ball game's ball and the Spark. */
+  markers(): { x: number; y: number; color: number; label: string; flag: boolean }[] {
+    return [
+      ...this.flags.map((f) => ({ x: f.x, y: f.y, color: f.color, label: f.state === 'home' ? 'HOME' : f.state === 'carried' ? 'TAKEN' : 'DROPPED', flag: true })),
+      ...this.balls.filter((b) => b.kind !== 'hunter').map((b) => ({
+        x: b.x, y: b.y, color: b.carrier ? b.carrier.look.color : b.color, label: b.kind === 'spark' ? 'SPARK' : b.carrier ? 'HELD' : 'BALL', flag: false,
+      })),
+    ];
+  }
+
   /** A team's flag, and the other one. */
   private flagsOf(team: number): { own: CtfFlag; theirs: CtfFlag } | null {
     if (this.flags.length < 2) return null;
@@ -1430,6 +1669,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    * a loose flag of theirs gets picked up, a teammate holding the enemy flag
    * gets an escort, and otherwise they go for the enemy flag.
    */
+  /** A CPU's job in the modes that give one (Capture the Flag, the ball games). */
+  private objective(k: Kubotz): Objective | null {
+    return MODES[this.mode].ball ? this.ballObjective(k) : this.ctfObjective(k);
+  }
+
   private ctfObjective(k: Kubotz): Objective | null {
     const f = this.flagsOf(k.team);
     if (!f) return null;
@@ -1525,7 +1769,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private spawnFoe(team: number, color: number, level: number, health: number, helmet: number, lives = 1, appearAt = this.clock): Kubotz {
     const players = this.fighters.filter((f) => f.team === HORDE_TEAM && f.isAlive());
     const far = (v: Phaser.Math.Vector2) => Math.min(...players.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
-    const spawn = MODES[this.mode].ctf ? Phaser.Utils.Array.GetRandom(this.teamSpawns(team))
+    const spawn = MODES[this.mode].ctf || MODES[this.mode].ball ? Phaser.Utils.Array.GetRandom(this.teamSpawns(team))
       : [...this.playerSpawns].sort((p, q) => far(q) - far(p))[Phaser.Math.Between(0, Math.min(1, this.playerSpawns.length - 1))];
     const x = spawn.x + Phaser.Math.Between(-12, 12);
     let k = this.fighters.find((f) => f.team === team && f.eliminated && f.index >= this.specs.length);
@@ -1540,7 +1784,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         powerUpPositions: () => (MODES[this.mode].trial ? this.orbs.map((o) => ({ x: o.x, y: o.y })) : []),
         now: () => this.clock,
         nav: this.nav,
-        objective: (me) => this.ctfObjective(me),
+        objective: (me) => this.objective(me),
       }, cpuReactionMs(level));
       k = new Kubotz(this, this.fighters.length, controller, color, this.rig, x, spawn.y, this, this.physicsWorld, { team, helmet });
       controller.agent = k;
@@ -1559,7 +1803,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private respawn(k: Kubotz): void {
     // Capture the Flag: back at its own base. Otherwise the spawn point farthest from the other Kubotz.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
-    const spawn = MODES[this.mode].ctf ? Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team)) : [...this.playerSpawns].sort((p, q) => {
+    const spawn = MODES[this.mode].ctf || MODES[this.mode].ball ? Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team)) : [...this.playerSpawns].sort((p, q) => {
       const d = (v: Phaser.Math.Vector2) => Math.min(...others.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
       return d(q) - d(p);
     })[0];
@@ -1574,6 +1818,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private focusPoints(): { x: number; y: number }[] {
     // Capture the Flag (a giant arena): the camera follows the human players only.
     if (MODES[this.mode].ctf) return this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
+    // Ball games: the Kubotz and the ball.
+    if (MODES[this.mode].ball && this.balls[0]) return [...this.fighters.filter((f) => f.isAlive()), this.balls[0]];
     const alive = this.fighters.filter((f) => f.isAlive());
     // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
@@ -1695,6 +1941,10 @@ const PREVIEW_BAKE = 0.3;
 /** Horde: the breather between two waves, and between two Kubotz of a wave coming in (ms). */
 const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
+/** Ball games: the black team's goal rifts, a pale steel (a black rift would not show). */
+const BLACK_GOAL = 0xc8d0dc;
+/** Skychase: the Spark comes out this long after "Fight" (ms). */
+const SPARK_AFTER_MS = 60000;
 /** Training: the CPUs' team (they never fight each other). */
 const TRIAL_FOES = 1;
 /** Horde: the black team's helmet (Skull). */

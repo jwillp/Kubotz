@@ -41,6 +41,17 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
     { color: BLACK_COLOR, helmet: 3, face: -1 },
     { color: BLACK_COLOR, helmet: 3, weapon: 'weapon_laserSword', flag: SLOT_COLORS[0], face: -1 },
   ],
+  kubeball: [
+    { color: SLOT_COLORS[0], helmet: 0, face: 1 },
+    { color: SLOT_COLORS[0], helmet: 8, face: 1 },
+    { color: SLOT_COLORS[1], helmet: 2, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 6, face: -1 },
+  ],
+  skychase: [
+    { color: SLOT_COLORS[0], helmet: 8, face: 1 },
+    { color: SLOT_COLORS[1], helmet: 4, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 9, face: -1 },
+  ],
   sandbox: [
     { color: SLOT_COLORS[0], helmet: 0, face: 1 },
     { color: SLOT_COLORS[1], helmet: 7, face: -1 },
@@ -60,10 +71,10 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
 const BTN_X = 300;
 /** The two lists: battles, then solo training, each under its heading. */
 const GROUPS: { group: 'battle' | 'training'; label: string; top: number }[] = [
-  { group: 'battle', label: 'B A T T L E', top: 186 },
-  { group: 'training', label: 'T R A I N I N G', top: 498 },
+  { group: 'battle', label: 'B A T T L E', top: 172 },
+  { group: 'training', label: 'T R A I N I N G', top: 556 },
 ];
-const BTN_STEP = 56;
+const BTN_STEP = 50;
 /** The panel describing the selected mode, on the right. */
 const PANEL = { x: 560, y: 168, w: 672, h: 480 };
 const STAGE_Y = 470;
@@ -112,12 +123,12 @@ export class ModeScene extends Phaser.Scene {
     this.rules = this.add.text(PANEL.x + 70, STAGE_Y + 30, '', body(18, { fontStyle: '600', color: '#e9f6ff', lineSpacing: 10 }));
 
     for (const g of GROUPS) {
-      this.add.text(BTN_X - 200, g.top - 40, g.label, body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5);
+      this.add.text(BTN_X - 200, g.top - 34, g.label, body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5);
     }
     MODE_ORDER.forEach((m, i) => {
       const g = GROUPS.find((x) => x.group === MODES[m].group)!;
       const row = MODE_ORDER.filter((o) => MODES[o].group === g.group).indexOf(m);
-      const b = new PlateButton(this, BTN_X, g.top + row * BTN_STEP, 400, 48, MODES[m].name, { size: 26 });
+      const b = new PlateButton(this, BTN_X, g.top + row * BTN_STEP, 400, 42, MODES[m].name, { size: 23 });
       b.on('pointerover', () => this.select(i));
       b.on('pointerdown', () => this.pick(i));
       this.items.push(b);

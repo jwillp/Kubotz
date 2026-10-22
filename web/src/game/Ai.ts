@@ -17,6 +17,8 @@ export interface Objective {
   target?: Kubotz | null;
   leash?: { x: number; y: number; r: number };
   fightWithin?: number;
+  /** Press grab now (take the ball in reach, throw the one in hand). */
+  grab?: boolean;
 }
 
 export interface AiWorld {
@@ -121,6 +123,7 @@ export class CpuController implements Controller {
         if (!enemy && Math.hypot(me.x - x, me.y - y) > 1.5 * UNIT) jobDest = { x, y };
       }
       if (job.goal && !job.target && !(enemy && manhattan(me, enemy) < (job.fightWithin ?? 3))) jobDest = job.goal;
+      if (job.grab) { pad.grab = true; this.debug.mode = 'grab (job)'; return pad; }
       if (!jobDest && job.leash && !enemy) { this.debug.mode = 'guard post'; return pad; }
     }
 

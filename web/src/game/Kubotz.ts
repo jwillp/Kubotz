@@ -10,6 +10,7 @@ import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { vfx } from './Settings';
 import { BLACK_TAG, BLACK_TEAM, canHurt, type Teamed } from './Match';
 import type { CtfFlag } from './Flag';
+import type { GameBall } from './Ball';
 import { flagTexture } from '../fx/Flag';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
@@ -319,6 +320,12 @@ export class Kubotz implements Damageable, Teamed {
   role?: 'striker' | 'guardian' | 'interceptor';
   /** Damage taken is multiplied by this (Capture the Flag: Kubotz go down much faster than in a duel). */
   damageScale = 1;
+  /** Ball games: the ball in its hands. No card on the HUD (the CPUs filling the teams, guardians). */
+  ball: GameBall | null = null;
+  hudless = false;
+  /** Jumps it gets back at each respawn, and the share of gravity it falls under (Skychase: more jumps, a slow fall). */
+  baseJumps: number = Config.NB_JUMPS;
+  lowGravity = 1;
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -640,10 +647,10 @@ export class Kubotz implements Damageable, Teamed {
     // specials' bursts keep their speed (spikes, dive kicks), easing back after.
     const f = feel();
     // The feel's gravity, over the world's (which every body falls under).
-    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity - Config.GRAVITY) * UNIT * dt;
+    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity * this.lowGravity - Config.GRAVITY) * UNIT * dt;
     if (!this.grounded && this.body.vy > 0 && !this.dodging) {
-      this.body.vy += (f.fallGravity - f.gravity) * UNIT * dt;
-      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT;
+      this.body.vy += (f.fallGravity - f.gravity) * this.lowGravity * UNIT * dt;
+      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT * (this.lowGravity < 1 ? 0.55 : 1);
       if (this.body.vy > cap && now >= this.hitstunUntil && !this.currentMove?.burst) {
         this.body.vy = Math.max(cap, this.body.vy - 90 * UNIT * dt);
       }
@@ -1482,6 +1489,26 @@ export class Kubotz implements Damageable, Teamed {
     if (def.timed) this.powerUps.push({ type, endsAt: now + Config.POWERUP_DURATION });
   }
 
+  /**
+   * Struck by something that is not a Kubot (Skychase's Hunters): damage,
+   * flung at this velocity (pixels/s), stunned a moment.
+   */
+  struck(damage: number, vx: number, vy: number): void {
+    if (this.dead || this.invincible || this.intangible) return;
+    const now = this.hooks.now();
+    if (this.holding || this.heldBy) this.breakGrab();
+    this.releaseLedge(now);
+    this.health = Math.max(0, this.health - damage * this.damageScale);
+    this.body.setVelocity(vx, vy);
+    this.hitstunUntil = Math.max(this.hitstunUntil, now + 450);
+    this.tumbleUntil = this.hitstunUntil;
+    this.hitUntil = now + 450;
+    this.flashUntil = now + 70;
+    this.attack = null;
+    this.currentMove = null;
+    this.anim.play('tumble', { restart: true, fade: 40 });
+  }
+
   /** Capture the Flag: takes the flag in hand (it fights with the sword's moves), or lets go of it. */
   carryFlag(flag: CtfFlag | null): void {
     if (flag) for (const p of [...this.powerUps]) if (POWER_UPS[p.type].weapon) this.removePowerUp(p);
@@ -1608,7 +1635,7 @@ export class Kubotz implements Damageable, Teamed {
     this.health = this.maxHealth;
     this.weapon = this.armed;
     this.energy = Config.KUBOTZ_ENERGY;
-    this.maxJumps = Config.NB_JUMPS;
+    this.maxJumps = this.baseJumps;
     this.lastAttacker = null;
     this.guard = Config.GUARD_MAX;
     this.stunnedUntil = 0;

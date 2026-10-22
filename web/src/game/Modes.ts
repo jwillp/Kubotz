@@ -2,7 +2,7 @@
 
 import type { Weapon } from './Kubotz';
 
-export type MatchMode = 'gladiator' | 'horde' | 'blasters' | 'blades' | 'ctf' | 'sandbox' | 'blasterTraining' | 'bladeTraining';
+export type MatchMode = 'gladiator' | 'horde' | 'blasters' | 'blades' | 'ctf' | 'kubeball' | 'skychase' | 'sandbox' | 'blasterTraining' | 'bladeTraining';
 
 export interface ModeInfo {
   /** Where it is listed on the mode screen: the battles, or the solo training. */
@@ -24,6 +24,8 @@ export interface ModeInfo {
   sandbox?: boolean;
   /** Training: defeat a number of CPUs coming in one or two at a time. */
   trial?: boolean;
+  /** A ball game, red against blue (CPUs fill both teams): Kubeball, or Skychase. */
+  ball?: 'kubeball' | 'skychase';
 }
 
 export const MODES: Record<MatchMode, ModeInfo> = {
@@ -61,6 +63,20 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     rules: ['A giant hall with pits and portals', 'Grab the black flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
     ctf: true,
   },
+  kubeball: {
+    group: 'battle',
+    name: 'Kubeball',
+    tagline: 'Red against blue, one ball, two goals.',
+    rules: ['Grab the ball and throw it, or kick and hit it', 'Into the other team\'s goal rift to score', 'A hit knocks the ball out of your hands', 'Goals or time: you choose'],
+    ball: 'kubeball',
+  },
+  skychase: {
+    group: 'battle',
+    name: 'Skychase',
+    tagline: 'Fly, throw, chase the Spark.',
+    rules: ['Five air jumps each; the Core through a ring: 10', 'Two Hunters chase anyone and knock them flying', 'After a minute the golden Spark: 30, and it ends', 'Points or time: you choose'],
+    ball: 'skychase',
+  },
   sandbox: {
     group: 'training',
     name: 'Sandbox',
@@ -89,7 +105,7 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   },
 };
 
-export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blades', 'ctf', 'sandbox', 'blasterTraining', 'bladeTraining'];
+export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blades', 'ctf', 'kubeball', 'skychase', 'sandbox', 'blasterTraining', 'bladeTraining'];
 
 /** All players on one team against the black team (Horde, Capture the Flag). */
 export const teamUp = (m: ModeInfo): boolean => !!(m.horde || m.ctf);
@@ -140,3 +156,15 @@ export function hordeWave(n: number, players: number): { count: number; level: n
     health: Math.min(100, 40 + (n - 1) * 7),
   };
 }
+
+/** Ball games: each team is filled up to this many with CPUs. */
+export const BALL_TEAM_SIZE = 3;
+/** Ball games: the score to reach, picked on the setup screen (0: no limit, time decides). */
+export const KUBEBALL_GOALS = [3, 5, 7, 10, 0];
+export const SKYCHASE_POINTS = [100, 150, 200, 0];
+/** Skychase: the Core through a ring, and the Spark caught (which ends the match). */
+export const CORE_POINTS = 10;
+export const SPARK_POINTS = 30;
+/** Skychase: air jumps and how much gravity is left (it plays like flying). */
+export const SKYCHASE_JUMPS = 6;
+export const SKYCHASE_GRAVITY = 0.45;

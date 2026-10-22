@@ -46,7 +46,7 @@ export const POWER_UPS: Record<PowerUpType, PowerUpDef> = {
   jump: {
     label: 'Extra jump', image: 'bonus-jump', color: 0x9fe3ff, timed: true,
     onStart: (k) => { k.maxJumps++; },
-    onFinish: (k) => { k.maxJumps = Math.max(Config.NB_JUMPS, k.maxJumps - 1); },
+    onFinish: (k) => { k.maxJumps = Math.max(k.baseJumps, k.maxJumps - 1); },
   },
   speed: {
     label: 'Speed', image: 'bonus-speed', color: 0xffa94d, timed: true,

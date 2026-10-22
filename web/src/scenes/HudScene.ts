@@ -79,12 +79,12 @@ export class HudScene extends Phaser.Scene {
     // The mode's line under the timer: Horde's wave, the sandbox dummy, the training count, the captures.
     this.waveText = undefined;
     const mode = MODES[this.game_.mode];
-    if (mode.horde || mode.sandbox || mode.trial || mode.ctf) {
+    if (mode.horde || mode.sandbox || mode.trial || mode.ctf || mode.ball) {
       drawPlate(tg, width / 2 - 170, 40, 340, 30, { cut: 10, alpha: 0.85 });
       this.waveText = this.add.text(width / 2, 55, '', body(15, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5);
     }
     this.bubbles = this.add.graphics().setDepth(15);
-    this.bubbleLabels = this.game_.flags.map(() => this.add.text(0, 0, '', body(11, { fontStyle: '800', color: '#e9f6ff' })).setOrigin(0.5).setDepth(15));
+    this.bubbleLabels = [];
 
     // One card per Kubot in seat order, centred along the bottom edge; the black team and the guardians have none.
     this.syncCards();
@@ -129,6 +129,7 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('wave-cleared', this.onWaveCleared, this);
     this.game_.events.on('bonus-recharge', this.onBonusRecharge, this);
     this.game_.events.on('capture', this.onCapture, this);
+    this.game_.events.on('goal', this.onGoal, this);
     this.game_.events.on('dummy', this.onDummy, this);
     this.glitches = [];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -137,6 +138,7 @@ export class HudScene extends Phaser.Scene {
       this.game_.events.off('wave-cleared', this.onWaveCleared, this);
       this.game_.events.off('bonus-recharge', this.onBonusRecharge, this);
       this.game_.events.off('capture', this.onCapture, this);
+      this.game_.events.off('goal', this.onGoal, this);
       this.game_.events.off('dummy', this.onDummy, this);
       this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
@@ -149,7 +151,7 @@ export class HudScene extends Phaser.Scene {
   private syncCards(): void {
     const { width, height } = this.scale;
     const trial = MODES[this.game_.mode].trial;
-    const shown = this.game_.fighters.filter((k) => !isBlackTeam(k) && k.role !== 'guardian'
+    const shown = this.game_.fighters.filter((k) => (!isBlackTeam(k) || !!MODES[this.game_.mode].ball) && k.role !== 'guardian' && !k.hudless
       && !(trial && k.index >= this.game_.specs.length && (k.eliminated || k.appearAt > this.game_.clock)));
     for (const k of shown) if (!this.cards.has(k)) this.cards.set(k, this.makeCard(k, 0, height - CARD_H - 10));
     const left = (width - shown.length * CARD_W - (shown.length - 1) * CARD_GAP) / 2;
@@ -205,6 +207,7 @@ export class HudScene extends Phaser.Scene {
       this.waveText.setText(mode.sandbox ? `DUMMY: ${(g.dummyMode() ?? '').toUpperCase()}   ·   SELECT / TAB: CHANGE`
         : mode.trial ? `DEFEATED ${g.defeated} / ${g.target}`
           : mode.ctf ? `CAPTURES   RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   FIRST TO ${CTF_CAPTURES}`
+            : mode.ball ? `RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   ${g.scoreLimit ? `FIRST TO ${g.scoreLimit}` : 'NO LIMIT'}${mode.ball === 'skychase' ? '   ·   SPARK +30' : ''}`
             : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
     this.drawFlagBubbles();
@@ -343,10 +346,11 @@ export class HudScene extends Phaser.Scene {
    */
   private drawFlagBubbles(): void {
     const g = this.bubbles.clear();
-    const flags = this.game_.flags;
+    const marks = this.game_.markers();
     const cam = this.game_.cameras.main;
     const { width, height } = this.scale;
-    flags.forEach((f, i) => {
+    while (this.bubbleLabels.length < marks.length) this.bubbleLabels.push(this.add.text(0, 0, '', body(11, { fontStyle: '800', color: '#e9f6ff' })).setOrigin(0.5).setDepth(15));
+    marks.forEach((f, i) => {
       const label = this.bubbleLabels[i];
       const sx = (f.x - cam.worldView.x) * cam.zoom;
       const sy = (f.y - cam.worldView.y) * cam.zoom;
@@ -363,11 +367,16 @@ export class HudScene extends Phaser.Scene {
       g.fillStyle(ring, 0.95).fillTriangle(tip.x, tip.y, bx + Math.cos(a + 0.5) * R, by + Math.sin(a + 0.5) * R, bx + Math.cos(a - 0.5) * R, by + Math.sin(a - 0.5) * R);
       g.fillStyle(0x0d1520, 0.92).fillCircle(bx, by, R);
       g.lineStyle(3, ring, 1).strokeCircle(bx, by, R);
-      // The flag inside: a pole and its cloth.
-      g.lineStyle(3, 0x8d96a6, 1).lineBetween(bx - 7, by + 14, bx - 7, by - 14);
-      g.fillStyle(f.color === BLACK_COLOR ? 0x3a3e46 : f.color, 1).fillTriangle(bx - 6, by - 14, bx + 13, by - 8, bx - 6, by - 1);
-      label?.setPosition(bx, by + R + 10).setText(f.state === 'home' ? 'HOME' : f.state === 'carried' ? 'TAKEN' : 'DROPPED')
-        .setColor(f.state === 'home' ? '#9fe3ff' : '#ffd27a');
+      // Inside: the flag (a pole and its cloth), or the ball.
+      if (f.flag) {
+        g.lineStyle(3, 0x8d96a6, 1).lineBetween(bx - 7, by + 14, bx - 7, by - 14);
+        g.fillStyle(f.color === BLACK_COLOR ? 0x3a3e46 : f.color, 1).fillTriangle(bx - 6, by - 14, bx + 13, by - 8, bx - 6, by - 1);
+      } else {
+        g.fillStyle(f.color, 1).fillCircle(bx, by, 10);
+        g.fillStyle(0xffffff, 0.35).fillCircle(bx - 3, by - 3, 4);
+      }
+      label?.setPosition(bx, by + R + 10).setText(f.label)
+        .setColor(f.label === 'HOME' || f.label === 'BALL' ? '#9fe3ff' : '#ffd27a');
     });
   }
 
@@ -377,6 +386,16 @@ export class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: t, alpha: 1, duration: 200 });
     this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
     this.glitchTitle(t, 1500);
+  }
+
+  /** Ball games: a goal (or the Spark caught), glitching in the scoring team's colour. */
+  private onGoal(team: number, title: string): void {
+    // team -1: news for everyone (the Spark is out).
+    const text = team < 0 ? title : `${team === 0 ? 'RED' : 'BLACK'}  ${title}`;
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, text, team < 0 ? 64 : 84, { glow: team < 0 ? 0xffd84d : team === 0 ? SLOT_COLORS[0] : 0x8d96a6 }).setDepth(20).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, duration: 200 });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1300, duration: 400, onComplete: () => t.destroy() });
+    this.glitchTitle(t, 1300);
   }
 
   /** Sandbox: the dummy's new behaviour, briefly. */
