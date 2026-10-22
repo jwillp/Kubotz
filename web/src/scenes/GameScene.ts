@@ -170,8 +170,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
-    // Once the camera has shown every projector the countdown starts, and all
-    // the robots materialize together during it (solid on "1", then they drop).
+    // Each robot forms as a hologram while the camera is on it and waits; once
+    // all are shown the countdown starts, and they materialize together during
+    // it, let go on "Fight".
     this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
@@ -198,7 +199,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.lives = this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
-      // The intro: one projector after the other, each hidden until its turn.
+      // The intro: one spawn after the other, each hidden until its turn.
       const at = i * INTRO_FOCUS_MS;
       this.introAt.push(at);
       k.appearAt = at;
@@ -1263,11 +1264,11 @@ const SHAKE_DECAY = 1.8;
 const PAUSE_MUSIC = 0.3;
 
 /**
- * Match intro: the projectors arrive one after the other, the camera on each
- * for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while the camera takes
- * INTRO_RETURN_MS back out to the fight view; the robots materialize during
- * the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how much of the arena
- * (units) shows round a projector; INTRO_CAMERA_PACE how much faster than in
+ * Match intro: the robots appear as holograms one after the other, the
+ * camera on each for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while
+ * the camera takes INTRO_RETURN_MS back out to the fight view; the robots
+ * materialize during the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how
+ * much of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much faster than in
  * the fight the camera moves meanwhile.
  */
 const INTRO_FOCUS_MS = 750;
