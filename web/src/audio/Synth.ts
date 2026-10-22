@@ -8,7 +8,9 @@ const GLASS = [[1, 1, 9], [2.32, 0.55, 14], [4.25, 0.35, 22], [6.63, 0.2, 30], [
 
 function ping(d: Float32Array, rate: number, at: number, f: number, gain: number): void {
   const start = Math.floor(at * rate);
-  for (let i = start; i < d.length; i++) {
+  // Past 0.8 s even the slowest partial (e^-9t) is below a thousandth: stop there.
+  const end = Math.min(d.length, start + Math.floor(rate * 0.8));
+  for (let i = start; i < end; i++) {
     const t = (i - start) / rate;
     let v = 0;
     for (const [m, a, k] of GLASS) v += a * Math.sin(2 * Math.PI * f * m * t) * Math.exp(-t * k);
@@ -318,3 +320,23 @@ export function scanBuffer(ctx: BaseAudioContext): AudioBuffer {
   reverb(d, rate, 0.15);
   return buf;
 }
+
+// ------------------------------------------------------------------ the table
+/** Every synth sound by key (audio/Sounds.ts loads them; the recorded ones are listed there). */
+export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {
+  boom: sciFiExplosionBuffer, // a robot blowing up
+  'orb-bounce': crystalBounceBuffer, // the power-up ball bouncing
+  'orb-pickup': pickupChimeBuffer,
+  'orb-heal': healChimeBuffer,
+  // Footsteps: soft metal boot steps, three variants (replacing step.mp3, too loud and scuffy).
+  'step-0': (ctx) => metalStepBuffer(ctx, 0),
+  'step-1': (ctx) => metalStepBuffer(ctx, 1),
+  'step-2': (ctx) => metalStepBuffer(ctx, 2),
+  'holo-spawn': holoSpawnBuffer, // a robot materializing
+  'portal-warp': portalWarpBuffer, // a robot going through a portal
+  'ui-move': (ctx) => uiSoundBuffer(ctx, 'move'),
+  'ui-tick': (ctx) => uiSoundBuffer(ctx, 'tick'),
+  'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),
+  'ui-back': (ctx) => uiSoundBuffer(ctx, 'back'),
+  'ui-scan': scanBuffer, // the menu screen like a TV changing stations
+};

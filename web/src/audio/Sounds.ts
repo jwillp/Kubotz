@@ -1,16 +1,15 @@
 import Phaser from 'phaser';
 import { sfxVolume } from '../game/Settings';
-import {
-  crystalBounceBuffer, healChimeBuffer, holoSpawnBuffer, metalStepBuffer, pickupChimeBuffer, portalWarpBuffer,
-  sciFiExplosionBuffer, uiSoundBuffer, scanBuffer, type UiSoundKind,
-} from './Synth';
+import { SYNTH_SOUNDS, type UiSoundKind } from './Synth';
 
 /**
  * Every sound in the game, by key, in one place.
  *
  * RECORDED: the original Kubotz recordings (release v0.1-alpha music and
  * sounds), converted to mp3 in public/audio.
- * SYNTH: sounds made in code at boot (Synth.ts), added for the web port.
+ * SYNTH: sounds made in code at boot, added for the web port: the
+ * SYNTH_SOUNDS table at the end of Synth.ts (it stays free of Phaser so a
+ * worker can run it, audio/SynthWorker.ts).
  */
 const RECORDED: Record<string, string> = {
   'music-title': 'dashboard.mp3',
@@ -24,33 +23,40 @@ const RECORDED: Record<string, string> = {
   'narrator-fight': 'narrator-fight.mp3',
 };
 
-const SYNTH: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {
-  boom: sciFiExplosionBuffer, // a robot blowing up
-  'orb-bounce': crystalBounceBuffer, // the power-up ball bouncing
-  'orb-pickup': pickupChimeBuffer,
-  'orb-heal': healChimeBuffer,
-  // Footsteps: soft metal boot steps, three variants (replacing step.mp3, too loud and scuffy).
-  'step-0': (ctx) => metalStepBuffer(ctx, 0),
-  'step-1': (ctx) => metalStepBuffer(ctx, 1),
-  'step-2': (ctx) => metalStepBuffer(ctx, 2),
-  'holo-spawn': holoSpawnBuffer, // a robot materializing
-  'portal-warp': portalWarpBuffer, // a robot going through a portal
-  'ui-move': (ctx) => uiSoundBuffer(ctx, 'move'),
-  'ui-tick': (ctx) => uiSoundBuffer(ctx, 'tick'),
-  'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),
-  'ui-back': (ctx) => uiSoundBuffer(ctx, 'back'),
-  'ui-scan': scanBuffer, // the menu screen like a TV changing stations
-};
 
 /** Queues the recorded sounds on the loader. */
 export function loadRecordedSounds(load: Phaser.Loader.LoaderPlugin): void {
   for (const [key, file] of Object.entries(RECORDED)) load.audio(key, `audio/${file}`);
 }
 
-/** Makes the synth sounds into the audio cache (Web Audio only). */
-export function makeSynthSounds(scene: Phaser.Scene): void {
+/**
+ * Makes the synth sounds into the audio cache (Web Audio only). They are
+ * generated in a worker (SynthWorker.ts), off the page's thread, so the load
+ * screen never waits on them; without workers, here, pausing between two.
+ */
+export async function makeSynthSounds(scene: Phaser.Scene, pause: () => Promise<void> = async () => {}): Promise<void> {
   if (!(scene.sound instanceof Phaser.Sound.WebAudioSoundManager)) return;
-  for (const [key, make] of Object.entries(SYNTH)) scene.cache.audio.add(key, make(scene.sound.context));
+  const ctx = scene.sound.context;
+  const add = (key: string, data: Float32Array) => {
+    const buf = ctx.createBuffer(1, data.length, ctx.sampleRate);
+    buf.copyToChannel(data as Float32Array<ArrayBuffer>, 0);
+    scene.cache.audio.add(key, buf);
+  };
+  try {
+    const worker = new Worker(new URL('./SynthWorker.ts', import.meta.url), { type: 'module' });
+    await new Promise<void>((resolve, reject) => {
+      worker.onmessage = (e: MessageEvent<{ key?: string; data?: Float32Array; done?: boolean }>) => {
+        if (e.data.done) { worker.terminate(); resolve(); } else if (e.data.key && e.data.data) add(e.data.key, e.data.data);
+      };
+      worker.onerror = (err) => { worker.terminate(); reject(err); };
+      worker.postMessage({ rate: ctx.sampleRate });
+    });
+  } catch {
+    for (const [key, make] of Object.entries(SYNTH_SOUNDS)) {
+      if (!scene.cache.audio.exists(key)) scene.cache.audio.add(key, make(ctx));
+      await pause();
+    }
+  }
 }
 
 // ------------------------------------------------------------------ menus

@@ -28,6 +28,8 @@ export type ParticleName = keyof typeof PARTICLE_FILES;
 
 /** Where each part of the boot ends on the load bar: first files, robot parts and tiles, then the made textures. */
 const PHASES = [0.45, 0.75] as const;
+/** The longest the boot work holds the page before it lets the load screen draw a frame (ms). */
+const PACE_MS = 12;
 
 /** Loads the original assets: Spriter file + its images, TMX map + tiles, HUD. */
 export class BootScene extends Phaser.Scene {
@@ -78,8 +80,10 @@ export class BootScene extends Phaser.Scene {
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);
     this.loadPhase = 1;
     this.load.once(Phaser.Loader.Events.COMPLETE, async () => {
+      // The sounds are made in a worker meanwhile.
+      const sounds = makeSynthSounds(this, () => this.pace(1));
       await this.makeTextures();
-      makeSynthSounds(this);
+      await sounds;
       this.ident?.setProgress(1);
       // From the load screen's snow to the title, as any screen change.
       void bodyFont.then(() => shutter(this, () => this.scene.start('Title'), null));
@@ -87,36 +91,51 @@ export class BootScene extends Phaser.Scene {
     this.load.start();
   }
 
+  private lastPause = 0;
+
   /**
-   * Player-coloured helmets and CPU labels, and a small spark texture. It
-   * pauses for a frame between batches, so the load screen keeps moving and
-   * its bar goes on filling (the last stretch of it).
+   * Called between two pieces of boot work: sets the bar to `progress` and,
+   * once the work has held the page for more than a few ms, waits for the
+   * next frame so the load screen goes on moving.
+   */
+  private async pace(progress: number): Promise<void> {
+    this.ident?.setProgress(progress);
+    if (performance.now() - this.lastPause < PACE_MS) return;
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    this.lastPause = performance.now();
+  }
+
+  /**
+   * Player-coloured helmets and CPU labels, and a small spark texture.
    */
   private async makeTextures(): Promise<void> {
-    const done = async (p: number) => {
-      this.ident?.setProgress(PHASES[1] + (1 - PHASES[1]) * p);
-      await new Promise((r) => requestAnimationFrame(() => r(null)));
-    };
+    // Steps of the work, for the bar; between items it hands a frame back to the
+    // load screen whenever it has run for a while (pace), so the screen never stalls.
+    let step = 0;
+    const steps = 4;
+    const pace = (within = 0) => this.pace(PHASES[1] + (1 - PHASES[1]) * Math.min(1, (step + within) / steps));
     // Normal maps so the lights shade the art: robot parts and bonus chips as
     // rounded metal shells, the arena tiles with a flatter bevel.
     const spriter = this.registry.get('spriter') as SpriterData;
     const map = this.registry.get('map') as TmxMap;
-    for (const file of spriter.allFiles()) addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 });
-    for (const tile of map.tileImages.values()) addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 });
-    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 });
-    await done(0.15);
-    for (const color of SLOT_COLORS) {
+    for (const file of spriter.allFiles()) { addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 }); await pace(); }
+    for (const tile of map.tileImages.values()) { addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 }); await pace(); }
+    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) { addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 }); await pace(); }
+    step = 1;
+    for (const [c, color] of SLOT_COLORS.entries()) {
       for (const file of HEAD_FILES) {
         this.recolor(`kubotz:${file}`, `head:${hex(color)}:${file}`, color, false);
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
+        await pace(c / SLOT_COLORS.length);
       }
       // P1 / P2 / CPU tags in each robot colour, drawn in the heading font.
       for (const who of ['CPU', 'P1', 'P2']) makeTagTexture(this, `label-${who}:${hex(color)}`, who, color);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
       addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
+      await pace((c + 1) / SLOT_COLORS.length);
     }
-    await done(0.3);
+    step = 2;
     // Worn copies of every robot part, helmets and blades in every colour
     // (fx/Surface.ts): the look in play, G switches back to the clean art.
     const parts: [string, string][] = spriter.allFiles().map((f) => [`kubotz:${f}`, f]);
@@ -127,8 +146,9 @@ export class BootScene extends Phaser.Scene {
     for (const [i, [key, file]] of parts.entries()) {
       this.textures.addCanvas(WORN + key, weather(this.textures.get(key).getSourceImage() as HTMLImageElement, file));
       addNormalMap(this.textures, WORN + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {});
-      if (i % 8 === 7) await done(0.3 + 0.7 * (i + 1) / parts.length);
+      await pace((i + 1) / parts.length);
     }
+    step = 3;
     this.measureWeapons();
     const g = this.make.graphics({}, false);
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
