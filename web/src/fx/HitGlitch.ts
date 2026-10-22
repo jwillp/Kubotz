@@ -51,7 +51,7 @@ void main () {
   vec4 c = texture2D(uMainSampler, uv);
   vec4 r = texture2D(uMainSampler, uv + vec2(split, 0.0));
   vec4 b = texture2D(uMainSampler, uv - vec2(split, 0.0));
-  float a = max(c.a, max(r.a, b.a) * k);
+  float a = min(1.0, max(c.a, max(r.a, b.a) * k));
   if (a < 0.004) { gl_FragColor = vec4(0.0); return; }
   vec3 rgb = vec3(r.r, c.g, b.b);
   // Scan lines every 3 pixels, drifting down.

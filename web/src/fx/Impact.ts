@@ -328,11 +328,11 @@ export class ImpactFx {
       }
       g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
     }
-    // A broken signal over it all: it tears hard at the blast, then keeps flickering
-    // with scan lines while it lasts.
+    // A broken signal over it all: it tears very hard at the blast (past the hits'
+    // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
     const since = this.now - this.lastKoAt;
     const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke');
-    hitGlitch(this.smokeView, live ? Math.max(0.55, 1 - since / 500) : 0, undefined, null, 2.5);
+    hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3);
   }
 
   private draw(): void {
