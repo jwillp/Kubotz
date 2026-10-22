@@ -2,6 +2,22 @@ import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
+import { EffectDef, ParticleFx } from './ParticleEffect';
+
+/**
+ * The original laserSmoke effect (.pe) layered behind the K.O. smoke, drawn
+ * as many small puffs cel-shaded like it: 'trails' streams it behind the
+ * flying puffs, 'full' also boils a cloud of it out of the core. 'alone' shows
+ * full laserSmoke without the main smoke or its glitch. L cycles it in a match;
+ * ?laser=full|trails|alone|off.
+ */
+export type LaserSmokeMode = 'off' | 'trails' | 'full' | 'alone';
+export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['alone', 'full', 'trails', 'off'];
+export const laserSmoke = { mode: ((): LaserSmokeMode => {
+  const q = new URLSearchParams(location.search).get('laser');
+  return LASER_SMOKE_MODES.includes(q as LaserSmokeMode) ? q as LaserSmokeMode : 'alone';
+})() };
+const laserAlone = () => laserSmoke.mode === 'alone';
 
 type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
@@ -70,6 +86,13 @@ export class ImpactFx {
   private readonly smokeView: Phaser.GameObjects.Container;
   private lastKoAt = -Infinity;
   private now = 0;
+  /** The laserSmoke behind the K.O. smoke's puffs: particles drawn by drawSmoke(), tinted with their rim colour. */
+  private readonly laser: ParticleFx;
+  private readonly laserDef?: EffectDef;
+  /** Rim colour -> body colour of the laserSmoke puffs. */
+  private readonly laserBody = new Map<number, number>();
+  /** The laserSmoke puffs' flat layers (rims, bodies, highlights): pooled tinted discs, drawn in a few batches. */
+  private readonly celLayers: { view: Phaser.GameObjects.Container; pool: Phaser.GameObjects.Image[] }[];
 
   constructor(scene: Phaser.Scene) {
     // Twirl motes passing behind a robot are drawn under it.
@@ -79,7 +102,15 @@ export class ImpactFx {
     // The K.O. smoke, glitched as one (made up front: the results scene sorts new objects onto its cameras once).
     this.wispG = scene.add.graphics();
     this.smokeG = scene.add.graphics();
-    this.smokeView = scene.add.container(0, 0, [this.wispG, this.smokeG]).setDepth(10.6);
+    if (!scene.textures.exists('cel-disc')) {
+      const g = scene.make.graphics({}, false);
+      g.fillStyle(0xffffff, 1).fillCircle(32, 32, 32).generateTexture('cel-disc', 64, 64);
+      g.destroy();
+    }
+    this.celLayers = [0, 1, 2].map(() => ({ view: scene.make.container({}, false), pool: [] }));
+    this.smokeView = scene.add.container(0, 0, [this.wispG, ...this.celLayers.map((l) => l.view), this.smokeG]).setDepth(10.6);
+    this.laser = new ParticleFx(scene, 'pe:', 0, undefined, true);
+    this.laserDef = (scene.registry.get('effects') as Record<string, EffectDef> | undefined)?.laserSmoke;
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -154,11 +185,12 @@ export class ImpactFx {
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
     this.add({ kind: 'ring', x, y, color: bright, size: 0.5 * UNIT, grow: 3.6 * UNIT, life: 340 });
     this.flashes.push({ x, y, color: bright, intensity: 10, at: this.now });
+    const puffs: Particle[] = [];
     for (let i = 0; i < 40; i++) {
       const core = i < 12; // the first ones stay in the middle, the biggest
       const a = rand(0, Math.PI * 2);
-      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT;
-      this.add({
+      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT * (laserAlone() ? 1.3 : 1); // alone, they carry the laserSmoke a little further
+      const puff = this.add({
         kind: 'smoke', collide: true,
         x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
         vx: Math.cos(a) * speed * 1.3, vy: Math.sin(a) * speed * 0.8 - rand(1, 4) * UNIT,
@@ -166,7 +198,9 @@ export class ImpactFx {
         size: (core ? rand(0.8, 1.1) : rand(0.4, 0.7)) * UNIT, grow: (core ? rand(1, 1.5) : rand(0.6, 1.1)) * UNIT,
         color: deep, body: bright,
       });
+      if (puff && !core) puffs.push(puff);
     }
+    this.laserSmoke(x, y, deep, bright, puffs);
     // Streaks whipping out sideways and up, like the trails of the blast.
     for (let i = 0; i < 9; i++) {
       const side = i % 2 ? 1 : -1;
@@ -188,14 +222,14 @@ export class ImpactFx {
         life: rand(1400, 2200), drag: 0.08, gravity: -1.8 * UNIT,
       });
     }
-    // Hit sparks flying out of the blast, like a big hit's.
+    // Hit sparks flying out of the blast as far as the robot's pieces, stopped by walls.
     for (let i = 0; i < 26; i++) {
       const a = rand(0, Math.PI * 2);
-      const speed = rand(9, 26) * UNIT;
+      const speed = rand(12, 26) * UNIT;
       this.add({
-        kind: 'spark', x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
+        kind: 'spark', collide: true, x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
         color: i % 3 === 0 ? 0xffffff : mix(bright, 0xffffff, rand(0, 0.5)),
-        size: rand(2, 3.5), life: rand(260, 520), gravity: 30 * UNIT, drag: 0.08,
+        size: rand(2, 3.5), life: rand(700, 1200), gravity: 14 * UNIT, drag: 0.35,
       });
     }
     // Glitter: motes and sparks in the bright colour and white.
@@ -206,6 +240,32 @@ export class ImpactFx {
         kind: i % 3 ? 'mote' : 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(1, 4) * UNIT,
         color: i % 2 ? 0xffffff : bright, size: rand(1.6, 3), life: rand(500, 1000), drag: 0.12, gravity: -1.5 * UNIT,
       });
+    }
+  }
+
+  /**
+   * The original laserSmoke (a burst of soft, spinning glow) in the team
+   * colours: streaming behind the puffs flung out of the blast while they fly,
+   * and blooming from the core. It stops at walls and platforms like them.
+   */
+  private laserSmoke(x: number, y: number, deep: number, bright: number, puffs: Particle[]): void {
+    const def = this.laserDef;
+    if (!def || laserSmoke.mode === 'off') return;
+    const solids = this.solids;
+    this.laserBody.set(deep, bright);
+    // Tight streams of small puffs behind every flung puff while it flies.
+    for (const p of puffs) {
+      this.laser.play(def, p.x, p.y, {
+        tint: deep, size: 0.75, speed: 0.7, life: 1.2, rate: 0.6, solids,
+        follow: () => (p.age < p.life * 0.9 ? p : null),
+      });
+    }
+    if (laserSmoke.mode === 'trails') return;
+    // Many small puffs boiling out of the core, in a few bursts.
+    for (let i = 0; i < 4; i++) {
+      const a = rand(0, Math.PI * 2);
+      this.laser.play(def, x + Math.cos(a) * rand(0, 0.6) * UNIT, y + Math.sin(a) * rand(0, 0.5) * UNIT,
+        { tint: deep, size: 0.9, speed: 2.6, life: 1.5, rate: 0.8, solids });
     }
   }
 
@@ -308,6 +368,7 @@ export class ImpactFx {
       p.y += p.vy * dt;
       if (p.collide) this.collide(p);
     }
+    this.laser.update(dtMs);
     this.updateWisps(dtMs);
     this.draw();
   }
@@ -348,13 +409,13 @@ export class ImpactFx {
         left.push(at(d, -1, width));
         right.push(at(d, 1, width));
       }
-      g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
+      if (!laserAlone()) g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
     }
     // A broken signal over it all: it tears very hard at the blast (past the hits'
     // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
     const since = this.now - this.lastKoAt;
-    const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
-    hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
+    const live = this.wisps.length > 0 || this.laser.live || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
+    hitGlitch(this.smokeView, live && !laserAlone() ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
   }
 
   private draw(): void {
@@ -451,11 +512,30 @@ export class ImpactFx {
     const g = this.smokeG.clear();
     // Soft haze behind the puffs, billowing out round them and lingering.
     for (const p of this.particles) {
-      if (p.kind !== 'haze') continue;
+      if (p.kind !== 'haze' || laserAlone()) continue;
       const f = p.age / p.life;
       g.fillStyle(p.color, 0.28 * Math.min(1, f / 0.1) * (1 - f)).fillCircle(p.x, p.y, p.size + p.grow * f);
     }
-    const smoke = this.particles.filter((p) => p.kind === 'smoke');
+    // The laserSmoke behind the puffs, in the same flat layers but small and many:
+    // each swells and shrinks with the file's opacity curve.
+    const [rims, bodies, lights] = this.celLayers;
+    const used = [0, 0, 0];
+    const disc = (layer: number, x: number, y: number, w: number, h: number, color: number) => {
+      const l = this.celLayers[layer];
+      let img = l.pool[used[layer]];
+      if (!img) { img = this.smokeG.scene.make.image({ key: 'cel-disc' }, false); l.pool.push(img); l.view.add(img); }
+      used[layer]++;
+      img.setVisible(true).setPosition(x, y).setDisplaySize(w, h).setTint(color);
+    };
+    this.laser.each((x, y, size, alpha, tint) => {
+      if (alpha <= 0.05) return;
+      const r = (size / 2) * alpha;
+      disc(0, x, y, r * 2, r * 2, tint);
+      disc(1, x - r * 0.16, y - r * 0.2, r * 1.4, r * 1.4, this.laserBody.get(tint) ?? tint);
+      if (r > 0.12 * UNIT) disc(2, x - r * 0.34, y - r * 0.4, r * 0.45, r * 0.27, 0xfffbe6);
+    });
+    for (const [i, l] of [rims, bodies, lights].entries()) for (let k = used[i]; k < l.pool.length && l.pool[k].visible; k++) l.pool[k].setVisible(false);
+    const smoke = laserAlone() ? [] : this.particles.filter((p) => p.kind === 'smoke');
     const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };
     for (const p of smoke) g.fillStyle(p.color, 1).fillCircle(p.x, p.y, radius(p));
@@ -519,10 +599,12 @@ export class ImpactFx {
     }
   }
 
-  private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): void {
+  private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): Particle | undefined {
     // VFX setting: the many small bits thin out with it; single flashes, rings and beams stay until it is 0.
-    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return;
-    this.particles.push({ vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p });
+    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return undefined;
+    const particle = { vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p };
+    this.particles.push(particle);
+    return particle;
   }
 
   destroy(): void {
