@@ -7,6 +7,29 @@ interface Pulse { img: Phaser.GameObjects.Image; axis: 'x' | 'y'; line: number; 
 interface Mote { img: Phaser.GameObjects.Image; x: number; y: number; vx: number; vy: number; depth: number; phase: number; life: number; age: number; }
 
 /**
+ * Paints arena `n`'s room (fx/Backdrops.ts) into its textures, the first
+ * time only: the backdrop uses it, and the setup screen calls it ahead for
+ * the arenas not shown yet, so changing arena never waits on the painting.
+ */
+export function paintRoomOnce(scene: Phaser.Scene, n: number): void {
+  const th = BACKDROPS[n];
+  if (!th?.paint || scene.textures.exists(`room-${n}`)) return;
+  const wall = document.createElement('canvas');
+  const front = document.createElement('canvas');
+  wall.width = front.width = ROOM_W; wall.height = front.height = ROOM_H;
+  const room = th.paint(wall.getContext('2d')!, front.getContext('2d')!, ROOM_W, ROOM_H, seeded(31 + n * 1013));
+  scene.registry.set(`room-${n}`, room);
+  // Softened by the same lens blur as the picture, the silhouettes a little less (nearer).
+  for (const [key, src, blur] of [[`room-${n}`, wall, 7], [`room-${n}-front`, front, 5]] as const) {
+    const c = scene.textures.createCanvas(key, ROOM_W, ROOM_H)!;
+    const ctx = c.getContext();
+    ctx.filter = `blur(${blur}px)`;
+    ctx.drawImage(src, -ROOM_W * 0.02, -ROOM_H * 0.02, ROOM_W * 1.04, ROOM_H * 1.04);
+    c.refresh();
+  }
+}
+
+/**
  * Full-screen background behind the arena, shot like a film plate, in the
  * arena's palette (fx/Backdrops.ts): the room art softened by a lens blur
  * (made once into its own texture), out-of-focus lights drifting as bokeh
@@ -50,21 +73,7 @@ export class BackdropScene extends Phaser.Scene {
     this.pulses = [];
     const n = BACKDROPS.indexOf(th);
     if (th.paint) {
-      if (!this.textures.exists(`room-${n}`)) {
-        const wall = document.createElement('canvas');
-        const front = document.createElement('canvas');
-        wall.width = front.width = ROOM_W; wall.height = front.height = ROOM_H;
-        const room = th.paint(wall.getContext('2d')!, front.getContext('2d')!, ROOM_W, ROOM_H, seeded(31 + n * 1013));
-        this.registry.set(`room-${n}`, room);
-        // Softened by the same lens blur as the picture, the silhouettes a little less (nearer).
-        for (const [key, src, blur] of [[`room-${n}`, wall, 7], [`room-${n}-front`, front, 5]] as const) {
-          const c = this.textures.createCanvas(key, ROOM_W, ROOM_H)!;
-          const ctx = c.getContext();
-          ctx.filter = `blur(${blur}px)`;
-          ctx.drawImage(src, -ROOM_W * 0.02, -ROOM_H * 0.02, ROOM_W * 1.04, ROOM_H * 1.04);
-          c.refresh();
-        }
-      }
+      paintRoomOnce(this, n);
       this.room = this.registry.get(`room-${n}`) as Room;
     }
     const key = th.paint ? `room-${n}` : this.textures.exists('bg-blur') ? 'bg-blur' : 'bg';

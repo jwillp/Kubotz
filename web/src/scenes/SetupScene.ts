@@ -15,6 +15,7 @@ import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
+import { paintRoomOnce } from './BackdropScene';
 import { uiSound } from '../audio/Sounds';
 
 /**
@@ -213,6 +214,8 @@ export class SetupScene extends Phaser.Scene {
 
     const { width } = this.scale;
     this.live = this.sys.renderer.type === Phaser.WEBGL;
+    // Every arena's room painted now, while the screen change still covers the screen, not on the first switch to it.
+    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, i));
     kubeBackdrop(this, this.live ? 0 : 0.3);
     // The chosen arena is the menu's background (GameScene behind this scene), dimmed except in its frame.
     this.dim = this.add.graphics();

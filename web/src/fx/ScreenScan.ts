@@ -44,9 +44,9 @@ void main () {
   // Thick round scanlines, the tube's own (every 4 screen pixels at 768 high).
   float line = 0.5 + 0.5 * cos(6.2832 * (1.0 - outTexCoord.y) * uRes.y / (4.0 * zoom));
   rgb *= mix(1.0, 0.3 + 0.95 * line, k);
-  // Snow, and a flicker of the whole picture.
+  // Snow, blue and black (the Kube's cyan, not a real TV's white), and a flicker of the whole picture.
   float snow = hash(floor(gl_FragCoord.xy / zoom) + floor(uTime * 60.0));
-  rgb += vec3(snow) * 0.35 * k * k * a;
+  rgb += vec3(0.16, 0.62, 1.0) * snow * 0.45 * k * k * a;
   rgb *= 1.0 + 0.12 * k * (step(0.5, fract(uTime * 17.0)) - 0.5);
   gl_FragColor = vec4(max(rgb, 0.0), a);
 }

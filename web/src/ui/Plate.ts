@@ -239,10 +239,10 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
  * The menu transition, an old TV changing stations: the picture breaks up
  * and rolls away into snow, `swap` runs while the screen is covered, then
  * the next screen locks on. With visual effects off, `swap` runs at once.
- * It plays the confirm (or back) menu sound.
+ * It plays the confirm (or back) menu sound, unless `sound` is null.
  */
-export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' = 'confirm'): void {
-  uiSound(scene, sound);
+export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' | null = 'confirm'): void {
+  if (sound) uiSound(scene, sound);
   if (vfx() <= 0) { swap(); return; }
   // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
   // called from a scene's update (the scene manager defers adds made while it steps the scenes).
