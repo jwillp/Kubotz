@@ -12,10 +12,10 @@ import { EffectDef, ParticleFx } from './ParticleEffect';
  * ?laser=full|trails|alone|off.
  */
 export type LaserSmokeMode = 'off' | 'trails' | 'full' | 'alone';
-export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['full', 'trails', 'alone', 'off'];
+export const LASER_SMOKE_MODES: LaserSmokeMode[] = ['alone', 'full', 'trails', 'off'];
 export const laserSmoke = { mode: ((): LaserSmokeMode => {
   const q = new URLSearchParams(location.search).get('laser');
-  return LASER_SMOKE_MODES.includes(q as LaserSmokeMode) ? q as LaserSmokeMode : 'full';
+  return LASER_SMOKE_MODES.includes(q as LaserSmokeMode) ? q as LaserSmokeMode : 'alone';
 })() };
 const laserAlone = () => laserSmoke.mode === 'alone';
 
@@ -181,7 +181,7 @@ export class ImpactFx {
     for (let i = 0; i < 40; i++) {
       const core = i < 12; // the first ones stay in the middle, the biggest
       const a = rand(0, Math.PI * 2);
-      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT;
+      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT * (laserAlone() ? 1.3 : 1); // alone, they carry the laserSmoke a little further
       const puff = this.add({
         kind: 'smoke', collide: true,
         x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
@@ -214,14 +214,14 @@ export class ImpactFx {
         life: rand(1400, 2200), drag: 0.08, gravity: -1.8 * UNIT,
       });
     }
-    // Hit sparks flying out of the blast, like a big hit's.
+    // Hit sparks flying out of the blast as far as the robot's pieces, stopped by walls.
     for (let i = 0; i < 26; i++) {
       const a = rand(0, Math.PI * 2);
-      const speed = rand(9, 26) * UNIT;
+      const speed = rand(12, 26) * UNIT;
       this.add({
-        kind: 'spark', x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
+        kind: 'spark', collide: true, x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
         color: i % 3 === 0 ? 0xffffff : mix(bright, 0xffffff, rand(0, 0.5)),
-        size: rand(2, 3.5), life: rand(260, 520), gravity: 30 * UNIT, drag: 0.08,
+        size: rand(2, 3.5), life: rand(700, 1200), gravity: 14 * UNIT, drag: 0.35,
       });
     }
     // Glitter: motes and sparks in the bright colour and white.
@@ -248,8 +248,8 @@ export class ImpactFx {
     // Tight streams of small puffs behind every flung puff while it flies.
     for (const p of puffs) {
       this.laser.play(def, p.x, p.y, {
-        tint: deep, size: 0.75, speed: 0.4, life: 1.1, rate: 0.6, solids,
-        follow: () => (p.age < p.life * 0.8 ? p : null),
+        tint: deep, size: 0.75, speed: 0.7, life: 1.2, rate: 0.6, solids,
+        follow: () => (p.age < p.life * 0.9 ? p : null),
       });
     }
     if (laserSmoke.mode === 'trails') return;
@@ -257,7 +257,7 @@ export class ImpactFx {
     for (let i = 0; i < 4; i++) {
       const a = rand(0, Math.PI * 2);
       this.laser.play(def, x + Math.cos(a) * rand(0, 0.6) * UNIT, y + Math.sin(a) * rand(0, 0.5) * UNIT,
-        { tint: deep, size: 0.9, speed: 1.8, life: 1.4, rate: 0.8, solids });
+        { tint: deep, size: 0.9, speed: 2.6, life: 1.5, rate: 0.8, solids });
     }
   }
 
