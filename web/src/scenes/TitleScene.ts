@@ -12,6 +12,7 @@ const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
   { label: 'Play', scene: 'Setup' },
   { label: 'Moves', scene: 'MoveList' },
   // Over the title, which waits paused until Back.
+  { label: 'Controls', scene: 'Controls', overlay: true },
   { label: 'Settings', scene: 'Settings', overlay: true },
 ];
 

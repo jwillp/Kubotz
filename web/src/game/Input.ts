@@ -67,7 +67,34 @@ export const PLAYER_2_KEYS: KeyBinding = {
  * grab, LT / RT = shield, D-pad = taunt; left stick moves, right stick
  * smashes. A Nintendo pad gets the same positions.
  */
-const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
+export const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, SELECT: 8, START: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
+export type PadButtonName = keyof typeof BTN;
+
+/** The pad's buttons per action (the layout above); the left stick moves, the right stick smashes. */
+export const PAD_BINDING = {
+  attack: ['A'], special: ['X'], jump: ['B', 'Y'], grab: ['LB', 'RB'], guard: ['LT', 'RT'], taunt: ['UP', 'DOWN', 'LEFT', 'RIGHT'],
+} as const satisfies Partial<Record<keyof KeyBinding, readonly PadButtonName[]>>;
+
+/** A pad control as drawn on the Controls screen: a button, a stick, or the whole D-pad. */
+export type PadControl = PadButtonName | 'LS' | 'RS' | 'DPAD';
+
+/**
+ * What the controls do, in the order the Controls screen lists them
+ * (scenes/ControlsScene.ts): each with the KeyBinding actions whose keys it
+ * shows and the pad controls, so the screen always matches the bindings.
+ * `keyText` stands in where a keyboard has no key of its own for it.
+ */
+export const CONTROLS: { action: string; hint: string; keys: (keyof KeyBinding)[]; keyText?: string; pad: PadControl[] }[] = [
+  { action: 'Move', hint: 'Tilt the stick to walk, push it to run · down falls faster in the air', keys: ['up', 'left', 'down', 'right'], pad: ['LS'] },
+  { action: 'Jump', hint: 'Again in the air for a double jump · pushing up jumps too', keys: ['jump'], pad: [...PAD_BINDING.jump] },
+  { action: 'Fists', hint: 'Jab combo · with a direction: tilts, aerials · flick + press: smash', keys: ['attack'], pad: [...PAD_BINDING.attack] },
+  { action: 'Legs', hint: 'Special moves (kicks), with or without a direction', keys: ['special'], pad: [...PAD_BINDING.special] },
+  { action: 'Smash', hint: 'A smash on the ground, an aerial in the air · keys: hold Fists to charge', keys: [], keyText: 'Flick + Fists', pad: ['RS'] },
+  { action: 'Grab', hint: 'Throw an opponent · pick up bonuses', keys: ['grab'], pad: [...PAD_BINDING.grab] },
+  { action: 'Shield', hint: 'Held: a bubble that wears down · with a direction: roll, or dodge in the air', keys: ['guard'], pad: [...PAD_BINDING.guard] },
+  { action: 'Taunt', hint: 'Show off', keys: ['taunt'], pad: ['DPAD'] },
+  { action: 'Pause', hint: 'Settings, controls, quit', keys: [], keyText: 'Esc', pad: ['START'] },
+];
 /** The triggers are analog: a light pull counts (past 0.5 felt late). */
 const TRIGGER = 0.15;
 /** Stick: below DEAD is centred, past TILT a direction, past FULL pushed; a flick goes from centred to FULL within FLICK_MS. */
@@ -146,13 +173,14 @@ export class HumanController implements Controller {
       if (flick) s.flick = true;
     }
     const trigger = (i: number) => (pad.buttons[i]?.value ?? 0) > TRIGGER;
-    s.attack ||= btn(BTN.A);
-    s.special ||= btn(BTN.X);
-    s.jump ||= btn(BTN.B) || btn(BTN.Y);
-    s.guard ||= trigger(BTN.LT) || trigger(BTN.RT);
-    const grab = btn(BTN.LB) || btn(BTN.RB);
+    const pressed = (names: readonly PadButtonName[], on = btn) => names.some((n) => on(BTN[n]));
+    s.attack ||= pressed(PAD_BINDING.attack);
+    s.special ||= pressed(PAD_BINDING.special);
+    s.jump ||= pressed(PAD_BINDING.jump);
+    s.guard ||= pressed(PAD_BINDING.guard, trigger);
+    const grab = pressed(PAD_BINDING.grab);
     s.grab ||= grab && !this.prevPad.grab;
-    const taunt = btn(BTN.UP) || btn(BTN.DOWN) || btn(BTN.LEFT) || btn(BTN.RIGHT);
+    const taunt = pressed(PAD_BINDING.taunt);
     s.taunt ||= taunt && !this.prevPad.taunt;
     // Right stick: one smash (or aerial) each time it is pushed out of the centre.
     const cx = axis(2);
