@@ -292,8 +292,10 @@ export class ParticleFx {
   /**
    * @param texturePrefix the texture key of image `x.png` is `${texturePrefix}x.png`.
    * @param parent particles go in this container (e.g. to be glitched with it) instead of the scene.
+   * @param hidden particles are not drawn: the caller draws them its own way from each().
    */
-  constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15, private parent?: Phaser.GameObjects.Container) {}
+  constructor(private scene: Phaser.Scene, private texturePrefix: string, private depth = 15,
+    private parent?: Phaser.GameObjects.Container, private hidden = false) {}
 
   /** Starts the effect at a world position in pixels (y down); a number is a tint. */
   play(def: EffectDef, x: number, y: number, opts?: number | PlayOptions): void {
@@ -302,6 +304,11 @@ export class ParticleFx {
   }
 
   get live(): boolean { return this.running.length > 0; }
+
+  /** Every live particle: position (world pixels), width (px), opacity and colour. */
+  each(fn: (x: number, y: number, size: number, alpha: number, tint: number) => void): void {
+    for (const e of this.running) for (const p of e.particles) fn(p.img.x, p.img.y, p.img.displayWidth, p.img.alpha, p.img.tintTopLeft);
+  }
 
   update(dtMs: number): void {
     for (const e of this.running) e.update(dtMs);
@@ -312,7 +319,7 @@ export class ParticleFx {
     const key = this.texturePrefix + image;
     let img = this.pool.pop();
     if (!img) {
-      img = this.parent ? this.scene.make.image({ x: 0, y: 0, key }, false) : this.scene.add.image(0, 0, key);
+      img = this.parent || this.hidden ? this.scene.make.image({ x: 0, y: 0, key }, false) : this.scene.add.image(0, 0, key);
       this.parent?.add(img);
     }
     return img.setTexture(key).setVisible(true).setDepth(this.depth)
