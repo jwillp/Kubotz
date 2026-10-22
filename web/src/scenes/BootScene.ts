@@ -5,7 +5,9 @@ import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
 import { addNormalMap } from '../fx/NormalMaps';
 import { WORN, weather } from '../fx/Surface';
-import { body, buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
+import { TvIdent } from '../fx/TvIdent';
+import { shutter } from '../ui/Plate';
+import { buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
 import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
@@ -70,7 +72,8 @@ export class BootScene extends Phaser.Scene {
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.makeTextures();
       makeSynthSounds(this);
-      void bodyFont.then(() => this.scene.start('Title'));
+      // From the load screen's snow to the title, as any screen change.
+      void bodyFont.then(() => shutter(this, () => this.scene.start('Title'), null));
     });
     this.load.start();
   }
@@ -190,18 +193,25 @@ export class BootScene extends Phaser.Scene {
     canvas.refresh();
   }
 
+  /**
+   * The load screen: the logo tuning in on a snowy old-TV signal over a
+   * tuning bar (fx/TvIdent), from the moment the logo is in (the first file
+   * in the queue) until the title takes over. The scene does not update
+   * while it loads, so the ident runs off the game's step.
+   */
   private drawLoadingBar(): void {
-    const { width, height } = this.scale;
-    const bar = this.add.graphics();
-    // The logo is the first file in the queue: show it as soon as it's in.
+    let ident: TvIdent | undefined;
+    let progress = 0;
+    const step = () => ident?.update();
     this.load.once('filecomplete-svg-logo', () => {
-      this.add.image(width / 2, height / 2 - 80, 'logo').setScale(0.9 / LOGO_RES);
+      ident = new TvIdent(this, 'logo');
+      ident.setProgress(progress);
+      this.game.events.on(Phaser.Core.Events.STEP, step);
     });
-    const text = this.add.text(width / 2, height / 2 + 44, 'Loading', body(18, { color: '#9fe3ff' })).setOrigin(0.5);
-    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => {
-      bar.clear().fillStyle(0x29abe2, 1).fillRect(width / 2 - 200, height / 2 + 10, 400 * p, 12);
-      bar.lineStyle(2, 0x29abe2, 1).strokeRect(width / 2 - 200, height / 2 + 10, 400, 12);
+    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => { progress = p; ident?.setProgress(p); });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.off(Phaser.Core.Events.STEP, step);
+      ident?.destroy();
     });
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => { text.setText(''); });
   }
 }
