@@ -486,6 +486,29 @@ export class SetupScene extends Phaser.Scene {
     this.refresh();
   }
 
+  /**
+   * A gamepad the browser shows (connected, or woken by a press) goes to
+   * player 1 by itself when player 1 is still on the keyboard, waiting for a
+   * pad or off, once per pad: set back to the keyboard, it stays there.
+   */
+  private autoAssignPad(): void {
+    const done = (this.registry.get('padsAutoAssigned') as string[] | undefined) ?? [];
+    const seat = this.state.seats[0];
+    for (const p of this.input.gamepad?.gamepads ?? []) {
+      if (!p?.connected || done.includes(p.id + p.index)) continue;
+      this.registry.set('padsAutoAssigned', [...done, p.id + p.index]);
+      if (this.state.seats.some((s) => s.device === p.index)) return;
+      if (seat.device !== 'K1' && seat.device !== 'PAD' && seat.device !== 'OFF') return;
+      seat.device = p.index;
+      // The press that woke the pad does not also count as A (that would start the match).
+      this.padDown.set(p.index, new Set(p.buttons.filter((b) => b.pressed).map((b) => b.index)));
+      uiSound(this, 'confirm');
+      this.taunt(0);
+      this.refresh();
+      return;
+    }
+  }
+
   /** Joins and leaves: a keyboard set's attack or a pad's A takes the first free slot; special / B leaves. */
   private pollJoins(): void {
     for (const set of ['K1', 'K2'] as const) {
@@ -610,6 +633,7 @@ export class SetupScene extends Phaser.Scene {
   // ------------------------------------------------------------------- frame
   update(time: number, deltaMs: number): void {
     if (this.leaving) return;
+    this.autoAssignPad();
     this.pollJoins();
     this.menu.update(time);
     const seats = this.state.seats;
