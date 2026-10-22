@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { Config } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
-import { TEAM_NAMES } from '../game/Match';
+import { BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
+import { HORDE_WAVES, MODES } from '../game/Modes';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
@@ -37,6 +38,8 @@ export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
   private cards = new Map<Kubotz, Card>();
   private timer!: Phaser.GameObjects.Text;
+  /** Horde: the wave and the black-team robots left, under the timer. */
+  private waveText?: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
   private bannerPlate!: Phaser.GameObjects.Graphics;
   private bannerText!: HeadingText;
@@ -60,8 +63,14 @@ export class HudScene extends Phaser.Scene {
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
     this.timer = this.add.text(width / 2, 18, '0:00', body(22, { fontStyle: '800' })).setOrigin(0.5);
 
-    // One card per robot in seat order, centred along the bottom edge.
-    const fighters = this.game_.fighters;
+    this.waveText = undefined;
+    if (MODES[this.game_.mode].horde) {
+      drawPlate(tg, width / 2 - 110, 40, 220, 30, { cut: 10, alpha: 0.85 });
+      this.waveText = this.add.text(width / 2, 55, '', body(15, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5);
+    }
+
+    // One card per robot in seat order, centred along the bottom edge; the black team has none.
+    const fighters = this.game_.fighters.filter((k) => !isBlackTeam(k));
     const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
     fighters.forEach((k, i) => this.cards.set(k, this.makeCard(k, left + i * (CARD_W + CARD_GAP), height - CARD_H - 10)));
 
@@ -101,8 +110,12 @@ export class HudScene extends Phaser.Scene {
     this.game_.events.on('pause', this.onPause, this);
     this.game_.events.on('countdown', this.onCountdown, this);
     this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
+    this.game_.events.on('wave', this.onWave, this);
+    this.game_.events.on('wave-cleared', this.onWaveCleared, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off(Phaser.Scenes.Events.RESUME);
+      this.game_.events.off('wave', this.onWave, this);
+      this.game_.events.off('wave-cleared', this.onWaveCleared, this);
       this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
@@ -146,7 +159,26 @@ export class HudScene extends Phaser.Scene {
       this.timer.setText(`${Math.floor(shown / 60)}:${String(shown % 60).padStart(2, '0')}`);
       this.timer.setColor(g.timeLimit && shown <= 10 ? '#ff6a5a' : '#ffffff');
     }
+    if (this.waveText) {
+      const left = g.fighters.filter((k) => isBlackTeam(k) && !k.eliminated).length;
+      this.waveText.setText(g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
+    }
     for (const [k, card] of this.cards) this.drawCard(k, card, time);
+  }
+
+  /** Horde: a new wave's number comes in big, like the countdown. */
+  private onWave(wave: number): void {
+    const final = wave === HORDE_WAVES;
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, final ? 'FINAL WAVE' : `WAVE ${wave}`, 96).setDepth(20).setScale(1.5).setAlpha(0);
+    this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 240, ease: 'Back.out' });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1100, duration: 400, onComplete: () => t.destroy() });
+  }
+
+  private onWaveCleared(wave: number): void {
+    const t = this.add.text(this.scale.width / 2, this.scale.height / 2 - 60, `WAVE ${wave} CLEARED`, body(34, { fontStyle: 'italic 800', color: '#bfe9ff' }))
+      .setOrigin(0.5).setShadow(0, 3, '#02060c', 0, false, true).setDepth(20).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, y: t.y - 12, duration: 260, ease: 'Quad.out' });
+    this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
   }
 
   private drawCard(k: Kubotz, card: Card, time: number): void {
@@ -216,11 +248,13 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onMatchOver(winnerTeam: number | null): void {
-    // One robot: its name; a team of several: the team.
+    // One robot: its name; a team of several: the team. Horde: survived, or the wave that ended it.
     const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
-    const color = winnerTeam === null ? NEON : SLOT_COLORS[winnerTeam];
-    this.bannerText.setText(winnerTeam === null ? 'DRAW' : `${title} WINS`).setGlow(color);
+    const horde = MODES[this.game_.mode].horde;
+    const color = winnerTeam === null || winnerTeam === BLACK_TEAM ? NEON : SLOT_COLORS[winnerTeam];
+    this.bannerText.setText(horde ? (winnerTeam === BLACK_TEAM ? `FELL ON WAVE ${this.game_.wave}` : 'HORDE SURVIVED')
+      : winnerTeam === null ? 'DRAW' : `${title} WINS`).setGlow(color);
     // A plate band lit in the winner's colour.
     const w = Math.max(560, this.bannerText.displayWidth + 140);
     drawStrip(drawPlate(this.bannerPlate.clear(), -w / 2, -70, w, 150, { cut: 28 }), -w / 2 + 28, -70, w / 2, -70, color, 3);

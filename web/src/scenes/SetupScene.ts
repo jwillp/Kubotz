@@ -8,6 +8,7 @@ import {
   BONUS_RATES, CPU_LEVEL, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
   type BonusRate, type FighterSpec, type MatchSetup,
 } from '../game/Match';
+import { HORDE_TEAM, MODES, type MatchMode } from '../game/Modes';
 import { ARENA_INFO } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
 import type { SpriterData } from '../spriter/Spriter';
@@ -186,6 +187,8 @@ export class SetupScene extends Phaser.Scene {
   private rules: Record<'stocks' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
   private start!: StartButton;
   private status!: Phaser.GameObjects.Text;
+  /** The battle mode picked on the mode screen. */
+  private mode: MatchMode = 'gladiator';
   /** Pad buttons down last frame, per pad, for joins and leaves. */
   private padDown = new Map<number, Set<number>>();
   private keyPresses = new Map<string, number>();
@@ -197,6 +200,7 @@ export class SetupScene extends Phaser.Scene {
     this.slots = [];
     this.leaving = false;
     this.padDown.clear();
+    this.mode = (this.registry.get('mode') as MatchMode | undefined) ?? 'gladiator';
     const saved = this.registry.get('setup') as SetupState | undefined;
     this.state = saved ? structuredClone(saved) : {
       seats: [
@@ -310,7 +314,18 @@ export class SetupScene extends Phaser.Scene {
     rule('stocks', right, CAROUSEL_Y - 50, 'STOCKS', (d) => this.change({ kind: 'stocks' }, d));
     rule('time', right, CAROUSEL_Y + 50, 'TIME', (d) => this.change({ kind: 'time' }, d));
     rule('bonuses', 136, CAROUSEL_Y + 50, 'POWER-UPS', (d) => this.change({ kind: 'bonuses' }, d));
+    // The mode picked on the previous screen, above the power-ups (Back changes it).
+    const y = CAROUSEL_Y - 50;
+    const g = drawPlate(this.add.graphics(), 136 - 80, y - 36, 160, 72, { cut: 12, alpha: 0.7 });
+    drawStrip(g, 136 - 80 + 12, y + 36, 136 + 80, y + 36, NEON, 2);
+    this.add.text(136, y - 18, 'MODE', body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0.5);
+    this.add.text(136, y + 10, MODES[this.mode].name.toUpperCase(), body(22, { fontStyle: 'italic 800' })).setOrigin(0.5);
   }
+
+  /** Horde: every robot on the players' team against the black team. */
+  private get horde(): boolean { return !!MODES[this.mode].horde; }
+  /** A seat's team in this mode. */
+  private teamOf(seat: Seat): number { return this.horde ? HORDE_TEAM : seat.team; }
 
   private makeSlot(i: number, rig: Rig): Slot {
     const x = this.slotX(i);
@@ -361,7 +376,7 @@ export class SetupScene extends Phaser.Scene {
     switch (f.kind) {
       case 'arena': this.pickArena(d); return;
       case 'stocks': s.stocks = STOCKS[(STOCKS.indexOf(s.stocks) + d + STOCKS.length) % STOCKS.length]; break;
-      case 'time': s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
+      case 'time': if (this.horde) return; s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
       case 'bonuses': s.bonuses = RATE_ORDER[(RATE_ORDER.indexOf(s.bonuses) + d + RATE_ORDER.length) % RATE_ORDER.length]; break;
       case 'start': return;
       case 'slot': {
@@ -373,7 +388,7 @@ export class SetupScene extends Phaser.Scene {
           seat.device = next.device;
           seat.level = next.level;
           if (seat.device !== 'OFF') this.taunt(f.slot);
-        } else if (seat.device === 'OFF') {
+        } else if (seat.device === 'OFF' || (f.field === 'team' && this.horde)) {
           return;
         } else if (f.field === 'helmet') {
           seat.helmet = (seat.helmet + d + HEADS.length) % HEADS.length;
@@ -440,6 +455,8 @@ export class SetupScene extends Phaser.Scene {
   /** Why START is greyed out, if it is: too few robots (the grey button says it), or everyone on one team. */
   private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
+    // Horde: one robot is enough, and everyone is on one team anyway.
+    if (this.horde) return seats.length < 1 ? 'few' : null;
     if (seats.length < 2) return 'few';
     if (new Set(seats.map((s) => s.team)).size < 2) return 'one team';
     return null;
@@ -449,7 +466,7 @@ export class SetupScene extends Phaser.Scene {
   /** The rows the cursor steps through, top to bottom, for the slot it is in (or the first). */
   private order(slot: number): Focus[] {
     const seat = this.state.seats[slot];
-    const fields: Field[] = seat.device === 'OFF' ? ['input'] : [...FIELDS];
+    const fields: Field[] = seat.device === 'OFF' ? ['input'] : FIELDS.filter((f) => f !== 'team' || !this.horde);
     return [
       { kind: 'arena' }, { kind: 'stocks' }, { kind: 'time' }, { kind: 'bonuses' },
       ...fields.map((field): Focus => ({ kind: 'slot', slot, field })),
@@ -561,7 +578,7 @@ export class SetupScene extends Phaser.Scene {
     const on = (k: Focus['kind']) => f.kind === k;
     // Rules: values, and the focused one glows.
     this.rules.stocks.value.setText(String(s.stocks));
-    this.rules.time.value.setText(s.minutes ? `${s.minutes}:00` : '∞');
+    this.rules.time.value.setText(s.minutes && !this.horde ? `${s.minutes}:00` : '∞');
     this.rules.bonuses.value.setText(BONUS_RATES[s.bonuses].label).setFontSize(s.bonuses === 'frequent' ? 20 : 24);
     for (const k of ['stocks', 'time', 'bonuses'] as const) {
       const r = this.rules[k];
@@ -595,7 +612,7 @@ export class SetupScene extends Phaser.Scene {
   private drawSlot(p: Slot, i: number, seat: Seat, tag: string): void {
     const x = this.slotX(i);
     const off = seat.device === 'OFF';
-    const color = off ? 0x3a4a66 : SLOT_COLORS[seat.team];
+    const color = off ? 0x3a4a66 : SLOT_COLORS[this.teamOf(seat)];
     const f = this.focus;
     const focused = f.kind === 'slot' && f.slot === i ? f.field : null;
     p.color = color;
@@ -622,10 +639,10 @@ export class SetupScene extends Phaser.Scene {
     p.blurb.setText(deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
     p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
-    p.rows.team.label.setText(`${TEAM_NAMES[seat.team]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
+    p.rows.team.label.setText(this.horde ? 'PLAYERS TEAM' : `${TEAM_NAMES[seat.team]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
     for (const field of ['helmet', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
-      for (const a of p.rows[field].arrows) a.setVisible(!off);
+      for (const a of p.rows[field].arrows) a.setVisible(!off && (field !== 'team' || !this.horde));
     }
     p.robot.visible = !off;
   }
@@ -656,10 +673,11 @@ export class SetupScene extends Phaser.Scene {
     const taken = new Set(this.state.seats.map((s) => s.device).filter((d) => typeof d === 'number'));
     const freePad = () => { let i = 0; while (taken.has(i)) i++; taken.add(i); return i; };
     return this.seats().map((s): FighterSpec => {
-      if (s.device === 'CPU') return { input: 'CPU', team: s.team, helmet: s.helmet, cpuLevel: s.level };
+      const team = this.teamOf(s);
+      if (s.device === 'CPU') return { input: 'CPU', team, helmet: s.helmet, cpuLevel: s.level };
       const n = humans++;
-      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team: s.team, helmet: s.helmet };
-      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team: s.team, helmet: s.helmet };
+      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team, helmet: s.helmet };
+      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team, helmet: s.helmet };
     });
   }
 
@@ -667,13 +685,15 @@ export class SetupScene extends Phaser.Scene {
     if (this.problem() || this.leaving) return;
     this.leaving = true;
     const s = this.state;
-    const setup: MatchSetup = { fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, stocks: s.stocks, minutes: s.minutes };
+    const setup: MatchSetup = {
+      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, stocks: s.stocks, minutes: this.horde ? 0 : s.minutes,
+    };
     shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }
 
   private back(): void {
     if (this.leaving) return;
     this.leaving = true;
-    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Title'); }, 'back');
+    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Modes'); }, 'back');
   }
 }

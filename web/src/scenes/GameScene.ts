@@ -8,7 +8,8 @@ import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type RobotFrame } from '../game/Match';
+import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type RobotFrame } from '../game/Match';
+import { HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -111,6 +112,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Lives each robot starts with, and the match length in ms (0: no limit). */
   stocks: number = Config.NB_LIVES;
   timeLimit = 0;
+  /** The battle mode (game/Modes.ts). */
+  mode: MatchMode = 'gladiator';
+  /** Horde: the wave being fought (0 before the first), when the next one starts, and its robots still to come in. */
+  wave = 0;
+  private nextWaveAt = Infinity;
+  private waveQueue: { at: number; level: number; health: number }[] = [];
+  private rig!: Rig;
   private countdownStep = -1;
   /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every robot's spawn is shown). */
   private countdownAt = 0;
@@ -152,17 +160,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.recorder = new ReplayRecorder();
     this.promptShown = false;
     this.attackWasDown.clear();
+    this.wave = 0;
+    this.nextWaveAt = Infinity;
+    this.waveQueue = [];
   }
 
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
+    this.mode = setup.mode ?? 'gladiator';
     this.specs = setup.fighters.slice(0, 4);
     this.stocks = setup.stocks ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
     const spriter: SpriterData = this.registry.get('spriter');
-    const rig = new Rig(spriter);
+    const rig = this.rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot-sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
@@ -211,6 +223,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
       k.lives = this.stocks;
+      // Blasters, Blades: the mode's weapon from the start, for the whole match.
+      k.armed = k.weapon = MODES[this.mode].armed ?? 'none';
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
@@ -232,6 +246,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.applyZoom();
     this.bonusRate = BONUS_RATES[setup.bonuses] ?? BONUS_RATES.normal;
     this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : this.startedAt + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
+    // Horde: the first wave comes in once "Fight" has faded.
+    if (MODES[this.mode].horde) this.nextWaveAt = this.startedAt + 1200;
 
     this.sound.stopByKey('music-title');
     this.music = addMusic(this, 'music-game', 0.28);
@@ -746,6 +762,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkDeaths(now);
     this.checkTime(now);
     this.updateBonusSpawns(now);
+    this.updateHorde(now);
     const drawn = new Map<Kubotz, Partial<RobotFrame>>();
     for (const k of this.fighters) {
       k.render(now, dtMs);
@@ -1079,7 +1096,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const free = this.bonusSpawns.filter((q) => !this.orbs.some((o) => Math.hypot(o.x - q.x, o.y - q.y) < 2 * UNIT));
     if (free.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(free);
-    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
+    // Modes where everyone is armed get no weapon power-ups.
+    const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(!MODES[this.mode].armed), now);
     this.pickupFx.explode(vfxCount(12), orb.x, orb.y);
     this.orbs.push(orb);
   }
@@ -1136,14 +1154,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const killer = k.lastAttacker && now - k.lastAttacker.at < 6000 ? k.lastAttacker.by : null;
       if (killer && killer !== k) { killer.kills++; killer.stats.kos++; }
       k.stats.falls++;
-      // The match point: this K.O. leaves one team (or nobody) standing.
-      const final = this.winnerTeam === undefined && k.lives <= 1 && teamsLeft(this.fighters.filter((f) => f !== k || f.lives > 1)).length <= 1;
+      // The match point: this K.O. leaves one team (or nobody) standing; in Horde, no player or no wave left.
+      const final = this.winnerTeam === undefined && k.lives <= 1 && (MODES[this.mode].horde
+        ? (isBlackTeam(k) ? this.wave >= HORDE_WAVES && this.waveQueue.length === 0 && this.blackLeft().length === 1 : teamsLeft(this.fighters.filter((f) => f !== k)).length === 0)
+        : teamsLeft(this.fighters.filter((f) => f !== k || f.lives > 1)).length <= 1);
       this.recorder.ko(k.index, killer && killer !== k ? killer.index : null, now, final);
       this.debris.explode(k, now);
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
-      this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
+      this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} ELIMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
+    }
+    // Horde: the players lose when none of them is left (the waves end it the other way, see updateHorde).
+    if (MODES[this.mode].horde) {
+      if (this.winnerTeam === undefined && teamsLeft(this.fighters).length === 0) this.endMatch(BLACK_TEAM, now);
+      return;
     }
     // Last team standing: the match ends when one team (or nobody) is left.
     if (this.winnerTeam === undefined) {
@@ -1186,8 +1211,78 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       hull: this.warpZones.length > 0,
       blocks: this.blocks.map(({ x, y, width, height }) => ({ x, y, width, height })),
       arena: this.arena,
+      mode: this.mode,
+      ...(MODES[this.mode].horde ? { wave: this.winnerTeam === BLACK_TEAM ? this.wave : Math.min(this.wave, HORDE_WAVES) } : {}),
       warpZones: this.warpZones.map(({ x, y, width, height }) => ({ x, y, width, height })),
     };
+  }
+
+  // ------------------------------------------------------------------- horde
+  /** Horde: the black team's robots still in the fight. */
+  private blackLeft(): Kubotz[] {
+    return this.fighters.filter((f) => isBlackTeam(f) && !f.eliminated);
+  }
+
+  /**
+   * Horde: when a wave is cleared the next one comes in after a breather,
+   * its robots materializing one after the other; clearing the last wave
+   * wins the match.
+   */
+  private updateHorde(now: number): void {
+    if (!MODES[this.mode].horde || this.winnerTeam !== undefined || now < this.startedAt) return;
+    while (this.waveQueue.length && now >= this.waveQueue[0].at) {
+      const w = this.waveQueue.shift()!;
+      this.spawnBlack(w.level, w.health);
+    }
+    if (this.waveQueue.length || this.blackLeft().length) return;
+    if (this.wave >= HORDE_WAVES) { this.endMatch(HORDE_TEAM, now); return; }
+    if (this.nextWaveAt === Infinity) {
+      // Cleared: a short breather before the next wave.
+      this.nextWaveAt = now + WAVE_BREAK_MS;
+      if (this.wave > 0) this.events.emit('wave-cleared', this.wave);
+      return;
+    }
+    if (now < this.nextWaveAt) return;
+    this.nextWaveAt = Infinity;
+    this.wave++;
+    const w = hordeWave(this.wave, this.specs.length);
+    for (let i = 0; i < w.count; i++) this.waveQueue.push({ at: now + 500 + i * WAVE_SPAWN_GAP_MS, level: w.level, health: w.health });
+    this.events.emit('wave', this.wave, w.count);
+  }
+
+  /**
+   * A black-team robot materializes at the spawn point farthest from the
+   * players: a K.O.'d one comes back (at the new wave's level), or a new one
+   * joins while there are fewer than the wave needs. One life each.
+   */
+  private spawnBlack(level: number, health: number): void {
+    const players = this.fighters.filter((f) => !isBlackTeam(f) && f.isAlive());
+    const far = (v: Phaser.Math.Vector2) => Math.min(...players.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
+    const spawn = [...this.playerSpawns].sort((p, q) => far(q) - far(p))[Phaser.Math.Between(0, Math.min(1, this.playerSpawns.length - 1))];
+    const x = spawn.x + Phaser.Math.Between(-12, 12);
+    let k = this.fighters.find((f) => isBlackTeam(f) && f.eliminated);
+    if (k) {
+      (k.controller as CpuController).reactionMs = cpuReactionMs(level);
+      k.maxHealth = health;
+      k.lives = 1;
+      k.respawn(x, spawn.y);
+    } else {
+      const controller = new CpuController({
+        enemiesOf: (me) => this.fighters.filter((f) => canHurt(me, f) && !f.eliminated),
+        powerUpPositions: () => [],
+        now: () => this.clock,
+        nav: this.nav,
+      }, cpuReactionMs(level));
+      k = new Kubotz(this, this.fighters.length, controller, BLACK_COLOR, this.rig, x, spawn.y, this, this.physicsWorld, { team: BLACK_TEAM, helmet: BLACK_HELMET });
+      controller.agent = k;
+      k.maxHealth = k.health = health;
+      k.lives = 1;
+      k.appearAt = this.clock;
+      this.fighters.push(k);
+    }
+    k.facing = x < (this.map.width * UNIT) / 2 ? 1 : -1;
+    this.holo.start(k, this.clock, (hx, hy) => k.teleport(hx, hy), spawn.y);
+    this.playSfx('holo-spawn', 0.35);
   }
 
   private respawn(k: Kubotz): void {
@@ -1225,7 +1320,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const i = Math.floor(this.clock / INTRO_FOCUS_MS);
     const k = this.fighters[i];
     // A little low, so the projector under the robot shows above the HUD cards.
-    return this.clock < this.fighters.length * INTRO_FOCUS_MS && k ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    return this.clock < this.specs.length * INTRO_FOCUS_MS && k ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
   }
 
   /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
@@ -1323,6 +1418,12 @@ function cpuCanvas(w: number, h: number): HTMLCanvasElement {
 
 /** The setup screen's arena preview is baked at this fraction of the match's resolution (a sixteenth of the work at 0.25). */
 const PREVIEW_BAKE = 0.3;
+
+/** Horde: the breather between two waves, and between two robots of a wave coming in (ms). */
+const WAVE_BREAK_MS = 3000;
+const WAVE_SPAWN_GAP_MS = 700;
+/** Horde: the black team's helmet (Skull). */
+const BLACK_HELMET = 3;
 
 /** The match is over: how long the winners dance before "press to continue" (ms). */
 const CONTINUE_DELAY = 1600;

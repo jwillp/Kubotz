@@ -2,6 +2,7 @@
 
 import type { Pose } from '../anim/Rig';
 import type { Shield } from '../anim/Robot2D';
+import type { MatchMode } from './Modes';
 
 /** Who drives a robot: keyboard set 1 or 2 (with any pad), or the computer. */
 export type InputKind = 'P1' | 'P2' | 'CPU';
@@ -55,6 +56,9 @@ export interface MatchResult {
   blocks: { x: number; y: number; width: number; height: number }[];
   /** The arena played (its backdrop and light), and its portals (world pixels). */
   arena: number;
+  /** The battle mode; for Horde, the wave reached (the last one cleared when they won). */
+  mode?: MatchMode;
+  wave?: number;
   warpZones: { x: number; y: number; width: number; height: number }[];
 }
 
@@ -141,6 +145,8 @@ export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
 /** What the setup screen hands to GameScene. */
 export interface MatchSetup {
+  /** The battle mode (default Gladiator). */
+  mode?: MatchMode;
   /** One per robot, in slot order (at most 4). */
   fighters: FighterSpec[];
   /** Index into ARENA_INFO / ARENAS. */
@@ -173,9 +179,19 @@ export interface Teamed { readonly team: number }
  */
 export const canHurt = (a: Teamed, b: Teamed): boolean => a !== b && a.team !== b.team;
 
-/** The teams with at least one robot still in the match (not eliminated). */
+/**
+ * The black team: CPUs nobody plays (Horde's waves, an arena's NPCs), hostile
+ * to every player. No HUD card, and never counted as a team still standing.
+ */
+export const BLACK_TEAM = 99;
+export const BLACK_COLOR = 0x2a2d33;
+/** Its player tag's colour (BLACK_COLOR would not read over the arenas). */
+export const BLACK_TAG = 0x8d96a6;
+export const isBlackTeam = (f: Teamed): boolean => f.team === BLACK_TEAM;
+
+/** The players' teams with at least one robot still in the match (not eliminated); the black team never counts. */
 export function teamsLeft(fighters: { team: number; eliminated: boolean }[]): number[] {
-  return [...new Set(fighters.filter((f) => !f.eliminated).map((f) => f.team))];
+  return [...new Set(fighters.filter((f) => !f.eliminated && !isBlackTeam(f)).map((f) => f.team))];
 }
 
 /** The default match: P1 against a CPU on the original arena. */

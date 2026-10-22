@@ -8,7 +8,7 @@ import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { vfx } from './Settings';
-import { canHurt, type Teamed } from './Match';
+import { BLACK_TAG, BLACK_TEAM, canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
@@ -308,6 +308,10 @@ export class Kubotz implements Damageable, Teamed {
   kills = 0;
   deaths = 0;
   weapon: Weapon = 'none';
+  /** The weapon it always holds (the Blasters and Blades modes): back after a weapon power-up and at each respawn. */
+  armed: Weapon = 'none';
+  /** The health it spawns with (Horde's weaker black-team robots start lower). */
+  maxHealth: number = Config.KUBOTZ_HEALTH;
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -463,8 +467,10 @@ export class Kubotz implements Damageable, Teamed {
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
-    this.tagKey = `label-${who}:${hex(color)}`;
-    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, color);
+    // The black team's tag is a light steel, so it reads over the dark arenas.
+    const tagColor = this.team === BLACK_TEAM ? BLACK_TAG : color;
+    this.tagKey = `label-${who}:${hex(tagColor)}`;
+    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, tagColor);
     this.tag = scene.add.image(x, y, this.tagKey).setOrigin(0.5, 1).setDepth(21);
   }
 
@@ -1580,7 +1586,9 @@ export class Kubotz implements Damageable, Teamed {
   /** RespawnSystem SPAWNING state. */
   respawn(x: number, y: number): void {
     this.dead = false;
-    this.health = Config.KUBOTZ_HEALTH;
+    this.eliminated = false;
+    this.health = this.maxHealth;
+    this.weapon = this.armed;
     this.energy = Config.KUBOTZ_ENERGY;
     this.maxJumps = Config.NB_JUMPS;
     this.lastAttacker = null;

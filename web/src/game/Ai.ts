@@ -43,7 +43,8 @@ export class CpuController implements Controller {
   private ledgeSince = 0;
   private ledgeWait = 0;
 
-  constructor(private world: AiWorld, private reactionMs = 140) {}
+  /** `reactionMs` can change between lives (Horde's robots come back at a new level). */
+  constructor(private world: AiWorld, public reactionMs = 140) {}
 
   read(): PadState {
     const now = this.world.now();

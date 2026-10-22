@@ -229,7 +229,9 @@ export class ResultsScene extends Phaser.Scene {
     c.add(this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.82));
     const winners = r.winnerTeam === null ? [] : r.fighters.map((f, i) => (f.team === r.winnerTeam ? i : -1)).filter((i) => i >= 0);
     const winColor = winners.length ? r.colors[winners[0]] : 0x29abe2;
-    const title = winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
+    const title = r.mode === 'horde'
+      ? (winners.length ? `Survived ${r.wave} waves!` : `Fell on wave ${r.wave}`)
+      : winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
     c.add(heading(this, width / 2, 70, title.replace(/&/g, 'and'), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
     c.add(this.add.text(width / 2, 130, `Match time ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}  ·  ${r.stats.reduce((n, st) => n + st.falls, 0)} K.O.${r.stats.reduce((n, st) => n + st.falls, 0) === 1 ? '' : 's'}`, {
@@ -239,12 +241,13 @@ export class ResultsScene extends Phaser.Scene {
     // One row per robot, the numbers in its colour; the best of each column is lit.
     const x0 = 120; const nameW = 260; const colW = (width - 2 * x0 - nameW) / COLUMNS.length;
     const top = 200;
-    const rowH = Math.min(84, 380 / Math.max(1, r.names.length));
+    // The players' robots only (Horde's black team is in the replays, not the table).
+    const rowH = Math.min(84, 380 / Math.max(1, r.fighters.length));
     COLUMNS.forEach((col, j) => c.add(this.add.text(x0 + nameW + colW * (j + 0.5), top, col.label, {
       fontFamily: FONT, fontStyle: '800', fontSize: '15px', color: '#8fb4d8',
     }).setOrigin(0.5)));
-    const best = COLUMNS.map((col) => Math.max(...r.stats.map((s) => col.get(s))));
-    r.names.forEach((name, i) => {
+    const best = COLUMNS.map((col) => Math.max(...r.stats.slice(0, r.fighters.length).map((s) => col.get(s))));
+    r.names.slice(0, r.fighters.length).forEach((name, i) => {
       const y = top + 50 + i * rowH;
       const color = r.colors[i];
       const row = this.add.container(0, y);
