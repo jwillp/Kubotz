@@ -136,6 +136,8 @@ export interface PlayOptions {
 interface Particle {
   img: Phaser.GameObjects.Image;
   life: number; age: number;
+  /** Position in world units (y up). */
+  wx: number; wy: number;
   scale: [number, number]; velocity: [number, number]; angle: [number, number];
   rotation: [number, number]; wind: [number, number]; gravity: [number, number]; alpha: [number, number];
 }
@@ -209,7 +211,7 @@ class RunningEmitter {
       const img = this.fx.acquire(d.image, d.additive);
       const life = this.lifeLow + this.lifeDiff * d.life.scale(percent);
       const p: Particle = {
-        img, life, age: d.lifeOffset.active ? d.lifeOffset.newLow() : 0,
+        img, life, age: d.lifeOffset.active ? d.lifeOffset.newLow() : 0, wx: 0, wy: 0,
         scale: d.scale.pair(), velocity: d.velocity.pair(), angle: d.angle.pair(),
         rotation: d.rotation.pair(), wind: d.wind.pair(), gravity: d.gravity.pair(), alpha: d.transparency.pair(),
       };
@@ -228,7 +230,7 @@ class RunningEmitter {
         x += Math.cos(a) * (w / 2) * r;
         y += Math.sin(a) * (h / 2) * r;
       }
-      img.setData('wx', x).setData('wy', y);
+      p.wx = x; p.wy = y;
       this.particles.push(p);
       this.step(p, 0);
     }
@@ -238,8 +240,8 @@ class RunningEmitter {
     const d = this.def;
     const pc = Math.min(1, p.age / p.life);
     const at = (v: Value, pair: [number, number]) => pair[0] + pair[1] * v.scale(pc);
-    let x = p.img.getData('wx') as number;
-    let y = p.img.getData('wy') as number;
+    let x = p.wx;
+    let y = p.wy;
     const angle = d.angle.active ? at(d.angle, p.angle) : 0;
     if (d.velocity.active) {
       const v = at(d.velocity, p.velocity) * dt;
@@ -258,7 +260,7 @@ class RunningEmitter {
       if (side === 0) x = r.left / UNIT; else if (side === 1) x = r.right / UNIT;
       else if (side === 2) y = -r.top / UNIT; else y = -r.bottom / UNIT;
     }
-    p.img.setData('wx', x).setData('wy', y);
+    p.wx = x; p.wy = y;
 
     let rotation = d.rotation.active ? at(d.rotation, p.rotation) : 0;
     if (d.aligned) rotation += angle;
