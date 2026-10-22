@@ -77,11 +77,12 @@ export const Config = {
   AIR_DODGE_DURATION: 350, // intangible: attacks and bullets pass through
   // Guard + left / right on the ground: dodge roll (SSB), intangible for most of it,
   // passing through robots.
+  // Timed like Ultimate's (Mario): intangible frames 4-15, over by frame 31.
   ROLL_DISTANCE: 3.4, // units
   ROLL_DURATION: 330, // ms of travel
-  ROLL_END_LAG: 110, // ms after it, no actions
-  ROLL_SAFE_FROM: 30, // ms: intangible from here...
-  ROLL_SAFE_UNTIL: 300, // ...to here
+  ROLL_END_LAG: 187, // ms after it, no actions (330 + 187 = 517 ms, 31 frames)
+  ROLL_SAFE_FROM: 50, // ms: intangible from here (frame 4)...
+  ROLL_SAFE_UNTIL: 250, // ...to here (frame 15)
   ROLL_COOLDOWN: 150, // ms after the end lag before the next roll
 
   // Match start: narrator counts 3, 2, 1, Fight! while inputs are off.
