@@ -29,6 +29,7 @@ import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Se
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
+import { uiSound } from '../audio/Sounds';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -1018,7 +1019,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         k.health = 0;
         continue;
       }
-      this.warp(k.x, k.y, k.body.vx, (x, y) => k.teleport(x, y));
+      // A robot going through makes the rift's whoosh (in replays too: playSfx records it).
+      this.warp(k.x, k.y, k.body.vx, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
     }
     // Everything else that moves goes through the portals too: laser bolts,
     // power-up balls and debris (anything with a position, a velocity and a move).
@@ -1185,6 +1187,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   togglePause(): void {
     if (this.winnerTeam !== undefined) return;
     this.paused = !this.paused;
+    uiSound(this, this.paused ? 'confirm' : 'back');
     if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
     this.events.emit('pause', this.paused);
   }
@@ -1192,6 +1195,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** From the pause menu: the settings screen over the paused match; back to the pause after. */
   openSettings(): void {
     if (!this.paused) return;
+    uiSound(this, 'confirm');
     this.scene.pause('Hud');
     this.scene.pause();
     this.scene.launch('Settings', { resume: ['Game', 'Hud'] });
@@ -1199,7 +1203,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   backToTitle(): void {
-    shutter(this, () => this.scene.start('Title'));
+    shutter(this, () => this.scene.start('Title'), 'back');
   }
 }
 

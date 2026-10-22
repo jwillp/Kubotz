@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { crystalBounceBuffer, pickupChimeBuffer, healChimeBuffer, sciFiExplosionBuffer, metalStepBuffer } from '../fx/Synth';
+import { loadRecordedSounds, makeSynthSounds } from '../audio/Sounds';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
 import { EffectDef, parseEffect } from '../fx/ParticleEffect';
@@ -50,13 +50,8 @@ export class BootScene extends Phaser.Scene {
     // LibGDX particle effects (full-on-scripting branch) and their images.
     for (const [key, file] of Object.entries(PARTICLE_FILES)) this.load.text(`pe-file:${key}`, `particles/${file}`);
     for (const img of ['pre_particle.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png']) this.load.image(`pe:${img}`, `particles/${img}`);
-    // Original music and sounds (release v0.1-alpha), converted to mp3.
-    this.load.audio('music-title', 'audio/dashboard.mp3');
-    this.load.audio('music-game', 'audio/TechnoTheme.mp3');
-    this.load.audio('shot', 'audio/layzer.mp3');
-    this.load.audio('punch', 'audio/punch_tight.mp3'); // HeavyPunch2 without its lead-in
-    this.load.audio('step', 'audio/step_tight.mp3'); // step.mp3 without its silence and scuff
-    for (const n of ['1', '2', '3', 'fight']) this.load.audio(`narrator-${n}`, `audio/narrator_${n}.mp3`);
+    // Original music and sounds (audio/Sounds.ts lists every sound).
+    loadRecordedSounds(this.load);
   }
 
   async create(): Promise<void> {
@@ -74,14 +69,7 @@ export class BootScene extends Phaser.Scene {
     for (const tile of map.tileImages.values()) this.load.image(`tile:${tile.source}`, `maps/${tile.source}`);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.makeTextures();
-      if (this.sound instanceof Phaser.Sound.WebAudioSoundManager) {
-        this.cache.audio.add('boom', sciFiExplosionBuffer(this.sound.context));
-        this.cache.audio.add('orb-bounce', crystalBounceBuffer(this.sound.context));
-        this.cache.audio.add('orb-pickup', pickupChimeBuffer(this.sound.context));
-        this.cache.audio.add('orb-heal', healChimeBuffer(this.sound.context));
-        // Footsteps: soft metal boot steps, three variants (replacing step.mp3, too loud and scuffy).
-        for (let v = 0; v < 3; v++) this.cache.audio.add(`step-${v}`, metalStepBuffer(this.sound.context, v));
-      }
+      makeSynthSounds(this);
       void bodyFont.then(() => this.scene.start('Title'));
     });
     this.load.start();

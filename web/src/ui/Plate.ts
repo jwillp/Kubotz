@@ -4,6 +4,7 @@ import { BACKDROPS } from '../fx/Backdrops';
 import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
 import { body, heading, HeadingText, NEON } from './Type';
+import { uiSound } from '../audio/Sounds';
 
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
@@ -91,12 +92,15 @@ export class PlateButton extends Phaser.GameObjects.Container {
   readonly label: HeadingText | Phaser.GameObjects.Text;
   private selected_ = false;
   private readonly home: number;
+  /** The frame it was made on: the first selection, as the menu opens, is silent. */
+  private readonly born: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, readonly w: number, readonly h: number, text: string,
     { size = 32, bodyLabel = false }: { size?: number; bodyLabel?: boolean } = {}) {
     super(scene, x, y);
     this.home = x;
     this.glow = drawGlow(scene.add.graphics(), -w / 2, -h / 2, w, h, { cut: 16 }).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+    this.born = scene.game.loop.frame;
     this.g = scene.add.graphics();
     // A bright bar that runs across the plate when it is selected, clipped to the plate by its own geometry.
     this.sweep = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
@@ -120,6 +124,7 @@ export class PlateButton extends Phaser.GameObjects.Container {
     tweens.add({ targets: this, x: this.home + (on ? 10 : 0), duration: 120, ease: 'Quad.out' });
     this.sweep.setVisible(false);
     if (!on) { this.glow.setAlpha(0); return this; }
+    if (this.scene.game.loop.frame > this.born) uiSound(this.scene, 'move');
     // The halo flares as the button takes the selection, then breathes.
     this.glow.setAlpha(1).setScale(1.04);
     tweens.add({ targets: this.glow, scale: 1, duration: 220, ease: 'Quad.out' });
@@ -231,9 +236,10 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
 /**
  * The menu transition: two plates close from the sides onto a cyan seam,
  * `swap` runs while the screen is covered, then they open. With visual
- * effects off, `swap` runs at once.
+ * effects off, `swap` runs at once. It plays the confirm (or back) menu sound.
  */
-export function shutter(scene: Phaser.Scene, swap: () => void): void {
+export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' = 'confirm'): void {
+  uiSound(scene, sound);
   if (vfx() <= 0) { swap(); return; }
   // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
   // called from a scene's update (the scene manager defers adds made while it steps the scenes).

@@ -15,6 +15,7 @@ import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
 import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
+import { uiSound } from '../audio/Sounds';
 
 /** What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody. */
 type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF';
@@ -370,12 +371,14 @@ export class SetupScene extends Phaser.Scene {
         }
       }
     }
+    uiSound(this, 'tick');
     this.refresh();
   }
 
   private pickArena(d: number): void {
     const s = this.state;
     s.arena = (s.arena + d + ARENA_INFO.length) % ARENA_INFO.length;
+    if (d) uiSound(this, 'move');
     const { width } = this.scale;
     this.center.setTexture(arenaThumbnail(this, s.arena, CENTER_W));
     if (this.live) this.showArena();
@@ -463,6 +466,7 @@ export class SetupScene extends Phaser.Scene {
   }
 
   private setFocus(f: Focus): void {
+    if (JSON.stringify(f) !== JSON.stringify(this.focus)) uiSound(this, 'move');
     this.focus = f;
     if (f.kind === 'slot') this.lastSlot = f.slot;
     this.refresh();
@@ -501,13 +505,14 @@ export class SetupScene extends Phaser.Scene {
     const i = seats.findIndex((s) => s.device === 'OFF') >= 0 ? seats.findIndex((s) => s.device === 'OFF') : seats.findIndex((s) => s.device === 'CPU');
     if (i < 0) return;
     seats[i].device = device;
+    uiSound(this, 'confirm');
     this.setFocus({ kind: 'slot', slot: i, field: 'helmet' });
     this.taunt(i);
   }
 
   private leave(device: Device): void {
     const seat = this.state.seats.find((s) => s.device === device);
-    if (seat) { seat.device = 'OFF'; this.refresh(); }
+    if (seat) { seat.device = 'OFF'; this.refresh(); uiSound(this, 'back'); }
   }
 
   // ------------------------------------------------------------------ drawing
@@ -626,6 +631,6 @@ export class SetupScene extends Phaser.Scene {
   private back(): void {
     if (this.leaving) return;
     this.leaving = true;
-    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Title'); });
+    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Title'); }, 'back');
   }
 }

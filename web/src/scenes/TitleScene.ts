@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { addMusic, vfx } from '../game/Settings';
 import { hitGlitch } from '../fx/HitGlitch';
 import { footer, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
+import { uiSound } from '../audio/Sounds';
 import { heading } from '../ui/Type';
 import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
@@ -119,6 +120,7 @@ export class TitleScene extends Phaser.Scene {
     const e = ENTRIES[i];
     if (this.leaving) return;
     if (e.overlay) {
+      uiSound(this, 'confirm');
       this.scene.pause();
       this.scene.launch(e.scene, { resume: ['Title'] });
       this.scene.bringToTop(e.scene);
