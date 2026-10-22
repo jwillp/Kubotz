@@ -87,9 +87,7 @@ export class HudScene extends Phaser.Scene {
     this.bubbleLabels = this.game_.flags.map(() => this.add.text(0, 0, '', body(11, { fontStyle: '800', color: '#e9f6ff' })).setOrigin(0.5).setDepth(15));
 
     // One card per Kubot in seat order, centred along the bottom edge; the black team and the guardians have none.
-    const fighters = this.game_.fighters.filter((k) => !isBlackTeam(k) && k.role !== 'guardian');
-    const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
-    fighters.forEach((k, i) => this.cards.set(k, this.makeCard(k, left + i * (CARD_W + CARD_GAP), height - CARD_H - 10)));
+    this.syncCards();
 
     this.banner = this.add.container(width / 2, height / 2).setVisible(false).setDepth(10);
     this.bannerPlate = this.add.graphics();
@@ -147,6 +145,21 @@ export class HudScene extends Phaser.Scene {
     });
   }
 
+  /** Cards for the Kubotz that have one (not the black team, not guardians, not a defeated training CPU), centred along the bottom. */
+  private syncCards(): void {
+    const { width, height } = this.scale;
+    const trial = MODES[this.game_.mode].trial;
+    const shown = this.game_.fighters.filter((k) => !isBlackTeam(k) && k.role !== 'guardian'
+      && !(trial && k.index >= this.game_.specs.length && (k.eliminated || k.appearAt > this.game_.clock)));
+    for (const k of shown) if (!this.cards.has(k)) this.cards.set(k, this.makeCard(k, 0, height - CARD_H - 10));
+    const left = (width - shown.length * CARD_W - (shown.length - 1) * CARD_GAP) / 2;
+    for (const [k, card] of this.cards) {
+      const i = shown.indexOf(k);
+      card.container.setVisible(i >= 0);
+      if (i >= 0) card.container.x = left + i * (CARD_W + CARD_GAP);
+    }
+  }
+
   private makeCard(k: Kubotz, x: number, y: number): Card {
     const color = k.look.color;
     const c = this.add.container(x, y);
@@ -161,7 +174,8 @@ export class HudScene extends Phaser.Scene {
     const who = k.tagKey.slice('label-'.length).split(':')[0];
     const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color });
     const name = this.add.text(SLAB + 10, 8, k.name, body(15, { fontStyle: '800' }));
-    const team = this.add.text(CARD_W - 8, 10, `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(),
+    const opponent = MODES[this.game_.mode].trial && k.index >= this.game_.specs.length;
+    const team = this.add.text(CARD_W - 8, 10, opponent ? 'OPPONENT' : `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(),
       body(11, { fontStyle: '800', color: '#' + hex(color) })).setOrigin(1, 0);
     const bars = this.add.graphics();
     const kills = this.add.text(CARD_W - 8, 56, 'K.O. 0', body(13, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(1, 0.5);
@@ -194,7 +208,9 @@ export class HudScene extends Phaser.Scene {
             : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
     this.drawFlagBubbles();
-    for (const [k, card] of this.cards) this.drawCard(k, card, time);
+    // Training: each CPU coming in gets a card (its health in sight), gone once defeated.
+    if (MODES[g.mode].trial) this.syncCards();
+    for (const [k, card] of this.cards) if (card.container.visible) this.drawCard(k, card, time);
   }
 
   /** Horde: a new wave's number comes in big, like the countdown. */
@@ -235,7 +251,9 @@ export class HudScene extends Phaser.Scene {
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
     // Recharge: cube pips in the helmet colour.
-    const recharges = Math.max(this.game_.recharges, k.lives); // Horde's bonus recharges add pips
+    // Horde's bonus recharges add pips; a training CPU shows its own (one).
+    const foe = MODES[this.game_.mode].trial && k.index >= this.game_.specs.length;
+    const recharges = foe ? k.lives : Math.max(this.game_.recharges, k.lives);
     card.infinite.setVisible(!Number.isFinite(recharges));
     if (!Number.isFinite(recharges)) { card.kills.setText(`K.O. ${k.kills}`); return this.drawStatus(k, card, time, stunned); }
     const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
