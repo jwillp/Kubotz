@@ -25,7 +25,7 @@ import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import type { DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
-import { addMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
+import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
@@ -110,6 +110,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   stocks: number = Config.NB_LIVES;
   timeLimit = 0;
   private countdownStep = -1;
+  /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every robot's spawn is shown). */
+  private countdownAt = 0;
+  /** Match intro: when each robot starts its spawn, by fighter index; the spawn sound plays on each. */
+  private introAt: number[] = [];
+  private introSounded = 0;
   paused = false;
   private music?: Phaser.Sound.BaseSound;
   /** Post-match (phase 11 D): kill replays, when the match ended, humans' attack last frame (a fresh press continues). */
@@ -133,6 +138,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.paused = false;
     this.clock = 0;
     this.countdownStep = -1;
+    this.introAt = [];
+    this.introSounded = 0;
     this.recorder = new ReplayRecorder();
     this.promptShown = false;
     this.attackWasDown.clear();
@@ -166,6 +173,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
+    // Each robot forms as a hologram while the camera is on it and waits; once
+    // all are shown the countdown starts, and they materialize together during
+    // it, let go on "Fight".
+    this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
       const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
@@ -191,19 +202,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.lives = this.stocks;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
-      this.holo.start(k, 0, (x, y) => k.teleport(x, y), spawn.y);
+      // The intro: one spawn after the other, each hidden until its turn.
+      const at = i * INTRO_FOCUS_MS;
+      this.introAt.push(at);
+      k.appearAt = at;
+      this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
-    this.playSfx('holo-spawn', 0.45);
+    this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
+    // The camera starts on the first robot's spawn (updateCamera follows the intro).
     const cam = this.cameras.main;
-    const c = this.centerOfFighters();
-    this.camTarget.copy(c);
-    cam.centerOn(c.x, c.y);
-    this.camMid.set(c.x, c.y);
+    const first = this.introFocus() ?? this.centerOfFighters();
+    this.camTarget.set(first.x, first.y);
+    this.camVisibleWidth = INTRO_VIEW_WIDTH;
+    cam.centerOn(first.x, first.y - UNIT);
+    this.camMid.set(first.x, first.y - UNIT);
     this.trauma = 0;
     this.applyZoom();
     this.bonusRate = BONUS_RATES[setup.bonuses] ?? BONUS_RATES.normal;
-    this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : Config.COUNTDOWN + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
+    this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : this.startedAt + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
     this.music = addMusic(this, 'music-game', 0.28);
@@ -642,7 +659,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     let best: Kubotz | null = null;
     let bestD = Infinity;
     for (const o of this.fighters) {
-      if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge) continue;
+      if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge || o.guarding) continue; // a raised shield can't be grabbed
       const ahead = (o.x - k.x) * k.facing;
       if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
       if (ahead < bestD) { bestD = ahead; best = o; }
@@ -684,6 +701,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
     // it stops while the game is paused.
     const now = this.clock += dtMs;
+    while (this.introSounded < this.introAt.length && now >= this.introAt[this.introSounded]) {
+      this.introSounded++;
+      this.playSfx('holo-spawn', 0.45);
+    }
     this.updateCountdown(now);
     const fighting = now >= this.startedAt;
 
@@ -713,7 +734,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (k.isAlive() && k.invincible) this.impact.aura(k, 'invincibility', POWER_UPS.invincibility.color);
       if (k.isAlive() && k.shield > 0) this.impact.aura(k, 'shield', POWER_UPS.shield.color);
       // Materializing: the same motes swirl round it in the hologram's cyan.
-      if (k.isAlive() && this.holo.state(k, now)) this.impact.aura(k, 'hologram', HOLO_COLOR);
+      if (k.isAlive() && (this.holo.state(k, now)?.[0] ?? -1) >= 0) this.impact.aura(k, 'hologram', HOLO_COLOR);
       // A charging gun draws sparks into its barrel.
       if (k.isAlive() && k.charge > 0 && k.weapon.startsWith('laserGun')) {
         const m = k.muzzle();
@@ -891,7 +912,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
   private updateCountdown(now: number): void {
-    const step = Math.min(3, Math.floor(now / 1000));
+    if (now < this.countdownAt) return; // the intro is still showing the robots
+    const step = Math.min(3, Math.floor((now - this.countdownAt) / 1000));
     if (step === this.countdownStep) return;
     this.countdownStep = step;
     const word = ['3', '2', '1', 'fight'][step];
@@ -1162,10 +1184,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
+  /** Match intro: the robot whose spawn the camera is showing (its spawn point), or null once all are shown. */
+  private introFocus(): { x: number; y: number } | null {
+    const i = Math.floor(this.clock / INTRO_FOCUS_MS);
+    const k = this.fighters[i];
+    // A little low, so the projector under the robot shows above the HUD cards.
+    return this.clock < this.fighters.length * INTRO_FOCUS_MS && k ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+  }
+
   /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
   private updateCamera(dt: number): void {
     const pts = this.focusPoints();
-    if (pts.length > 0) {
+    // The intro moves faster: close on each spawn in turn, then back out to the fight.
+    const intro = this.winnerTeam === undefined && this.clock < this.countdownAt + INTRO_RETURN_MS ? INTRO_CAMERA_PACE : 1;
+    const focus = this.winnerTeam === undefined ? this.introFocus() : null;
+    if (focus) {
+      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, INTRO_VIEW_WIDTH, Math.min(1, Config.CAMERA_ZOOM_SPEED * intro * dt));
+      this.camTarget.set(focus.x, focus.y);
+    } else if (pts.length > 0) {
       const xs = pts.map((f) => f.x);
       const ys = pts.map((f) => f.y);
       const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
@@ -1173,11 +1209,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const aspect = this.scale.width / this.scale.height;
       // After the match the camera closes in on the dancing winner.
       const wanted = this.winnerTeam !== undefined ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
-      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * dt));
+      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
       this.camTarget.copy(this.centerOfFighters());
     }
     const cam = this.cameras.main;
-    const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * dt);
+    const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * intro * dt);
     const mid = this.camMid;
     mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y - UNIT, t));
     this.applyZoom();
@@ -1214,6 +1250,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.paused = !this.paused;
     uiSound(this, this.paused ? 'confirm' : 'back');
     if (this.paused) this.tweens.pauseAll(); else this.tweens.resumeAll(); // physics only steps in update()
+    duckMusic(this.music, this.paused ? PAUSE_MUSIC : 1);
     this.events.emit('pause', this.paused);
   }
 
@@ -1252,6 +1289,22 @@ const CONTINUE_DELAY = 1600;
 /** Camera shake: the largest offset (world px) and how fast trauma wears off (per second). */
 const SHAKE_MAX = 0.45 * UNIT;
 const SHAKE_DECAY = 1.8;
+
+/** The pause lowers the match music to this much of its level. */
+const PAUSE_MUSIC = 0.3;
+
+/**
+ * Match intro: the robots appear as holograms one after the other, the
+ * camera on each for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while
+ * the camera takes INTRO_RETURN_MS back out to the fight view; the robots
+ * materialize during the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how
+ * much of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much faster than in
+ * the fight the camera moves meanwhile.
+ */
+const INTRO_FOCUS_MS = 750;
+const INTRO_RETURN_MS = 600;
+const INTRO_VIEW_WIDTH = 14;
+const INTRO_CAMERA_PACE = 3;
 
 /** How long the camera keeps a newly spawned power-up ball in view. */
 const ORB_FOCUS_MS = 2000;

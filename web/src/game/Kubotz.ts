@@ -385,6 +385,8 @@ export class Kubotz implements Damageable, Teamed {
   respawnAt = 0;
   /** Materializing in the spawn hologram (fx/Hologram.ts): held in the beam, no controls, intangible, until then. */
   materializeUntil = 0;
+  /** The match intro: not shown at all (no tag either) until its spawn starts. */
+  appearAt = 0;
   eliminated = false;
   pad: PadState = emptyPad();
   /** Melee grabs: the robot this one holds, or the one holding it. */
@@ -1618,7 +1620,7 @@ export class Kubotz implements Damageable, Teamed {
     // Constant on-screen size whatever the camera zoom.
     const zoom = this.scene.cameras.main.zoom;
     const y = this.body.top - UNIT * 0.75;
-    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom);
+    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom).setAlpha(now < this.appearAt ? 0 : 1);
     // The HUD cards carry health; over the robot it shows only while low (red),
     // so close fights stay readable.
     const low = this.health <= 30;

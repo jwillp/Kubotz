@@ -149,7 +149,7 @@ export const MOVE_LIST: MoveEntry[] = [
   { group: 'Laser gun', name: 'Charged shot', keys: 'Hold O, release', pad: 'Hold A, release', desc: `Charges for up to ${GUN_CHARGE_MS / 1000} s: a big, slower bolt with strong recoil, up to ${shotDamage(1)} dmg (Mk I).`, weapon: 'laserGunMkI', steps: [clip('idle', { ms: GUN_CHARGE_MS, gather: true }), shot(1)] },
 
   // ---------------------------------------------------------------- grabs
-  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front, through guards; also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
+  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front (not a robot behind its guard); also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
   { group: 'Grab and throws', name: 'Pummel', keys: 'O while holding', pad: 'A while holding', desc: `${PUMMEL_DAMAGE} dmg a hit.`, victim: true, steps: [clip('grab'), clip('grabHold', { ms: 300 }), clip('pummel', { ms: PUMMEL_MS }), clip('pummel', { ms: PUMMEL_MS }), clip('grabHold', { ms: 300 })] },
   { group: 'Grab and throws', name: 'Forward throw', keys: 'Forward while holding', pad: '◀▶ while holding', desc: `${stats(THROWS.forward)}.`, victim: true, steps: throwSteps('forward') },
   { group: 'Grab and throws', name: 'Back throw', keys: 'Back while holding', pad: 'Back while holding', desc: `With a spin. ${stats(THROWS.back)}.`, victim: true, steps: throwSteps('back') },
