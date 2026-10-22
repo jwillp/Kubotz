@@ -136,9 +136,12 @@ export class HudScene extends Phaser.Scene {
     if (!g?.fighters) return;
     if (g.paused) this.pauseMenu.update(this.time.now);
     const time = g.clock; // the match clock stands still while paused
-    const elapsed = Math.max(0, Math.floor((time - g.startedAt) / 1000));
+    // Counts up, or down to the time limit.
+    const ms = Math.max(0, time - g.startedAt);
+    const shown = g.timeLimit ? Math.ceil(Math.max(0, g.timeLimit - ms) / 1000) : Math.floor(ms / 1000);
     if (g.winnerTeam === undefined && !g.paused) {
-      this.timer.setText(`${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`);
+      this.timer.setText(`${Math.floor(shown / 60)}:${String(shown % 60).padStart(2, '0')}`);
+      this.timer.setColor(g.timeLimit && shown <= 10 ? '#ff6a5a' : '#ffffff');
     }
     for (const [k, card] of this.cards) this.drawCard(k, card, time);
   }
@@ -164,8 +167,10 @@ export class HudScene extends Phaser.Scene {
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
     // Stock: cube pips in the helmet colour.
-    for (let s = 0; s < Config.NB_LIVES; s++) {
-      const cx = x0 + 6 + s * 16;
+    const stocks = this.game_.stocks;
+    const step = Math.min(16, (w - 70) / Math.max(1, stocks - 1));
+    for (let s = 0; s < stocks; s++) {
+      const cx = x0 + 6 + s * step;
       const pip = new Phaser.Geom.Polygon([cx, 50, cx + 6, 56, cx, 62, cx - 6, 56]);
       if (s < k.lives) b.fillStyle(k.look.color, 1).fillPoints(pip.points, true).lineStyle(1, 0xffffff, 0.55).strokePoints(pip.points, true);
       else b.lineStyle(1, 0xffffff, 0.2).strokePoints(pip.points, true);

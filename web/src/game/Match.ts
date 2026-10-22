@@ -13,7 +13,15 @@ export interface FighterSpec {
   team: number;
   /** Helmet: an index into HEADS / HEAD_FILES. */
   helmet: number;
+  /** A CPU's level, 1 to 9 (see cpuReactionMs). */
+  cpuLevel?: number;
 }
+
+/** CPU levels: the highest a CPU can be set to, and the default. */
+export const CPU_LEVELS = 9;
+export const CPU_LEVEL = 5;
+/** How long a CPU takes to react at a level: 140 ms at level 5 (the original tuning), quicker above, slower below. */
+export const cpuReactionMs = (level = CPU_LEVEL): number => Math.round(140 * 1.25 ** (CPU_LEVEL - level));
 
 /** Per-robot numbers collected during a match, shown on the results screen. */
 export interface FighterStats {
@@ -93,18 +101,26 @@ export const BONUS_RATES: Record<BonusRate, { label: string; min: number; max: n
 };
 export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
-/** What the menus (join, arena select) hand to GameScene. */
+/** What the setup screen hands to GameScene. */
 export interface MatchSetup {
   /** One per robot, in slot order (at most 4). */
   fighters: FighterSpec[];
   /** Index into ARENA_INFO / ARENAS. */
   arena: number;
   bonuses: BonusRate;
+  /** Lives per robot (default Config.NB_LIVES). */
+  stocks?: number;
+  /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
+  minutes?: number;
   /**
-   * Arena select preview: no robots, music, HUD or rules; the whole arena
+   * Setup screen preview: no robots, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
-  preview?: { x: number; y: number; width: number; height: number };
+  preview?: {
+    x: number; y: number; width: number; height: number;
+    /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */
+    inset?: { x: number; y: number; width: number; height: number };
+  };
 }
 
 /** Faction names, by team (same order as SLOT_COLORS). */
