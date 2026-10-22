@@ -139,6 +139,14 @@ export function installDevHud(game: Phaser.Game): void {
     const before = g.setup;
     const d = g.debugState;
     const was = { frozen: d.frozen, on: d.on, show: { ...d.show }, timeScale: d.timeScale };
+    // The same arena rebuilt: the players' Kubotz stay where they are (no respawn, no spawn sound).
+    const keepKubotz = g.arena === index
+      ? g.fighters.filter((k) => !k.home && k.isAlive()).length === g.setup.fighters.length
+        ? g.fighters.filter((k) => !k.home).map((k) => ({ x: k.body.x, y: k.body.y, facing: k.facing as 1 | -1, health: k.health, lives: k.lives }))
+        : undefined
+      : undefined;
+    // Kept Kubotz only need a frame or two drawn; new ones (frozen) a moment to beam in.
+    const kept = !!keepKubotz;
     const ready = () => {
       if (g.setup === before || !g.sys.isActive()) return;
       game.events.off(Phaser.Core.Events.POST_STEP, ready);
@@ -150,7 +158,7 @@ export function installDevHud(game: Phaser.Game): void {
       // A different arena: while editing, show all of it (the match's camera is held, so it would stay on the first spawn).
       if (!keep && editing) { g.cameras.main.preRender(); arena().recentre(); }
       // The debug views and time as they were.
-      Object.assign(g.debugState, { frozen: was.frozen || !!opts.edit, steps: was.frozen || opts.edit ? 45 : 0, timeScale: was.timeScale, show: was.show, holdCamera: editing });
+      Object.assign(g.debugState, { frozen: was.frozen || !!opts.edit, steps: was.frozen || opts.edit ? (kept ? 2 : 45) : 0, timeScale: was.timeScale, show: was.show, holdCamera: editing });
       if (was.on) { g.debugState.on = true; g.scene.launch('Debug'); }
       bringToolsUp();
       // The panel shows the arena now playing.
@@ -158,7 +166,7 @@ export function installDevHud(game: Phaser.Game): void {
       build();
     };
     game.events.on(Phaser.Core.Events.POST_STEP, ready);
-    g.scene.restart({ ...g.setup, arena: index, editor: true });
+    g.scene.restart({ ...g.setup, arena: index, editor: true, keep: keepKubotz });
   };
 
   // Arena edits rebuild the match once a drag or a typed value is done (debounced).

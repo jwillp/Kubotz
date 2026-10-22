@@ -4,6 +4,7 @@ import { BACKDROPS, ROOMS, ROOM_H, ROOM_W, seeded } from '../fx/Backdrops';
 import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, warpExit, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
 import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
+import { Fingers } from './Fingers';
 import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type Store } from './Store';
 
 /**
@@ -62,7 +63,12 @@ export class ArenaScene extends Phaser.Scene {
     to.preRender();
   }
 
+  /** The fingers on the canvas, for pinching (see Fingers). */
+  private fingers!: Fingers;
+
   create(): void {
+    this.fingers = new Fingers(this.game);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.fingers.destroy());
     this.store = this.registry.get('store') as Store;
     this.base = this.registry.get('map') as TmxMap;
     this.room = this.add.image(0, 0, 'bg').setOrigin(0.5).setDepth(0).setAlpha(0.75);
@@ -335,10 +341,11 @@ export class ArenaScene extends Phaser.Scene {
 
   private down(p: Phaser.Input.Pointer): void {
     const cam = this.cam;
-    const a = this.pointer2Down() ? null : this.arena;
-    if (this.pointer2Down()) {
+    const two = this.fingers.two();
+    const a = two ? null : this.arena;
+    if (two) {
       if (this.drag && this.drag.kind !== 'pan') this.store.endDrag();
-      const q = this.input.pointer1; const r = this.input.pointer2;
+      const [q, r] = two;
       const mid = cam.getWorldPoint((q.x + r.x) / 2, (q.y + r.y) / 2);
       this.drag = { kind: 'pinch', dist: Math.max(1, Phaser.Math.Distance.Between(q.x, q.y, r.x, r.y)), zoom: cam.zoom, wx: mid.x, wy: mid.y };
       return;
@@ -412,7 +419,6 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private pointer2Down(): boolean { return this.input.pointer1.isDown && this.input.pointer2.isDown; }
 
   /** The tile brush: puts (or, with the eraser or the right button, clears) the tile of the cell under the pointer. */
   private paint(p: Phaser.Input.Pointer): void {
@@ -438,8 +444,9 @@ export class ArenaScene extends Phaser.Scene {
     const cam = this.cam;
     if (!d) return;
     if (d.kind === 'pinch') {
-      const q = this.input.pointer1; const r = this.input.pointer2;
-      if (!q.isDown || !r.isDown) return;
+      const two = this.fingers.two();
+      if (!two) return;
+      const [q, r] = two;
       cam.setZoom(Phaser.Math.Clamp(d.zoom * Phaser.Math.Distance.Between(q.x, q.y, r.x, r.y) / d.dist, 0.08, 4));
       cam.preRender();
       const mid = cam.getWorldPoint((q.x + r.x) / 2, (q.y + r.y) / 2);

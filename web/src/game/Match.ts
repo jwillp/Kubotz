@@ -121,6 +121,12 @@ export interface MatchSetup {
    */
   /** Started from the in-game editor: no intro, countdown or music, the robots straight in. */
   editor?: boolean;
+  /**
+   * The editor rebuilding the arena under a match: each Kubot of the specs
+   * where it was (body centre, pixels), facing, health and lives as they
+   * were, already there (no hologram, no spawn sound).
+   */
+  keep?: { x: number; y: number; facing: 1 | -1; health: number; lives: number }[];
   preview?: {
     x: number; y: number; width: number; height: number;
     /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */

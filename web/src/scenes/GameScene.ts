@@ -219,7 +219,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           ? new HumanController(this, null, spec.input, spec.pad, `P${humans}`)
           : new HumanController(this, keys, spec.input, -1, `P${humans}`);
       }
-      const spawn = this.playerSpawns[i % this.playerSpawns.length];
+      const kept = setup.editor ? setup.keep?.[i] : undefined;
+      const spawn = kept ? new Phaser.Math.Vector2(kept.x, kept.y) : this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
       k.lives = this.stocks;
@@ -227,6 +228,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
       const at = setup.editor ? 0 : i * INTRO_FOCUS_MS;
+      // The editor rebuilding the arena: the Kubot stays as it was, no hologram or spawn sound.
+      if (kept) { k.facing = kept.facing; k.health = kept.health; k.lives = kept.lives; return; }
       this.introAt.push(at);
       k.appearAt = at;
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
@@ -623,9 +626,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.lives = stocks < 0 ? Infinity : Math.max(1, stocks);
       k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
       this.fighters.push(k);
-      const at = setup.editor ? 0 : this.countdownAt;
-      k.appearAt = at;
-      this.holo.start(k, at, (x, y) => k.teleport(x, y), spot.y, this.countdownAt);
+      // In the editor's rebuilds an NPC is simply there (no hologram).
+      if (setup.editor) continue;
+      k.appearAt = this.countdownAt;
+      this.holo.start(k, this.countdownAt, (x, y) => k.teleport(x, y), spot.y, this.countdownAt);
     }
   }
 

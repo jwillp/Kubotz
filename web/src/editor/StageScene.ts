@@ -8,6 +8,7 @@ import { opaqueOutline } from '../scenes/GameScene';
 import type { SpriterData } from '../spriter/Spriter';
 import { FRAME_MS, type Store } from './Store';
 import { EventPlayer } from '../anim/ClipEvents';
+import { Fingers } from './Fingers';
 import { ParticleFx, effectFromData, type EffectDef, type ParticleHandle } from '../fx/ParticleEffect';
 
 /**
@@ -80,7 +81,12 @@ export class StageScene extends Phaser.Scene {
 
   constructor() { super('Editor'); }
 
+  /** The fingers on the canvas, for pinching (see Fingers). */
+  private fingers!: Fingers;
+
   create(): void {
+    this.fingers = new Fingers(this.game);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.fingers.destroy());
     this.store = this.registry.get('store') as Store;
     const spriter = this.registry.get('spriter') as SpriterData;
     this.rig = new Rig(spriter);
@@ -498,8 +504,9 @@ export class StageScene extends Phaser.Scene {
 
   /** Two fingers down: drop whatever the first one was doing and pinch instead. */
   private startPinch(): boolean {
-    const a = this.input.pointer1; const b = this.input.pointer2;
-    if (!a.isDown || !b.isDown) return false;
+    const two = this.fingers.two();
+    if (!two) return false;
+    const [a, b] = two;
     if (this.drag && this.drag.kind !== 'pan') this.store.endDrag();
     const cam = this.cameras.main;
     const mid = cam.getWorldPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -509,8 +516,9 @@ export class StageScene extends Phaser.Scene {
 
   /** Zooms by the fingers' spread and keeps the stage point first under them between them. */
   private pinch(d: Extract<Drag, { kind: 'pinch' }>): void {
-    const a = this.input.pointer1; const b = this.input.pointer2;
-    if (!a.isDown || !b.isDown) return;
+    const two = this.fingers.two();
+    if (!two) return;
+    const [a, b] = two;
     const cam = this.cameras.main;
     cam.setZoom(Phaser.Math.Clamp(d.zoom * Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y) / d.dist, 0.4, 6));
     cam.preRender();
