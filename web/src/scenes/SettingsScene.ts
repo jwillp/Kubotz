@@ -3,6 +3,8 @@ import { settings, updateSettings, sfxVolume, type Settings } from '../game/Sett
 import { MenuInput } from './MenuInput';
 import { drawGlow, drawPlate, drawStrip, menuScreenFx, PlateButton } from '../ui/Plate';
 import { BODY_FAMILY, heading } from '../ui/Type';
+import { uiSound } from '../audio/Sounds';
+import { toggleFullscreen } from '../ui/Fullscreen';
 
 /** What opened the settings: the scenes it paused, resumed when it closes. */
 export interface SettingsData { resume?: string[]; }
@@ -36,6 +38,7 @@ const BLUE = 0x29abe2;
 export class SettingsScene extends Phaser.Scene {
   private rows: Row[] = [];
   private back!: PlateButton;
+  private fullscreen!: PlateButton;
   private selected = 0;
   private menu!: MenuInput;
   private resume: string[] = [];
@@ -80,12 +83,24 @@ export class SettingsScene extends Phaser.Scene {
       this.draw(row);
     });
 
-    this.back = new PlateButton(this, width / 2, height / 2 + 196, 220, 48, 'Back', { size: 24, bodyLabel: true });
+    this.back = new PlateButton(this, width / 2 + 130, height / 2 + 196, 220, 48, 'Back', { size: 24, bodyLabel: true });
     let backDown = false;
     this.back.on('pointerover', () => this.select(ROWS.length));
     this.back.on('pointerdown', () => { backDown = true; });
     this.back.on('pointerup', () => { if (backDown) this.close(); });
-    this.add.text(width / 2, height / 2 + 240, '↑↓ choose · ←→ adjust · Enter / Esc back   ·   pad: D-pad or stick · A / B back', {
+    // Fullscreen (also F11 or a pad's Select anywhere); the label follows the screen.
+    this.fullscreen = new PlateButton(this, width / 2 - 130, height / 2 + 196, 220, 48, '', { size: 24, bodyLabel: true });
+    this.fullscreen.on('pointerover', () => this.select(ROWS.length + 1));
+    this.fullscreen.on('pointerdown', () => this.toggleFullscreen());
+    const label = () => (this.fullscreen.label as Phaser.GameObjects.Text).setText(this.scale.isFullscreen ? 'Windowed' : 'Fullscreen');
+    label();
+    this.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, label);
+    this.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, label);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.ENTER_FULLSCREEN, label);
+      this.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, label);
+    });
+    this.add.text(width / 2, height / 2 + 240, '↑↓ choose · ←→ adjust · Enter select · Esc back · F11 fullscreen   ·   pad: D-pad or stick · A select · B back · Select fullscreen', {
       fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '15px', color: '#cfe9ff',
     }).setOrigin(0.5);
 
@@ -95,10 +110,15 @@ export class SettingsScene extends Phaser.Scene {
 
     this.menu = new MenuInput({
       move: (dx, dy) => {
-        if (dy) this.select((this.selected + dy + ROWS.length + 1) % (ROWS.length + 1));
+        // The rows, then the button row: Fullscreen and Back side by side (left / right between them).
+        if (dy) {
+          const i = this.selected >= ROWS.length ? (dy > 0 ? 0 : ROWS.length - 1) : this.selected + dy;
+          this.select(i < 0 ? ROWS.length : i);
+        }
         else if (dx && this.rows[this.selected]) this.set(this.rows[this.selected], settings()[this.rows[this.selected].key] + dx * STEP);
+        else if (dx) this.select(dx < 0 ? ROWS.length + 1 : ROWS.length);
       },
-      confirm: () => this.close(),
+      confirm: () => (this.selected === ROWS.length + 1 ? this.toggleFullscreen() : this.close()),
       back: () => this.close(),
     }, true);
     this.select(0);
@@ -111,6 +131,7 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private select(i: number): void {
+    if (i !== this.selected && i < ROWS.length) uiSound(this, 'move');
     this.selected = i;
     this.glow.clear();
     this.rows.forEach((r, j) => {
@@ -127,6 +148,7 @@ export class SettingsScene extends Phaser.Scene {
       r.knob.setScale(j === i ? 1.15 : 1);
     });
     this.back.setSelected(i === ROWS.length);
+    this.fullscreen.setSelected(i === ROWS.length + 1);
   }
 
   private setFromPointer(row: Row, x: number): void {
@@ -143,7 +165,7 @@ export class SettingsScene extends Phaser.Scene {
       this.lastSfxAt = this.time.now;
       const key = ['punch', 'orb-pickup'].find((k) => this.cache.audio.exists(k));
       if (key) this.sound.play(key, { volume: sfxVolume(0.5) });
-    }
+    } else if (row.key !== 'sfx') uiSound(this, 'tick');
   }
 
   private draw(row: Row): void {
@@ -153,7 +175,13 @@ export class SettingsScene extends Phaser.Scene {
     row.value.setText(`${Math.round(v * 100)}%`);
   }
 
+  private toggleFullscreen(): void {
+    uiSound(this, 'confirm');
+    toggleFullscreen(this.game);
+  }
+
   private close(): void {
+    uiSound(this, 'back');
     for (const key of this.resume) this.scene.resume(key);
     this.scene.stop();
   }

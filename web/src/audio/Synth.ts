@@ -1,6 +1,6 @@
 /**
- * Small sounds made in code (Web Audio buffers): the crystal ball bounce, the
- * power-up pick-up and the heal.
+ * The sounds made in code (Web Audio buffers), as opposed to the original
+ * recordings in public/audio. Sounds.ts lists them all.
  */
 
 /** Glass partials (a struck glass sphere is inharmonic) with fast, partial-dependent decays. */
@@ -177,5 +177,111 @@ export function metalStepBuffer(ctx: BaseAudioContext, variant: number): AudioBu
     d[i] += lp * 0.09 * Math.exp(-t * 120);
   }
   reverb(d, rate, 0.18);
+  return buf;
+}
+
+// ------------------------------------------------------------------ spawn
+/** The materialize sound: a rising shimmer, crackles of scan lines and a soft lock-in tone. */
+export function holoSpawnBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 1.9), rate);
+  const d = buf.getChannelData(0);
+  let ph1 = 0; let ph2 = 0; let lp = 0;
+  for (let i = 0; i < d.length; i++) {
+    const t = i / rate;
+    // A swelling sweep with a fast warble, up through the reveal.
+    const u = Math.min(1, t / 1.2);
+    const f = 220 * Math.pow(4, u) * (1 + 0.04 * Math.sin(t * 2 * Math.PI * 31));
+    ph1 += (2 * Math.PI * f) / rate;
+    ph2 += (2 * Math.PI * f * 1.503) / rate;
+    const env = Math.min(1, t * 6) * (t < 1.25 ? 1 : Math.exp(-(t - 1.25) * 9));
+    let v = 0.12 * env * (Math.sin(ph1) + 0.45 * Math.sin(ph2));
+    // Scan-line crackle: filtered noise in short bursts.
+    lp += (Math.random() * 2 - 1 - lp) * 0.35;
+    const burst = Math.sin(t * 2 * Math.PI * 14) > 0.3 ? 1 : 0.25;
+    v += 0.07 * lp * burst * env;
+    // The lock-in: a clean ring as the hologram turns solid.
+    if (t > 1.25) v += 0.1 * Math.sin(2 * Math.PI * 1318 * (t - 1.25)) * Math.exp(-(t - 1.25) * 4) * Math.min(1, (t - 1.25) * 80);
+    d[i] = v;
+  }
+  return buf;
+}
+
+// ------------------------------------------------------------------ menus
+/** The menu sounds: a glassy tick to move, a rising chirp to confirm, a falling one to go back, a soft tick to adjust. */
+export type UiSoundKind = 'move' | 'confirm' | 'back' | 'tick';
+
+/** A short square-ish blip (a sine through a soft clip), for the digital chirps. */
+function blip(d: Float32Array, rate: number, at: number, dur: number, f: (u: number) => number, gain: number): void {
+  let phase = 0;
+  const start = Math.floor(at * rate);
+  const end = Math.min(d.length, start + Math.floor(dur * rate));
+  for (let i = start; i < end; i++) {
+    const u = (i - start) / (end - start);
+    phase += (2 * Math.PI * f(u)) / rate;
+    d[i] += gain * Math.tanh(2.2 * Math.sin(phase)) * Math.min(1, u * 40) * Math.pow(1 - u, 1.6);
+  }
+}
+
+export function uiSoundBuffer(ctx: BaseAudioContext, kind: UiSoundKind): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * (kind === 'move' || kind === 'tick' ? 0.3 : 0.6)), rate);
+  const d = buf.getChannelData(0);
+  if (kind === 'move') {
+    // A light glass tick over a tiny upward blip: the cursor landing on a plate.
+    glide(d, rate, 0, 0.04, (u) => 1150 + 500 * u, (u) => 0.14 * (1 - u) * Math.min(1, u * 60));
+    ping(d, rate, 0.004, 3136, 0.06);
+    reverb(d, rate, 0.2);
+  } else if (kind === 'tick') {
+    // Lower and duller than the move: a detent clicking as a value steps.
+    glide(d, rate, 0, 0.025, () => 760, (u) => 0.13 * (1 - u) * Math.min(1, u * 80));
+    ping(d, rate, 0.002, 1975, 0.035);
+    reverb(d, rate, 0.12);
+  } else {
+    // Two quick blips a fifth apart (up to confirm, down to go back), a short energy sweep and a fading ring.
+    const up = kind === 'confirm';
+    const [a, b] = up ? [1318.5, 1975.5] : [1174.7, 784];
+    blip(d, rate, 0, 0.06, () => a, 0.09);
+    blip(d, rate, 0.055, up ? 0.12 : 0.1, () => b, 0.09);
+    glide(d, rate, 0, 0.16, (u) => (up ? 500 * Math.pow(4, u) : 1400 * Math.pow(0.3, u)) * (1 + 0.05 * Math.sin(u * 2 * Math.PI * 18)),
+      (u) => 0.08 * Math.min(1, u * 15) * (1 - u));
+    glide(d, rate, 0.07, 0.4, () => 2 * b, (u) => 0.04 * Math.exp(-u * 6) * Math.min(1, u * 60));
+    reverb(d, rate, 0.3);
+  }
+  return buf;
+}
+
+/**
+ * Going through a portal: a rushing whoosh of noise swept through a
+ * resonant filter (the phaser of the rift), a warbling tone that rises in
+ * and drops out the other side, a soft sub thump at the crossing and a few
+ * glassy motes, in a little reverb.
+ */
+export function portalWarpBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 1.1), rate);
+  const d = buf.getChannelData(0);
+  const len = 0.55;
+  // Whoosh: noise through a state-variable band-pass whose centre sweeps up then down.
+  let low = 0; let band = 0;
+  for (let i = 0; i < Math.floor(rate * len); i++) {
+    const u = i / (rate * len);
+    const fc = 300 + 2600 * Math.sin(Math.PI * Math.pow(u, 0.8));
+    const f = 2 * Math.sin((Math.PI * fc) / rate);
+    const noise = Math.random() * 2 - 1;
+    low += f * band;
+    band += f * (noise - low - band * 0.35);
+    d[i] += band * 0.14 * Math.sin(Math.PI * u) * (u < 0.5 ? 1 : 1 - (u - 0.5) * 0.6);
+  }
+  // The warp tone: in to the crossing, then out lower, with a fast wobble.
+  glide(d, rate, 0, 0.26, (u) => 260 * Math.pow(4, u) * (1 + 0.08 * Math.sin(u * 2 * Math.PI * 14)),
+    (u) => 0.1 * Math.min(1, u * 4));
+  glide(d, rate, 0.26, 0.4, (u) => 1200 * Math.pow(0.35, u) * (1 + 0.08 * Math.sin(u * 2 * Math.PI * 10)),
+    (u) => 0.1 * (1 - u) * (1 - u));
+  // A thump as the body crosses.
+  glide(d, rate, 0.24, 0.25, (u) => 55 + 70 * Math.exp(-u * 8), (u) => 0.32 * Math.exp(-u * 7) * Math.min(1, u * 150));
+  // Motes thrown off the rim on the way out.
+  [2637, 3520, 2960, 4186].forEach((f, n) => ping(d, rate, 0.27 + n * 0.045, f, 0.03));
+  reverb(d, rate, 0.35);
   return buf;
 }

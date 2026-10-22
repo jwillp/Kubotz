@@ -268,32 +268,6 @@ export function spawnLight(x: number, feet: number, age: number): { x: number; y
   return i > 0.02 ? { x, y: feet - UNIT * 0.8, color: HOLO_COLOR, intensity: i } : null;
 }
 
-/** The materialize sound: a rising shimmer, crackles of scan lines and a soft lock-in tone. */
-export function holoSpawnBuffer(ctx: BaseAudioContext): AudioBuffer {
-  const rate = ctx.sampleRate;
-  const buf = ctx.createBuffer(1, Math.floor(rate * 1.9), rate);
-  const d = buf.getChannelData(0);
-  let ph1 = 0; let ph2 = 0; let lp = 0;
-  for (let i = 0; i < d.length; i++) {
-    const t = i / rate;
-    // A swelling sweep with a fast warble, up through the reveal.
-    const u = Math.min(1, t / 1.2);
-    const f = 220 * Math.pow(4, u) * (1 + 0.04 * Math.sin(t * 2 * Math.PI * 31));
-    ph1 += (2 * Math.PI * f) / rate;
-    ph2 += (2 * Math.PI * f * 1.503) / rate;
-    const env = Math.min(1, t * 6) * (t < 1.25 ? 1 : Math.exp(-(t - 1.25) * 9));
-    let v = 0.12 * env * (Math.sin(ph1) + 0.45 * Math.sin(ph2));
-    // Scan-line crackle: filtered noise in short bursts.
-    lp += (Math.random() * 2 - 1 - lp) * 0.35;
-    const burst = Math.sin(t * 2 * Math.PI * 14) > 0.3 ? 1 : 0.25;
-    v += 0.07 * lp * burst * env;
-    // The lock-in: a clean ring as the hologram turns solid.
-    if (t > 1.25) v += 0.1 * Math.sin(2 * Math.PI * 1318 * (t - 1.25)) * Math.exp(-(t - 1.25) * 4) * Math.min(1, (t - 1.25) * 80);
-    d[i] = v;
-  }
-  return buf;
-}
-
 // ------------------------------------------------------------------ in game
 
 interface Spawning { at: number; x: number; feet: number }
@@ -319,8 +293,6 @@ export class HoloSpawns {
     // The beam over the robot, the projector in front of its feet.
     this.add = scene.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
     this.g = scene.add.graphics().setDepth(10.5);
-    const sound = scene.sound as Phaser.Sound.WebAudioSoundManager;
-    if (sound.context && !scene.cache.audio.exists('holo-spawn')) scene.cache.audio.add('holo-spawn', holoSpawnBuffer(sound.context));
   }
 
   /** Starts a robot's spawn now: it is raised by HOVER and held until RELEASE_AT. */
