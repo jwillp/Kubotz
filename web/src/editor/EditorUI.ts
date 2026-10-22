@@ -18,7 +18,7 @@ import { Timeline } from './Timeline';
 import { host, store } from './Host';
 
 /**
- * Kubotz Editor: tune the robots' clips and moves (poses, hit circles,
+ * Kubotz Editor: tune the Kubotz' clips and moves (poses, hit circles,
  * active frames, launches, particle events), the particle effects and the
  * arenas, then save them back to src/data. It runs on a page of its own
  * (editor.html, `npm run editor`) or inside the game (dev builds: the
@@ -42,8 +42,12 @@ const round = (v: number, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
 
 // ------------------------------------------------------------------ layout
 const status = h('span', { cls: 'status' });
-const saveBtn = h('button', { cls: 'btn primary', textContent: 'Save', title: 'Writes the changed files (Ctrl+S). On the published page it downloads them instead.' });
-/** The editor's tabs: robot animation and moves, particle effects, and arenas (next). */
+// Inside the game Save keeps the edits in this browser (the game plays them) and Export writes the files; on editor.html Save writes the files.
+const saveBtn = h('button', { cls: 'btn primary', textContent: 'Save', title: host.inGame
+  ? 'Keeps your edits in this browser (Ctrl+S): the game plays them, and they are still here after a reload. Export writes them to files.'
+  : 'Writes the changed files (Ctrl+S). On the published page it downloads them instead.' });
+const exportBtn = h('button', { cls: 'btn', textContent: 'Export', title: 'Writes the changed data files (src/data): on the dev server straight into the project, on a published page as downloads.', onclick: () => void exportFiles() });
+/** The editor's tabs: Kubot animation and moves, particle effects, and arenas (next). */
 type Tab = 'anim' | 'particles' | 'arena';
 let tab: Tab = 'anim';
 const tabBtn = (t: Tab, label: string, help: string) => { const b = h('button', { textContent: label, title: help, onclick: () => setTab(t) }); b.dataset.tab = t; return b; };
@@ -64,6 +68,7 @@ const header = h('header', {},
   ...(host.inGame
     ? [h('button', { cls: 'btn solid', textContent: 'Back to title', title: 'Leaves the editor. Unsaved changes stay in the game (matches play them) until you reload.', onclick: () => host.close?.() })]
     : [h('button', { cls: 'btn solid', textContent: 'Test in game', title: 'Opens the game in a new tab with these changes, saved or not', onclick: () => testInGame() })]),
+  ...(host.inGame ? [exportBtn] : []),
   saveBtn,
 );
 saveBtn.onclick = () => void save();
@@ -73,7 +78,7 @@ const list = h('div');
 const left = h('aside', { cls: 'left' }, search, list);
 
 // Inside the game the stage is a window onto the game's canvas, under the panels.
-const stageEl = h('div', { id: 'stage' }, host.inGame ? '' : h('div', { cls: 'splash', textContent: 'Loading the robot…' }));
+const stageEl = h('div', { id: 'stage' }, host.inGame ? '' : h('div', { cls: 'splash', textContent: 'Loading the Kubot…' }));
 const readout = h('div', { cls: 'readout' });
 const check = (label: string, help: string, on: boolean, fn: (v: boolean) => void) => {
   const box = h('input', { type: 'checkbox', checked: on });
@@ -140,7 +145,7 @@ const game = host.game ?? new Phaser.Game({
           stageEl.querySelector('.splash')?.remove();
           stageEl.append(readout);
           buildToolbar();
-          // A tab picked while the robot was loading.
+          // A tab picked while the Kubot was loading.
           if (tab === 'arena') { game.scene.sleep('Editor'); game.scene.run('Arena'); }
           stage.mode = tab === 'particles' ? 'particles' : 'anim';
           store.emit();
@@ -164,8 +169,8 @@ function buildToolbar(): void {
   if (tab === 'particles') {
     const p = stage!.preview;
     toolbar.replaceChildren(
-      check('Mirrored', 'Plays the effect mirrored, the way a robot facing left plays it (effects are made facing right).', p.flip, (on) => (p.flip = on)),
-      check('Robot for scale', 'Shows a faint robot beside the effect, to judge its size.', p.robot, (on) => (p.robot = on)),
+      check('Mirrored', 'Plays the effect mirrored, the way a Kubot facing left plays it (effects are made facing right).', p.flip, (on) => (p.flip = on)),
+      check('Kubot for scale', 'Shows a faint Kubot beside the effect, to judge its size.', p.kubot, (on) => (p.kubot = on)),
       h('button', { cls: 'btn', textContent: 'Recentre', title: 'Frames the stage again at the default zoom.', onclick: () => stage?.recentre() }),
       h('span', { cls: 'hint', textContent: 'The effect plays over and over from the cross · pinch or wheel to zoom · drag to pan' }),
     );
@@ -173,10 +178,10 @@ function buildToolbar(): void {
   }
   toolbar.replaceChildren(
     check('Handles', 'Shows the orange bone knobs: drag one to turn that bone and the bones it carries (hold Shift to turn it alone). Drag the white square on the hips to move the whole body.', v.handles, (on) => (v.handles = on)),
-    check('Onion skin', 'Shows faint white copies of the robot at the key before and the key after this frame, so you can see where the motion comes from and goes to.', v.onion, (on) => (v.onion = on)),
-    check('Target dummy', 'A blue robot standing in front, with its hurtbox. It flashes white when an active hit circle touches it. Drag it to move it closer or further.', v.dummy, (on) => (v.dummy = on)),
-    labelledSelect('Helmet', 'Which helmet the robot wears on the stage (only for looking; every robot plays the same moves).', ['flame', 'terminator', 'big buff', 'skull'], (i) => (v.helmet = i)),
-    h('button', { cls: 'btn', textContent: 'Recentre', title: 'Frames the robot again at the default zoom.', onclick: () => stage?.recentre() }),
+    check('Onion skin', 'Shows faint white copies of the Kubot at the key before and the key after this frame, so you can see where the motion comes from and goes to.', v.onion, (on) => (v.onion = on)),
+    check('Target dummy', 'A blue Kubot standing in front, with its hurtbox. It flashes white when an active hit circle touches it. Drag it to move it closer or further.', v.dummy, (on) => (v.dummy = on)),
+    labelledSelect('Helmet', 'Which helmet the Kubot wears on the stage (only for looking; every Kubot plays the same moves).', ['flame', 'terminator', 'big buff', 'skull'], (i) => (v.helmet = i)),
+    h('button', { cls: 'btn', textContent: 'Recentre', title: 'Frames the Kubot again at the default zoom.', onclick: () => stage?.recentre() }),
     h('span', { cls: 'hint', textContent: 'Drag knobs to pose · red dots move hit points · pinch or wheel to zoom · drag empty space or two fingers to pan' }),
   );
 }
@@ -213,6 +218,11 @@ function testInGame(): void {
 }
 
 async function save(): Promise<void> {
+  if (host.inGame) { status.textContent = store.keep(); return; }
+  await exportFiles();
+}
+
+async function exportFiles(): Promise<void> {
   try { status.textContent = await store.save(); } catch (e) {
     const code = (e as { code?: string }).code;
     status.textContent = code === 'declined' ? 'Not saved' : `Save failed: ${(e as Error).message ?? String(e)}`;
@@ -309,11 +319,11 @@ const setOpt = <T extends object, K extends keyof T>(o: T, k: K, v: T[K] | undef
 /** The pose fields, by body part: what each bone is, and its key in the data. */
 const POSE_GROUPS: { id: string; title: string; fields: [keyof Pose, string, string][] }[] = [
   { id: 'pose-body', title: 'Body', fields: [
-    ['x', 'forward', 'Moves the whole robot forwards (pixels of the art). On a root-motion clip the body really travels by it in the game.'],
-    ['y', 'up', 'Lifts the whole robot (pixels of the art). With "feet on the ground", this is a hop above the floor.'],
-    ['tilt', 'lean', 'Leans the whole robot forwards round its feet (degrees).'],
-    ['spin', 'flip', 'Turns the whole robot round the middle of its body (degrees, positive is a forward flip).'],
-    ['yaw', 'turn', 'Turns the robot round the vertical axis (degrees), for spins.'],
+    ['x', 'forward', 'Moves the whole Kubot forwards (pixels of the art). On a root-motion clip the body really travels by it in the game.'],
+    ['y', 'up', 'Lifts the whole Kubot (pixels of the art). With "feet on the ground", this is a hop above the floor.'],
+    ['tilt', 'lean', 'Leans the whole Kubot forwards round its feet (degrees).'],
+    ['spin', 'flip', 'Turns the whole Kubot round the middle of its body (degrees, positive is a forward flip).'],
+    ['yaw', 'turn', 'Turns the Kubot round the vertical axis (degrees), for spins.'],
     ['body', 'hips', 'Direction of the hips bone (degrees, facing right: 0 forwards, 90 up). Its children (torso and thighs) follow it on the stage.'],
   ] },
   { id: 'pose-top', title: 'Torso and head', fields: [
@@ -356,10 +366,10 @@ function buildInspector(): void {
     const name = s.sel.move!.table === 'combo' || s.sel.move!.table === 'swordCombo' ? `${s.sel.move!.table === 'combo' ? 'jab' : 'sword jab'} ${Number(s.sel.move!.key) + 1}` : s.sel.move!.key;
     out.push(h('div', { cls: 'inspector-title', textContent: `Move · ${name}` }));
     out.push(section('hit', 'Hit', [grid(2,
-      num('Damage %', 'Damage dealt to the robot that is hit.', () => s.move()!.damage, (v) => editMove((mm) => { mm.damage = v ?? 0; })),
-      num('Knockback', 'How hard the hit sends the robot flying (units per second, before damage makes it grow).', () => s.move()!.launch.knockback, (v) => editMove((mm) => { mm.launch.knockback = v ?? 0; })),
-      num('Launch angle °', 'Direction the robot is sent: 0 straight forwards, 90 straight up, negative angles spike downwards. Shown as the red arrow on the stage.', () => s.move()!.launch.angle, (v) => editMove((mm) => { mm.launch.angle = v ?? 0; })),
-      num('Hitstun ms', 'How long the hit robot cannot act. Leave empty to work it out from the knockback; a short fixed stun lets combo hits link.', () => s.move()!.launch.stun, (v) => editMove((mm) => setOpt(mm.launch, 'stun', v)), { placeholder: 'from knockback' }),
+      num('Damage %', 'Damage dealt to the Kubot that is hit.', () => s.move()!.damage, (v) => editMove((mm) => { mm.damage = v ?? 0; })),
+      num('Knockback', 'How hard the hit sends the Kubot flying (units per second, before damage makes it grow).', () => s.move()!.launch.knockback, (v) => editMove((mm) => { mm.launch.knockback = v ?? 0; })),
+      num('Launch angle °', 'Direction the Kubot is sent: 0 straight forwards, 90 straight up, negative angles spike downwards. Shown as the red arrow on the stage.', () => s.move()!.launch.angle, (v) => editMove((mm) => { mm.launch.angle = v ?? 0; })),
+      num('Hitstun ms', 'How long the hit Kubot cannot act. Leave empty to work it out from the knockback; a short fixed stun lets combo hits link.', () => s.move()!.launch.stun, (v) => editMove((mm) => setOpt(mm.launch, 'stun', v)), { placeholder: 'from knockback' }),
       num('Growth', 'How much more the knockback grows with the damage the target has taken (1 = normal).', () => s.move()!.launch.growth, (v) => editMove((mm) => setOpt(mm.launch, 'growth', v)), { step: 0.1, placeholder: '1' }),
     )]));
     out.push(section('timing', 'Timing', [grid(2,
@@ -375,19 +385,19 @@ function buildInspector(): void {
       ),
       h('div', { cls: 'checks' },
         flag('every point hits', 'Off: only the point furthest forward strikes (the leading fist or foot). On: every point has a circle (spins, splits).', () => !!s.move()!.all, (v) => editMove((mm) => setOpt(mm, 'all', v || undefined), false)),
-        flag('both sides', 'Hits on both sides, each robot sent away from the attacker (down smash).', () => !!s.move()!.both, (v) => editMove((mm) => setOpt(mm, 'both', v || undefined), false)),
+        flag('both sides', 'Hits on both sides, each Kubot sent away from the attacker (down smash).', () => !!s.move()!.both, (v) => editMove((mm) => setOpt(mm, 'both', v || undefined), false)),
         flag('behind', 'The strike goes backwards (back air): the point furthest back strikes and the launch goes the other way.', () => !!s.move()!.behind, (v) => editMove((mm) => setOpt(mm, 'behind', v || undefined), false)),
       ),
     ]));
     out.push(section('effects', 'Effects', [
       h('p', { cls: 'note', textContent: 'What the move shows besides the hit itself. They play for the whole move and show on the Effects row of the timeline.' }),
       h('div', { cls: 'checks' },
-        flag('afterimages', 'Leaves fading copies of the robot behind it while it moves fast.', () => !!s.move()!.ghosts, (v) => editMove((mm) => setOpt(mm, 'ghosts', v || undefined), false)),
+        flag('afterimages', 'Leaves fading copies of the Kubot behind it while it moves fast.', () => !!s.move()!.ghosts, (v) => editMove((mm) => setOpt(mm, 'ghosts', v || undefined), false)),
       ),
     ]));
     out.push(section('burst', 'Special motion', [grid(2,
-      num('Burst forward', 'Specials: speed pushed forwards (units per second) during the first part of the move. Empty keeps the robot\'s own speed.', () => s.move()!.burst?.[0] ?? undefined, (v) => editMove((mm) => { mm.burst = [v ?? null, mm.burst?.[1] ?? null]; if (mm.burst.every((b) => b === null)) delete mm.burst; })),
-      num('Burst up', 'Specials: speed pushed upwards (units per second, negative dives). Empty keeps the robot\'s own speed.', () => s.move()!.burst?.[1] ?? undefined, (v) => editMove((mm) => { mm.burst = [mm.burst?.[0] ?? null, v ?? null]; if (mm.burst.every((b) => b === null)) delete mm.burst; })),
+      num('Burst forward', 'Specials: speed pushed forwards (units per second) during the first part of the move. Empty keeps the Kubot\'s own speed.', () => s.move()!.burst?.[0] ?? undefined, (v) => editMove((mm) => { mm.burst = [v ?? null, mm.burst?.[1] ?? null]; if (mm.burst.every((b) => b === null)) delete mm.burst; })),
+      num('Burst up', 'Specials: speed pushed upwards (units per second, negative dives). Empty keeps the Kubot\'s own speed.', () => s.move()!.burst?.[1] ?? undefined, (v) => editMove((mm) => { mm.burst = [mm.burst?.[0] ?? null, v ?? null]; if (mm.burst.every((b) => b === null)) delete mm.burst; })),
       num('Sustain', 'Share of the move (0 to 1) the burst speed is held for.', () => s.move()!.sustain, (v) => editMove((mm) => setOpt(mm, 'sustain', v)), { step: 0.05, placeholder: '-' }),
     )], { closed: !m.burst }));
   }
@@ -417,12 +427,12 @@ function buildInspector(): void {
     grid(2, num('Length ms', 'The clip\'s own length. A move stretches it to its own length.', () => s.clipData.ms, (v) => s.edit('clips', (d) => { d.clips[s.sel.clip].ms = v ?? d.clips[s.sel.clip].ms; }, true))),
     h('div', { cls: 'checks' },
       flag('loops', 'Plays round and round (idle, run).', () => s.clipData.loop, (v) => s.edit('clips', (d) => { d.clips[s.sel.clip].loop = v; })),
-      flag('feet on the ground', 'Lifts the robot so its lowest boot always touches the floor; "up" then adds a hop.', () => s.clipData.planted, (v) => s.edit('clips', (d) => { d.clips[s.sel.clip].planted = v; })),
-      flag('root motion', 'The clip\'s forward motion moves the robot itself in the game, instead of only its drawing.', () => !!s.clipData.rootMotion, (v) => s.edit('clips', (d) => setOpt(d.clips[s.sel.clip], 'rootMotion', v || undefined))),
+      flag('feet on the ground', 'Lifts the Kubot so its lowest boot always touches the floor; "up" then adds a hop.', () => s.clipData.planted, (v) => s.edit('clips', (d) => { d.clips[s.sel.clip].planted = v; })),
+      flag('root motion', 'The clip\'s forward motion moves the Kubot itself in the game, instead of only its drawing.', () => !!s.clipData.rootMotion, (v) => s.edit('clips', (d) => setOpt(d.clips[s.sel.clip], 'rootMotion', v || undefined))),
     ),
   ], { closed: true }));
-  out.push(section('hurtbox', 'Hurtbox (every robot)', [grid(2,
-    num('Width units', 'Width of the blue box where a robot can be hit, centred on it (1 unit = one map tile).', () => s.docs.moves.hurtbox.width, (v) => s.edit('moves', (d) => { d.moves.hurtbox.width = v ?? 1; }, true), { step: 0.05 }),
+  out.push(section('hurtbox', 'Hurtbox (every Kubot)', [grid(2,
+    num('Width units', 'Width of the blue box where a Kubot can be hit, centred on it (1 unit = one map tile).', () => s.docs.moves.hurtbox.width, (v) => s.edit('moves', (d) => { d.moves.hurtbox.width = v ?? 1; }, true), { step: 0.05 }),
     num('Height units', 'Height of the blue box from the feet up.', () => s.docs.moves.hurtbox.height, (v) => s.edit('moves', (d) => { d.moves.hurtbox.height = v ?? 2.8; }, true), { step: 0.05 }),
   )], { closed: true }));
   out.push(section('shortcuts', 'Shortcuts and gestures', [
@@ -468,7 +478,7 @@ function particleRows(): HTMLElement[] {
       grid(2,
         pick('Effect', 'Which particle effect starts (src/data/particles).', effects, () => ev().effect, (v) => editEvent(i, (e) => { e.effect = v; })),
         num('Frame', `The frame it starts on (0 to ${f}).`, () => ev().t * f, (v) => editEvent(i, (e) => { e.t = Math.min(1, Math.max(0, (v ?? 0) / f)); }, true), { digits: 0 }),
-        pick('On', 'The body part it starts on; "feet" is the ground under the robot.', Object.entries(PARTS), () => ev().part, (v) => editEvent(i, (e) => { e.part = v; })),
+        pick('On', 'The body part it starts on; "feet" is the ground under the Kubot.', Object.entries(PARTS), () => ev().part, (v) => editEvent(i, (e) => { e.part = v; })),
       ),
       h('div', { cls: 'checks' },
         flag('follows the part', 'On: the effect keeps coming from the part as it moves (a trail). Off: it stays where it started (a burst).', () => !!ev().follow, (v) => editEvent(i, (e) => setOpt(e, 'follow', v || undefined))),
@@ -529,8 +539,13 @@ store.on(() => {
   info.textContent = m ? `${m.ms} ms · ${f} frames · startup ${Math.round(m.active[0] * f)} · active ${Math.round(m.active[0] * f)}-${Math.round(m.active[1] * f)} · endlag ${f - Math.round(m.active[1] * f)}` : `${s.clipData.ms} ms · ${f} frames${s.clipData.loop ? ' · loops' : ''}`;
   const playing = !!stage?.playing;
   if (playBtn.dataset.state !== String(playing)) { playBtn.dataset.state = String(playing); playBtn.innerHTML = svg(playing ? 'pause' : 'play'); }
-  saveBtn.classList.toggle('clean', s.dirty.size === 0);
-  saveBtn.textContent = s.dirty.size ? `Save (${[...s.dirty].join(', ')})` : 'Saved';
+  if (host.inGame) {
+    saveBtn.classList.toggle('clean', !s.unsaved);
+    saveBtn.textContent = s.unsaved ? 'Save' : 'Saved';
+  } else {
+    saveBtn.classList.toggle('clean', s.dirty.size === 0);
+    saveBtn.textContent = s.dirty.size ? `Save (${[...s.dirty].join(', ')})` : 'Saved';
+  }
 });
 
 window.addEventListener('keydown', (e) => {
@@ -561,7 +576,7 @@ function setTab(t: Tab): void {
   filesLabel.textContent = { anim: 'src/data/clips · src/data/moves', particles: 'src/data/particles', arena: 'src/data/arenas' }[t];
   filesLabel.title = { anim: 'Where Save writes: one file per clip and one per move, only the ones you changed. The game reads them too.', particles: 'Where Save writes: one file per effect.', arena: 'Where Save writes: one file per arena.' }[t];
   search.placeholder = { anim: 'Find a move or clip', particles: 'Find an effect', arena: 'Find an arena' }[t];
-  // The arena has its own stage (ArenaScene); the other tabs share the robot's.
+  // The arena has its own stage (ArenaScene); the other tabs share the Kubot's.
   if (!host.inGame && (game.scene.isActive('Editor') || game.scene.isSleeping('Editor'))) {
     if (t === 'arena') { game.scene.sleep('Editor'); game.scene.run('Arena'); } else { game.scene.sleep('Arena'); game.scene.run('Editor'); }
   }
@@ -766,7 +781,7 @@ function buildEffectInspector(): void {
 }
 
 // ------------------------------------------------------------------ inside the game
-/** Inside the game: the robot stage draws in the part of the canvas the panels leave free. */
+/** Inside the game: the Kubot stage draws in the part of the canvas the panels leave free. */
 function fitStage(): void {
   if (!host.inGame || !stage?.sys.isActive()) return;
   const c = game.canvas.getBoundingClientRect();
@@ -807,10 +822,10 @@ if (host.inGame) {
 const arenaScene = () => game.scene.getScene('Arena') as ArenaScene | null;
 const TOOLS: [ArenaTool, string, string][] = [
   ['select', 'Select', 'Pick a piece to move it (drag) or resize it (drag a white corner). Drag empty space to pan. Delete removes the picked piece.'],
-  ['walls', 'Wall', 'Drag to draw a solid block: robots stand on it and cannot pass through. The tiles are laid on it automatically.'],
-  ['platforms', 'Platform', 'Drag to draw a platform (one unit thick): robots land on it from above, jump up through it and drop down through it.'],
+  ['walls', 'Wall', 'Drag to draw a solid block: Kubotz stand on it and cannot pass through. The tiles are laid on it automatically.'],
+  ['platforms', 'Platform', 'Drag to draw a platform (one unit thick): Kubotz land on it from above, jump up through it and drop down through it.'],
   ['warps', 'Portal', 'Click to place a portal. An arena has none or two: going into one brings you out of the other (left and right).'],
-  ['spawns', 'Spawn', 'Click to place a spawn point (where a robot appears, on its feet). Up to four robots play.'],
+  ['spawns', 'Spawn', 'Click to place a spawn point (where a Kubot appears, on its feet). Up to four Kubotz play.'],
   ['bonus', 'Bonus spot', 'Click to place a spot where power-up balls drop.'],
   ['tile', 'Tile brush', 'Paints the chosen tile image on the cell under the pointer, over the automatic ones. Right-click or the eraser clears a cell.'],
   ['erase', 'Eraser', 'Clears the tile of the chosen layer on a cell, even an automatic one.'],
@@ -901,7 +916,7 @@ function arenaChecks(a: ArenaData): string[] {
   const out: string[] = [];
   const [w, h] = a.size ?? DEFAULT_SIZE;
   if (a.warps.length !== 0 && a.warps.length !== 2) out.push(`Portals work in pairs: there are ${a.warps.length}, so none of them works. Use two, or none.`);
-  if (a.spawns.length < 4) out.push(`${a.spawns.length} spawn point${a.spawns.length === 1 ? '' : 's'}: a four-robot match needs four.`);
+  if (a.spawns.length < 4) out.push(`${a.spawns.length} spawn point${a.spawns.length === 1 ? '' : 's'}: a four-Kubot match needs four.`);
   if (a.bonus.length === 0) out.push('No bonus spot: power-ups will not drop.');
   const inside = ([x, y]: [number, number]) => a.walls.some(([wx, wy, ww, wh]) => x > wx && x < wx + ww && y > wy && y <= wy + wh - 0.01);
   a.spawns.forEach((sp, i) => { if (inside(sp)) out.push(`Spawn ${i + 1} is inside a wall.`); });
@@ -957,9 +972,9 @@ function buildArenaInspector(): void {
     h('div', { cls: 'keyline' }, up, down, dup, del),
   ]));
   out.push(section('blast', 'Blast zone', [
-    h('p', { cls: 'note', textContent: 'The red dashed line: a robot that goes past it is out. Distances are in units past the map\'s edges.' }),
+    h('p', { cls: 'note', textContent: 'The red dashed line: a Kubot that goes past it is out. Distances are in units past the map\'s edges.' }),
     grid(2, ...(['Left', 'Top', 'Right', 'Bottom'] as const).map((label, i) =>
-      num(label, `How far past the map's ${label.toLowerCase()} edge a robot can go before it is out.`, () => (A().blast ?? DEFAULT_BLAST)[i], (v) => editArena((x) => { const b = [...(x.blast ?? DEFAULT_BLAST)] as [number, number, number, number]; b[i] = Math.max(0, v ?? 0); x.blast = b; })))),
+      num(label, `How far past the map's ${label.toLowerCase()} edge a Kubot can go before it is out.`, () => (A().blast ?? DEFAULT_BLAST)[i], (v) => editArena((x) => { const b = [...(x.blast ?? DEFAULT_BLAST)] as [number, number, number, number]; b[i] = Math.max(0, v ?? 0); x.blast = b; })))),
   ], { closed: true }));
 
   // The picked piece.
@@ -1013,7 +1028,7 @@ function buildArenaInspector(): void {
   filterProps();
 }
 
-// Inside the game: the robot stage joins the running game (started when the editor opens).
+// Inside the game: the Kubot stage joins the running game (started when the editor opens).
 if (host.inGame) {
   game.registry.set('store', store);
   stage = game.scene.add('Editor', StageScene, false) as StageScene;

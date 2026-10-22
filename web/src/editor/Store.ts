@@ -1,6 +1,7 @@
 import { CLIPS, loadClips, type Clip, type ClipData, type Key } from '../anim/Clips';
 import { loadMoves, type MoveData } from '../game/Kubotz';
 import { DATA_FILES, fileTexts, fromFiles, type GameData } from '../game/DataFiles';
+import { KEPT_KEY, keptDocs } from '../game/EditedData';
 import { loadArenas, type ArenaData } from '../map/Arenas';
 import { EDITED_KEY } from '../game/EditedData';
 
@@ -97,12 +98,15 @@ type Listener = () => void;
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
 export class Store {
-  docs: Docs = clone(fromFiles(DATA_FILES));
-  /** The data files as last saved (or loaded), to write only the ones that changed. */
-  private saved = fileTexts(this.docs);
+  /** The data files as last exported (or as the build has them), to write only the ones that changed. */
+  private saved = fileTexts(fromFiles(DATA_FILES));
+  /** What is being edited: the build's data, or the edits saved in this browser (keptDocs). */
+  docs: Docs = clone(keptDocs() ?? fromFiles(DATA_FILES));
+  /** Edits not saved in this browser yet (Save). */
+  unsaved = false;
   sel: Selection = { clip: 'idle', move: null, t: 0, bone: null, effect: 'hitStars', arena: 'the-foundry', piece: null };
-  /** Files changed since the last save. */
-  dirty = new Set<Kind>();
+  /** Files changed since the last export (the edits saved in this browser count). */
+  dirty = new Set<Kind>(keptDocs() ? ['clips', 'moves', 'particles', 'arenas'] : []);
   private undoStack: string[] = [];
   private redoStack: string[] = [];
   private listeners: Listener[] = [];
@@ -159,7 +163,28 @@ export class Store {
    * Changes the documents. `drag` edits (a handle being dragged) share one
    * undo step until endDrag().
    */
+  /** Save: keeps the edits in this browser (the game plays them, a reload keeps them); Export writes the files. */
+  keep(): string {
+    try { localStorage.setItem(KEPT_KEY, JSON.stringify(this.docs)); } catch { return 'Not saved: this browser keeps no data here'; }
+    this.unsaved = false;
+    this.emit();
+    return 'Saved in this browser';
+  }
+
+  /** Drops the edits saved in this browser and every unsaved one: back to the build's data. */
+  revert(): void {
+    try { localStorage.removeItem(KEPT_KEY); } catch { /* nothing kept */ }
+    this.undoStack.push(JSON.stringify(this.docs));
+    this.docs = clone(fromFiles(DATA_FILES));
+    this.unsaved = false;
+    this.dirty.clear();
+    for (const k of ['clips', 'moves', 'arenas'] as const) this.apply(k);
+    this.sel.piece = null;
+    this.emit();
+  }
+
   edit(what: Kind, fn: (d: Docs) => void, drag = false): void {
+    this.unsaved = true;
     if (!drag || !this.dragging) {
       this.undoStack.push(JSON.stringify(this.docs));
       if (this.undoStack.length > 200) this.undoStack.shift();

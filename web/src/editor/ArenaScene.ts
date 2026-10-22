@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UNIT } from '../config';
 import { BACKDROPS, ROOMS, ROOM_H, ROOM_W, seeded } from '../fx/Backdrops';
-import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
+import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, warpExit, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
 import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
 import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type Store } from './Store';
@@ -21,7 +21,8 @@ type Drag =
   | { kind: 'move'; piece: ArenaPiece; ux: number; uy: number; start: number[] }
   | { kind: 'resize'; piece: ArenaPiece; corner: number; start: Rect }
   | { kind: 'draw'; what: 'walls' | 'platforms'; ux: number; uy: number; index: number }
-  | { kind: 'paint' };
+  | { kind: 'paint' }
+  | { kind: 'exit'; index: number };
 
 export class ArenaScene extends Phaser.Scene {
   tool: ArenaTool = 'select';
@@ -180,7 +181,7 @@ export class ArenaScene extends Phaser.Scene {
     const px = (v: number) => v / z;
     const [w, h] = this.size;
     const [l, t, r, b] = a.blast ?? DEFAULT_BLAST;
-    // The blast zone: past this line a robot is out.
+    // The blast zone: past this line a Kubot is out.
     g.lineStyle(px(2), COLORS.blast, 0.85);
     this.dashed(g, -l * UNIT, -t * UNIT, (w + l + r) * UNIT, (h + t + b) * UNIT, px(12));
     if (!this.view.pieces) return;
@@ -193,10 +194,19 @@ export class ArenaScene extends Phaser.Scene {
         g.lineStyle(px(isSel(kind, i) ? 3 : 1.5), isSel(kind, i) ? COLORS.sel : c, 1).strokeRect(x * UNIT, y * UNIT, rw * UNIT, rh * UNIT);
       });
     }
-    // The two portals lead to each other.
-    if (a.warps.length === 2) {
-      const [p, q] = a.warps;
+    // Where each portal leads: a faint dotted line to its exit (a ring you can drag), or between the two of a pair.
+    g.lineStyle(px(1.5), COLORS.warps, 0.7);
+    a.warps.forEach((w, i) => {
+      const exit = warpExit(w);
+      if (!exit) return;
+      const [ex, ey] = [exit[0] * UNIT, exit[1] * UNIT];
+      this.dashedLine(g, (w[0] + w[2] / 2) * UNIT, (w[1] + w[3] / 2) * UNIT, ex, ey, px(6));
+      g.lineStyle(px(isSel('warps', i) ? 3 : 2), isSel('warps', i) ? COLORS.sel : COLORS.warps, 1).strokeCircle(ex, ey, px(9));
       g.lineStyle(px(1.5), COLORS.warps, 0.7);
+    });
+    const pair = a.warps.filter((w) => !warpExit(w));
+    if (pair.length === 2 && a.warps.length === 2) {
+      const [p, q] = pair;
       this.dashedLine(g, (p[0] + p[2] / 2) * UNIT, (p[1] + p[3] / 2) * UNIT, (q[0] + q[2] / 2) * UNIT, (q[1] + q[3] / 2) * UNIT, px(10));
     }
     a.spawns.forEach(([x, y], i) => {
@@ -244,6 +254,52 @@ export class ArenaScene extends Phaser.Scene {
 
   private corners([x, y, w, h]: Rect): [number, number][] {
     return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]].map(([cx, cy]) => [cx * UNIT, cy * UNIT]);
+  }
+
+  // ------------------------------------------------------------ the dev HUD's palette
+  /** The stage point under a page point (client pixels), or null when it is off the canvas. */
+  worldAt(clientX: number, clientY: number): { x: number; y: number } | null {
+    const r = this.game.canvas.getBoundingClientRect();
+    if (clientX < r.left || clientX > r.right || clientY < r.top || clientY > r.bottom) return null;
+    const k = this.game.scale.width / r.width;
+    this.syncCamera();
+    const p = this.cameras.main.getWorldPoint((clientX - r.left) * k, (clientY - r.top) * k);
+    return { x: p.x, y: p.y };
+  }
+
+  /** The middle of what the camera shows (units), where a palette item tapped (not dragged) lands. */
+  viewCentre(): { x: number; y: number } {
+    this.syncCamera();
+    const m = this.cameras.main.midPoint;
+    return { x: m.x, y: m.y };
+  }
+
+  /** Adds a piece dropped from the palette at a stage point (pixels), snapped to the grid, and picks it. */
+  dropAt(kind: ArenaPiece['kind'], wx: number, wy: number): void {
+    const s = this.store;
+    const a = this.arena;
+    if (!a) return;
+    const ux = Math.round(wx / UNIT); const uy = Math.round(wy / UNIT);
+    const hx = Math.round((wx / UNIT) * 2) / 2; const hy = Math.round((wy / UNIT) * 2) / 2;
+    const index = ((a[kind] as unknown[] | undefined) ?? []).length;
+    s.edit('arenas', (d) => {
+      const x = d.arenas[s.sel.arena];
+      switch (kind) {
+        case 'walls': x.walls.push([ux - 2, uy - 1, 4, 2]); break;
+        case 'platforms': x.platforms.push([ux - 3, uy, 6, 1]); break;
+        // A new portal leads a few units to its right until its exit ring is dragged somewhere.
+        case 'warps': x.warps.push([ux, uy - 2, 1, 5, ux + 4, uy + 0.5]); break;
+        case 'spawns': x.spawns.push([hx, hy]); break;
+        case 'bonus': x.bonus.push([hx, hy]); break;
+        case 'emitters': {
+          const effect = Object.keys(s.docs.particles).includes('stars') ? 'stars' : Object.keys(s.docs.particles)[0];
+          x.emitters = [...(x.emitters ?? []), { x: hx, y: hy, effect, every: 600 }];
+          break;
+        }
+        case 'npcs': x.npcs = [...(x.npcs ?? []), { x: hx, y: hy, behaviour: 'attack', level: 5 }]; break;
+      }
+    });
+    s.select({ piece: { kind, index } });
   }
 
   // ------------------------------------------------------------ input
@@ -298,8 +354,12 @@ export class ArenaScene extends Phaser.Scene {
         if (rect) {
           const r = (p.wasTouch ? 22 : 10) / cam.zoom;
           const corner = this.corners(rect).findIndex(([cx, cy]) => Math.abs(cx - p.worldX) <= r && Math.abs(cy - p.worldY) <= r);
-          if (corner >= 0) { this.drag = { kind: 'resize', piece: s.sel.piece!, corner, start: [...rect] as Rect }; return; }
+          if (corner >= 0) { this.drag = { kind: 'resize', piece: s.sel.piece!, corner, start: [...rect] as unknown as Rect }; return; }
         }
+        // A portal's exit ring: drag it to set where the portal leads.
+        const exitR = (p.wasTouch ? 22 : 12) / cam.zoom;
+        const exitOf = a.warps.findIndex((w) => { const e = warpExit(w); return !!e && Math.hypot(e[0] * UNIT - p.worldX, e[1] * UNIT - p.worldY) <= exitR; });
+        if (exitOf >= 0) { s.select({ piece: { kind: 'warps', index: exitOf } }); this.drag = { kind: 'exit', index: exitOf }; return; }
         const hit = this.pieceAt(p.worldX, p.worldY, p.wasTouch);
         if (!hit) { s.select({ piece: null }); pan(); return; }
         s.select({ piece: hit });
@@ -410,7 +470,13 @@ export class ArenaScene extends Phaser.Scene {
       if (d.corner === 0 || d.corner === 3) x1 = Math.min(ux, x2 - 1); else x2 = Math.max(ux, x1 + 1);
       if (d.corner === 0 || d.corner === 1) y1 = Math.min(uy, y2 - 1); else y2 = Math.max(uy, y1 + 1);
       if (d.piece.kind === 'platforms') y2 = y1 + 1; // platforms are one unit thick
-      s.edit('arenas', (docs) => { (docs.arenas[id][d.piece.kind as 'walls'] as Rect[])[d.piece.index] = [x1, y1, x2 - x1, y2 - y1]; }, true);
+      // A portal keeps its exit.
+      s.edit('arenas', (docs) => { (docs.arenas[id][d.piece.kind as 'walls'] as number[][])[d.piece.index] = [x1, y1, x2 - x1, y2 - y1, ...d.start.slice(4)]; }, true);
+      return;
+    }
+    if (d.kind === 'exit') {
+      const [hx, hy] = this.unit(p, 0.5);
+      s.edit('arenas', (docs) => { const w = docs.arenas[id].warps[d.index]; docs.arenas[id].warps[d.index] = [w[0], w[1], w[2], w[3], hx, hy]; }, true);
       return;
     }
     if (d.kind === 'draw') {

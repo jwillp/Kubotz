@@ -15,7 +15,7 @@ import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM } from '../map/Arenas';
+import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM, warpExit } from '../map/Arenas';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -82,6 +82,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
+  /** Where each portal leads (pixels; null: to the other one of a pair), from the arena file. */
+  private warpExits: (Phaser.Math.Vector2 | null)[] = [];
+  /** Things just sent through a portal, until when they cannot take one again (no ping-pong between an exit and a portal). */
+  private warpedUntil = new WeakMap<object, number>();
+  /** The last frame's time step (s), to tell what a fast bolt crossed. */
+  private lastDt = 1 / 60;
   private portals!: PortalFx;
   /** The spawn holograms (match start, respawns). */
   private holo!: HoloSpawns;
@@ -408,6 +414,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
+    this.warpExits = this.warpZones.map((_, i) => {
+      const w = ARENAS[this.arena]?.warps[i];
+      const exit = w ? warpExit(w) : null;
+      return exit ? new Phaser.Math.Vector2(exit[0] * UNIT, exit[1] * UNIT) : null;
+    });
     // A lit edge along the top of every block, like the 3D version's glowing rims.
     const mood = backdropOf(this.arena);
     const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
@@ -602,12 +613,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         powerUpPositions: () => [],
         now: () => this.clock,
         nav: this.nav,
-      }, cpuReactionMs(5));
+      }, cpuReactionMs(n.level ?? 5));
       controller.behaviour = n.behaviour;
       const k = new Kubotz(this, this.fighters.length, controller, NPC_COLOR, rig, spot.x, spot.y, this, this.physicsWorld, { team: NPC_TEAM, helmet: n.helmet ?? 3 });
       controller.agent = k;
       k.home = { x: spot.x, y: spot.y };
-      k.lives = Infinity;
+      // Back at its spot after each K.O., or gone after one (it never counts to win either way).
+      k.lives = n.respawn === false ? 1 : Infinity;
       k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
       this.fighters.push(k);
       const at = setup.editor ? 0 : this.countdownAt;
@@ -775,6 +787,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       dtMs = 1000 / 60;
     }
     const dt = dtMs / 1000;
+    this.lastDt = dt;
     // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
     // it stops while the game is paused.
     const now = this.clock += dtMs;
@@ -1146,23 +1159,47 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         continue;
       }
       // A robot going through makes the rift's whoosh (in replays too: playSfx records it).
-      this.warp(k.x, k.y, k.body.vx, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
+      this.warp(k, k.x, k.y, k.body.vx, k.body.vy, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
     }
     // Everything else that moves goes through the portals too: laser bolts,
     // power-up balls and debris (anything with a position, a velocity and a move).
-    const movers: { x: number; y: number; vx: number; teleport: (x: number, y: number) => void }[] = [
-      ...this.bullets.filter((b) => !b.dead),
-      ...this.orbs.map((o) => ({ x: o.x, y: o.y, vx: o.body.vx, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
-      ...this.debris.bodies.map((d) => ({ x: d.x, y: d.y, vx: d.vx, teleport: (x: number, y: number) => d.setPosition(x, y) })),
+    const movers: { key: object; x: number; y: number; vx: number; vy: number; teleport: (x: number, y: number) => void }[] = [
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ key: b, x: b.x, y: b.y, vx: b.vx, vy: b.vy, teleport: (x: number, y: number) => b.teleport(x, y) })),
+      ...this.orbs.map((o) => ({ key: o, x: o.x, y: o.y, vx: o.body.vx, vy: o.body.vy ?? 0, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
+      ...this.debris.bodies.map((d) => ({ key: d, x: d.x, y: d.y, vx: d.vx, vy: d.vy ?? 0, teleport: (x: number, y: number) => d.setPosition(x, y) })),
     ];
-    for (const m of movers) this.warp(m.x, m.y, m.vx, (x, y) => m.teleport(x, y));
+    for (const m of movers) this.warp(m.key, m.x, m.y, m.vx, m.vy, (x, y) => m.teleport(x, y));
   }
 
-  private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
-    if (this.warpZones.length !== 2) return;
-    const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
-    // "Past the zone's inner edge" rather than "inside it", so fast bullets
-    // cannot skip over a 1-unit-wide portal between two frames.
+  /**
+   * Portals. A portal with an exit (the arena file) sends what crosses into
+   * it out at its exit point, at the same height in the lane and the same
+   * speed. Two portals without exits lead to each other: "past the zone's
+   * inner edge" rather than "inside it", so fast bullets cannot skip over a
+   * 1-unit-wide portal between two frames.
+   */
+  private warp(key: object, x: number, y: number, vx: number, vy: number, teleport: (x: number, y: number) => void): void {
+    const zones = this.warpZones;
+    if (zones.length === 0 || (this.warpedUntil.get(key) ?? 0) > this.clock) return;
+    const sent = (from: Phaser.Geom.Rectangle, to: Phaser.Math.Vector2 | null, tx: number, ty: number) => {
+      teleport(tx, ty);
+      this.warpedUntil.set(key, this.clock + 250);
+      this.portals.burst(from.centerX, y, this.clock);
+      if (to) this.portals.burst(tx, ty, this.clock);
+    };
+    // Portals with their own exit: what moved into one this frame (the segment from where it was).
+    const line = new Phaser.Geom.Line(x - vx * this.lastDt, y - vy * this.lastDt, x, y);
+    for (let i = 0; i < zones.length; i++) {
+      const exit = this.warpExits[i];
+      const z = zones[i];
+      if (!exit || !(z.contains(x, y) || Phaser.Geom.Intersects.LineToRectangle(line, z))) continue;
+      sent(z, exit, exit.x, exit.y + (y - z.centerY));
+      return;
+    }
+    // A pair without exits.
+    const pair = zones.filter((_, i) => !this.warpExits[i]);
+    if (pair.length !== 2 || zones.length !== 2) return;
+    const [a, b] = pair[0].x < pair[1].x ? pair : [pair[1], pair[0]];
     const inLane = (z: Phaser.Geom.Rectangle) => y >= z.top && y <= z.bottom;
     if (vx < 0 && x < a.right && inLane(a)) {
       teleport(b.x - UNIT, y);

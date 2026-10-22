@@ -33,3 +33,14 @@
 .dev-errors pre { margin: 0; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; user-select: text; }
 .dev-errors button { position: absolute; right: 6px; top: 4px; border: 0; background: none; color: #ffd6d6; font: 16px sans-serif; cursor: pointer; }
 #game { position: relative; }
+.dev-top { position: sticky; top: -10px; z-index: 2; margin: -10px -10px 0; padding: 10px; background: rgba(16, 20, 26, 0.98); border-bottom: 1px solid #262c36; display: flex; flex-direction: column; gap: 6px; }
+.dev-top .dev-row { margin-top: 0; }
+.dev-hud .btn.on { border-color: #ffb547; color: #ffb547; }
+.dev-arena { align-items: flex-end; }
+.dev-arena .dev-field { flex: 1; min-width: 0; }
+.dev-palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.dev-element { padding: 8px 4px; text-align: center; border-radius: 6px; border: 1px solid #333b48; background: #1a2029; cursor: grab; user-select: none; touch-action: none; font-size: 12px; }
+.dev-element:hover { border-color: #ffb547; }
+.dev-walls { border-left: 4px solid #8e99a8; } .dev-platforms { border-left: 4px solid #3fb8a6; } .dev-warps { border-left: 4px solid #a06eff; }
+.dev-spawns { border-left: 4px solid #4aa3ff; } .dev-bonus { border-left: 4px solid #ffd166; } .dev-emitters { border-left: 4px solid #ff7ad9; } .dev-npcs { border-left: 4px solid #000; }
+.dev-ghost { position: absolute; z-index: 70; transform: translate(-50%, -120%); padding: 4px 8px; border-radius: 5px; background: #ffb547; color: #1a1205; font: 700 12px 'Exo 2', system-ui, sans-serif; pointer-events: none; }

@@ -11,6 +11,16 @@ import { DATA_FILES, fromFiles } from '../game/DataFiles';
 
 export type Rect = [x: number, y: number, w: number, h: number];
 
+/**
+ * A portal: its rectangle, and where it leads (the exit point, units: where a
+ * robot's middle comes out, keeping its speed). Without an exit, two portals
+ * lead to each other (the left one out in front of the right one and back).
+ */
+export type Warp = [x: number, y: number, w: number, h: number, exitX?: number, exitY?: number];
+
+/** Where a portal leads (units), or null when it has no exit of its own. */
+export const warpExit = (w: Warp): [number, number] | null => (w.length >= 6 ? [w[4]!, w[5]!] : null);
+
 /** A tile painted over the automatic ones: layer, cell (tiles sit on their cell's bottom edge) and image; '' erases. */
 export type TilePaint = [layer: 'fades' | 'blocks' | 'platforms', x: number, y: number, source: string];
 
@@ -24,8 +34,8 @@ export interface ArenaDef {
   walls: Rect[];
   /** Drop-through platforms. */
   platforms: Rect[];
-  /** Portals: none, or two that lead to each other (the left one's robots come out of the right one). */
-  warps: Rect[];
+  /** Portals (see Warp): each leads to its exit point, or two without exits lead to each other. */
+  warps: Warp[];
   /** Feet positions. */
   spawns: [x: number, y: number][];
   /** Centres. */
@@ -44,8 +54,13 @@ export interface ArenaDef {
 export interface MapEmitter { x: number; y: number; effect: string; every?: number; flip?: boolean }
 
 export type NpcBehaviour = 'attack' | 'flee' | 'idle';
-/** An NPC: where its feet are (units), what it does (attack the nearest robot, keep away from robots, stand still) and its helmet (HEADS index). */
-export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; helmet?: number }
+/**
+ * An NPC: where its feet are (units), what it does (attack the nearest
+ * robot, keep away from robots, stand still), how good it is (CPU level 1
+ * to 9, default 5), whether it comes back after a K.O. (default yes) and its
+ * helmet (HEADS index).
+ */
+export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; level?: number; respawn?: boolean; helmet?: number }
 
 /** The NPCs' team and colour: one team for every map NPC, hostile to the players. */
 export const NPC_TEAM = 99;

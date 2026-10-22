@@ -6,6 +6,24 @@ import { ARENA_IDS, loadArenas } from '../map/Arenas';
 
 /** Where the editor leaves its data for "Test in game". */
 export const EDITED_KEY = 'kubotz-editor-test';
+/** Where the dev tools' Save keeps the edits in this browser (dev builds). */
+export const KEPT_KEY = 'kubotz-dev-saved';
+
+/** The edits saved in this browser by the dev tools' Save, if any (dev builds only). */
+export function keptDocs(): GameData | null {
+  if (!__EDITOR__) return null;
+  try { return JSON.parse(localStorage.getItem(KEPT_KEY) ?? 'null') as GameData | null; } catch { return null; }
+}
+
+/** Dev builds: plays the edits saved in this browser (before the game boots, so the particle effects are in too). */
+export function useKeptEdits(): void {
+  const docs = keptDocs();
+  if (!docs) return;
+  loadClips(docs.clips);
+  loadMoves(docs.moves);
+  if (docs.arenas) loadArenas(docs.arenas);
+  editedParticles = docs.particles ?? null;
+}
 
 /** The editor's particle effects while testing (BootScene plays them instead of src/data's). */
 export let editedParticles: Record<string, EffectData> | null = null;

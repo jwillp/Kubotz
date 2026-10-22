@@ -12,9 +12,10 @@ import { ControlsScene } from './scenes/ControlsScene';
 import { ResultsScene } from './scenes/ResultsScene';
 import { ShutterScene } from './ui/Plate';
 import { installFullscreen } from './ui/Fullscreen';
-import { useEditedData } from './game/EditedData';
+import { useEditedData, useKeptEdits } from './game/EditedData';
 
-// Opened from the editor's "Test in game": its clips and moves instead of the saved ones.
+// Dev builds: the edits saved in this browser; opened from the editor's "Test in game": its data.
+useKeptEdits();
 useEditedData();
 
 // 1280x768 (5:3), the resolution of the original HUD mock-up and close to its 80x48 viewport.

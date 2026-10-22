@@ -67,7 +67,7 @@ export class StageScene extends Phaser.Scene {
   /** What the stage shows: the robot and its clip, or one particle effect playing over and over (Particles tab). */
   mode: 'anim' | 'particles' = 'anim';
   /** Particles tab: the effect mirrored (as a robot facing left plays it), and a robot beside it for scale. */
-  preview = { flip: false, robot: true };
+  preview = { flip: false, kubot: true };
   private previewing: { name: string; text: string; handle: ParticleHandle; again: number } | null = null;
   private grid!: Phaser.GameObjects.Graphics;
   private over!: Phaser.GameObjects.Graphics;
@@ -208,10 +208,10 @@ export class StageScene extends Phaser.Scene {
     }
     this.particles.update(dt * (this.rate || 1));
     // The robot for scale, standing to the side; nothing else of the animation stage.
-    this.robot.visible = this.preview.robot;
+    this.robot.visible = this.preview.kubot;
     for (const o of this.onions) o.visible = false;
     this.dummy.visible = false;
-    if (this.preview.robot) {
+    if (this.preview.kubot) {
       const idle = sampleClip(CLIPS.idle, 0);
       this.robot.update({ ...idle, y: (idle.y ?? 0) + this.rig.groundLift(idle) }, this.maps(null), -1.6 * UNIT, 0, 0, { lean: 0, squash: 1, alpha: 0.35, flash: false, dtMs: dt, snap: true });
     }
