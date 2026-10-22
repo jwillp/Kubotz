@@ -5,7 +5,7 @@ import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
 import { body, heading, HeadingText, NEON } from './Type';
 import { scanSound, uiSound } from '../audio/Sounds';
-import { screenScan, tvCut } from '../fx/ScreenScan';
+import { liveCameras, screenScan, tvCut } from '../fx/ScreenScan';
 
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
@@ -90,14 +90,14 @@ export class PlateButton extends Phaser.GameObjects.Container {
   private readonly g: Phaser.GameObjects.Graphics;
   private readonly glow: Phaser.GameObjects.Graphics;
   private readonly sweep: Phaser.GameObjects.Graphics;
-  readonly label: HeadingText | Phaser.GameObjects.Text;
+  readonly label: Phaser.GameObjects.Text;
   private selected_ = false;
   private readonly home: number;
   /** The frame it was made on: the first selection, as the menu opens, is silent. */
   private readonly born: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number, readonly w: number, readonly h: number, text: string,
-    { size = 32, bodyLabel = false }: { size?: number; bodyLabel?: boolean } = {}) {
+    { size = 32 }: { size?: number } = {}) {
     super(scene, x, y);
     this.home = x;
     this.glow = drawGlow(scene.add.graphics(), -w / 2, -h / 2, w, h, { cut: 16 }).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
@@ -105,9 +105,9 @@ export class PlateButton extends Phaser.GameObjects.Container {
     this.g = scene.add.graphics();
     // A bright bar that runs across the plate when it is selected, clipped to the plate by its own geometry.
     this.sweep = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.label = bodyLabel
-      ? scene.add.text(0, 0, text, body(size, { fontStyle: '800' })).setOrigin(0.5)
-      : heading(scene, 0, 2, text, size, { glow: null });
+    // The START button's lettering: Exo 2 extra bold italic, in capitals, with a drop shadow.
+    this.label = scene.add.text(2, 1, text.toUpperCase(), body(size, { fontStyle: 'italic 800' })).setOrigin(0.5)
+      .setShadow(0, 2, '#02060c', 0, false, true);
     this.add([this.glow, this.g, this.sweep, this.label]);
     this.setSize(w, h).setInteractive({ useHandCursor: true });
     scene.add.existing(this);
@@ -152,8 +152,7 @@ export class PlateButton extends Phaser.GameObjects.Container {
       drawStrip(g, -w / 2 + 1, -h / 2 + 18, -w / 2 + 1, h / 2 - 4, NEON, 4);
       drawStrip(g, w / 2 - 18, h / 2, w / 2 - 2, h / 2, NEON, 2);
     }
-    if (this.label instanceof HeadingText) this.label.setGlow(on ? NEON : null);
-    else this.label.setColor(on ? '#bfe9ff' : '#ffffff');
+    this.label.setColor(on ? '#bfe9ff' : '#ffffff');
   }
 }
 
@@ -281,8 +280,8 @@ export class ShutterScene extends Phaser.Scene {
         if (!swapped) { swapped = true; swap(); this.scene.bringToTop(); }
       } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
       cover.setAlpha(a);
-      const live = new Set<Phaser.Cameras.Scene2D.Camera>();
-      for (const s of this.game.scene.getScenes(true)) live.add(s.cameras.main);
+      const live = new Set(liveCameras(this.game));
+      live.add(this.cameras.main);
       for (const cam of cams) if (!live.has(cam)) tvCut(cam, 0, 0);
       cams.clear();
       for (const cam of live) { tvCut(cam, k, roll * 0.35 * k * k); cams.add(cam); }

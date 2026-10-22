@@ -75,7 +75,7 @@ export function uiSound(scene: Phaser.Scene, kind: UiSoundKind): void {
   scene.sound.play(key, { volume: sfxVolume(UI_VOLUME[kind]) });
 }
 
-/** The menu screen like a TV changing stations, louder for a stronger one. */
-export function scanSound(scene: Phaser.Scene, strength: number): void {
-  if (scene.cache.audio.exists('ui-scan')) scene.sound.play('ui-scan', { volume: sfxVolume(0.3 * strength) });
+/** The menu screen like a TV changing stations, louder for a stronger one (a faster `rate` makes it a short blip). */
+export function scanSound(scene: Phaser.Scene, strength: number, rate = 1): void {
+  if (scene.cache.audio.exists('ui-scan')) scene.sound.play('ui-scan', { volume: sfxVolume(0.3 * strength), rate });
 }

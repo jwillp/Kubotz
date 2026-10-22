@@ -52,6 +52,11 @@ void main () {
 }
 `;
 
+/** The cameras of every running scene but the screen change's own. */
+export function liveCameras(game: Phaser.Game): Phaser.Cameras.Scene2D.Camera[] {
+  return game.scene.getScenes(true).filter((s) => s.scene.key !== 'Shutter').flatMap((s) => s.cameras.cameras);
+}
+
 /** The scanline pass on a camera. */
 export class ScanPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
   static readonly key: string = 'ScreenScan';
@@ -74,11 +79,10 @@ export class ScanPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline
 }
 
 /**
- * Now and then the menu screen goes like an old 70s/80s TV changing
- * stations, for about a second: thick scanlines, oversaturated bleeding
- * colour, snow, the rows wobbling and the picture rolling, then it locks
- * back on. The pass sits on the menu's camera and on the backdrop's, driven
- * together; its strength follows the visual effects setting (none at 0).
+ * Now and then the menu screen catches a blip of interference, like an
+ * old 70s/80s TV: for a split second thick scanlines, oversaturated
+ * bleeding colour, snow, the rows wobbling and the picture jumping (the
+ * screen changes use the full look, ShutterScene). The pass sits on every camera on screen, driven together; its strength follows the visual effects setting (none at 0).
  */
 export function screenScan(scene: Phaser.Scene): void {
   if (scene.sys.renderer.type !== Phaser.WEBGL) return;
@@ -95,30 +99,34 @@ export function screenScan(scene: Phaser.Scene): void {
     }
     return p;
   };
-  const clear = () => {
-    for (const [cam] of passes) cam.removePostPipeline(ScanPipeline.key);
-    passes.clear();
+  const drop = (cam: Phaser.Cameras.Scene2D.Camera) => {
+    try { cam.removePostPipeline(ScanPipeline.key); } catch { /* its scene is gone */ }
+    passes.delete(cam);
   };
+  const clear = () => { for (const [cam] of passes) drop(cam); };
 
   let next = scene.time.now + Phaser.Math.Between(1500, 4000);
   let burst: { at: number; ms: number; strength: number; roll: number } | null = null;
   const onUpdate = (now: number) => {
     if (!burst && now >= next) {
-      burst = { at: now, ms: Phaser.Math.Between(800, 1300), strength: Phaser.Math.FloatBetween(0.75, 1), roll: Math.random() < 0.5 ? 1 : -1 };
+      // Just a blip of interference: far shorter and softer than a screen change.
+      burst = { at: now, ms: Phaser.Math.Between(120, 220), strength: Phaser.Math.FloatBetween(0.4, 0.6), roll: Math.random() < 0.5 ? 1 : -1 };
       next = now + burst.ms + Phaser.Math.Between(...GAP);
-      if (vfx() > 0) scanSound(scene, burst.strength);
+      if (vfx() > 0) scanSound(scene, burst.strength * 0.5, 2.6);
     }
     const u = burst ? (now - burst.at) / burst.ms : 1;
     if (u >= 1) burst = null;
-    // Quick in, hold, slower out.
-    const amount = u < 1 ? (burst?.strength ?? 0) * Math.min(1, u / 0.12, (1 - u) / 0.4) * vfx() : 0;
+    // Quick in, quick out.
+    const amount = u < 1 ? (burst?.strength ?? 0) * Math.min(1, u / 0.2, (1 - u) / 0.5) * vfx() : 0;
     if (amount <= 0) { if (passes.size) clear(); return; }
-    const backdrop = scene.scene.get('Backdrop');
-    for (const cam of [scene.cameras.main, ...(backdrop?.sys.isActive() ? [backdrop.cameras.main] : [])]) {
+    // Every camera on screen: the menu's, the room behind and an arena previewed in it.
+    const live = liveCameras(scene.game);
+    for (const [cam] of passes) if (!live.includes(cam)) drop(cam);
+    for (const cam of live) {
       const p = passOf(cam);
       p.amount = amount;
       // A roll that slips away and snaps back as the set locks on.
-      p.roll = (burst?.roll ?? 0) * 0.18 * Math.sin(Math.PI * Math.min(1, u * 1.25)) ** 2;
+      p.roll = (burst?.roll ?? 0) * 0.04 * Math.sin(Math.PI * u);
     }
   };
   scene.events.on(Phaser.Scenes.Events.UPDATE, onUpdate);

@@ -17,8 +17,11 @@ import { LOGO_RES } from './BootScene';
 import { MenuInput } from './MenuInput';
 import { uiSound } from '../audio/Sounds';
 
-/** What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody. */
-type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF';
+/**
+ * What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody.
+ * 'PAD' is a gamepad not seen yet (browsers only show a pad once a button is pressed): the next pad to press A takes the slot.
+ */
+type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 
 interface Seat { device: Device; team: number; helmet: number; level: number }
 
@@ -55,6 +58,7 @@ const deviceLabel = (s: Seat): string => {
   if (d === 'K2') return 'Keyboard (Arrows)';
   if (d === 'CPU') return `CPU Lv ${s.level}`;
   if (d === 'OFF') return 'Off';
+  if (d === 'PAD') return 'Gamepad';
   return `Gamepad ${d + 1}`;
 };
 const deviceBlurb = (s: Seat): string => {
@@ -63,6 +67,7 @@ const deviceBlurb = (s: Seat): string => {
   if (d === 'K2') return 'Arrows move · M jump\n, attack · N special';
   if (d === 'CPU') return s.level >= 7 ? 'Reads you, punishes\nevery opening.' : s.level <= 3 ? 'Takes its time.\nGood for practice.' : 'A fair fight.';
   if (typeof d === 'number') return 'Smash Ultimate layout';
+  if (d === 'PAD') return 'Press A on a gamepad\nto take this slot.';
   return 'Press attack or pad A\nto join, or pick a CPU.';
 };
 
@@ -339,6 +344,8 @@ export class SetupScene extends Phaser.Scene {
     const taken = new Set(this.state.seats.filter((_, j) => j !== slot).map((s) => s.device));
     const devs: Device[] = ['OFF', 'K1', 'K2'];
     for (const p of this.input.gamepad?.gamepads ?? []) if (p?.connected) devs.push(p.index);
+    // No free pad known yet: a slot waiting for one.
+    if (!devs.some((d) => typeof d === 'number' && !taken.has(d))) devs.push('PAD');
     const out = devs.filter((d) => d === 'OFF' || !taken.has(d)).map((device) => ({ ...seat, device }));
     for (let l = 1; l <= CPU_LEVELS; l++) out.push({ ...seat, device: 'CPU', level: l });
     return out;
@@ -422,7 +429,8 @@ export class SetupScene extends Phaser.Scene {
     this.slots[slot]?.anim.play('taunt', { restart: true, ms: 700, fade: 60 });
   }
 
-  private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF'); }
+  /** The slots in the match (a slot still waiting for a pad is not). */
+  private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF' && s.device !== 'PAD'); }
 
   private problem(): string | null {
     const seats = this.seats();
@@ -501,8 +509,9 @@ export class SetupScene extends Phaser.Scene {
   private join(device: Device): void {
     const seats = this.state.seats;
     if (seats.some((s) => s.device === device)) return;
-    // The first empty slot, else the first CPU's.
-    const i = seats.findIndex((s) => s.device === 'OFF') >= 0 ? seats.findIndex((s) => s.device === 'OFF') : seats.findIndex((s) => s.device === 'CPU');
+    // A slot waiting for a pad (for a pad), else the first empty slot, else the first CPU's.
+    const waiting = typeof device === 'number' ? seats.findIndex((s) => s.device === 'PAD') : -1;
+    const i = waiting >= 0 ? waiting : seats.findIndex((s) => s.device === 'OFF') >= 0 ? seats.findIndex((s) => s.device === 'OFF') : seats.findIndex((s) => s.device === 'CPU');
     if (i < 0) return;
     seats[i].device = device;
     uiSound(this, 'confirm');
