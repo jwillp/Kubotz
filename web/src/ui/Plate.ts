@@ -246,6 +246,9 @@ export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' 
   if (vfx() <= 0) { swap(); return; }
   // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
   // called from a scene's update (the scene manager defers adds made while it steps the scenes).
+  // A change asked for while one runs (a press during the cut) waits for it, then runs in turn.
+  const running = scene.game.scene.getScene('Shutter') as ShutterScene | null;
+  if (running?.queue(swap)) return;
   scene.game.scene.run('Shutter', { swap });
   scene.game.scene.bringToTop('Shutter');
 }
@@ -257,17 +260,30 @@ const CUT_OUT = 380;
 
 /** Runs the screen change over every scene (its own scene, so it survives the scene swap). */
 export class ShutterScene extends Phaser.Scene {
+  /** Changes asked for while this one runs, in order. */
+  private waiting: (() => void)[] = [];
+  private busy = false;
+
   constructor() { super('Shutter'); }
+
+  /** Takes a change to run after the current one; false when none is running (start the scene). */
+  queue(swap: () => void): boolean {
+    if (!this.busy) return false;
+    this.waiting.push(swap);
+    return true;
+  }
 
   create({ swap }: { swap: () => void }): void {
     const { width, height } = this.scale;
     // The screen between two stations: dark, under the snow and scanlines of the pass.
     const cover = this.add.rectangle(width / 2, height / 2, width, height, 0x05080f).setAlpha(0);
-    const roll = Math.random() < 0.5 ? 1 : -1;
+    let current = swap;
+    this.busy = true;
+    this.waiting = [];
+    let roll = Math.random() < 0.5 ? 1 : -1;
     // Time as the frames show it: a long frame (the next screen building) does not skip the lock-on.
     let t = 0;
     let swapped = false;
-    const cams = new Set<Phaser.Cameras.Scene2D.Camera>();
     scanSound(this, 0.8);
     const step = (_now: number, delta: number) => {
       t += Math.min(delta, 34);
@@ -277,20 +293,37 @@ export class ShutterScene extends Phaser.Scene {
       if (t < CUT_IN) { const u = t / CUT_IN; k = u; a = u * u; }
       else if (t < CUT_IN + CUT_HOLD || !swapped) {
         k = 1; a = 1;
-        if (!swapped) { swapped = true; swap(); this.scene.bringToTop(); }
+        if (!swapped) { swapped = true; current(); this.scene.bringToTop(); }
       } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
       cover.setAlpha(a);
-      const live = new Set(liveCameras(this.game));
-      live.add(this.cameras.main);
-      for (const cam of cams) if (!live.has(cam)) tvCut(cam, 0, 0);
-      cams.clear();
-      for (const cam of live) { tvCut(cam, k, roll * 0.35 * k * k); cams.add(cam); }
+      // Every camera on screen, every frame: cameras come and go as scenes start and stop.
+      clearTvCut(this.game);
+      for (const cam of [...liveCameras(this.game), this.cameras.main]) tvCut(cam, k, roll * 0.35 * k * k);
       if (swapped && t >= CUT_IN + CUT_HOLD + CUT_OUT) {
-        for (const cam of cams) tvCut(cam, 0, 0);
+        const next = this.waiting.shift();
+        if (next) {
+          // The next change asked for during this one: straight into it.
+          current = next; t = 0; swapped = false; roll = -roll;
+          scanSound(this, 0.8);
+          return;
+        }
+        clearTvCut(this.game);
+        this.busy = false;
         this.events.off(Phaser.Scenes.Events.UPDATE, step);
         this.scene.stop();
       }
     };
     this.events.on(Phaser.Scenes.Events.UPDATE, step);
+    // However it ends, no camera keeps the look.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.busy = false;
+      this.events.off(Phaser.Scenes.Events.UPDATE, step);
+      clearTvCut(this.game);
+    });
   }
+}
+
+/** Takes the screen change's TV look off every camera of every scene, running or not. */
+function clearTvCut(game: Phaser.Game): void {
+  for (const s of game.scene.getScenes(false)) for (const cam of s.cameras?.cameras ?? []) tvCut(cam, 0, 0);
 }
