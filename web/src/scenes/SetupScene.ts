@@ -29,11 +29,9 @@ const SLOT_W = 282;
 const SLOT_H = 250;
 const SLOT_GAP = 20;
 const SLOT_TOP = 398;
-/** The arena carousel: the chosen one live in the middle, its neighbours as pictures either side. */
+/** The chosen arena's frame, top centre. */
 const CAROUSEL_Y = 212;
 const CENTER_W = 300;
-const SIDE_W = 210;
-const SIDE_DX = 280;
 const STOCKS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
@@ -152,8 +150,8 @@ class StartButton extends Phaser.GameObjects.Container {
 
 /**
  * The setup screen: arena, rules and robots on one page (it replaces the
- * join screen and the arena select). The arena carousel runs across the top,
- * the chosen arena rendered live; stocks, time and power-ups beside it; four
+ * join screen and the arena select). The chosen arena fills the background,
+ * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.
  *
  * One cursor (arrows / WASD, any gamepad's D-pad or stick) moves up and down
@@ -171,7 +169,8 @@ export class SetupScene extends Phaser.Scene {
   /** The live arena (GameScene in preview mode); the canvas renderer keeps the picture. */
   private live = false;
   private center!: Phaser.GameObjects.Image;
-  private sides: Phaser.GameObjects.Image[] = [];
+  /** Dims the arena behind the menu, around the centre frame. */
+  private dim!: Phaser.GameObjects.Graphics;
   private arenaFrame!: Phaser.GameObjects.Graphics;
   private arenaName!: HeadingText;
   private arenaBlurb!: Phaser.GameObjects.Text;
@@ -187,7 +186,6 @@ export class SetupScene extends Phaser.Scene {
 
   create(): void {
     this.slots = [];
-    this.sides = [];
     this.leaving = false;
     this.padDown.clear();
     const saved = this.registry.get('setup') as SetupState | undefined;
@@ -209,7 +207,9 @@ export class SetupScene extends Phaser.Scene {
 
     const { width } = this.scale;
     this.live = this.sys.renderer.type === Phaser.WEBGL;
-    kubeBackdrop(this, this.live ? 0.12 : 0.3);
+    kubeBackdrop(this, this.live ? 0 : 0.3);
+    // The chosen arena is the menu's background (GameScene behind this scene), dimmed except in its frame.
+    this.dim = this.add.graphics();
     if (this.live) {
       this.lights.enable().setAmbientColor(0xb4bcdc);
       // Key light from the top left over the slots, a blue rim from below right.
@@ -267,11 +267,6 @@ export class SetupScene extends Phaser.Scene {
 
   private makeCarousel(): void {
     const { width } = this.scale;
-    for (const d of [-1, 1]) {
-      const img = this.add.image(width / 2 + d * SIDE_DX, CAROUSEL_Y, '__DEFAULT').setAlpha(0.45)
-        .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pickArena(d));
-      this.sides.push(img);
-    }
     this.arenaFrame = this.add.graphics();
     this.center = this.add.image(width / 2, CAROUSEL_Y, arenaThumbnail(this, 0, CENTER_W))
       .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.setFocus({ kind: 'arena' }));
@@ -284,7 +279,7 @@ export class SetupScene extends Phaser.Scene {
     this.arenaBlurb = this.add.text(width / 2, CAROUSEL_Y + h / 2 + 53, '', body(14, { fontStyle: '500', color: '#9fe3ff' })).setOrigin(0.5);
   }
 
-  /** Stocks and time on the right of the carousel, power-ups on the left. */
+  /** Stocks and time on the right of the arena, power-ups on the left. */
   private makeRules(): void {
     const { width } = this.scale;
     const rule = (key: 'stocks' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
@@ -381,15 +376,7 @@ export class SetupScene extends Phaser.Scene {
     const s = this.state;
     s.arena = (s.arena + d + ARENA_INFO.length) % ARENA_INFO.length;
     const { width } = this.scale;
-    const n = ARENA_INFO.length;
     this.center.setTexture(arenaThumbnail(this, s.arena, CENTER_W));
-    this.sides.forEach((img, j) => {
-      img.setTexture(arenaThumbnail(this, (s.arena + (j ? 1 : -1) + n) % n, SIDE_W));
-      if (d) {
-        img.setX(width / 2 + (j ? 1 : -1) * SIDE_DX + d * 50).setAlpha(0.1);
-        this.tweens.add({ targets: img, x: width / 2 + (j ? 1 : -1) * SIDE_DX, alpha: 0.45, duration: 220, ease: 'Cubic.out' });
-      }
-    });
     if (this.live) this.showArena();
     else if (d) {
       this.center.setX(width / 2 + d * 40).setAlpha(0.3);
@@ -406,10 +393,21 @@ export class SetupScene extends Phaser.Scene {
     const { width } = this.scale;
     const w = this.center.width;
     const h = this.center.height;
+    const { height } = this.scale;
     const setup: MatchSetup = {
       fighters: [], arena: this.state.arena, bonuses: this.state.bonuses,
-      preview: { x: width / 2 - w / 2, y: CAROUSEL_Y - h / 2, width: w, height: h },
+      preview: { x: 0, y: 0, width, height, inset: { x: width / 2 - w / 2, y: CAROUSEL_Y - h / 2, width: w, height: h } },
     };
+    // Dark over the background arena, clear over the frame.
+    const fy = CAROUSEL_Y - h / 2;
+    const fx = width / 2 - w / 2;
+    this.dim.clear().fillStyle(0x050b18, 0.38)
+      .fillRect(0, 0, width, fy).fillRect(0, fy + h, width, height - fy - h)
+      .fillRect(0, fy, fx, h).fillRect(fx + w, fy, width - fx - w, h);
+    // A new arena flashes in behind.
+    this.dim.setAlpha(1);
+    this.tweens.killTweensOf(this.dim);
+    this.tweens.add({ targets: this.dim, alpha: { from: 0.45, to: 1 }, duration: 320, ease: 'Quad.out' });
     const game = this.scene.get('Game');
     if (game.sys.isActive()) game.scene.restart(setup);
     else this.scene.launch('Game', setup);

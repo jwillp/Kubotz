@@ -116,7 +116,11 @@ export interface MatchSetup {
    * Arena select preview: no robots, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
-  preview?: { x: number; y: number; width: number; height: number };
+  preview?: {
+    x: number; y: number; width: number; height: number;
+    /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */
+    inset?: { x: number; y: number; width: number; height: number };
+  };
 }
 
 /** Faction names, by team (same order as SLOT_COLORS). */

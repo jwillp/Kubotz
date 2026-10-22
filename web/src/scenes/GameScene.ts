@@ -278,13 +278,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
     const mapH = this.map.height * this.map.tileHeight;
     cam.setViewport(rect.x, rect.y, rect.width, rect.height);
-    cam.setZoom(Math.min(rect.width / mapW, rect.height / mapH)).centerOn(mapW / 2, mapH / 2);
+    const fit = (r: { width: number; height: number }) => Math.min(r.width / mapW, r.height / mapH);
+    if (rect.inset) {
+      // The arena behind the whole menu, filling it and soft, and whole again in the inset.
+      cam.setZoom(Math.max(rect.width / mapW, rect.height / mapH) * 1.08).centerOn(mapW / 2, mapH / 2);
+      if (vfx() > 0) cam.postFX?.addBlur(0, 1, 1, 0.8);
+      const r = rect.inset;
+      this.cameras.add(r.x, r.y, r.width, r.height).setZoom(fit(r)).centerOn(mapW / 2, mapH / 2);
+    } else {
+      cam.setZoom(fit(rect)).centerOn(mapW / 2, mapH / 2);
+    }
     this.setupScreenFx();
     this.setupLights();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.preview = false;
       this.debris.destroy();
       this.portals.destroy();
+      // The next start (a match, another preview) gets a plain camera again.
+      cam.postFX?.clear();
+      for (const c of [...this.cameras.cameras]) if (c !== cam) this.cameras.remove(c);
+      cam.setViewport(0, 0, this.scale.width, this.scale.height);
     });
   }
 
