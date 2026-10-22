@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { CONTROLS, PLAYER_1_KEYS, PLAYER_2_KEYS, type KeyBinding, type PadControl } from '../game/Input';
 import { MenuInput } from './MenuInput';
-import { drawGlow, drawPlate, drawStrip, menuScreenFx, METAL, METAL_EDGE, METAL_TOP, PlateButton } from '../ui/Plate';
+import { BEVEL, drawGlow, drawPlate, drawStrip, menuScreenFx, METAL, METAL_EDGE, METAL_TOP, PlateButton } from '../ui/Plate';
 import { body, heading, NEON } from '../ui/Type';
 import { uiSound } from '../audio/Sounds';
 import { gamepads } from '../ui/Fullscreen';
@@ -29,17 +29,32 @@ const keyName = (k: string) => KEY_NAMES[k] ?? k.replace(/^NUMPAD_(\w+)$/, (_, n
 const FACE: Partial<Record<PadControl, number>> = { A: 0x5fb043, B: 0xd8423a, X: 0x2f86d8, Y: 0xe8b62a };
 const PAD_NAMES: Partial<Record<PadControl, string>> = { LS: 'L stick', RS: 'R stick', DPAD: 'D-pad', START: 'Start', SELECT: 'Select' };
 
-/** Where each control sits on the drawn pad (pad pixels from its centre), and its shape there. */
+/** The glyphs' chip: a dark inset with a light rim, on the pad as in the list. */
+const CHIP_FILL = 0x0b121c;
+const CHIP_EDGE = 0x9cc4e8;
+const hexColor = (c: number) => '#' + c.toString(16).padStart(6, '0');
+
+/** Where each control sits on the drawn pad (screen pixels from its centre), and its shape there: a circle (r) or a pill (w, h). */
 const PAD_SPOTS: Partial<Record<PadControl, { x: number; y: number; r?: number; w?: number; h?: number }>> = {
-  LT: { x: -118, y: -162, w: 64, h: 26 }, RT: { x: 118, y: -162, w: 64, h: 26 },
-  LB: { x: -118, y: -128, w: 92, h: 18 }, RB: { x: 118, y: -128, w: 92, h: 18 },
-  LS: { x: -112, y: -36, r: 30 }, RS: { x: 58, y: 34, r: 27 },
-  DPAD: { x: -58, y: 34, r: 30 },
-  Y: { x: 116, y: -68, r: 15 }, X: { x: 84, y: -36, r: 15 }, B: { x: 148, y: -36, r: 15 }, A: { x: 116, y: -4, r: 15 },
-  SELECT: { x: -26, y: -52, r: 9 }, START: { x: 26, y: -52, r: 9 },
+  LT: { x: -150, y: -160, w: 74, h: 28 }, RT: { x: 150, y: -160, w: 74, h: 28 },
+  LB: { x: -150, y: -120, w: 100, h: 24 }, RB: { x: 150, y: -120, w: 100, h: 24 },
+  LS: { x: -142, y: -40, r: 34 }, RS: { x: 76, y: 46, r: 30 },
+  DPAD: { x: -76, y: 46, r: 32 },
+  Y: { x: 146, y: -78, r: 17 }, X: { x: 108, y: -40, r: 17 }, B: { x: 184, y: -40, r: 17 }, A: { x: 146, y: -2, r: 17 },
+  SELECT: { x: -36, y: -58, w: 34, h: 16 }, START: { x: 36, y: -58, w: 34, h: 16 },
 };
 /** The drawn pad's centre on screen. */
-const PAD_AT = { x: 345, y: 470 };
+const PAD_AT = { x: 345, y: 450 };
+
+/** The pad's outline: the right half from the top centre, clockwise, as cubic curves (mirrored for the left). */
+const PAD_HALF: [number, number][][] = [
+  [[122, -112]],
+  [[176, -112], [216, -86], [226, -30]],
+  [[236, 26], [242, 96], [226, 138]],
+  [[210, 178], [158, 184], [138, 152]],
+  [[118, 120], [100, 94], [68, 92]],
+  [[0, 92]],
+];
 
 /**
  * Controls: what every key and pad button does, on a Keyboard tab (both
@@ -153,7 +168,7 @@ export class ControlsScene extends Phaser.Scene {
 
   private buildGamepad(): void {
     this.drawPad();
-    this.padStatus = this.add.text(PAD_AT.x, 640, '', body(14, { fontStyle: '600', color: '#9fe3ff', align: 'center', wordWrap: { width: 470 } })).setOrigin(0.5, 0);
+    this.padStatus = this.add.text(PAD_AT.x, 648, '', body(14, { fontStyle: '600', color: '#9fe3ff', align: 'center', wordWrap: { width: 470 } })).setOrigin(0.5, 0);
     this.page.add(this.padStatus);
     this.updatePadStatus();
     const x = 612;
@@ -201,74 +216,99 @@ export class ControlsScene extends Phaser.Scene {
 
   /** A pad control's glyph at x (left edge), centred on y; returns its width. */
   private glyph(x: number, y: number, p: PadControl): number {
-    const g = this.add.graphics();
     const face = FACE[p];
-    const label = PAD_NAMES[p] ?? p;
-    let w: number;
     if (face !== undefined) {
-      w = 30;
-      g.fillStyle(0x0b121c, 1).fillCircle(x + 15, y, 15);
-      g.lineStyle(2, face, 1).strokeCircle(x + 15, y, 13);
-      this.page.add(g);
-      this.page.add(this.add.text(x + 15, y + 1, label, body(15, { fontStyle: '800', color: '#' + face.toString(16).padStart(6, '0') })).setOrigin(0.5));
-      return w;
+      this.faceButton(x + 15, y, 15, p, face);
+      return 30;
     }
-    const t = this.add.text(0, y + 1, label, body(13, { fontStyle: '800' })).setOrigin(0.5);
-    w = Math.max(38, t.width + 18);
-    g.fillStyle(0x0b121c, 1).fillRoundedRect(x, y - 14, w, 28, 14);
-    g.lineStyle(1.5, 0x9cc4e8, 0.9).strokeRoundedRect(x, y - 14, w, 28, 14);
+    const t = this.add.text(0, y + 1, PAD_NAMES[p] ?? p, body(13, { fontStyle: '800' })).setOrigin(0.5);
+    const w = Math.max(38, t.width + 18);
+    this.pill(x + w / 2, y, w, 28);
     t.x = x + w / 2;
-    this.page.add([g, t]);
+    this.page.add(t);
     return w;
   }
 
-  /** The pad, after the owner's Xbox-layout pad, in the plates' brushed metal. */
+  /** A face button as in the list: a dark chip, a ring and its letter in the button's colour. */
+  private faceButton(x: number, y: number, r: number, label: string, color: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(CHIP_FILL, 1).fillCircle(x, y, r);
+    g.lineStyle(2, color, 1).strokeCircle(x, y, r - 2);
+    this.page.add(g);
+    this.page.add(this.add.text(x, y + 1, label, body(Math.round(r), { fontStyle: '800', color: hexColor(color) })).setOrigin(0.5));
+  }
+
+  /** A pill chip centred on (x, y). */
+  private pill(x: number, y: number, w: number, h: number, label?: string, size = 13): void {
+    const g = this.add.graphics();
+    g.fillStyle(CHIP_FILL, 1).fillRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
+    g.lineStyle(1.5, CHIP_EDGE, 0.9).strokeRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
+    this.page.add(g);
+    if (label) this.page.add(this.add.text(x, y + 1, label, body(size, { fontStyle: '800' })).setOrigin(0.5));
+  }
+
+  /**
+   * The pad, an Xbox-layout pad like the owner's: a brushed-metal shell like
+   * the plates, every control drawn as the same chip as in the list.
+   */
   private drawPad(): void {
     const { x: cx, y: cy } = PAD_AT;
-    const s = 1.3;
-    const g = this.add.graphics({ x: cx, y: cy }).setScale(s);
-    // Triggers and bumpers behind the body.
-    for (const k of ['LT', 'RT', 'LB', 'RB'] as const) {
-      const p = PAD_SPOTS[k]!;
-      g.fillStyle(k.endsWith('T') ? METAL : METAL_TOP, 1).fillRoundedRect(p.x - p.w! / 2, p.y - p.h! / 2, p.w!, p.h! + 10, 8);
-      g.lineStyle(1, METAL_EDGE, 1).strokeRoundedRect(p.x - p.w! / 2, p.y - p.h! / 2, p.w!, p.h! + 10, 8);
+    const at = (k: PadControl) => ({ ...PAD_SPOTS[k]!, x: cx + PAD_SPOTS[k]!.x, y: cy + PAD_SPOTS[k]!.y });
+    // The shell: the outline's curves sampled, both halves.
+    const path = new Phaser.Curves.Path(0, -112);
+    for (const seg of PAD_HALF) {
+      const [ex, ey] = seg[seg.length - 1];
+      if (seg.length === 3) path.cubicBezierTo(ex, ey, seg[0][0], seg[0][1], seg[1][0], seg[1][1]);
+      else path.lineTo(ex, ey);
     }
-    // The body: a wide shell and two grips.
-    g.fillStyle(METAL_EDGE, 1);
-    g.fillRoundedRect(-185, -112, 370, 150, 64);
-    g.fillCircle(-128, 52, 66);
-    g.fillCircle(128, 52, 66);
-    g.fillStyle(0x1b2738, 1);
-    g.fillRoundedRect(-183, -110, 366, 146, 62);
-    g.fillCircle(-128, 50, 64);
-    g.fillCircle(128, 50, 64);
-    g.fillStyle(METAL_TOP, 0.55).fillRoundedRect(-150, -106, 300, 14, 7);
-    // Sticks, D-pad, face buttons, Select / Start.
-    for (const k of ['LS', 'RS'] as const) {
-      const p = PAD_SPOTS[k]!;
-      g.fillStyle(0x070b12, 1).fillCircle(p.x, p.y, p.r! + 6);
-      g.fillStyle(METAL_TOP, 1).fillCircle(p.x, p.y, p.r!);
-      g.lineStyle(2, METAL_EDGE, 1).strokeCircle(p.x, p.y, p.r! - 7);
-    }
-    const d = PAD_SPOTS.DPAD!;
-    g.fillStyle(0x070b12, 1).fillCircle(d.x, d.y, d.r! + 4);
-    g.fillStyle(METAL_TOP, 1).fillRect(d.x - 9, d.y - 26, 18, 52).fillRect(d.x - 26, d.y - 9, 52, 18);
-    for (const k of ['A', 'B', 'X', 'Y'] as const) {
-      const p = PAD_SPOTS[k]!;
-      g.fillStyle(0x070b12, 1).fillCircle(p.x, p.y, p.r! + 2);
-      g.fillStyle(FACE[k]!, 0.9).fillCircle(p.x, p.y, p.r!);
-    }
-    for (const k of ['SELECT', 'START'] as const) {
-      const p = PAD_SPOTS[k]!;
-      g.fillStyle(METAL_TOP, 1).fillCircle(p.x, p.y, p.r!);
-    }
-    this.page.add(g);
-    // Labels on the pad (screen space, so the text stays crisp).
-    const at = (k: PadControl) => ({ x: cx + PAD_SPOTS[k]!.x * s, y: cy + PAD_SPOTS[k]!.y * s });
-    for (const k of ['A', 'B', 'X', 'Y'] as const) this.page.add(this.add.text(at(k).x, at(k).y + 1, k, body(16, { fontStyle: '800', color: '#0b121c' })).setOrigin(0.5));
-    for (const k of ['LT', 'RT', 'LB', 'RB'] as const) {
+    const right = path.getPoints(24);
+    const left = right.slice().reverse().map((p) => new Phaser.Math.Vector2(-p.x, p.y));
+    const shell = [...right, ...left].map((p) => new Phaser.Math.Vector2(cx + p.x, cy + p.y));
+    const g = this.add.graphics();
+    // Shoulder buttons first, tucked behind the shell's top edge.
+    for (const k of ['LB', 'RB'] as const) { const p = at(k); g.fillStyle(0x070b12, 1).fillRoundedRect(p.x - p.w! / 2 - 6, p.y - p.h! / 2 - 6, p.w! + 12, p.h! + 24, 16); }
+    g.fillStyle(0x070b12, 0.6).fillPoints(shell.map((p) => new Phaser.Math.Vector2(p.x, p.y + 8)), true); // its shadow
+    g.fillStyle(METAL_TOP, 1).fillPoints(shell, true);
+    // Lit from above like the plates: the lower part a shade darker.
+    const lower = shell.filter((p) => p.y > cy - 20);
+    if (lower.length > 2) g.fillStyle(METAL, 0.3).fillPoints(lower, true);
+    g.lineStyle(1.5, METAL_EDGE, 1).strokePoints(shell, true);
+    g.lineStyle(1, BEVEL, 0.35).lineBetween(cx - 118, cy - 110, cx + 118, cy - 110);
+    // Wells round the sticks and the D-pad.
+    for (const k of ['LS', 'RS', 'DPAD'] as const) {
       const p = at(k);
-      this.page.add(this.add.text(p.x, p.y + (k.endsWith('T') ? -4 : 1), k, body(13, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5));
+      g.fillStyle(0x070b12, 0.9).fillCircle(p.x, p.y, p.r! + 7);
+      g.lineStyle(1, METAL_EDGE, 0.6).strokeCircle(p.x, p.y, p.r! + 7);
+    }
+    const f = at('A');
+    g.fillStyle(0x070b12, 0.45).fillCircle(f.x, f.y - 38, 60); // the face buttons' recess
+    this.page.add(g);
+
+    for (const k of ['LT', 'RT', 'LB', 'RB'] as const) { const p = at(k); this.pill(p.x, p.y, p.w!, p.h!, k); }
+    for (const k of ['SELECT', 'START'] as const) { const p = at(k); this.pill(p.x, p.y, p.w!, p.h!); }
+    for (const k of ['LS', 'RS'] as const) {
+      const p = at(k);
+      const s = this.add.graphics();
+      s.fillStyle(CHIP_FILL, 1).fillCircle(p.x, p.y, p.r!);
+      s.lineStyle(1.5, CHIP_EDGE, 0.9).strokeCircle(p.x, p.y, p.r!);
+      s.lineStyle(1, CHIP_EDGE, 0.3).strokeCircle(p.x, p.y, p.r! - 9);
+      this.page.add(s);
+      this.page.add(this.add.text(p.x, p.y + 1, k[0], body(15, { fontStyle: '800' })).setOrigin(0.5));
+    }
+    const d = at('DPAD');
+    const a = 9; const l = 27; // the cross's half thickness and arm length
+    const V = Phaser.Math.Vector2;
+    const cross = [[-a, -l], [a, -l], [a, -a], [l, -a], [l, a], [a, a], [a, l], [-a, l], [-a, a], [-l, a], [-l, -a], [-a, -a]]
+      .map(([x, y]) => new V(d.x + x, d.y + y));
+    const dg = this.add.graphics();
+    dg.fillStyle(CHIP_FILL, 1).fillPoints(cross, true);
+    dg.lineStyle(1.5, CHIP_EDGE, 0.9).strokePoints(cross, true);
+    dg.fillStyle(CHIP_EDGE, 0.5).fillCircle(d.x, d.y, 3);
+    this.page.add(dg);
+    for (const k of ['A', 'B', 'X', 'Y'] as const) { const p = at(k); this.faceButton(p.x, p.y, p.r!, k, FACE[k]!); }
+    for (const [k, t] of [['SELECT', 'SELECT'], ['START', 'START']] as const) {
+      const p = at(k);
+      this.page.add(this.add.text(p.x, p.y + 17, t, body(9, { fontStyle: '800', color: '#8fb6d8' })).setOrigin(0.5));
     }
     this.padGlow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     this.page.add(this.padGlow);
@@ -279,16 +319,18 @@ export class ControlsScene extends Phaser.Scene {
   private lightPad(controls: PadControl[]): void {
     const g = this.padGlow?.clear();
     if (!g) return;
-    const s = 1.3;
     for (const k of controls) {
       const p = PAD_SPOTS[k];
       if (!p) continue;
-      const x = PAD_AT.x + p.x * s;
-      const y = PAD_AT.y + p.y * s;
+      const x = PAD_AT.x + p.x;
+      const y = PAD_AT.y + p.y;
       for (const [grow, width, alpha] of [[10, 10, 0.12], [6, 6, 0.25], [2, 3, 0.6], [0, 1.5, 1]] as const) {
         g.lineStyle(width, NEON, alpha);
-        if (p.r) g.strokeCircle(x, y, (p.r + 4) * s + grow);
-        else g.strokeRoundedRect(x - (p.w! * s) / 2 - 4 - grow, y - (p.h! * s) / 2 - 4 - grow, p.w! * s + 8 + 2 * grow, p.h! * s + 8 + 2 * grow, 10 + grow);
+        if (p.r) g.strokeCircle(x, y, p.r + 4 + grow);
+        else {
+          const w = p.w! + 8 + 2 * grow; const h = p.h! + 8 + 2 * grow;
+          g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, h / 2);
+        }
       }
     }
   }
