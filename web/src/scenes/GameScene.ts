@@ -245,6 +245,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       quit: () => { if (this.paused) this.backToTitle(); }, // from the pause: Q, pad Select
       confirm: () => this.continueAfterMatch(), // after the match: Enter, Space, pad A, B or Start
     }, false, { confirm: ['A', 'B', 9] });
+    // Back from the settings or controls (drawn over the paused match): the Esc or Start that closed them must not unpause too.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.commands?.reset());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME));
     kb.on('keydown-V', () => {
       look25.on = !look25.on;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, look25.on ? '2.5D on' : '2.5D off', 0xffffff);

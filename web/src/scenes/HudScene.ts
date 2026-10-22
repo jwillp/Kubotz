@@ -94,12 +94,15 @@ export class HudScene extends Phaser.Scene {
       // Esc and Start already toggle the pause in the match: B resumes here.
       back: () => { if (this.game_.paused) this.game_.togglePause(); },
     }, false, { back: ['B'] });
+    // Back from the settings or controls: the Esc or B that closed them must not resume the match too.
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.pauseMenu.reset());
 
     this.game_.events.on('match-over', this.onMatchOver, this);
     this.game_.events.on('pause', this.onPause, this);
     this.game_.events.on('countdown', this.onCountdown, this);
     this.game_.events.on('continue-prompt', this.onContinuePrompt, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(Phaser.Scenes.Events.RESUME);
       this.game_.events.off('continue-prompt', this.onContinuePrompt, this);
       this.game_.events.off('countdown', this.onCountdown, this);
       this.game_.events.off('match-over', this.onMatchOver, this);
