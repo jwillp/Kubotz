@@ -30,7 +30,7 @@ interface Card {
 
 /**
  * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
- * slab in its helmet colour, segmented health, guard, stock pips, K.O.s),
+ * slab in its helmet colour, segmented health, guard, recharge pips, K.O.s),
  * a status chip above each card, and the match timer plate top centre.
  */
 export class HudScene extends Phaser.Scene {
@@ -169,10 +169,10 @@ export class HudScene extends Phaser.Scene {
     const stunned = time < k.stunnedUntil;
     b.fillStyle(0xffffff, 0.08).fillRect(x0, 46, w - 2, 4);
     b.fillStyle(stunned ? 0xff5252 : guard >= 1 ? 0xffcf4a : 0xbfa640, 0.95).fillRect(x0, 46, (w - 2) * guard, 4);
-    // Stock: cube pips in the helmet colour.
-    const stocks = this.game_.stocks;
-    const step = Math.min(16, (w - 70) / Math.max(1, stocks - 1));
-    for (let s = 0; s < stocks; s++) {
+    // Recharge: cube pips in the helmet colour.
+    const recharges = this.game_.recharges;
+    const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
+    for (let s = 0; s < recharges; s++) {
       const cx = x0 + 6 + s * step;
       const pip = new Phaser.Geom.Polygon([cx, 50, cx + 6, 56, cx, 62, cx - 6, 56]);
       if (s < k.lives) b.fillStyle(k.look.color, 1).fillPoints(pip.points, true).lineStyle(1, 0xffffff, 0.55).strokePoints(pip.points, true);

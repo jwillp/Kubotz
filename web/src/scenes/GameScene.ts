@@ -109,7 +109,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
   startedAt: number = Config.COUNTDOWN;
   /** Lives each Kubot starts with, and the match length in ms (0: no limit). */
-  stocks: number = Config.NB_LIVES;
+  recharges: number = Config.NB_LIVES;
   timeLimit = 0;
   private countdownStep = -1;
   /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every Kubot's spawn is shown). */
@@ -157,7 +157,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
     this.specs = setup.fighters.slice(0, 4);
-    this.stocks = setup.stocks ?? Config.NB_LIVES;
+    this.recharges = setup.recharges ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -210,7 +210,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spawn = this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
-      k.lives = this.stocks;
+      k.lives = this.recharges;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.

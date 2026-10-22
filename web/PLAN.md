@@ -866,7 +866,7 @@ the Okuba Cloud / Exo 2 pairing.
   edge, with a soft glow, like the arenas' lit block edges. Selection = the
   strip lights up and the plate slides in a few pixels.
 - A fighter's helmet colour (slot colour = team) is the only other accent:
-  the edge strip and tag slab of its HUD card, its stock pips, its banner.
+  the edge strip and tag slab of its HUD card, its recharge pips, its banner.
 - Okuba Cloud (heading helper) for titles, countdown, winner banner and the
   font-drawn P1/P2/CPU tags; Exo 2 for everything people read.
 - One shared module, `ui/Plate.ts`, draws plates, strips and menu buttons so
@@ -877,7 +877,7 @@ the Okuba Cloud / Exo 2 pairing.
   along the bottom edge, centred, one card per fighter in seat order, Smash
   style. Card: P1/CPU tag on a helmet-colour slab, name + team, a segmented
   health bar (red under 30%), a thin amber guard bar, the shield as a cyan
-  overlay, stock as small cube pips in the helmet colour, K.O. count.
+  overlay, recharge as small cube pips in the helmet colour, K.O. count.
 - Status line above each card: power-up chips with a draining bar, GUARD
   BROKEN (red), respawn countdown, ELIMINATED (card dims).
 - Timer: a small chamfered plate top centre with a cyan underline.
