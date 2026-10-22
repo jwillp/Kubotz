@@ -177,7 +177,7 @@ export class HudScene extends Phaser.Scene {
     const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color });
     const name = this.add.text(SLAB + 10, 8, k.name, body(15, { fontStyle: '800' }));
     const opponent = MODES[this.game_.mode].trial && k.index >= this.game_.specs.length;
-    const team = this.add.text(CARD_W - 8, 10, opponent ? 'OPPONENT' : `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(),
+    const team = this.add.text(CARD_W - 8, 10, opponent ? 'OPPONENT' : `${TEAM_NAMES[k.team] ?? (isBlackTeam(k) ? 'Black' : '')} team`.toUpperCase(),
       body(11, { fontStyle: '800', color: '#' + hex(color) })).setOrigin(1, 0);
     const bars = this.add.graphics();
     const kills = this.add.text(CARD_W - 8, 56, 'K.O. 0', body(13, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(1, 0.5);
