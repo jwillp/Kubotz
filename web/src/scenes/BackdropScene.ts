@@ -20,7 +20,8 @@ export function paintRoomOnce(scene: Phaser.Scene, n: number): void {
   const room = th.paint(wall.getContext('2d')!, front.getContext('2d')!, ROOM_W, ROOM_H, seeded(31 + n * 1013));
   scene.registry.set(`room-${n}`, room);
   // Softened by the same lens blur as the picture, the silhouettes a little less (nearer).
-  for (const [key, src, blur] of [[`room-${n}`, wall, 7], [`room-${n}-front`, front, 5]] as const) {
+  const [wallBlur, frontBlur] = th.blur ?? [7, 5];
+  for (const [key, src, blur] of [[`room-${n}`, wall, wallBlur], [`room-${n}-front`, front, frontBlur]] as const) {
     const c = scene.textures.createCanvas(key, ROOM_W, ROOM_H)!;
     const ctx = c.getContext();
     ctx.filter = `blur(${blur}px)`;
@@ -81,12 +82,14 @@ export class BackdropScene extends Phaser.Scene {
     this.bg.setScale(Math.max(width / this.bg.width, height / this.bg.height) * 1.15);
     // A dim room, so the lights, lasers and glowing platforms carry the scene.
     this.bg.setTint(th.room[0], th.room[0], th.room[1], th.room[1]);
+    // A light room's lights are drawn over it: added, they would wash out to white.
+    const blend = th.light ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD;
     if (th.paint) {
-      // Light running along the panel seams.
+      // Light running along the panel seams (a city's: its flying traffic).
       const room = this.room!;
-      for (let i = 0; i < 14; i++) {
-        const axis = i % 3 === 0 ? 'y' : 'x';
-        const img = this.add.image(0, 0, 'pulse').setBlendMode(Phaser.BlendModes.ADD).setTint(th.rimLine).setAlpha(0.5);
+      for (let i = 0; i < (room.rows.length ? 14 : 0); i++) {
+        const axis = i % 3 === 0 && room.cols.length ? 'y' : 'x';
+        const img = this.add.image(0, 0, 'pulse').setBlendMode(blend).setTint(th.light ? th.glow : th.rimLine).setAlpha(th.light ? 0.7 : 0.5);
         this.pulses.push(this.newPulse({ img, axis, line: 0, pos: 0, speed: 0, len: 0 }, room, true));
       }
       this.front = this.add.image(width / 2, height / 2, `room-${n}-front`).setScale(this.bg.scaleX);
@@ -110,7 +113,7 @@ export class BackdropScene extends Phaser.Scene {
       const depth = i < 16 ? 0.25 : i < 28 ? 0.5 : 0.85;
       const size = (depth === 0.25 ? 16 : depth === 0.5 ? 35 : 74) * Phaser.Math.FloatBetween(0.7, 1.4);
       const color = Phaser.Utils.Array.GetRandom(Math.random() < 0.4 ? th.bokeh.accents : th.bokeh.main);
-      const img = this.add.image(0, 0, 'bokeh').setBlendMode(Phaser.BlendModes.ADD).setTint(color).setDisplaySize(size, size);
+      const img = this.add.image(0, 0, 'bokeh').setBlendMode(blend).setTint(color).setDisplaySize(size, size);
       this.bokeh.push({
         img, depth, x: Math.random() * width * 1.3 - width * 0.15, y: Math.random() * height * 1.2 - height * 0.1,
         phase: Math.random() * Math.PI * 2, drift: Phaser.Math.FloatBetween(4, 12) * (Math.random() < 0.5 ? -1 : 1),
@@ -118,10 +121,10 @@ export class BackdropScene extends Phaser.Scene {
       });
     }
 
-    // Embers drifting up, or small motes of light hanging in the air.
-    const count = th.particles === 'embers' ? 60 : th.particles === 'motes' ? 36 : 0;
+    // Embers drifting up, small motes of light hanging in the air, or rain.
+    const count = { embers: 60, motes: 36, rain: 150, none: 0 }[th.particles];
     for (let i = 0; i < count; i++) {
-      const img = this.add.image(0, 0, 'bokeh').setBlendMode(Phaser.BlendModes.ADD);
+      const img = this.add.image(0, 0, 'bokeh').setBlendMode(blend);
       const m: Mote = { img, x: 0, y: 0, vx: 0, vy: 0, depth: 0.2 + Math.random() * 0.8, phase: Math.random() * 6.3, life: 1, age: 0 };
       this.spawnMote(m, true);
       this.motes.push(m);
@@ -175,7 +178,8 @@ export class BackdropScene extends Phaser.Scene {
       const f = m.age / m.life;
       if (f >= 1 || m.y < -40 || m.y > height + 40) { this.spawnMote(m, false); continue; }
       const fade = Math.min(1, f * 6) * (1 - f);
-      const a = this.theme.particles === 'embers' ? 0.9 * fade * (0.6 + 0.4 * Math.sin(t * 9 + m.phase)) : 0.4 * fade;
+      const kind = this.theme.particles;
+      const a = kind === 'embers' ? 0.9 * fade * (0.6 + 0.4 * Math.sin(t * 9 + m.phase)) : kind === 'rain' ? 0.12 + 0.2 * m.depth : 0.4 * fade;
       m.img.setPosition(m.x - px * 260 * m.depth, m.y - py * 150 * m.depth).setAlpha(a);
     }
     if (this.theme.lightning) this.updateLightning(time, dt);
@@ -227,6 +231,13 @@ export class BackdropScene extends Phaser.Scene {
       m.vy = -Phaser.Math.FloatBetween(30, 80) * (0.5 + s);
       m.life = Phaser.Math.FloatBetween(4, 9);
       m.img.setTint(Phaser.Utils.Array.GetRandom([0xff8a2a, 0xffb050, 0xff5a1a, 0xffd080])).setDisplaySize(4 + s * 6, 4 + s * 6);
+    } else if (kind === 'rain') {
+      // Thin streaks slanting down, the near ones longer and faster.
+      m.y = anywhere ? Math.random() * height : -40;
+      m.vx = -80 - s * 60;
+      m.vy = 700 + s * 700;
+      m.life = 10;
+      m.img.setTint(this.theme.rimLine).setDisplaySize(1 + s * 1.5, 14 + s * 30).setRotation(Math.atan2(-m.vx, m.vy));
     } else {
       m.y = Math.random() * height;
       m.vx = Phaser.Math.FloatBetween(-8, 8);

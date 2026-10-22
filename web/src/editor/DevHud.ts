@@ -9,7 +9,7 @@ import { Config } from '../config';
 import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
 import { npcStocks, warpExit, type ArenaData, type BlockLook, type NpcBehaviour, type TilePaint } from '../map/Arenas';
-import { ROOMS } from '../fx/Backdrops';
+import { ROOM_CHOICES } from '../fx/Backdrops';
 import './devhud.css';
 
 /**
@@ -169,14 +169,16 @@ export function installDevHud(game: Phaser.Game): void {
     g.scene.restart({ ...g.setup, arena: index, editor: true, keep: keepKubotz });
   };
 
-  // Arena edits rebuild the match once a drag or a typed value is done (debounced).
+  // Edits to the arena playing rebuild the match once a drag or a typed value is done (debounced),
+  // in play mode too (a new background).
   const applied = new Map<string, string>();
   let timer = 0;
   store.on(() => {
     const g = match();
-    const id = store.sel.arena;
+    const id = g ? ARENA_IDS[g.arena] : undefined;
+    if (!g || !id) return;
     const text = JSON.stringify(store.docs.arenas[id] ?? null);
-    if (!applied.has(id) || !editing || !g || ARENA_IDS[g.arena] !== id) { applied.set(id, text); return; }
+    if (!applied.has(id)) { applied.set(id, text); return; }
     if (text === applied.get(id) || store.busy) return;
     clearTimeout(timer);
     timer = window.setTimeout(() => {
@@ -277,6 +279,8 @@ export function installDevHud(game: Phaser.Game): void {
     const p = store.sel.piece;
     const id = g ? ARENA_IDS[g.arena] : null;
     const a = id ? store.docs.arenas[id] : null;
+    // What the match was built from, before any edit from this panel.
+    if (id && !applied.has(id)) applied.set(id, JSON.stringify(a ?? null));
     const piecesNow = a && p ? piecesOf(a, p.kind)[p.index] : null;
     const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
     if (next === shape || !open || !g) { refresh(); return; }
@@ -363,7 +367,7 @@ export function installDevHud(game: Phaser.Game): void {
         h('div', { cls: 'dev-row dev-arena' }, arenaPick, newBtn),
         a ? h('div', { cls: 'dev-grid' },
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
-          choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOMS.map((r) => [r, { kube: 'The Kube (blue)', foundry: 'Foundry (amber)', skyDeck: 'Sky Deck (violet)', pit: 'The Pit (teal)' }[r] ?? r] as [string, string]), a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
+          choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
         ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, or make a new one.' }),
         a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
           h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),

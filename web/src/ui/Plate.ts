@@ -167,7 +167,8 @@ export function menuArena(scene: Phaser.Scene): number {
   let n = reg.get('menuArena') as number | undefined;
   if (n === undefined) {
     const last = reg.get('menuArenaLast') as number | undefined;
-    const choices = BACKDROPS.map((_, i) => i).filter((i) => i !== last || BACKDROPS.length < 2);
+    // The original arenas' rooms (the first four).
+    const choices = BACKDROPS.slice(0, 4).map((_, i) => i).filter((i) => i !== last);
     n = Phaser.Utils.Array.GetRandom(choices);
     reg.set('menuArena', n);
     reg.set('menuArenaLast', n);

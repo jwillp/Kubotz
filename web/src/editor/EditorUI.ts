@@ -11,7 +11,7 @@ import type { MoveData } from '../game/Kubotz';
 import { StageScene } from './StageScene';
 import { ArenaScene, type ArenaTool } from './ArenaScene';
 import { DEFAULT_BLAST, DEFAULT_SIZE, type ArenaData, type TilePaint } from '../map/Arenas';
-import { ROOMS } from '../fx/Backdrops';
+import { ROOM_CHOICES } from '../fx/Backdrops';
 import type { TmxMap } from '../map/TmxMap';
 import { FRAME_MS, PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type PointKind } from './Store';
 import { Timeline } from './Timeline';
@@ -963,7 +963,7 @@ function buildArenaInspector(): void {
   out.push(section('arena', 'Arena', [
     grid(2,
       text('Name', 'Shown on the arena select.', () => A().name, (v) => editArena((x) => { x.name = v; }, false)),
-      pick('Room', 'The room behind the arena, and the colours of its light and tiles.', ROOMS.map((r) => [r, { kube: 'The Kube (blue)', foundry: 'Foundry (amber)', skyDeck: 'Sky Deck (violet)', pit: 'The Pit (teal)' }[r] ?? r] as [string, string]), () => A().room ?? 'kube', (v) => editArena((x) => { x.room = v; }, false)),
+      pick('Room', 'The room behind the arena, and the colours of its light and tiles.', ROOM_CHOICES, () => A().room ?? 'kube', (v) => editArena((x) => { x.room = v; }, false)),
     ),
     grid(1, text('Blurb', 'The line under the name on the arena select.', () => A().blurb, (v) => editArena((x) => { x.blurb = v; }, false))),
     grid(2,
