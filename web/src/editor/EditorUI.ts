@@ -772,7 +772,11 @@ function fitStage(): void {
   const c = game.canvas.getBoundingClientRect();
   const r = stageEl.getBoundingClientRect();
   const k = game.scale.width / c.width;
-  stage.cameras.main.setViewport((r.left - c.left) * k, (r.top - c.top) * k, r.width * k, r.height * k);
+  // The hole, clipped to the canvas (the canvas is letterboxed in its container); the whole canvas if the hole is off it.
+  const x0 = Math.max(0, (r.left - c.left) * k); const y0 = Math.max(0, (r.top - c.top) * k);
+  const x1 = Math.min(game.scale.width, (r.right - c.left) * k); const y1 = Math.min(game.scale.height, (r.bottom - c.top) * k);
+  if (x1 - x0 < 80 || y1 - y0 < 80) stage.cameras.main.setViewport(0, 0, game.scale.width, game.scale.height);
+  else stage.cameras.main.setViewport(x0, y0, x1 - x0, y1 - y0);
   stage.recentre();
 }
 if (host.inGame) new ResizeObserver(() => fitStage()).observe(stageEl);
@@ -780,15 +784,17 @@ if (host.inGame) new ResizeObserver(() => fitStage()).observe(stageEl);
 /** Inside the game: the editor opens (the title's Editor entry) or closes. */
 export function editorShown(on: boolean): void {
   root.hidden = !on;
+  // A field focused when the editor closes never reports losing focus: give the game its keys back.
+  game.input.keyboard!.enabled = true;
   if (!on) {
     if (game.scene.isActive('Editor')) game.scene.stop('Editor');
     return;
   }
   if (tab === 'arena') tab = 'anim';
+  // The stage fits the hole between the panels once it runs (the scene starts on the game's next step).
+  stage!.events.once(Phaser.Scenes.Events.CREATE, () => { game.scene.bringToTop('Editor'); fitStage(); setTab(tab); });
   game.scene.run('Editor');
-  game.scene.bringToTop('Editor');
   setTab(tab);
-  requestAnimationFrame(() => fitStage());
 }
 
 // Typing in the editor's fields must not reach the game's keys (and the game's captured keys must not swallow the typing).

@@ -69,10 +69,16 @@ export function installDevHud(game: Phaser.Game): void {
   panel.addEventListener('focusin', (e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) game.input.keyboard!.enabled = false; });
   panel.addEventListener('focusout', () => { game.input.keyboard!.enabled = true; });
 
+  /** Closing the HUD gives the match back as it plays: running, full speed, keys on, its camera its own. */
   const setOpen = (on: boolean) => {
     open = on && inMatch();
     panel.hidden = !open;
-    if (!open) setEditing(false);
+    if (!open) {
+      setEditing(false);
+      const d = debug();
+      if (d) { d.frozen = false; d.timeScale = 1; }
+      game.input.keyboard!.enabled = true;
+    }
     build();
   };
 

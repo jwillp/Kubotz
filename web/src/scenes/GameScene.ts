@@ -136,6 +136,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   constructor() { super('Game'); }
 
   init(): void {
+    // Every match starts running, at full speed, its camera its own: a pause or slow motion from the
+    // debug keys or the dev HUD ends with the match (the HUD sets them again when it rebuilds one).
+    Object.assign(this.debugState, { on: false, timeScale: 1, frozen: false, steps: 0, holdCamera: false, show: { ...ALL_LAYERS } });
     this.fighters = [];
     this.orbs = [];
     this.bullets = [];
