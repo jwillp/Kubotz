@@ -20,15 +20,22 @@ interface Particle {
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
 interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
 
-/** A puff of the K.O. smoke: a soft cloud image that billows out, rises, darkens and fades. */
+/**
+ * A puff of the K.O. smoke, drawn cel-shaded in three flat layers: a deep
+ * coloured rim, a bright body set up and to the left in it, and cream
+ * highlights on top. It bursts out, swells, turns to rim as the body shrinks
+ * away, and collapses.
+ */
 interface Smoke {
-  img: Phaser.GameObjects.Image;
+  rim: Phaser.GameObjects.Image; body: Phaser.GameObjects.Image; shine: Phaser.GameObjects.Image;
   x: number; y: number; vx: number; vy: number;
   age: number; life: number;
   size: number; grow: number; // radius at the start, and gained over the life (px)
   spin: number; // radians/s
-  hot: number; cold: number; // colour at the start and at the end
 }
+
+/** A streak of the K.O. smoke whipping out from the core, tapering to a point. */
+interface Wisp { x: number; y: number; angle: number; len: number; width: number; bend: number; age: number; life: number; color: number }
 
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
 
@@ -41,8 +48,8 @@ const TWIRL_FADE = 300;
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const FLASH_MS = 160;
-/** K.O. smoke puffs drawn at once at most (the image pool). */
-const SMOKE_POOL = 64;
+/** K.O. smoke puffs drawn at once at most (the image pool, three images each). */
+const SMOKE_POOL = 48;
 const SMOKE_TEXTURES = 3;
 
 const mix = (a: number, b: number, f: number) => {
@@ -67,8 +74,11 @@ export class ImpactFx {
   private flashes: Flash[] = [];
   private twirls: Twirl[] = [];
   private readonly behind: Phaser.GameObjects.Graphics;
-  private readonly smokeImages: Phaser.GameObjects.Image[] = [];
+  private readonly smokePool: Smoke[] = [];
   private smoke: Smoke[] = [];
+  private wisps: Wisp[] = [];
+  /** The K.O. smoke's streaks, under its puffs. */
+  private readonly wispG: Phaser.GameObjects.Graphics;
   private now = 0;
 
   constructor(scene: Phaser.Scene) {
@@ -78,7 +88,14 @@ export class ImpactFx {
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
     // The K.O. smoke: a pool made up front (the results scene sorts new objects onto its cameras once).
     smokeTextures(scene.textures);
-    for (let i = 0; i < SMOKE_POOL; i++) this.smokeImages.push(scene.add.image(0, 0, 'smoke-0').setDepth(10.6).setVisible(false));
+    this.wispG = scene.add.graphics().setDepth(10.55);
+    const layer = (key: string, depth: number) => scene.add.image(0, 0, key).setDepth(depth).setVisible(false);
+    for (let i = 0; i < SMOKE_POOL; i++) {
+      this.smokePool.push({
+        rim: layer('smoke-rim-0', 10.6), body: layer('smoke-body-0', 10.61), shine: layer('smoke-shine-0', 10.62),
+        x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 1, size: 0, grow: 0, spin: 0,
+      });
+    }
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -142,38 +159,60 @@ export class ImpactFx {
   }
 
   /**
-   * A K.O.: a big explosion of smoke in the robot's team colour. Hot, light
-   * puffs burst out from the robot's middle, slow down, swell and rise,
-   * darkening as they cool, while the flash and a light go off in the core.
+   * A K.O.: a big, magical explosion of smoke in the robot's team colour,
+   * cel-shaded like a cartoon effect (deep rim, bright body, cream highlights),
+   * with streaks whipping out of the core and glittering motes.
    */
   koSmoke(x: number, y: number, color: number): void {
     if (vfx() <= 0) return;
-    const hot = mix(color, 0xffffff, 0.35);
-    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.9 * UNIT, grow: 0.6 * UNIT, life: 140 });
-    this.add({ kind: 'ring', x, y, color: hot, size: 0.4 * UNIT, grow: 3.2 * UNIT, life: 320 });
-    this.flashes.push({ x, y, color, intensity: 9, at: this.now });
-    const n = Math.round(18 + 22 * vfx());
+    const { deep, bright } = smokeColors(color);
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
+    this.add({ kind: 'ring', x, y, color: bright, size: 0.5 * UNIT, grow: 3.6 * UNIT, life: 340 });
+    this.flashes.push({ x, y, color: bright, intensity: 10, at: this.now });
+    const n = Math.round(10 + 10 * vfx());
     for (let i = 0; i < n; i++) {
-      const img = this.smokeImages.find((m) => !m.visible) ?? this.oldestSmoke();
-      if (!img) break;
-      const core = i < n * 0.3; // the first ones stay in the middle, hot and light
+      const p = this.smokePool.find((q) => !this.smoke.includes(q)) ?? this.oldestSmoke();
+      if (!p) break;
+      const core = i < n * 0.35; // the first ones stay in the middle, the biggest
       const a = rand(0, Math.PI * 2);
-      const speed = (core ? rand(1, 5) : rand(7, 20)) * UNIT;
-      this.smoke = this.smoke.filter((p) => p.img !== img);
-      this.smoke.push({
-        img: img.setTexture(`smoke-${i % SMOKE_TEXTURES}`).setVisible(true).setRotation(rand(0, Math.PI * 2)),
+      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT;
+      const t = i % SMOKE_TEXTURES;
+      const rot = rand(-0.5, 0.5); // upright-ish, so the highlights stay up and to the left
+      p.rim.setTexture(`smoke-rim-${t}`).setTint(deep).setRotation(rot).setVisible(true);
+      p.body.setTexture(`smoke-body-${t}`).setTint(bright).setRotation(rot).setVisible(true);
+      p.shine.setTexture(`smoke-shine-${t}`).setTint(0xfffbe6).setRotation(rot).setVisible(true);
+      Object.assign(p, {
         x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
-        vx: Math.cos(a) * speed * 1.25, vy: Math.sin(a) * speed * 0.85 - rand(1, 4) * UNIT,
-        age: 0, life: core ? rand(900, 1300) : rand(1200, 2100),
-        size: (core ? rand(0.8, 1.2) : rand(0.6, 1)) * UNIT, grow: (core ? rand(1.2, 1.8) : rand(1.6, 2.8)) * UNIT,
-        spin: rand(-0.8, 0.8),
-        hot: core ? mix(color, 0xffffff, 0.6) : hot, cold: mix(color, 0x0b0d14, 0.35),
+        vx: Math.cos(a) * speed * 1.3, vy: Math.sin(a) * speed * 0.8 - rand(1, 4) * UNIT,
+        age: 0, life: core ? rand(1000, 1400) : rand(800, 1500),
+        size: (core ? rand(1.2, 1.6) : rand(0.7, 1.1)) * UNIT, grow: (core ? rand(1.4, 2) : rand(0.9, 1.6)) * UNIT,
+        spin: rand(-0.4, 0.4),
+      });
+      this.smoke = this.smoke.filter((q) => q !== p);
+      this.smoke.push(p);
+    }
+    // Streaks whipping out sideways and up, like the trails of the blast.
+    for (let i = 0; i < 9; i++) {
+      const side = i % 2 ? 1 : -1;
+      this.wisps.push({
+        x, y, angle: side > 0 ? rand(-0.9, 0.25) : Math.PI - rand(-0.9, 0.25),
+        len: rand(2.5, 4.5) * UNIT, width: rand(0.12, 0.28) * UNIT, bend: rand(-0.5, 0.5) * UNIT,
+        age: 0, life: rand(450, 750), color: deep,
+      });
+    }
+    // Glitter: motes and sparks in the bright colour and white.
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(4, 13) * UNIT;
+      this.add({
+        kind: i % 3 ? 'mote' : 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(1, 4) * UNIT,
+        color: i % 2 ? 0xffffff : bright, size: rand(1.6, 3), life: rand(500, 1000), drag: 0.12, gravity: -1.5 * UNIT,
       });
     }
   }
 
-  private oldestSmoke(): Phaser.GameObjects.Image | undefined {
-    return this.smoke.reduce<Smoke | undefined>((o, p) => (!o || p.age / p.life > o.age / o.life ? p : o), undefined)?.img;
+  private oldestSmoke(): Smoke | undefined {
+    return this.smoke.reduce<Smoke | undefined>((o, p) => (!o || p.age / p.life > o.age / o.life ? p : o), undefined);
   }
 
   /** Dust kicked up behind a running robot (`dir`: away from the run). */
@@ -281,21 +320,47 @@ export class ImpactFx {
   private updateSmoke(dt: number, dtMs: number): void {
     this.smoke = this.smoke.filter((p) => {
       if ((p.age += dtMs) < p.life) return true;
-      p.img.setVisible(false);
+      for (const img of [p.rim, p.body, p.shine]) img.setVisible(false);
       return false;
     });
+    const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     for (const p of this.smoke) {
-      // Billows out fast and stalls, then drifts up as it cools.
-      const keep = Math.pow(0.02, dt);
+      // Bursts out fast and stalls, then drifts up.
+      const keep = Math.pow(0.015, dt);
       p.vx *= keep;
-      p.vy = p.vy * keep - 2.2 * UNIT * dt;
+      p.vy = p.vy * keep - 2 * UNIT * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       const f = p.age / p.life;
-      const r = p.size + p.grow * (1 - (1 - f) * (1 - f));
-      const alpha = Math.min(1, f / 0.06) * Math.pow(1 - f, 1.4) * 0.9;
-      p.img.setPosition(p.x, p.y).setScale(r / 60).setRotation(p.img.rotation + p.spin * dt)
-        .setTint(mix(p.hot, p.cold, Math.min(1, f * 1.6))).setAlpha(alpha);
+      // Swells, then collapses at the end; the bright body goes first, leaving the deep rim.
+      const r = (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f));
+      const rot = p.rim.rotation + p.spin * dt;
+      const scale = r / 60;
+      p.rim.setPosition(p.x, p.y).setScale(scale).setRotation(rot);
+      p.body.setPosition(p.x, p.y).setScale(scale * (1 - 0.85 * smooth(0.35, 0.8, f))).setRotation(rot);
+      p.shine.setPosition(p.x, p.y).setScale(scale * (1 - smooth(0.25, 0.55, f))).setRotation(rot);
+    }
+    this.wisps = this.wisps.filter((w) => (w.age += dtMs) < w.life);
+    const g = this.wispG.clear();
+    for (const w of this.wisps) {
+      // The tip races out and the tail follows it, thinning to nothing.
+      const f = w.age / w.life;
+      const tip = w.len * (1 - (1 - f) * (1 - f) * (1 - f));
+      const tail = w.len * f * f;
+      const ca = Math.cos(w.angle); const sa = Math.sin(w.angle);
+      const at = (d: number, side: number, width: number) => {
+        const k = (d / w.len) * (d / w.len) * w.bend; // curls more towards the tip
+        return { x: w.x + ca * d - sa * (k + side * width), y: w.y + sa * d + ca * (k + side * width) };
+      };
+      const left: { x: number; y: number }[] = [];
+      const right: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 6; i++) {
+        const d = tail + ((tip - tail) * i) / 6;
+        const width = w.width * (1 - f) * (1 - i / 6);
+        left.push(at(d, -1, width));
+        right.push(at(d, 1, width));
+      }
+      g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
     }
   }
 
@@ -435,7 +500,8 @@ export class ImpactFx {
   }
 
   destroy(): void {
-    for (const img of this.smokeImages) img.destroy();
+    for (const p of this.smokePool) { p.rim.destroy(); p.body.destroy(); p.shine.destroy(); }
+    this.wispG.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();
@@ -443,32 +509,59 @@ export class ImpactFx {
 }
 
 /**
- * Soft cloud puffs for the K.O. smoke (white, lit from above so a tint keeps
- * some shading): a few lumps of soft circles, one shape per texture.
+ * The K.O. smoke's colours from the team colour, kept saturated: a deep rim
+ * and a bright body shifted in hue (blue gives royal blue and teal, red gives
+ * crimson and orange), like painted cartoon smoke.
+ */
+function smokeColors(color: number): { deep: number; bright: number } {
+  const c = Phaser.Display.Color.IntegerToColor(color);
+  const h = (Phaser.Display.Color.RGBToHSV(c.red, c.green, c.blue) as Phaser.Types.Display.HSVColorObject).h;
+  // Warm colours brighten towards yellow, cool ones towards cyan; the rim turns the other way.
+  const target = h < 0.3 || h > 0.85 ? 0.13 : 0.46;
+  let d = target - h;
+  if (d > 0.5) d -= 1;
+  if (d < -0.5) d += 1;
+  const hue = (x: number) => (x + 1) % 1;
+  return {
+    deep: Phaser.Display.Color.HSVToRGB(hue(h - Math.sign(d) * 0.05), 0.85, 0.82).color,
+    bright: Phaser.Display.Color.HSVToRGB(hue(h + d * 0.6), 0.68, 1).color,
+  };
+}
+
+/**
+ * Hard-edged cloud shapes for the K.O. smoke, white so a tint colours them,
+ * one shape per texture in three layers: the whole lumpy cloud (rim), the
+ * same lumps smaller and up to the left (body) and a few highlight blobs.
  */
 function smokeTextures(textures: Phaser.Textures.TextureManager): void {
   for (let t = 0; t < SMOKE_TEXTURES; t++) {
-    const key = `smoke-${t}`;
-    if (textures.exists(key)) continue;
-    const tex = textures.createCanvas(key, 128, 128)!;
-    const ctx = tex.getContext();
-    const lumps = 7 + t * 2;
-    for (let i = 0; i < lumps; i++) {
-      const a = (i / lumps) * Math.PI * 2 + t;
-      const d = i === 0 ? 0 : 14 + ((i * 37 + t * 11) % 13);
-      const cx = 64 + Math.cos(a) * d;
-      const cy = 64 + Math.sin(a) * d * 0.9;
-      const r = i === 0 ? 40 : 22 + ((i * 53 + t * 7) % 12);
-      // Lighter at the top of each lump, darker underneath.
-      const g = ctx.createRadialGradient(cx - r * 0.25, cy - r * 0.35, 0, cx, cy, r);
-      g.addColorStop(0, 'rgba(255,255,255,0.55)');
-      g.addColorStop(0.55, 'rgba(205,205,205,0.35)');
-      g.addColorStop(1, 'rgba(150,150,150,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.fill();
+    if (textures.exists(`smoke-rim-${t}`)) continue;
+    // Lumps round a big middle one (centre, radius), the same each time.
+    const lumps: [number, number, number][] = [[64, 66, 36]];
+    const count = 5 + t;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + t * 0.7;
+      const d = 24 + ((i * 37 + t * 11) % 9);
+      lumps.push([64 + Math.cos(a) * d, 66 + Math.sin(a) * d * 0.85, 17 + ((i * 53 + t * 7) % 9)]);
     }
-    tex.refresh();
+    const draw = (key: string, paint: (ctx: CanvasRenderingContext2D) => void) => {
+      const tex = textures.createCanvas(key, 128, 128)!;
+      const ctx = tex.getContext();
+      ctx.fillStyle = '#ffffff';
+      paint(ctx);
+      tex.refresh();
+    };
+    const circle = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+    draw(`smoke-rim-${t}`, (ctx) => { for (const [x, y, r] of lumps) circle(ctx, x, y, r); });
+    draw(`smoke-body-${t}`, (ctx) => { for (const [x, y, r] of lumps) circle(ctx, x - r * 0.16, y - r * 0.2, r * 0.74); });
+    draw(`smoke-shine-${t}`, (ctx) => {
+      // A highlight up and to the left on the big lump and on the upper ones.
+      for (const [i, [x, y, r]] of lumps.entries()) {
+        if (i > 0 && (y > 50 || i % 2)) continue;
+        ctx.beginPath();
+        ctx.ellipse(x - r * 0.3, y - r * 0.36, r * (i ? 0.2 : 0.3), r * (i ? 0.13 : 0.18), -0.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
   }
 }
