@@ -67,8 +67,6 @@ function say(text: string): void {
   note.dataset.timer = String(setTimeout(() => { if (note) note.style.opacity = '0'; }, 3500));
 }
 
-const SELECT = 8;
-
 export function installFullscreen(game: Phaser.Game): void {
   window.addEventListener('keydown', (e) => {
     if (e.code !== 'F11' || e.repeat) return;
@@ -81,17 +79,5 @@ export function installFullscreen(game: Phaser.Game): void {
   game.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => fillScreen(game, false));
   game.scale.on(Phaser.Scale.Events.FULLSCREEN_FAILED, () => say('The browser refused fullscreen: press F11 or click the game, then try again'));
   game.scale.on(Phaser.Scale.Events.FULLSCREEN_UNSUPPORTED, () => say('Fullscreen is not supported here'));
-
-  // Select on any pad, read straight from the browser (a scene's gamepad
-  // plugin only runs while that scene does). In the pause Select quits to
-  // the title instead (GameScene).
-  let wasDown = false;
-  game.events.on(Phaser.Core.Events.POST_STEP, () => {
-    const down = gamepads().some((p) => p.buttons[SELECT]?.pressed);
-    if (down && !wasDown) {
-      const match = game.scene.getScene('Game') as Phaser.Scene & { paused?: boolean } | null;
-      if (!(match && game.scene.isActive('Game') && match.paused)) toggleFullscreen(game);
-    }
-    wasDown = down;
-  });
+  // Pad Select is not a fullscreen button (it quits from the pause, and works the sandbox's dummy): F11 or the settings.
 }

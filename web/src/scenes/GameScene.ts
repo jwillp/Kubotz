@@ -10,7 +10,7 @@ import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
-import { CTF_CAPTURES, CTF_GUARDIANS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
+import { CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -84,6 +84,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
   private portals!: PortalFx;
+  /** Portals inside an arena (Capture the Flag's), in pairs, and when each thing that went through may go through again. */
+  private innerPortals: Phaser.Geom.Rectangle[] = [];
+  private portalCooldown = new WeakMap<object, number>();
   /** The spawn holograms (match start, respawns). */
   private holo!: HoloSpawns;
   private orbs: PowerUpOrb[] = [];
@@ -156,6 +159,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
+    this.innerPortals = [];
+    this.portalCooldown = new WeakMap();
     this.solids = [];
     this.blocks = [];
     this.winnerTeam = undefined;
@@ -206,7 +211,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.recorder.setArena(this.map.width * UNIT, this.map.height * UNIT);
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
-    this.portals = new PortalFx(this, this.warpZones);
+    this.portals = new PortalFx(this, [...this.warpZones, ...this.innerPortals]);
     this.recorder.watch(this.portals, ['burst'], 'portals');
     this.holo = new HoloSpawns(this);
 
@@ -444,6 +449,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           break;
         case 'BONUS_SPAWN':
           this.bonusSpawns.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height / 2));
+          break;
+        case 'PORTAL':
+          this.innerPortals.push(new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height));
           break;
         case 'FLAG_STAND':
           this.flagStands.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height));
@@ -793,6 +801,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateBullets(now, dt);
     this.updateOrbs(now);
     this.checkBoundsAndWarps(now);
+    this.updateInnerPortals(now);
     this.checkDeaths(now);
     this.checkTime(now);
     this.updateBonusSpawns(now);
@@ -1166,6 +1175,34 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const m of movers) this.warp(m.x, m.y, m.vx, (x, y) => m.teleport(x, y));
   }
 
+  /**
+   * Portals inside the arena, in pairs: whatever goes into one (a Kubot,
+   * a laser bolt, a power-up ball) comes out of the other at the same height
+   * in it, still moving the same way; then not again for a moment.
+   */
+  private updateInnerPortals(now: number): void {
+    const zones = this.innerPortals;
+    if (zones.length < 2) return;
+    const movers: { key: object; x: number; y: number; vx: number; teleport: (x: number, y: number) => void }[] = [
+      ...this.fighters.filter((k) => k.isAlive()).map((k) => ({ key: k, x: k.x, y: k.y, vx: k.body.vx, teleport: (x: number, y: number) => k.teleport(x, y) })),
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ key: b, x: b.x, y: b.y, vx: b.vx, teleport: (x: number, y: number) => b.teleport(x, y) })),
+      ...this.orbs.map((o) => ({ key: o, x: o.x, y: o.y, vx: o.body.vx, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
+    ];
+    for (const m of movers) {
+      if ((this.portalCooldown.get(m.key) ?? 0) > now) continue;
+      const i = zones.findIndex((z) => m.x > z.x - 0.3 * UNIT && m.x < z.right + 0.3 * UNIT && m.y > z.y && m.y < z.bottom);
+      if (i < 0) continue;
+      const from = zones[i];
+      const to = zones[i % 2 === 0 ? i + 1 : i - 1];
+      if (!to) continue;
+      const dir = Math.sign(m.vx) || 1;
+      m.teleport(to.centerX + dir * 1.1 * UNIT, to.y + (m.y - from.y));
+      this.portalCooldown.set(m.key, now + 700);
+      this.portals.burst(to.centerX, m.y, this.clock);
+      if (m.key instanceof Kubotz) this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60));
+    }
+  }
+
   private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
     if (this.warpZones.length !== 2) return;
     const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
@@ -1365,13 +1402,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const colors = [SLOT_COLORS[HORDE_TEAM], BLACK_COLOR];
     const teams = [HORDE_TEAM, BLACK_TEAM];
     this.flags = teams.map((team, i) => new CtfFlag(this, this.physicsWorld, team, colors[i], this.flagStands[i]));
-    const add = (team: number, role: 'striker' | 'guardian', helmet: number) => {
-      const k = this.spawnFoe(team, team === BLACK_TEAM ? BLACK_COLOR : SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, helmet, Infinity, this.countdownAt);
+    // The black team plays a little sharper than the players' own guardians.
+    const add = (team: number, role: 'striker' | 'guardian' | 'interceptor', helmet: number) => {
+      const black = team === BLACK_TEAM;
+      const k = this.spawnFoe(team, black ? BLACK_COLOR : SLOT_COLORS[team], black ? 7 : 5, Config.KUBOTZ_HEALTH, helmet, Infinity, this.countdownAt);
       k.role = role;
     };
     for (let i = 0; i < CTF_GUARDIANS; i++) add(HORDE_TEAM, 'guardian', 7);
     for (let i = 0; i < this.specs.length; i++) add(BLACK_TEAM, 'striker', BLACK_HELMET);
+    for (let i = 0; i < CTF_INTERCEPTORS; i++) add(BLACK_TEAM, 'interceptor', 1);
     for (let i = 0; i < CTF_GUARDIANS; i++) add(BLACK_TEAM, 'guardian', 7);
+    // Everyone goes down much faster than in a duel: a few good hits launch.
+    for (const k of this.fighters) k.damageScale = CTF_DAMAGE;
   }
 
   /** A team's flag, and the other one. */
@@ -1401,6 +1443,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // The two guardians stand either side of the stand, not on it (the flag stays in sight).
       const side = k.index % 2 === 0 ? -1 : 1;
       return { leash: { x: base.x + side * 3 * UNIT, y: base.y - UNIT, r: 8 } };
+    }
+    if (k.role === 'interceptor') {
+      // The middle of the hall: they go after a thief crossing it, else hold it.
+      const mid = { x: (this.map.width * UNIT) / 2 + (k.index % 2 === 0 ? -8 : 8) * UNIT, y: base.y };
+      if (own.carrier && Math.abs(own.carrier.x - mid.x) < 30 * UNIT) return { target: own.carrier };
+      return { leash: { x: mid.x, y: mid.y - 6 * UNIT, r: 16 } };
     }
     if (k.carrying) return { goal: base, fightWithin: 1.2 };
     if (own.carrier && k.index % 2 === 0) return { target: own.carrier };

@@ -24,6 +24,8 @@ export interface ArenaDef {
   size?: [w: number, h: number];
   /** Capture the Flag only: the flag stands (the pole's foot), the players' first; spawns nearest a stand belong to its team. */
   flags?: [x: number, y: number][];
+  /** Portals inside the arena, in pairs (1st and 2nd, 3rd and 4th...): going into one comes out of the other. */
+  portals?: Rect[];
 }
 
 /** One Kube's size in units: the default arena size. */
@@ -70,24 +72,26 @@ export const ARENAS: (ArenaDef | null)[] = [
     bonus: [[26, 26], [26, 12], [11, 10], [41, 10]],
   },
   {
-    // Capture the Flag: two bases at the ends of a long hall, two pits to jump, a raised middle.
+    // Capture the Flag: two bases far apart at the ends of a long hall, six pits between them,
+    // a raised middle, and two pairs of portals across the middle: a high lane, and one by the floor.
     name: 'The Long Hall',
     blurb: 'Capture the Flag: a base at each end',
-    size: [120, 40],
+    size: [180, 44],
     walls: [
-      [6, 1, 108, 2], [4, 3, 2, 33], [114, 3, 2, 33],
-      [6, 36, 30, 3], [40, 36, 40, 3], [84, 36, 30, 3],
-      [26, 31, 3, 5], [91, 31, 3, 5], [46, 30, 3, 6], [71, 30, 3, 6], [56, 27, 8, 2],
+      [6, 1, 168, 2], [4, 3, 2, 37], [174, 3, 2, 37],
+      [6, 40, 26, 3], [36, 40, 16, 3], [57, 40, 14, 3], [75, 40, 30, 3], [109, 40, 14, 3], [128, 40, 16, 3], [148, 40, 26, 3],
+      [24, 35, 3, 5], [153, 35, 3, 5], [62, 34, 3, 6], [115, 34, 3, 6], [86, 31, 8, 2],
     ],
     platforms: [
-      [8, 29, 10, 1], [102, 29, 10, 1], [14, 22, 10, 1], [96, 22, 10, 1],
-      [33, 30, 10, 1], [77, 30, 10, 1], [44, 22, 10, 1], [66, 22, 10, 1], [54, 15, 12, 1],
-      [26, 14, 14, 1], [80, 14, 14, 1],
+      [30, 34, 8, 1], [142, 34, 8, 1], [50, 33, 9, 1], [121, 33, 9, 1], [70, 34, 7, 1], [103, 34, 7, 1],
+      [8, 32, 10, 1], [162, 32, 10, 1], [14, 25, 10, 1], [156, 25, 10, 1], [40, 26, 10, 1], [130, 26, 10, 1],
+      [60, 22, 12, 1], [108, 22, 12, 1], [84, 18, 12, 1], [28, 17, 14, 1], [138, 17, 14, 1],
     ],
     warps: [],
-    spawns: [[8, 36], [13, 36], [18, 36], [12, 29], [112, 36], [107, 36], [102, 36], [108, 29]],
-    bonus: [[21, 33], [99, 33], [60, 24], [60, 12]],
-    flags: [[10, 36], [110, 36]],
+    spawns: [[8, 40], [13, 40], [18, 40], [12, 32], [172, 40], [167, 40], [162, 40], [168, 32]],
+    bonus: [[20, 37], [160, 37], [90, 28], [90, 15], [55, 30], [125, 30]],
+    flags: [[11, 40], [169, 40]],
+    portals: [[46, 9, 1, 5], [133, 9, 1, 5], [58, 36, 1, 4], [121, 36, 1, 4]],
   },
 ];
 
@@ -164,6 +168,7 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     ...def.spawns.map(([x, y]) => obj('PLAYER_SPAWN', x - 0.5, y - 1, 1, 1)),
     ...def.bonus.map(([x, y]) => obj('BONUS_SPAWN', x - 0.5, y - 0.5, 1, 1)),
     ...(def.flags ?? []).map(([x, y]) => obj('FLAG_STAND', x - 0.5, y - 1, 1, 1)),
+    ...(def.portals ?? []).map(([x, y, w, h]) => obj('PORTAL', x, y, w, h)),
   ];
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };

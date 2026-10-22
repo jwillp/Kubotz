@@ -316,7 +316,9 @@ export class Kubotz implements Damageable, Teamed {
   maxHealth: number = Config.KUBOTZ_HEALTH;
   /** Capture the Flag: the flag it holds (swung with the sword's moves), and its job on a CPU team. */
   carrying: CtfFlag | null = null;
-  role?: 'striker' | 'guardian';
+  role?: 'striker' | 'guardian' | 'interceptor';
+  /** Damage taken is multiplied by this (Capture the Flag: Kubotz go down much faster than in a duel). */
+  damageScale = 1;
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -1500,6 +1502,7 @@ export class Kubotz implements Damageable, Teamed {
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
     if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return;
+    amount *= this.damageScale;
     const now = this.hooks.now();
     // A hit breaks a grab (on either Kubot) and knocks a Kubot off its ledge.
     if (this.holding || this.heldBy) this.breakGrab();

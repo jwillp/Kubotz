@@ -235,6 +235,8 @@ export const BACKDROPS: BackdropTheme[] = [
     tiles: { hue: 165, plates: [0.92, 1.04, 1.0] },
   },
 ];
+// The Long Hall (Capture the Flag): Sky Deck's violet room.
+BACKDROPS.push(BACKDROPS[2]);
 
 /** The mood of an arena (index into ARENA_INFO). */
 export function backdropOf(arena: number | undefined): BackdropTheme {

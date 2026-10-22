@@ -58,7 +58,7 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'battle',
     name: 'Capture the Flag',
     tagline: 'Bring the black team\'s flag home.',
-    rules: ['All players on one team, on a giant arena', 'Grab the black flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; infinite recharges'],
+    rules: ['A giant hall with pits and portals', 'Grab the black flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
     ctf: true,
   },
   sandbox: {
@@ -115,6 +115,9 @@ export function trainingFoes(done: number, target: number): { together: number; 
 /** Capture the Flag: captures to win, and guardians per side. */
 export const CTF_CAPTURES = 3;
 export const CTF_GUARDIANS = 2;
+/** Capture the Flag: the black team's interceptors (they hold the middle), and how much more damage everyone takes. */
+export const CTF_INTERCEPTORS = 2;
+export const CTF_DAMAGE = 1.8;
 
 /** Horde: waves to survive, and the players' team. */
 export const HORDE_WAVES = 10;
