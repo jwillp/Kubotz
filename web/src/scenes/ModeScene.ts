@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { HEADS, SLOT_COLORS, partTexture } from '../game/Kubotz';
 import { BLACK_COLOR } from '../game/Match';
 import { MODE_ORDER, MODES, type MatchMode } from '../game/Modes';
@@ -10,7 +10,7 @@ import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawPlate, drawStrip, footer, frameTitle, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
 import { MenuInput } from './MenuInput';
 
-/** A robot on the mode's stage: its colour, helmet, weapon (rig map) and which way it faces. */
+/** A Kubot on the mode's stage: its colour, helmet, weapon (rig map) and which way it faces. */
 interface Actor { color: number; helmet: number; weapon?: string; face: 1 | -1 }
 
 /** Who stands on the stage for each mode. */
@@ -58,7 +58,7 @@ export class ModeScene extends Phaser.Scene {
   private title!: HeadingText;
   private tagline!: Phaser.GameObjects.Text;
   private rules!: Phaser.GameObjects.Text;
-  private actors: { robot: Robot2D; anim: Animator; actor: Actor }[] = [];
+  private actors: { kubot: Kubot2D; anim: Animator; actor: Actor }[] = [];
 
   constructor() { super('Modes'); }
 
@@ -69,7 +69,7 @@ export class ModeScene extends Phaser.Scene {
     kubeBackdrop(this);
     frameTitle(this, 'Battle mode');
     this.rig = new Rig(this.registry.get('spriter') as SpriterData);
-    // The robots' parts are lit (normal maps), as on the setup screen: a key light from the top left, a blue rim from below right.
+    // The Kubotz' parts are lit (normal maps), as on the setup screen: a key light from the top left, a blue rim from below right.
     if (this.sys.renderer.type === Phaser.WEBGL) {
       this.lights.enable().setAmbientColor(0xb4bcdc);
       this.lights.addLight(PANEL.x + 120, PANEL.y + 40, 1200, 0xffe8cc, 2.6);
@@ -79,7 +79,7 @@ export class ModeScene extends Phaser.Scene {
     const p = drawPlate(this.add.graphics(), PANEL.x, PANEL.y, PANEL.w, PANEL.h, { cut: 26, alpha: 0.88 });
     drawStrip(p, PANEL.x, PANEL.y + 26, PANEL.x, PANEL.y + PANEL.h, NEON, 4);
     drawStrip(p, PANEL.x + PANEL.w * 0.45, PANEL.y + PANEL.h, PANEL.x + PANEL.w - 26, PANEL.y + PANEL.h, NEON, 3);
-    // The stage's floor: a lit strip the robots stand on.
+    // The stage's floor: a lit strip the Kubotz stand on.
     drawStrip(p, PANEL.x + 60, STAGE_Y + 2, PANEL.x + PANEL.w - 60, STAGE_Y + 2, NEON, 2);
     const cx = PANEL.x + PANEL.w / 2;
     this.title = heading(this, cx, PANEL.y + 52, '', 54);
@@ -109,15 +109,15 @@ export class ModeScene extends Phaser.Scene {
   update(time: number, deltaMs: number): void {
     if (!this.leaving) this.menu.update(time);
     const lineup = this.actors.length;
-    this.actors.forEach(({ robot, anim, actor }, i) => {
+    this.actors.forEach(({ kubot, anim, actor }, i) => {
       anim.tick(deltaMs);
       if (anim.finished) anim.play('idle', { fade: 150 });
       // Spread along the stage: the first side facing right, the other facing left.
       const x = PANEL.x + PANEL.w / 2 + (i - (lineup - 1) / 2) * Math.min(130, (PANEL.w - 200) / Math.max(1, lineup - 1));
       const maps = [HEADS[actor.helmet], ...(actor.weapon ? [actor.weapon] : [])].filter((m): m is string => !!m);
-      robot.update(anim.pose(), maps, x, STAGE_Y, 160, { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
+      kubot.update(anim.pose(), maps, x, STAGE_Y, 160, { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
       const s = ART_SCALE * (lineup > 3 ? 0.62 : 0.78);
-      robot.view.setScale(-s * actor.face, s);
+      kubot.view.setScale(-s * actor.face, s);
     });
   }
 
@@ -131,12 +131,12 @@ export class ModeScene extends Phaser.Scene {
     this.tagline.setText(m.tagline);
     this.rules.setText(m.rules.map((r) => `▸  ${r}`).join('\n'));
     // A new cast on the stage, one taunting.
-    for (const a of this.actors) a.robot.destroy();
+    for (const a of this.actors) a.kubot.destroy();
     this.actors = LINEUPS[MODE_ORDER[i]].map((actor) => {
-      const robot = new Robot2D(this, this.rig, (file) => partTexture(this.textures, file, actor.color));
+      const kubot = new Kubot2D(this, this.rig, (file) => partTexture(this.textures, file, actor.color));
       const anim = new Animator(this.rig);
       anim.play('idle', { restart: true });
-      return { robot, anim, actor };
+      return { kubot, anim, actor };
     });
     this.actors[0]?.anim.play('taunt', { restart: true, ms: 700, fade: 60 });
   }

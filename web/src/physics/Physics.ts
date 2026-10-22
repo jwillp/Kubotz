@@ -17,7 +17,7 @@ const CAT_KUBOTZ = 0x2;
 const CAT_ITEM = 0x4;
 
 type FixtureTag = 'foot' | 'kubotz' | 'static' | 'item' | 'debris';
-/** A soft platform (STATIC_PLATFORM): one-way, and robots can drop through it. */
+/** A soft platform (STATIC_PLATFORM): one-way, and Kubotz can drop through it. */
 interface PlatformTag { platform: true; top: number; }
 const isPlatform = (f: Fixture): boolean => (f.getUserData() as PlatformTag | null)?.platform === true;
 
@@ -90,7 +90,7 @@ abstract class PxBody {
  * The Kubotz body (KubotzFactory.buildBody): a fixed-rotation dynamic body made
  * of a box between two circles (a capsule: torso, head and legs hitboxes) and a
  * foot sensor. The original was 2 x 4 units; it is scaled to the 1 x 2 unit
- * robot the art and map of this port use.
+ * Kubot the art and map of this port use.
  */
 export class KubotzBody extends PxBody {
   /** The top (units) of the soft platform being dropped through, or null. */
@@ -117,14 +117,14 @@ export class KubotzBody extends PxBody {
     this.body.createFixture({ shape: new Box(0.05, 0.05, Vec2(0, hh)), isSensor: true, userData: 'foot' as FixtureTag, ...filter });
   }
 
-  /** Passes through other robots (while held and thrown), still blocked by the map. */
+  /** Passes through other Kubotz (while held and thrown), still blocked by the map. */
   set ghost(on: boolean) {
     for (let f = this.body.getFixtureList(); f; f = f.getNext()) f.setFilterData({ groupIndex: 0, categoryBits: CAT_KUBOTZ, maskBits: on ? CAT_STATIC : CAT_STATIC | CAT_KUBOTZ });
   }
 
-  /** Overlapping another robot's body (so passing through it must go on a little longer). */
-  overlapsRobot(): boolean {
-    // A little inside the body: robots merely standing side by side are clear
+  /** Overlapping another Kubot's body (so passing through it must go on a little longer). */
+  overlapsKubot(): boolean {
+    // A little inside the body: Kubotz merely standing side by side are clear
     // (the broad phase's boxes are padded).
     const p = this.body.getPosition();
     const hw = Config.KUBOTZ_WIDTH * 0.3;
@@ -140,7 +140,7 @@ export class KubotzBody extends PxBody {
 
   bottomUnits(): number { return this.body.getPosition().y + Config.KUBOTZ_HEIGHT / 2; }
 
-  /** What the robot stands on: a touching, enabled contact pushing it up. */
+  /** What the Kubot stands on: a touching, enabled contact pushing it up. */
   private ground(): Fixture | null {
     if (this.body.getLinearVelocity().y < -0.5) return null; // going up
     for (let e = this.body.getContactList(); e; e = e.next ?? null) {
@@ -230,7 +230,7 @@ export class ItemBody extends PxBody {
   }
 }
 
-/** A piece of an exploded robot: a tumbling circle that bounces on the arena. */
+/** A piece of an exploded Kubot: a tumbling circle that bounces on the arena. */
 export class DebrisBody extends PxBody {
   constructor(physics: PhysicsWorld, x: number, y: number, radius: number) {
     super(physics.world.createBody({ type: 'dynamic', position: Vec2(x / UNIT, y / UNIT), bullet: true }));

@@ -3,7 +3,7 @@ import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 
 /**
- * Laser bullet (BulletFactory): no gravity, dies on contact with walls or robots.
+ * Laser bullet (BulletFactory): no gravity, dies on contact with walls or Kubotz.
  * It moves in a straight line, so it is integrated here rather than by Box2D.
  */
 export class Bullet {

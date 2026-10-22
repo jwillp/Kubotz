@@ -10,7 +10,7 @@ export interface ModeInfo {
   tagline: string;
   /** The rules, a few short lines. */
   rules: string[];
-  /** A weapon every robot holds for the whole match (no weapon power-ups then). */
+  /** A weapon every Kubot holds for the whole match (no weapon power-ups then). */
   armed?: Weapon;
   /** All players on one team against the black team's waves. */
   horde?: boolean;
@@ -25,19 +25,19 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   horde: {
     name: 'Horde',
     tagline: 'Everyone together against the black team.',
-    rules: ['All players fight on one team', 'Survive 10 waves of black-team robots', 'Each wave brings more, and tougher'],
+    rules: ['All players fight on one team', 'Survive 10 waves of black-team Kubotz', 'Each wave brings more, and tougher'],
     horde: true,
   },
   blasters: {
     name: 'Blasters',
     tagline: 'A laser gun for everyone, for good.',
-    rules: ['Every robot holds a laser gun all match', 'No sword or gun power-ups', 'Win with fire power alone'],
+    rules: ['Every Kubot holds a laser gun all match', 'No sword or gun power-ups', 'Win with fire power alone'],
     armed: 'laserGunMkI',
   },
   blades: {
     name: 'Blades',
     tagline: 'A laser sword for everyone, for good.',
-    rules: ['Every robot holds a laser sword all match', 'No sword or gun power-ups', 'Win with the blade alone'],
+    rules: ['Every Kubot holds a laser sword all match', 'No sword or gun power-ups', 'Win with the blade alone'],
     armed: 'laserSword',
   },
 };
@@ -48,13 +48,13 @@ export const MODE_ORDER: MatchMode[] = ['gladiator', 'horde', 'blasters', 'blade
 export const HORDE_WAVES = 10;
 export const HORDE_TEAM = 0;
 
-/** At most this many black-team robots at once: 4 more than the players, never more than 8. */
+/** At most this many black-team Kubotz at once: 4 more than the players, never more than 8. */
 export const hordeCap = (players: number): number => Math.min(players + 4, 8);
 
 /**
- * Wave `n` (from 1): how many black-team robots, their CPU level and the
- * health they start with (100 is a full robot). The first waves are one or
- * two level 1 robots at 40%; each wave adds a little of everything.
+ * Wave `n` (from 1): how many black-team Kubotz, their CPU level and the
+ * health they start with (100 is a full Kubot). The first waves are one or
+ * two level 1 Kubotz at 40%; each wave adds a little of everything.
  */
 export function hordeWave(n: number, players: number): { count: number; level: number; health: number } {
   return {

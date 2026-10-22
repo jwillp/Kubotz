@@ -3,7 +3,7 @@ import { UNIT } from '../config';
 /**
  * Path finding for the CPU players. The original ran A* on a grid over the
  * map; for a platformer it is simpler and more reliable to run A* on the
- * surfaces robots can stand on, linked by the moves between them: jump up to a
+ * surfaces Kubotz can stand on, linked by the moves between them: jump up to a
  * platform (through it from below when it is soft), drop through a soft
  * platform, run off an edge, or jump across a gap.
  */
@@ -110,7 +110,7 @@ export class Nav {
     return out;
   }
 
-  /** A solid block between two heights at x (would bump the robot's head). */
+  /** A solid block between two heights at x (would bump the Kubot's head). */
   private blockedAbove(x: number, fromY: number, toY: number, blocks: NavBlock[]): boolean {
     return blocks.some((o) => !o.soft && x > o.x - UNIT / 2 && x < o.x + o.width + UNIT / 2 && o.y + o.height <= fromY && o.y + o.height > toY);
   }
@@ -122,12 +122,12 @@ export class Nav {
     return blocks.some((o) => !o.soft && o.x < hi && o.x + o.width > lo && o.y < y - 1 && o.y + o.height > y - 1.5 * UNIT);
   }
 
-  /** Falling at x from y, would something else catch the robot before surface b? */
+  /** Falling at x from y, would something else catch the Kubot before surface b? */
   private landsOnOther(x: number, y: number, b: Surface, blocks: NavBlock[]): boolean {
     return blocks.some((o) => !o.soft && x >= o.x && x <= o.x + o.width && o.y > y && o.y < b.y);
   }
 
-  /** The surface under a point (the robot's feet), within `reach` px below it. */
+  /** The surface under a point (the Kubot's feet), within `reach` px below it. */
   surfaceAt(x: number, y: number, reach = 40 * UNIT): Surface | null {
     let best: Surface | null = null;
     for (const s of this.surfaces) {

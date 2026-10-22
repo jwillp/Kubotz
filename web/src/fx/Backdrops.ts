@@ -1,7 +1,7 @@
 /**
  * Arena moods (BackdropScene, GameScene): every arena keeps the Kube's
  * out-of-focus room with bokeh and light shafts, in its own palette, and the
- * match is lit and its tiles tinted to match, so robots, tiles and backdrop
+ * match is lit and its tiles tinted to match, so Kubotz, tiles and backdrop
  * read as one place.
  *
  *  - The Kube: cold blues (the original look).

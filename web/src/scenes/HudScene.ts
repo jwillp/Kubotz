@@ -30,7 +30,7 @@ interface Card {
 }
 
 /**
- * HUDSystem: a "Kube plate" card per robot along the bottom edge (tag on a
+ * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
  * slab in its helmet colour, segmented health, guard, stock pips, K.O.s),
  * a status chip above each card, and the match timer plate top centre.
  */
@@ -38,7 +38,7 @@ export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
   private cards = new Map<Kubotz, Card>();
   private timer!: Phaser.GameObjects.Text;
-  /** Horde: the wave and the black-team robots left, under the timer. */
+  /** Horde: the wave and the black-team Kubotz left, under the timer. */
   private waveText?: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
   private bannerPlate!: Phaser.GameObjects.Graphics;
@@ -69,7 +69,7 @@ export class HudScene extends Phaser.Scene {
       this.waveText = this.add.text(width / 2, 55, '', body(15, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5);
     }
 
-    // One card per robot in seat order, centred along the bottom edge; the black team has none.
+    // One card per Kubot in seat order, centred along the bottom edge; the black team has none.
     const fighters = this.game_.fighters.filter((k) => !isBlackTeam(k));
     const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
     fighters.forEach((k, i) => this.cards.set(k, this.makeCard(k, left + i * (CARD_W + CARD_GAP), height - CARD_H - 10)));
@@ -248,7 +248,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onMatchOver(winnerTeam: number | null): void {
-    // One robot: its name; a team of several: the team. Horde: survived, or the wave that ended it.
+    // One Kubot: its name; a team of several: the team. Horde: survived, or the wave that ended it.
     const team = winnerTeam === null ? [] : this.game_.teamOf(winnerTeam);
     const title = team.length === 1 ? team[0].name : `${TEAM_NAMES[winnerTeam!]} team`.toUpperCase();
     const horde = MODES[this.game_.mode].horde;
