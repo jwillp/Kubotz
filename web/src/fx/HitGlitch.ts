@@ -23,6 +23,16 @@ uniform float uTime;
 uniform float uAmount;
 uniform float uSeed;
 uniform float uZoom;
+// How much bigger the bands and tears are than the scan lines (1: the same).
+uniform float uCoarse;
+// Scan line spacing (1: every 3 pixels at the robots' scale; never under 2 screen pixels).
+uniform float uScan;
+// Opacity of the whole picture, applied after it is put together (so overlaps don't show).
+uniform float uOpacity;
+// A shield hexagon (pointy top): centre and half height in screen pixels, and
+// how hard what shows through it glitches.
+uniform vec3 uHex;
+uniform float uHexAmount;
 varying vec2 outTexCoord;
 float hash(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -31,33 +41,37 @@ float hash(vec2 p) {
 }
 void main () {
   vec2 uv = outTexCoord;
-  float k = uAmount;
   float y = (1.0 - uv.y) * uRes.y; // screen pixels from the top
+  vec2 q = abs(vec2(uv.x * uRes.x, y) - uHex.xy);
+  float inHex = step(max(q.x * 0.866 + q.y * 0.5, q.y), uHex.z);
+  float k = max(uAmount, uHexAmount * inHex);
   // The picture jumps a few times while it lasts, not every frame.
   float tick = floor(uTime * 30.0) + uSeed;
   // Bands of rows of uneven height tear sideways, the wider the harder the hit.
-  float band = floor(y / (uZoom * mix(3.0, 9.0, hash(vec2(floor(y / (12.0 * uZoom)), tick)))));
+  float cz = uZoom * uCoarse;
+  float band = floor(y / (cz * mix(3.0, 9.0, hash(vec2(floor(y / (12.0 * cz)), tick)))));
   float tear = step(1.0 - 0.45 * k, hash(vec2(band, tick)));
-  float shift = tear * (hash(vec2(band + 3.0, tick)) - 0.5) * 2.0 * 18.0 * uZoom * k;
+  float shift = tear * (hash(vec2(band + 3.0, tick)) - 0.5) * 2.0 * 18.0 * cz * k;
   uv.x += shift / uRes.x;
   // Red and blue pulled apart sideways.
-  float split = (2.0 + 4.0 * k) * uZoom * k / uRes.x;
+  float split = (2.0 + 4.0 * k) * cz * k / uRes.x;
   vec4 c = texture2D(uMainSampler, uv);
   vec4 r = texture2D(uMainSampler, uv + vec2(split, 0.0));
   vec4 b = texture2D(uMainSampler, uv - vec2(split, 0.0));
-  float a = max(c.a, max(r.a, b.a) * k);
+  float a = min(1.0, max(c.a, max(r.a, b.a) * k));
   if (a < 0.004) { gl_FragColor = vec4(0.0); return; }
   vec3 rgb = vec3(r.r, c.g, b.b);
   // Scan lines every 3 pixels, drifting down.
-  float scan = step(1.0, mod(y - uTime * 60.0, 3.0 * uZoom) / uZoom);
+  float period = max(2.0, 3.0 * uZoom * uScan); // fine lines, whatever the coarseness
+  float scan = step(1.0 / 3.0, mod(y - uTime * 60.0, period) / period);
   float keep = mix(1.0, 0.45 + 0.55 * scan, k);
   // A row here and there drops out, another burns bright.
-  float row = floor(y / (2.0 * uZoom));
+  float row = floor(y / (2.0 * cz));
   float drop = step(1.0 - 0.12 * k, hash(vec2(row, tick + 11.0)));
   float burn = step(1.0 - 0.08 * k, hash(vec2(row, tick + 23.0)));
   keep *= 1.0 - drop;
   rgb += vec3(0.55, 0.9, 1.0) * burn * a;
-  gl_FragColor = vec4(rgb * keep, a * keep);
+  gl_FragColor = vec4(rgb * keep, a * keep) * uOpacity;
 }
 `;
 
@@ -69,6 +83,13 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   seed = 0;
   /** The camera it is seen through (else the scene's main camera), for the zoom. */
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
+  /** A shield hexagon in world pixels (centre, half height) and how hard it glitches inside, or null. */
+  hex: HexGlitch | null = null;
+  /** How coarse the bands and tears are (1: sized like a robot's); the scan lines stay fine. */
+  coarse = 1;
+  /** Scan line spacing (1: as on a hit robot). */
+  scan = 1;
+  opacity = 1;
 
   constructor(game: Phaser.Game) {
     super({ game, name: HitGlitchPipeline.key, fragShader: FRAGMENT });
@@ -84,20 +105,38 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
     this.set1f('uAmount', this.amount);
     this.set1f('uSeed', this.seed);
     this.set1f('uZoom', Math.max(0.5, zoom));
+    this.set1f('uCoarse', this.coarse);
+    this.set1f('uScan', this.scan);
+    this.set1f('uOpacity', this.opacity);
+    const h = this.hex;
+    if (h && cam) {
+      // World to screen through the camera (scroll, zoom, rotation; its matrix is untyped), then to the target's pixels.
+      const s = target.height / this.renderer.height;
+      const p = (cam as unknown as { matrix: Phaser.GameObjects.Components.TransformMatrix }).matrix.transformPoint(h.x - cam.scrollX, h.y - cam.scrollY);
+      this.set3f('uHex', p.x * s, p.y * s, h.r * cam.zoom * s);
+      this.set1f('uHexAmount', h.amount);
+    } else {
+      this.set3f('uHex', 0, 0, 0);
+      this.set1f('uHexAmount', 0);
+    }
     this.bindAndDraw(target);
   }
 }
 
+/** What glitches inside a raised shield: a hexagon in world pixels (centre, half height) and how hard. */
+export interface HexGlitch { x: number; y: number; r: number; amount: number }
+
 /**
- * Sets how hard `obj` glitches (0 removes the pass). Without WebGL it does
+ * Sets how hard `obj` glitches (0 removes the pass), and optionally how hard
+ * the part of it inside a shield hexagon glitches. Without WebGL it does
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];
-  if (amount <= 0) {
+  if (amount <= 0 && !hex) {
     if (p) obj.removePostPipeline(HitGlitchPipeline.key);
     return;
   }
@@ -108,6 +147,10 @@ export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects
     p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline;
     p.seed = Math.random() * 100;
   }
-  p.amount = amount;
+  p.amount = Math.max(0, amount);
+  p.hex = hex ?? null;
+  p.coarse = coarse;
+  p.scan = scan;
+  p.opacity = opacity;
   if (camera) p.camera = camera;
 }

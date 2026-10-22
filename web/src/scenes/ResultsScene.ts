@@ -164,6 +164,7 @@ export class ResultsScene extends Phaser.Scene {
     // Hit sparks, rings and dust replayed from the match's calls.
     const before = new Set(this.children.list);
     this.impact = new ImpactFx(this);
+    this.impact.solids = (r.blocks ?? []).map((b) => new Phaser.Geom.Rectangle(b.x, b.y, b.width, b.height));
     for (const o of this.children.list) if (!before.has(o)) this.only(this.worldCam, o);
 
     this.buildStats();
@@ -377,7 +378,7 @@ export class ResultsScene extends Phaser.Scene {
     robot.visible = true;
     const bottom = L(ra.bottom, rb.bottom);
     robot.update(pose, ra.maps, L(ra.x, rb.x), bottom, L(ra.yaw, rb.yaw), {
-      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch,
+      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch, shield: ra.shield,
     });
     tag.setVisible(true).setPosition(L(ra.x, rb.x), bottom - 2.9 * UNIT).setScale(1 / zoom);
     if (ra.holo) {

@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
+import { hitGlitch } from './HitGlitch';
 
-type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote';
+type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
 interface Particle {
   kind: Kind;
@@ -15,10 +16,15 @@ interface Particle {
   drag: number; // fraction of speed kept per second
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
   len?: number; // beams: length behind the point (signed: the bolt's direction)
+  body?: number; // smoke: the bright colour inside its deep rim (`color`)
+  collide?: boolean; // stopped by the arena's walls and platforms
 }
 
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
 interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
+
+/** A streak of the K.O. smoke whipping out from the core, tapering to a point. */
+interface Wisp { x: number; y: number; angle: number; len: number; width: number; bend: number; age: number; life: number; color: number }
 
 interface Flash { x: number; y: number; color: number; intensity: number; at: number; }
 
@@ -54,6 +60,15 @@ export class ImpactFx {
   private flashes: Flash[] = [];
   private twirls: Twirl[] = [];
   private readonly behind: Phaser.GameObjects.Graphics;
+  private wisps: Wisp[] = [];
+  /** The K.O. smoke's streaks, under its puffs, and the puffs. */
+  private readonly wispG: Phaser.GameObjects.Graphics;
+  private readonly smokeG: Phaser.GameObjects.Graphics;
+  /** The arena's walls and platforms (world pixels), which smoke particles do not pass. */
+  solids: Phaser.Geom.Rectangle[] = [];
+  /** All of the K.O. smoke, glitched and scan-lined as one (fx/HitGlitch.ts). */
+  private readonly smokeView: Phaser.GameObjects.Container;
+  private lastKoAt = -Infinity;
   private now = 0;
 
   constructor(scene: Phaser.Scene) {
@@ -61,6 +76,10 @@ export class ImpactFx {
     this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(Phaser.BlendModes.ADD);
     this.dust = scene.add.graphics().setDepth(14);
     this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
+    // The K.O. smoke, glitched as one (made up front: the results scene sorts new objects onto its cameras once).
+    this.wispG = scene.add.graphics();
+    this.smokeG = scene.add.graphics();
+    this.smokeView = scene.add.container(0, 0, [this.wispG, this.smokeG]).setDepth(10.6);
   }
 
   /** A hit: `dir` is the push direction (-1 / 1), `power` about 1 for a punch. */
@@ -119,6 +138,73 @@ export class ImpactFx {
         kind: 'spark', x: x + rand(-0.3, 0.3) * UNIT, y,
         vx: rand(-4, 4) * UNIT, vy: rand(4, 9) * UNIT,
         color: mix(color, 0xffffff, 0.3), size: 2, life: rand(160, 260), gravity: 10 * UNIT, drag: 0.1,
+      });
+    }
+  }
+
+  /**
+   * A K.O.: a big, magical explosion of smoke in the robot's team colour,
+   * cel-shaded like a cartoon effect (deep rim, bright body, cream highlights),
+   * with streaks whipping out of the core and glittering motes.
+   */
+  koSmoke(x: number, y: number, color: number): void {
+    if (vfx() <= 0) return;
+    this.lastKoAt = this.now;
+    const { deep, bright } = smokeColors(color);
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
+    this.add({ kind: 'ring', x, y, color: bright, size: 0.5 * UNIT, grow: 3.6 * UNIT, life: 340 });
+    this.flashes.push({ x, y, color: bright, intensity: 10, at: this.now });
+    for (let i = 0; i < 40; i++) {
+      const core = i < 12; // the first ones stay in the middle, the biggest
+      const a = rand(0, Math.PI * 2);
+      const speed = (core ? rand(1, 5) : rand(8, 18)) * UNIT;
+      this.add({
+        kind: 'smoke', collide: true,
+        x: x + Math.cos(a) * rand(0, 0.4) * UNIT, y: y + Math.sin(a) * rand(0, 0.5) * UNIT,
+        vx: Math.cos(a) * speed * 1.3, vy: Math.sin(a) * speed * 0.8 - rand(1, 4) * UNIT,
+        life: core ? rand(1000, 1400) : rand(800, 1500), drag: 0.015, gravity: -2 * UNIT,
+        size: (core ? rand(0.8, 1.1) : rand(0.4, 0.7)) * UNIT, grow: (core ? rand(1, 1.5) : rand(0.6, 1.1)) * UNIT,
+        color: deep, body: bright,
+      });
+    }
+    // Streaks whipping out sideways and up, like the trails of the blast.
+    for (let i = 0; i < 9; i++) {
+      const side = i % 2 ? 1 : -1;
+      this.wisps.push({
+        x, y, angle: side > 0 ? rand(-0.9, 0.25) : Math.PI - rand(-0.9, 0.25),
+        len: rand(2.5, 4.5) * UNIT, width: rand(0.12, 0.28) * UNIT, bend: rand(-0.5, 0.5) * UNIT,
+        age: 0, life: rand(450, 750), color: deep,
+      });
+    }
+    // Soft smoke round the cartoon puffs, lingering after them as it rises.
+    const haze = mix(deep, bright, 0.4);
+    for (let i = 0; i < 16; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(2, 9) * UNIT;
+      this.add({
+        kind: 'haze', collide: true, x: x + Math.cos(a) * rand(0, 0.8) * UNIT, y: y + Math.sin(a) * rand(0, 0.6) * UNIT,
+        vx: Math.cos(a) * v * 1.3, vy: Math.sin(a) * v * 0.7 - rand(1, 3) * UNIT,
+        color: haze, size: rand(0.5, 0.9) * UNIT, grow: rand(1.2, 2.2) * UNIT,
+        life: rand(1400, 2200), drag: 0.08, gravity: -1.8 * UNIT,
+      });
+    }
+    // Hit sparks flying out of the blast, like a big hit's.
+    for (let i = 0; i < 26; i++) {
+      const a = rand(0, Math.PI * 2);
+      const speed = rand(9, 26) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed - rand(2, 6) * UNIT,
+        color: i % 3 === 0 ? 0xffffff : mix(bright, 0xffffff, rand(0, 0.5)),
+        size: rand(2, 3.5), life: rand(260, 520), gravity: 30 * UNIT, drag: 0.08,
+      });
+    }
+    // Glitter: motes and sparks in the bright colour and white.
+    for (let i = 0; i < 18; i++) {
+      const a = rand(0, Math.PI * 2);
+      const v = rand(4, 13) * UNIT;
+      this.add({
+        kind: i % 3 ? 'mote' : 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - rand(1, 4) * UNIT,
+        color: i % 2 ? 0xffffff : bright, size: rand(1.6, 3), life: rand(500, 1000), drag: 0.12, gravity: -1.5 * UNIT,
       });
     }
   }
@@ -220,8 +306,55 @@ export class ImpactFx {
       p.vy = p.vy * keep + p.gravity * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      if (p.collide) this.collide(p);
     }
+    this.updateWisps(dtMs);
     this.draw();
+  }
+
+  /** Pushes a particle out of any wall or platform it went into, killing its speed into it. */
+  private collide(p: Particle): void {
+    for (const r of this.solids) {
+      if (p.x <= r.left || p.x >= r.right || p.y <= r.top || p.y >= r.bottom) continue;
+      // Out the nearest side.
+      const outs = [p.x - r.left, r.right - p.x, p.y - r.top, r.bottom - p.y];
+      const side = outs.indexOf(Math.min(...outs));
+      if (side === 0) { p.x = r.left; p.vx = Math.min(0, p.vx) * 0.2; }
+      else if (side === 1) { p.x = r.right; p.vx = Math.max(0, p.vx) * 0.2; }
+      else if (side === 2) { p.y = r.top; p.vy = Math.min(0, p.vy) * 0.2; }
+      else { p.y = r.bottom; p.vy = Math.max(0, p.vy) * 0.2; }
+    }
+  }
+
+  /** The K.O. smoke's streaks, and its glitch. */
+  private updateWisps(dtMs: number): void {
+    this.wisps = this.wisps.filter((w) => (w.age += dtMs) < w.life);
+    const g = this.wispG.clear();
+    for (const w of this.wisps) {
+      // The tip races out and the tail follows it, thinning to nothing.
+      const f = w.age / w.life;
+      const tip = w.len * (1 - (1 - f) * (1 - f) * (1 - f));
+      const tail = w.len * f * f;
+      const ca = Math.cos(w.angle); const sa = Math.sin(w.angle);
+      const at = (d: number, side: number, width: number) => {
+        const k = (d / w.len) * (d / w.len) * w.bend; // curls more towards the tip
+        return { x: w.x + ca * d - sa * (k + side * width), y: w.y + sa * d + ca * (k + side * width) };
+      };
+      const left: { x: number; y: number }[] = [];
+      const right: { x: number; y: number }[] = [];
+      for (let i = 0; i <= 6; i++) {
+        const d = tail + ((tip - tail) * i) / 6;
+        const width = w.width * (1 - f) * (1 - i / 6);
+        left.push(at(d, -1, width));
+        right.push(at(d, 1, width));
+      }
+      g.fillStyle(w.color, 1).fillPoints([...left, ...right.reverse()], true);
+    }
+    // A broken signal over it all: it tears very hard at the blast (past the hits'
+    // 1), and keeps tearing, splitting and scan-lining hard while it lasts.
+    const since = this.now - this.lastKoAt;
+    const live = this.wisps.length > 0 || this.particles.some((p) => p.kind === 'smoke' || p.kind === 'haze');
+    hitGlitch(this.smokeView, live ? Math.max(0.95, 1.35 - since / 900) : 0, undefined, null, 3, 0.55, 0.86); // a touch see-through
   }
 
   private draw(): void {
@@ -277,8 +410,12 @@ export class ImpactFx {
         case 'puff':
           d.fillStyle(p.color, 0.35 * fade).fillCircle(p.x, p.y, p.size + p.grow * f);
           break;
+        case 'smoke':
+        case 'haze':
+          break; // drawSmoke(), in layers
       }
     }
+    this.drawSmoke();
     for (const [owner, trail] of this.trails) {
       trail.points = trail.points.filter((q) => this.now - q.t < TRAIL_MS);
       if (trail.points.length === 0) { this.trails.delete(owner); continue; }
@@ -301,6 +438,35 @@ export class ImpactFx {
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, midB, midA], true);
         g.lineStyle(0.1 * UNIT * k, 0xffffff, 0.85 * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
       }
+    }
+  }
+
+  /**
+   * The K.O. smoke, cel-shaded in flat layers over all its particles at once:
+   * every deep rim, then every bright body (up and to the left in its rim, so
+   * the bodies run together inside one outline), then cream highlights. Each
+   * swells, turns to rim as its body shrinks away, and collapses.
+   */
+  private drawSmoke(): void {
+    const g = this.smokeG.clear();
+    // Soft haze behind the puffs, billowing out round them and lingering.
+    for (const p of this.particles) {
+      if (p.kind !== 'haze') continue;
+      const f = p.age / p.life;
+      g.fillStyle(p.color, 0.28 * Math.min(1, f / 0.1) * (1 - f)).fillCircle(p.x, p.y, p.size + p.grow * f);
+    }
+    const smoke = this.particles.filter((p) => p.kind === 'smoke');
+    const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+    const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };
+    for (const p of smoke) g.fillStyle(p.color, 1).fillCircle(p.x, p.y, radius(p));
+    for (const p of smoke) {
+      const r = radius(p);
+      const k = 1 - 0.85 * smooth(0.35, 0.8, p.age / p.life);
+      g.fillStyle(p.body ?? p.color, 1).fillCircle(p.x - r * 0.16, p.y - r * 0.2, r * 0.74 * k);
+    }
+    for (const p of smoke) {
+      const r = radius(p) * (1 - smooth(0.25, 0.55, p.age / p.life));
+      if (r > 0.3 * UNIT) g.fillStyle(0xfffbe6, 1).fillEllipse(p.x - r * 0.34, p.y - r * 0.4, r * 0.5, r * 0.3);
     }
   }
 
@@ -360,8 +526,29 @@ export class ImpactFx {
   }
 
   destroy(): void {
+    this.smokeView.destroy();
     this.glow.destroy();
     this.dust.destroy();
     this.behind.destroy();
   }
+}
+
+/**
+ * The K.O. smoke's colours from the team colour, kept saturated: a deep rim
+ * and a bright body shifted in hue (blue gives royal blue and teal, red gives
+ * crimson and orange), like painted cartoon smoke.
+ */
+function smokeColors(color: number): { deep: number; bright: number } {
+  const c = Phaser.Display.Color.IntegerToColor(color);
+  const h = (Phaser.Display.Color.RGBToHSV(c.red, c.green, c.blue) as Phaser.Types.Display.HSVColorObject).h;
+  // Warm colours brighten towards yellow, cool ones towards cyan; the rim turns the other way.
+  const target = h < 0.3 || h > 0.85 ? 0.13 : 0.46;
+  let d = target - h;
+  if (d > 0.5) d -= 1;
+  if (d < -0.5) d += 1;
+  const hue = (x: number) => (x + 1) % 1;
+  return {
+    deep: Phaser.Display.Color.HSVToRGB(hue(h - Math.sign(d) * 0.05), 0.85, 0.82).color,
+    bright: Phaser.Display.Color.HSVToRGB(hue(h + d * 0.6), 0.68, 1).color,
+  };
 }
