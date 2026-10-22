@@ -645,7 +645,9 @@ export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number
  */
 function smokeColors(color: number): { deep: number; bright: number } {
   const c = Phaser.Display.Color.IntegerToColor(color);
-  const h = (Phaser.Display.Color.RGBToHSV(c.red, c.green, c.blue) as Phaser.Types.Display.HSVColorObject).h;
+  const { h, s } = Phaser.Display.Color.RGBToHSV(c.red, c.green, c.blue) as Phaser.Types.Display.HSVColorObject;
+  // A colourless team (the black team) smokes black and dark grey, not in its faint hue made vivid.
+  if (s < 0.3) return { deep: 0x101114, bright: 0x3a3e46 };
   // Warm colours brighten towards yellow, cool ones towards cyan; the rim turns the other way.
   const target = h < 0.3 || h > 0.85 ? 0.13 : 0.46;
   let d = target - h;
