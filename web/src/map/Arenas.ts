@@ -34,7 +34,22 @@ export interface ArenaDef {
   blast?: [l: number, t: number, r: number, b: number];
   /** Tiles painted over the automatic ones. */
   tiles?: TilePaint[];
+  /** Particle effects placed in the map, playing over and over. */
+  emitters?: MapEmitter[];
+  /** Hostile CPUs that belong to the map (the black team): no HUD card, back at their spot after a K.O., never counted to win. */
+  npcs?: MapNpc[];
 }
+
+/** A particle effect of src/data/particles placed in the map (units): played again `every` ms after it ends (0: at once), mirrored or not. */
+export interface MapEmitter { x: number; y: number; effect: string; every?: number; flip?: boolean }
+
+export type NpcBehaviour = 'attack' | 'flee' | 'idle';
+/** An NPC: where its feet are (units), what it does (attack the nearest robot, keep away from robots, stand still) and its helmet (HEADS index). */
+export interface MapNpc { x: number; y: number; behaviour: NpcBehaviour; helmet?: number }
+
+/** The NPCs' team and colour: one team for every map NPC, hostile to the players. */
+export const NPC_TEAM = 99;
+export const NPC_COLOR = 0x2a2d33;
 
 export const DEFAULT_SIZE: [number, number] = [52, 38];
 export const DEFAULT_BLAST: [number, number, number, number] = [6, 20, 6, 6];

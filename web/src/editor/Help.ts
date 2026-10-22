@@ -8,10 +8,11 @@ const DELAY = 550;
 const LONG_PRESS = 450;
 
 export function installHelp(root: HTMLElement): void {
+  // In the root (not the page's body), so it shows in fullscreen too.
   const tip = document.createElement('div');
   tip.className = 'help-tip';
   tip.hidden = true;
-  document.body.append(tip);
+  root.append(tip);
   let timer = 0;
   let shownFor: HTMLElement | null = null;
 

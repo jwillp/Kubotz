@@ -14,7 +14,13 @@ export interface DebugState {
   nav: boolean;
   /** The in-game editor moves the camera itself: the match leaves it alone. */
   holdCamera?: boolean;
+  /** What the overlay draws (the dev HUD picks; F3 shows it all). */
+  show: DebugLayers;
 }
+
+/** The debug overlay's layers. */
+export interface DebugLayers { bodies: boolean; boxes: boolean; ai: boolean; states: boolean; stats: boolean }
+export const ALL_LAYERS: DebugLayers = { bodies: true, boxes: true, ai: true, states: true, stats: true };
 
 const LINK_COLORS = { jump: 0x4da3ff, drop: 0xffd166, fall: 0xff8a1f } as const;
 
@@ -58,9 +64,10 @@ export class DebugScene extends Phaser.Scene {
     const sx = (x: number) => (x - view.x) * z;
     const sy = (y: number) => (y - view.y) * z;
     const g = this.g.clear();
+    const show = state.show;
 
     // Box2D fixtures.
-    for (let b = game.physicsWorld.world.getBodyList(); b; b = b.getNext()) {
+    for (let b = show.bodies ? game.physicsWorld.world.getBodyList() : null; b; b = b.getNext()) {
       if (!b.isActive()) continue;
       const t = b.getTransform();
       for (let f: Fixture | null = b.getFixtureList(); f; f = f.getNext()) {
@@ -89,10 +96,10 @@ export class DebugScene extends Phaser.Scene {
 
     // Warp zones.
     g.lineStyle(2, 0xb36bff, 0.9);
-    for (const w of game.warpZoneRects) g.strokeRect(sx(w.x), sy(w.y), w.width * z, w.height * z);
+    if (show.bodies) for (const w of game.warpZoneRects) g.strokeRect(sx(w.x), sy(w.y), w.width * z, w.height * z);
 
     // Navigation graph.
-    if (state.nav) {
+    if (state.nav && show.ai) {
       const nav = game.navGraph;
       for (const s of nav.surfaces) {
         g.lineStyle(4, s.soft ? 0x40e0ff : 0x5cff7a, 0.7).lineBetween(sx(s.x1), sy(s.y), sx(s.x2), sy(s.y));
@@ -107,11 +114,13 @@ export class DebugScene extends Phaser.Scene {
     // Robots: hurtbox, attack circles, CPU plan.
     const alive = game.fighters.filter((k) => k.isAlive());
     for (const k of alive) {
-      const h = k.hurtbox();
-      g.lineStyle(2, 0xff4d4d, 0.9).strokeRect(sx(h.x), sy(h.y), h.width * z, h.height * z);
-      const box = k.currentAttack();
-      if (box) for (const c of box.circles) g.fillStyle(0xff2020, 0.45).fillCircle(sx(c.x), sy(c.y), c.radius * z);
-      if (k.controller instanceof CpuController) {
+      if (show.boxes) {
+        const h = k.hurtbox();
+        g.lineStyle(2, 0xff4d4d, 0.9).strokeRect(sx(h.x), sy(h.y), h.width * z, h.height * z);
+        const box = k.currentAttack();
+        if (box) for (const c of box.circles) g.fillStyle(0xff2020, 0.45).fillCircle(sx(c.x), sy(c.y), c.radius * z);
+      }
+      if (show.ai && k.controller instanceof CpuController) {
         const d = k.controller.debug;
         const nav = game.navGraph;
         g.lineStyle(3, 0xff4dff, 0.9);
@@ -127,15 +136,19 @@ export class DebugScene extends Phaser.Scene {
         }
       }
     }
-    for (const c of game.debrisCircles()) g.lineStyle(1, 0xffa040, 0.8).strokeCircle(sx(c.x), sy(c.y), c.radius * z);
+    if (show.bodies) for (const c of game.debrisCircles()) g.lineStyle(1, 0xffa040, 0.8).strokeCircle(sx(c.x), sy(c.y), c.radius * z);
+    this.panel.setVisible(show.stats);
+    for (const t of this.labels) if (!show.states) t.setVisible(false);
 
     // Frame time graph (16.7 ms line).
+    if (show.stats) {
     const gx = 12;
     const gy = this.scale.height - 200;
     g.fillStyle(0x000000, 0.55).fillRect(gx, gy - 50, 240, 54);
     g.lineStyle(1, 0x5cff7a, 0.6).lineBetween(gx, gy - 16.7 * 1.5, gx + 240, gy - 16.7 * 1.5);
     g.lineStyle(1, 0xffd166, 1);
     this.frameMs.forEach((ms, i) => g.lineBetween(gx + i * 2, gy, gx + i * 2, gy - Math.min(48, ms * 1.5)));
+    }
 
     // Text: robot readouts and the panel, ten times a second.
     if (time < this.nextText) {
@@ -150,7 +163,7 @@ export class DebugScene extends Phaser.Scene {
     }
     this.labels.forEach((t, i) => {
       const k = game.fighters[i];
-      if (!k || !k.isAlive()) { t.setVisible(false); return; }
+      if (!k || !k.isAlive() || !show.states) { t.setVisible(false); return; }
       const now = game.clock;
       const ai = k.controller instanceof CpuController ? `\nAI ${k.controller.debug.mode}` : '';
       const stun = Math.max(k.stunnedUntil, k.hitstun) - now;

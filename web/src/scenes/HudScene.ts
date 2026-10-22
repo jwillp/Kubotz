@@ -61,7 +61,8 @@ export class HudScene extends Phaser.Scene {
     this.timer = this.add.text(width / 2, 18, '0:00', body(22, { fontStyle: '800' })).setOrigin(0.5);
 
     // One card per robot in seat order, centred along the bottom edge.
-    const fighters = this.game_.fighters;
+    // The map's NPCs (black team) have no card.
+    const fighters = this.game_.fighters.filter((k) => !k.home);
     const left = (width - fighters.length * CARD_W - (fighters.length - 1) * CARD_GAP) / 2;
     fighters.forEach((k, i) => this.cards.set(k, this.makeCard(k, left + i * (CARD_W + CARD_GAP), height - CARD_H - 10)));
 

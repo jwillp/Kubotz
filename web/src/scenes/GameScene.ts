@@ -15,7 +15,7 @@ import { GradePipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST } from '../map/Arenas';
+import { ARENAS, DEFAULT_BLAST, NPC_COLOR, NPC_TEAM } from '../map/Arenas';
 import { ImpactFx } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -25,7 +25,7 @@ import { DebrisField } from '../game/Debris';
 import { arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
-import type { DebugState } from './DebugScene';
+import { ALL_LAYERS, type DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
 import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder } from '../game/Replay';
@@ -60,7 +60,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private map!: TmxMap;
   physicsWorld!: PhysicsWorld;
   /** Debug mode and its time controls (F3, see DebugScene). */
-  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
+  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true, show: { ...ALL_LAYERS } };
   private glows: Phaser.GameObjects.Image[] = [];
   /** Lightsaber blades: a white-hot core in a coloured glow, drawn over the blade art. */
   private sabers!: Phaser.GameObjects.Graphics;
@@ -178,6 +178,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.buildMap();
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
+    this.startMapEmitters();
     this.portals = new PortalFx(this, this.warpZones);
     this.holo = new HoloSpawns(this);
 
@@ -221,6 +222,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.appearAt = at;
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
+    this.addNpcs(rig, setup);
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
     // The camera starts on the first robot's spawn (updateCamera follows the intro).
@@ -275,6 +277,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const d = this.debugState;
     const toggleDebug = () => {
       d.on = !d.on;
+      d.show = { ...ALL_LAYERS };
       if (d.on) { this.scene.launch('Debug'); this.scene.bringToTop('Debug'); } else { this.scene.stop('Debug'); d.timeScale = 1; d.frozen = false; }
     };
     kb.on('keydown-F3', toggleDebug);
@@ -341,6 +344,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private updatePreview(deltaMs: number): void {
     const now = this.clock += deltaMs;
+    this.updateMapEmitters(deltaMs);
     this.particles.update(deltaMs);
     this.impact.update(now, deltaMs);
     this.portals.update(now, deltaMs);
@@ -582,6 +586,53 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
+  /**
+   * The arena's NPCs: CPUs of the black team (hostile to every player), at
+   * their spots, with the behaviour the arena gives them. They have no HUD
+   * card, come back to their spot after a K.O. and never count to win.
+   */
+  private addNpcs(rig: Rig, setup: MatchSetup): void {
+    for (const n of ARENAS[this.arena]?.npcs ?? []) {
+      const spot = this.spawnPoint({ id: 0, type: 'NPC', x: (n.x - 0.5) * UNIT, y: (n.y - 1) * UNIT, width: UNIT, height: UNIT });
+      const controller = new CpuController({
+        enemiesOf: (k) => this.fighters.filter((f) => canHurt(k, f) && !f.eliminated),
+        powerUpPositions: () => [],
+        now: () => this.clock,
+        nav: this.nav,
+      }, cpuReactionMs(5));
+      controller.behaviour = n.behaviour;
+      const k = new Kubotz(this, this.fighters.length, controller, NPC_COLOR, rig, spot.x, spot.y, this, this.physicsWorld, { team: NPC_TEAM, helmet: n.helmet ?? 3 });
+      controller.agent = k;
+      k.home = { x: spot.x, y: spot.y };
+      k.lives = Infinity;
+      k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
+      this.fighters.push(k);
+      const at = setup.editor ? 0 : this.countdownAt;
+      k.appearAt = at;
+      this.holo.start(k, at, (x, y) => k.teleport(x, y), spot.y, this.countdownAt);
+    }
+  }
+
+  /** The arena's particle emitters, played over and over (see updateMapEmitters). */
+  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; handle: ParticleHandle | null; wait: number }[] = [];
+
+  private startMapEmitters(): void {
+    this.mapEmitters = (ARENAS[this.arena]?.emitters ?? []).flatMap((e) => {
+      const def = (this.effects as Record<string, EffectDef>)[e.effect];
+      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, handle: null, wait: 0 }] : [];
+    });
+  }
+
+  /** Each emitter starts its effect again `every` ms after the last one ended. */
+  private updateMapEmitters(dtMs: number): void {
+    for (const m of this.mapEmitters) {
+      if (m.handle && !m.handle.done) continue;
+      if (m.handle) { m.handle = null; m.wait = m.every; }
+      if ((m.wait -= dtMs) > 0) continue;
+      m.handle = this.particles.play(m.def, m.x, m.y, undefined, m.flip);
+    }
+  }
+
   private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height - (Config.KUBOTZ_HEIGHT * UNIT) / 2);
   }
@@ -765,6 +816,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     this.holo.update(now);
+    this.updateMapEmitters(dtMs);
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.portals.update(now, dtMs);
@@ -1180,6 +1232,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private respawn(k: Kubotz): void {
+    // A map NPC comes back to its own spot.
+    if (k.home) {
+      k.respawn(k.home.x, k.home.y);
+      this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), k.home.y);
+      return;
+    }
     // Prefer the spawn point farthest from the other robots.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
     const spawn = [...this.playerSpawns].sort((p, q) => {
@@ -1195,7 +1253,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   // ------------------------------------------------------------------ camera
   /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
   private focusPoints(): { x: number; y: number }[] {
-    const alive = this.fighters.filter((f) => f.isAlive());
+    const alive = this.fighters.filter((f) => f.isAlive() && !f.home); // the map's NPCs are not followed
     // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the robots.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
     return alive.length === 0 ? [] : [...alive, ...fresh];
@@ -1214,7 +1272,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const i = Math.floor(this.clock / INTRO_FOCUS_MS);
     const k = this.fighters[i];
     // A little low, so the projector under the robot shows above the HUD cards.
-    return this.clock < this.fighters.length * INTRO_FOCUS_MS && k ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    return this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
   }
 
   /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */

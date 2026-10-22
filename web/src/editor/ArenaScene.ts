@@ -4,7 +4,7 @@ import { BACKDROPS, ROOMS, ROOM_H, ROOM_W, seeded } from '../fx/Backdrops';
 import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
 import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
-import type { ArenaPiece, Store } from './Store';
+import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type Store } from './Store';
 
 /**
  * The Arena tab's stage: the arena drawn with the game's own tiles over its
@@ -12,9 +12,9 @@ import type { ArenaPiece, Store } from './Store';
  * spots, the blast zone), to pick, move, resize and draw with the tools.
  */
 
-export type ArenaTool = 'select' | 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus' | 'tile' | 'erase';
+export type ArenaTool = 'select' | 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus' | 'emitters' | 'npcs' | 'tile' | 'erase';
 
-const COLORS = { walls: 0x8e99a8, platforms: 0x3fb8a6, warps: 0xa06eff, spawns: 0x4aa3ff, bonus: 0xffd166, blast: 0xff4d4d, sel: 0xffb547 };
+const COLORS = { walls: 0x8e99a8, platforms: 0x3fb8a6, warps: 0xa06eff, spawns: 0x4aa3ff, bonus: 0xffd166, emitters: 0xff7ad9, npcs: 0x111111, blast: 0xff4d4d, sel: 0xffb547 };
 type Drag =
   | { kind: 'pan'; sx: number; sy: number; cx: number; cy: number }
   | { kind: 'pinch'; dist: number; zoom: number; wx: number; wy: number }
@@ -122,7 +122,7 @@ export class ArenaScene extends Phaser.Scene {
     const a = this.arena;
     if (!a) { this.tiles.removeAll(true); this.over.clear(); this.grid.clear(); return; }
     // The tiles and the room are rebuilt only when the arena's shape changes.
-    const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, ...shape } = a;
+    const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, emitters: _e, npcs: _np, ...shape } = a;
     // Inside the game the match draws the real arena; this scene only adds the pieces.
     if (!this.overlay) {
       const key = JSON.stringify(shape);
@@ -206,6 +206,17 @@ export class ArenaScene extends Phaser.Scene {
     a.bonus.forEach(([x, y], i) => {
       g.lineStyle(px(isSel('bonus', i) ? 4 : 3), isSel('bonus', i) ? COLORS.sel : COLORS.bonus, 1).strokeCircle(x * UNIT, y * UNIT, px(10));
     });
+    // Particle emitters: a pink star; NPCs: a black triangle ringed in white, like a spawn.
+    (a.emitters ?? []).forEach(({ x, y }, i) => {
+      const r = px(isSel('emitters', i) ? 11 : 9);
+      const pts = Array.from({ length: 8 }, (_, k) => ({ x: x * UNIT + Math.cos((k * Math.PI) / 4) * (k % 2 ? r * 0.45 : r), y: y * UNIT + Math.sin((k * Math.PI) / 4) * (k % 2 ? r * 0.45 : r) }));
+      g.fillStyle(isSel('emitters', i) ? COLORS.sel : COLORS.emitters, 1).fillPoints(pts, true);
+    });
+    (a.npcs ?? []).forEach(({ x, y }, i) => {
+      const s = px(isSel('npcs', i) ? 13 : 10);
+      g.fillStyle(COLORS.npcs, 1).fillTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
+      g.lineStyle(px(2), isSel('npcs', i) ? COLORS.sel : 0xffffff, 1).strokeTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
+    });
     // Resize handles on the picked rectangle.
     const rect = this.selectedRect();
     if (rect) for (const [cx, cy] of this.corners(rect)) g.fillStyle(0xffffff, 1).fillRect(cx - px(5), cy - px(5), px(10), px(10));
@@ -227,8 +238,8 @@ export class ArenaScene extends Phaser.Scene {
 
   private selectedRect(): Rect | null {
     const sel = this.store.sel.piece;
-    if (!sel || sel.kind === 'spawns' || sel.kind === 'bonus') return null;
-    return this.arena?.[sel.kind][sel.index] ?? null;
+    if (!sel || (POINT_KINDS as string[]).includes(sel.kind)) return null;
+    return this.arena?.[sel.kind as 'walls'][sel.index] ?? null;
   }
 
   private corners([x, y, w, h]: Rect): [number, number][] {
@@ -249,10 +260,10 @@ export class ArenaScene extends Phaser.Scene {
     const a = this.arena;
     if (!a) return null;
     const r = (touch ? 22 : 12) / this.cameras.main.zoom;
-    for (const kind of ['spawns', 'bonus'] as const) {
-      for (let i = a[kind].length - 1; i >= 0; i--) {
-        const [x, y] = a[kind][i];
-        const cy = kind === 'spawns' ? y * UNIT - r : y * UNIT;
+    for (const kind of POINT_KINDS) {
+      for (let i = ((a[kind] as unknown[] | undefined)?.length ?? 0) - 1; i >= 0; i--) {
+        const [x, y] = pointOf(a, kind, i)!;
+        const cy = kind === 'spawns' || kind === 'npcs' ? y * UNIT - r : y * UNIT;
         if (Math.hypot(x * UNIT - wx, cy - wy) <= r * 1.4) return { kind, index: i };
       }
     }
@@ -292,7 +303,8 @@ export class ArenaScene extends Phaser.Scene {
         const hit = this.pieceAt(p.worldX, p.worldY, p.wasTouch);
         if (!hit) { s.select({ piece: null }); pan(); return; }
         s.select({ piece: hit });
-        this.drag = { kind: 'move', piece: hit, ux: p.worldX / UNIT, uy: p.worldY / UNIT, start: [...a[hit.kind][hit.index]] };
+        const start = (POINT_KINDS as string[]).includes(hit.kind) ? pointOf(a, hit.kind as PointKind, hit.index)! : [...a[hit.kind as 'walls'][hit.index]];
+        this.drag = { kind: 'move', piece: hit, ux: p.worldX / UNIT, uy: p.worldY / UNIT, start };
         return;
       }
       case 'walls':
@@ -314,6 +326,21 @@ export class ArenaScene extends Phaser.Scene {
         const index = a[what].length;
         s.edit('arenas', (d) => { d.arenas[s.sel.arena][what].push([hx, hy]); });
         s.select({ piece: { kind: what, index } });
+        return;
+      }
+      case 'emitters': {
+        const [hx, hy] = this.unit(p, 0.5);
+        const index = a.emitters?.length ?? 0;
+        const effect = Object.keys(s.docs.particles).includes('stars') ? 'stars' : Object.keys(s.docs.particles)[0];
+        s.edit('arenas', (d) => { const x = d.arenas[s.sel.arena]; x.emitters = [...(x.emitters ?? []), { x: hx, y: hy, effect, every: 600 }]; });
+        s.select({ piece: { kind: 'emitters', index } });
+        return;
+      }
+      case 'npcs': {
+        const [hx, hy] = this.unit(p, 0.5);
+        const index = a.npcs?.length ?? 0;
+        s.edit('arenas', (d) => { const x = d.arenas[s.sel.arena]; x.npcs = [...(x.npcs ?? []), { x: hx, y: hy, behaviour: 'attack' }]; });
+        s.select({ piece: { kind: 'npcs', index } });
         return;
       }
       case 'tile':
@@ -365,12 +392,13 @@ export class ArenaScene extends Phaser.Scene {
     this.pressAt = null;
     const id = s.sel.arena;
     if (d.kind === 'move') {
-      const point = d.piece.kind === 'spawns' || d.piece.kind === 'bonus';
+      const point = (POINT_KINDS as string[]).includes(d.piece.kind);
       const step = point ? 0.5 : 1;
       const dx = Math.round((p.worldX / UNIT - d.ux) / step) * step;
       const dy = Math.round((p.worldY / UNIT - d.uy) / step) * step;
       s.edit('arenas', (docs) => {
-        const list = docs.arenas[id][d.piece.kind] as number[][];
+        if (point) { setPoint(docs.arenas[id], d.piece.kind as PointKind, d.piece.index, d.start[0] + dx, d.start[1] + dy); return; }
+        const list = docs.arenas[id][d.piece.kind as 'walls'] as number[][];
         list[d.piece.index] = [d.start[0] + dx, d.start[1] + dy, ...d.start.slice(2)];
       }, true);
       return;
@@ -382,7 +410,7 @@ export class ArenaScene extends Phaser.Scene {
       if (d.corner === 0 || d.corner === 3) x1 = Math.min(ux, x2 - 1); else x2 = Math.max(ux, x1 + 1);
       if (d.corner === 0 || d.corner === 1) y1 = Math.min(uy, y2 - 1); else y2 = Math.max(uy, y1 + 1);
       if (d.piece.kind === 'platforms') y2 = y1 + 1; // platforms are one unit thick
-      s.edit('arenas', (docs) => { (docs.arenas[id][d.piece.kind] as Rect[])[d.piece.index] = [x1, y1, x2 - x1, y2 - y1]; }, true);
+      s.edit('arenas', (docs) => { (docs.arenas[id][d.piece.kind as 'walls'] as Rect[])[d.piece.index] = [x1, y1, x2 - x1, y2 - y1]; }, true);
       return;
     }
     if (d.kind === 'draw') {

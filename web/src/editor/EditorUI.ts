@@ -13,22 +13,21 @@ import { ArenaScene, type ArenaTool } from './ArenaScene';
 import { DEFAULT_BLAST, DEFAULT_SIZE, type ArenaData, type TilePaint } from '../map/Arenas';
 import { ROOMS } from '../fx/Backdrops';
 import type { TmxMap } from '../map/TmxMap';
-import { FRAME_MS, Store } from './Store';
+import { FRAME_MS, PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type PointKind } from './Store';
 import { Timeline } from './Timeline';
-import { host } from './Host';
-import { ARENA_IDS } from '../map/Arenas';
+import { host, store } from './Host';
 
 /**
  * Kubotz Editor: tune the robots' clips and moves (poses, hit circles,
  * active frames, launches, particle events), the particle effects and the
  * arenas, then save them back to src/data. It runs on a page of its own
- * (editor.html, `npm run editor`) or inside the game (dev builds, F2:
- * host.inGame), docked round the running match.
+ * (editor.html, `npm run editor`) or inside the game (dev builds: the
+ * title's Editor entry), drawn over the game's canvas: there it has the
+ * Animation and Particles tabs (arenas are edited in a match, DevHud.ts).
  */
 
-export const store = new Store();
-const root = document.getElementById('editor') ?? document.body.appendChild(Object.assign(document.createElement('div'), { id: 'editor' }));
-if (host.inGame) root.classList.add('in-game');
+const root = document.getElementById('editor') ?? (host.gameEl ?? document.body).appendChild(Object.assign(document.createElement('div'), { id: 'editor' }));
+if (host.inGame) { root.classList.add('in-game'); root.hidden = true; }
 
 // ------------------------------------------------------------------ helpers
 function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> & { cls?: string } = {}, ...kids: (Node | string | null | false)[]): HTMLElementTagNameMap[K] {
@@ -51,15 +50,9 @@ const tabBtn = (t: Tab, label: string, help: string) => { const b = h('button', 
 const nav = h('nav', {},
   tabBtn('anim', 'Animation', 'Clips, poses, hit circles and particle events.'),
   tabBtn('particles', 'Particles', 'Particle effects: what they look like and how they move.'),
-  tabBtn('arena', 'Arena', 'Arenas: walls, platforms, portals, spawns, bonus spots, tiles and the room behind.'));
+  // Inside the game arenas are edited in a match (the dev HUD, F2).
+  ...(host.inGame ? [] : [tabBtn('arena', 'Arena', 'Arenas: walls, platforms, portals, spawns, bonus spots, tiles and the room behind.')]));
 const filesLabel = h('span', { cls: 'files' });
-/** Inside the game: lets the match run to try the changes, then freezes it again to edit. */
-let playing = false;
-const playToggle = h('button', { cls: 'btn solid', textContent: 'Play', title: 'Lets the match run with your changes (you play P1); press again to freeze it and edit.', onclick: () => {
-  playing = !playing;
-  host.play?.(playing);
-  playToggle.textContent = playing ? 'Edit' : 'Play';
-} });
 const header = h('header', {},
   h('span', { cls: 'brand', textContent: 'KUBOTZ EDITOR' }),
   nav,
@@ -69,7 +62,7 @@ const header = h('header', {},
   h('button', { cls: 'btn', textContent: 'Undo', title: 'Undo the last change (Ctrl+Z).', onclick: () => store.undo() }),
   h('button', { cls: 'btn', textContent: 'Redo', title: 'Redo what was undone (Ctrl+Shift+Z).', onclick: () => store.redo() }),
   ...(host.inGame
-    ? [playToggle, h('button', { cls: 'btn', textContent: 'Close', title: 'Closes the editor and plays on (F2). Unsaved changes stay in the game until you reload.', onclick: () => host.close?.() })]
+    ? [h('button', { cls: 'btn solid', textContent: 'Back to title', title: 'Leaves the editor. Unsaved changes stay in the game (matches play them) until you reload.', onclick: () => host.close?.() })]
     : [h('button', { cls: 'btn solid', textContent: 'Test in game', title: 'Opens the game in a new tab with these changes, saved or not', onclick: () => testInGame() })]),
   saveBtn,
 );
@@ -79,9 +72,8 @@ const search = h('input', { cls: 'search', placeholder: 'Find a move or clip', t
 const list = h('div');
 const left = h('aside', { cls: 'left' }, search, list);
 
+// Inside the game the stage is a window onto the game's canvas, under the panels.
 const stageEl = h('div', { id: 'stage' }, host.inGame ? '' : h('div', { cls: 'splash', textContent: 'Loading the robot…' }));
-// Inside the game, the stage is the game itself.
-if (host.gameEl) stageEl.append(host.gameEl);
 const readout = h('div', { cls: 'readout' });
 const check = (label: string, help: string, on: boolean, fn: (v: boolean) => void) => {
   const box = h('input', { type: 'checkbox', checked: on });
@@ -542,6 +534,7 @@ store.on(() => {
 });
 
 window.addEventListener('keydown', (e) => {
+  if (root.hidden) return; // inside the game, closed: the keys are the game's
   const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement;
   const mod = e.ctrlKey || e.metaKey;
   if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); void save(); return; }
@@ -558,7 +551,7 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('beforeunload', (e) => { if (store.dirty.size) e.preventDefault(); });
 
-installHelp(document.body);
+installHelp(host.inGame ? root : document.body);
 setTab('anim');
 
 // ------------------------------------------------------------------ the Particles tab
@@ -569,8 +562,7 @@ function setTab(t: Tab): void {
   filesLabel.title = { anim: 'Where Save writes: one file per clip and one per move, only the ones you changed. The game reads them too.', particles: 'Where Save writes: one file per effect.', arena: 'Where Save writes: one file per arena.' }[t];
   search.placeholder = { anim: 'Find a move or clip', particles: 'Find an effect', arena: 'Find an arena' }[t];
   // The arena has its own stage (ArenaScene); the other tabs share the robot's.
-  if (host.inGame) showInGame();
-  else if (game.scene.isActive('Editor') || game.scene.isSleeping('Editor')) {
+  if (!host.inGame && (game.scene.isActive('Editor') || game.scene.isSleeping('Editor'))) {
     if (t === 'arena') { game.scene.sleep('Editor'); game.scene.run('Arena'); } else { game.scene.sleep('Arena'); game.scene.run('Editor'); }
   }
   (transport.parentElement as HTMLElement).hidden = t !== 'anim';
@@ -774,43 +766,35 @@ function buildEffectInspector(): void {
 }
 
 // ------------------------------------------------------------------ inside the game
-/**
- * Which editor scenes run over the match: on the Arena tab the arena tools
- * on the real arena (the match frozen), on the others the robot stage over
- * it. Also called when the editor opens (`refresh`) or the match restarts.
- */
-function showInGame(): void {
-  const sc = game.scene;
-  if (!sc.getScene('Editor')) return;
-  if (tab === 'arena') {
-    if (sc.isActive('Editor')) sc.stop('Editor');
-    // The arena being played is the one edited.
-    const g = sc.getScene('Game') as unknown as { arena: number } | null;
-    const id = g ? ARENA_IDS[g.arena] : null;
-    if (id && id !== store.sel.arena) store.select({ arena: id, piece: null });
-    if (!sc.isActive('Arena')) sc.run('Arena');
-    sc.bringToTop('Arena');
-  } else {
-    if (sc.isActive('Arena')) sc.stop('Arena');
-    if (!sc.isActive('Editor')) sc.run('Editor');
-    sc.bringToTop('Editor');
-    if (stage) stage.mode = tab === 'particles' ? 'particles' : 'anim';
-  }
-  buildToolbar();
+/** Inside the game: the robot stage draws in the part of the canvas the panels leave free. */
+function fitStage(): void {
+  if (!host.inGame || !stage?.sys.isActive()) return;
+  const c = game.canvas.getBoundingClientRect();
+  const r = stageEl.getBoundingClientRect();
+  const k = game.scale.width / c.width;
+  stage.cameras.main.setViewport((r.left - c.left) * k, (r.top - c.top) * k, r.width * k, r.height * k);
+  stage.recentre();
 }
+if (host.inGame) new ResizeObserver(() => fitStage()).observe(stageEl);
 
-/** Inside the game: the editor opens (F2) or closes. */
+/** Inside the game: the editor opens (the title's Editor entry) or closes. */
 export function editorShown(on: boolean): void {
   root.hidden = !on;
   if (!on) {
-    for (const k of ['Editor', 'Arena']) if (game.scene.isActive(k)) game.scene.stop(k);
+    if (game.scene.isActive('Editor')) game.scene.stop('Editor');
     return;
   }
-  playing = false;
-  playToggle.textContent = 'Play';
-  if (host.gameEl) stageEl.append(host.gameEl);
-  showInGame();
-  store.emit();
+  if (tab === 'arena') tab = 'anim';
+  game.scene.run('Editor');
+  game.scene.bringToTop('Editor');
+  setTab(tab);
+  requestAnimationFrame(() => fitStage());
+}
+
+// Typing in the editor's fields must not reach the game's keys (and the game's captured keys must not swallow the typing).
+if (host.inGame) {
+  root.addEventListener('focusin', (e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) game.input.keyboard!.enabled = false; });
+  root.addEventListener('focusout', () => { game.input.keyboard!.enabled = true; });
 }
 
 // ------------------------------------------------------------------ the Arena tab
@@ -858,8 +842,7 @@ function buildArenaList(): void {
     if (q && !`${a.name} ${id}`.toLowerCase().includes(q)) continue;
     const item = h('button', { cls: `item${store.sel.arena === id ? ' on' : ''}`, onclick: () => {
       store.select({ arena: id, piece: null });
-      // Inside the game, the match moves to that arena.
-      if (host.inGame) host.playArena?.(id); else arenaScene()?.recentre();
+      arenaScene()?.recentre();
     } }, a.name, h('small', { textContent: id }));
     item.dataset.help = a.blurb;
     kids.push(item);
@@ -897,7 +880,7 @@ function editArena(fn: (a: ArenaData) => void, drag = true): void {
 function deletePiece(): void {
   const p = store.sel.piece;
   if (!p) return;
-  editArena((a) => { a[p.kind].splice(p.index, 1); }, false);
+  editArena((a) => { piecesOf(a, p.kind).splice(p.index, 1); }, false);
   store.select({ piece: null });
 }
 
@@ -975,14 +958,18 @@ function buildArenaInspector(): void {
 
   // The picked piece.
   const p = s.sel.piece;
-  if (p && A()[p.kind][p.index]) {
-    const names = { walls: 'Wall', platforms: 'Platform', warps: 'Portal', spawns: 'Spawn', bonus: 'Bonus spot' };
-    const val = (i: number) => () => (A()[p.kind][p.index] as number[])[i];
-    const set = (i: number, min = -99) => (v: number | undefined) => editArena((x) => { (x[p.kind][p.index] as number[])[i] = Math.max(min, v ?? 0); });
-    const rect = p.kind !== 'spawns' && p.kind !== 'bonus';
+  if (p && piecesOf(A(), p.kind)[p.index]) {
+    const rect = !(POINT_KINDS as string[]).includes(p.kind);
+    const val = (i: number) => () => (rect ? (piecesOf(A(), p.kind)[p.index] as number[])[i] : pointOf(A(), p.kind as PointKind, p.index)?.[i]);
+    const set = (i: number, min = -99) => (v: number | undefined) => editArena((x) => {
+      if (rect) { (piecesOf(x, p.kind)[p.index] as number[])[i] = Math.max(min, v ?? 0); return; }
+      const at = pointOf(x, p.kind as PointKind, p.index)!;
+      at[i] = v ?? 0;
+      setPoint(x, p.kind as PointKind, p.index, at[0], at[1]);
+    });
     const rm = h('button', { cls: 'btn', textContent: 'Delete', onclick: () => deletePiece() });
     rm.dataset.help = 'Removes this piece (Delete).';
-    out.push(section('piece', `${names[p.kind]} ${p.index + 1}`, [
+    out.push(section('piece', `${PIECE_NAMES[p.kind]} ${p.index + 1}`, [
       grid(2,
         num('x', 'Left edge (or the spot), in units from the map\'s left.', val(0), set(0), { step: rect ? 1 : 0.5 }),
         num('y', rect ? 'Top edge, in units from the map\'s top.' : 'Height of the spot, in units from the map\'s top (a spawn is where the feet stand).', val(1), set(1), { step: rect ? 1 : 0.5 }),
@@ -1020,11 +1007,10 @@ function buildArenaInspector(): void {
   filterProps();
 }
 
-// Inside the game: the editor's scenes join the running game (the robot stage over the match, the arena tools on it).
+// Inside the game: the robot stage joins the running game (started when the editor opens).
 if (host.inGame) {
   game.registry.set('store', store);
   stage = game.scene.add('Editor', StageScene, false) as StageScene;
-  game.scene.add('Arena', new ArenaScene(true), false);
   stageEl.append(readout);
 }
 

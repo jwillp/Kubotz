@@ -26,27 +26,22 @@ npm run build
 npm run preview    # serves dist/ on http://localhost:4173
 ```
 
-## Editor
+## Dev tools
 
-In a dev build (`npm run dev`), press **F2** during a match: the match freezes
-and the editor docks round it; **Play** lets it run with your changes, F2
-again closes it. The same editor also opens on a page of its own:
+In a dev build (`npm run dev`, or `npm run build:editor` into dist-editor/):
 
-```bash
-npm run editor        # http://localhost:5173/editor.html
-npm run build:editor  # a build with the editor in, in dist-editor/
-```
+- **Title → Editor**: the animation and particle editor (poses, keys, hit
+  circles, active frames, launches, particle events; particle effects).
+- **In a match, F2** (or the DEV button): the dev HUD over the running
+  match: pause, step and slow motion; physics bodies, hit and hurt boxes,
+  AI paths and robot states; and the arena tools (move, resize and add
+  walls, platforms, portals, spawns, bonus spots, particle emitters and
+  NPCs: hostile CPUs of the map, black team, Attack, Flee or Idle). Each
+  change rebuilds the match there; Save writes the arena's file.
 
-`npm run build` (production) leaves the editor out.
-
-Tune the robots' clips (bone poses, keys and particle events) and the moves
-(hit circles, active frames, damage, launch) on the game's own renderer. Save writes
-the changed files in `src/data/clips` and `src/data/moves` (one per clip and
-one per move); "Test in game" opens the
-game with the current edits, saved or not. The Particles tab edits the
-effects in `src/data/particles`, and the Arena tab the arenas in
-`src/data/arenas` (walls, platforms, portals, spawns, bonus spots, blast
-zone, room and painted tiles); its "Test in game" starts a match there.
+`npm run editor` opens the same editor on a page of its own (editor.html).
+Save writes the changed files in `src/data` (clips, moves, particles,
+arenas). `npm run build` (production) leaves all of this out.
 
 ## Play
 

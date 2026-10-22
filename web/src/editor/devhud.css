@@ -1,0 +1,30 @@
+/* The in-match dev HUD (DevHud.ts), drawn over the game's canvas inside its container. */
+.dev-toggle {
+  position: absolute; left: 8px; top: 8px; z-index: 6; padding: 4px 9px; border-radius: 5px;
+  border: 1px solid #ffb547; background: rgba(12, 14, 18, 0.8); color: #ffb547;
+  font: 700 12px 'Exo 2', system-ui, sans-serif; letter-spacing: 0.08em; cursor: pointer;
+}
+.dev-hud {
+  position: absolute; right: 8px; top: 8px; bottom: 8px; width: 290px; z-index: 6; overflow-y: auto;
+  padding: 10px; border-radius: 8px; border: 1px solid #262c36; background: rgba(16, 20, 26, 0.92);
+  color: #d8dee8; font: 13px 'Exo 2', system-ui, sans-serif; display: flex; flex-direction: column; gap: 8px;
+}
+.dev-hud[hidden], .dev-toggle[hidden] { display: none; }
+.dev-hud button, .dev-hud input, .dev-hud select { font: inherit; color: inherit; }
+.dev-head { display: flex; align-items: center; gap: 8px; }
+.dev-head strong { color: #ffb547; letter-spacing: 0.08em; }
+.dev-status { flex: 1; color: #9aa4b2; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-section { border: 1px solid #262c36; border-radius: 6px; background: #13171d; padding: 0 8px 8px; }
+.dev-section > summary { cursor: pointer; padding: 6px 0; font-weight: 600; font-size: 12px; color: #c5ccd6; }
+.dev-section label { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.dev-row, .dev-tools { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.dev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.dev-field { display: flex; flex-direction: column !important; align-items: stretch !important; gap: 3px !important; color: #9aa4b2; font-size: 12px; }
+.dev-field input, .dev-field select, .dev-hud select { padding: 4px 6px; background: #0f1217; border: 1px solid #2b323d; border-radius: 5px; }
+.dev-note { margin: 4px 0 0; color: #8a94a3; font-size: 12px; line-height: 1.4; }
+.dev-hud .btn { padding: 5px 9px; border-radius: 5px; border: 1px solid #333b48; background: transparent; color: #c5ccd6; cursor: pointer; }
+.dev-hud .btn.tool.on { background: #2b3a4f; border-color: #ffb547; color: #fff; }
+.dev-hud .btn.primary { background: #ffb547; color: #1a1205; border: 0; font-weight: 700; }
+.dev-hud .btn.primary.clean { background: #3a3324; color: #b9a378; }
+.help-tip { position: fixed; z-index: 50; max-width: 300px; padding: 8px 10px; background: #232a35; color: #e6ebf2; border: 1px solid #3a4352; border-radius: 6px; font: 12px/1.45 'Exo 2', system-ui, sans-serif; box-shadow: 0 6px 20px rgba(0,0,0,0.45); pointer-events: none; }
+.help-tip[hidden] { display: none; }

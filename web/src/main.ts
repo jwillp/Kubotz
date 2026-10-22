@@ -24,7 +24,8 @@ const game = new Phaser.Game({
   width: 1280,
   height: 768,
   backgroundColor: '#05080f',
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  // Fullscreen takes the game's container (not a new element round the canvas), so what is drawn over the canvas stays on screen.
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, fullscreenTarget: 'game' },
   input: { gamepad: true },
   render: { antialias: true, maxLights: 36 },
   scene: [BootScene, TitleScene, SetupScene, BackdropScene, GameScene, HudScene, DebugScene, SettingsScene, ControlsScene, MoveListScene, ResultsScene, ShutterScene],
@@ -32,8 +33,9 @@ const game = new Phaser.Game({
 
 installFullscreen(game);
 
-// The editor, in dev builds (and `npm run build:editor`): F2 opens it over the match. The production build leaves it out.
-if (__EDITOR__) void import('./editor/InGame').then((m) => m.installInGameEditor(game));
+// The dev tools, in dev builds (and `npm run build:editor`): the title's Editor entry and the in-match dev HUD (F2).
+// The production build leaves them out.
+if (__EDITOR__) void import('./editor/DevTools').then((m) => m.installDevTools(game));
 
 // Handy for debugging from the browser console.
 (window as unknown as { kubotz: Phaser.Game }).kubotz = game;

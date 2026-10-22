@@ -1,7 +1,7 @@
 import { CLIPS, loadClips, type Clip, type ClipData, type Key } from '../anim/Clips';
 import { loadMoves, type MoveData } from '../game/Kubotz';
 import { DATA_FILES, fileTexts, fromFiles, type GameData } from '../game/DataFiles';
-import { loadArenas } from '../map/Arenas';
+import { loadArenas, type ArenaData } from '../map/Arenas';
 import { EDITED_KEY } from '../game/EditedData';
 
 /**
@@ -61,7 +61,34 @@ export interface Selection {
 }
 
 /** A piece of an arena: a wall, platform or portal (a rectangle), or a spawn or bonus spot (a point), by its index. */
-export interface ArenaPiece { kind: 'walls' | 'platforms' | 'warps' | 'spawns' | 'bonus'; index: number }
+export interface ArenaPiece { kind: 'walls' | 'platforms' | 'warps' | PointKind; index: number }
+/** Pieces that are a point: spawns and bonus spots ([x, y]), particle emitters and NPCs ({ x, y, ... }). */
+export type PointKind = 'spawns' | 'bonus' | 'emitters' | 'npcs';
+export const POINT_KINDS: PointKind[] = ['spawns', 'bonus', 'emitters', 'npcs'];
+
+/** Where a point piece is (units). */
+export function pointOf(a: ArenaData, kind: PointKind, i: number): [number, number] | null {
+  const v = (a[kind] as unknown[] | undefined)?.[i];
+  if (!v) return null;
+  return Array.isArray(v) ? [v[0] as number, v[1] as number] : [(v as { x: number }).x, (v as { y: number }).y];
+}
+
+/** Names of the arena's pieces, for headings. */
+export const PIECE_NAMES: Record<ArenaPiece['kind'], string> = { walls: 'Wall', platforms: 'Platform', warps: 'Portal', spawns: 'Spawn', bonus: 'Bonus spot', emitters: 'Particles', npcs: 'NPC' };
+
+/** A piece's list in an arena (the optional ones may be missing). */
+export function piecesOf(a: ArenaData, kind: ArenaPiece['kind']): unknown[] {
+  return (a[kind] as unknown[] | undefined) ?? [];
+}
+
+/** Moves a point piece. */
+export function setPoint(a: ArenaData, kind: PointKind, i: number, x: number, y: number): void {
+  const list = a[kind] as unknown[] | undefined;
+  const v = list?.[i];
+  if (!list || !v) return;
+  if (Array.isArray(v)) list[i] = [x, y];
+  else Object.assign(v as object, { x, y });
+}
 
 type Docs = GameData;
 type Kind = 'clips' | 'moves' | 'particles' | 'arenas';

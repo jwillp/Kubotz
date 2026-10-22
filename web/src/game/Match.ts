@@ -141,8 +141,9 @@ export interface Teamed { readonly team: number }
 export const canHurt = (a: Teamed, b: Teamed): boolean => a !== b && a.team !== b.team;
 
 /** The teams with at least one robot still in the match (not eliminated). */
-export function teamsLeft(fighters: { team: number; eliminated: boolean }[]): number[] {
-  return [...new Set(fighters.filter((f) => !f.eliminated).map((f) => f.team))];
+export function teamsLeft(fighters: { team: number; eliminated: boolean; home?: unknown }[]): number[] {
+  // The map's NPCs (they have a home spot) never count: the match is between the players.
+  return [...new Set(fighters.filter((f) => !f.eliminated && !f.home).map((f) => f.team))];
 }
 
 /** The default match: P1 against a CPU on the original arena. */

@@ -1,19 +1,20 @@
 import type Phaser from 'phaser';
+import { Store } from './Store';
 
 /**
  * Where the editor runs: on its own page (editor.html), or inside the game
- * (InGame.ts sets this before loading the editor), docked round the match.
+ * (dev builds: the title's Editor entry and the in-match dev HUD, see
+ * DevTools.ts), drawn over the game's canvas.
  */
 export const host: {
   inGame: boolean;
   /** The running game, inside the game. */
   game?: Phaser.Game;
-  /** The game's own page container, moved into the editor's stage while it is open. */
+  /** The game's container: the editor is drawn in it, over the canvas (so it stays on screen in fullscreen). */
   gameEl?: HTMLElement;
-  /** Inside the game: closes the editor and plays on. */
+  /** Inside the game: leaves the editor, back to the title. */
   close?: () => void;
-  /** Inside the game: lets the match run (true) or freezes it to edit (false). */
-  play?: (on: boolean) => void;
-  /** Inside the game: plays the open arena (restarting the match there, its edits in). */
-  playArena?: (id: string) => void;
 } = { inGame: false };
+
+/** The documents being edited, shared by the editor and the in-match dev HUD (one undo history, one Save). */
+export const store = new Store();

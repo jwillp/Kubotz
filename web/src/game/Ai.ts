@@ -34,6 +34,12 @@ export class CpuController implements Controller {
   private link: Link | null = null;
   /** What it is doing, where to, and the path planned (for the debug view). */
   readonly debug: { mode: string; dest: { x: number; y: number } | null; path: Link[] } = { mode: '', dest: null, path: [] };
+  /**
+   * A map NPC's behaviour (arena files): 'attack' plays like any CPU, 'flee'
+   * keeps away from the robots near it, 'idle' stands its ground (it still
+   * hits back at whoever comes in reach). Players' CPUs leave it unset.
+   */
+  behaviour?: 'attack' | 'flee' | 'idle';
   private linkSince = 0;
   /** Keep the attack held until then: a charged smash or laser bolt. */
   private holdAttackUntil = 0;
@@ -86,11 +92,22 @@ export class CpuController implements Controller {
 
     let enemy: Kubotz | null = null;
     for (const e of enemies) if (!enemy || manhattan(me, e) < manhattan(me, enemy)) enemy = e;
+    // An idle NPC only strikes at a robot right in front of it; a fleeing one runs from any robot nearby.
+    if (this.behaviour === 'idle') {
+      this.debug.mode = 'idle (NPC)';
+      if (enemy && Math.abs(enemy.x - me.x) < 1.3 * UNIT && Math.abs(enemy.y - me.y) < 1.5 * UNIT) {
+        if (Math.sign(enemy.x - me.x) !== me.facing) pad[enemy.x < me.x ? 'left' : 'right'] = true;
+        else pad.attack = true;
+      }
+      return pad;
+    }
+    const fleeing = this.behaviour === 'flee' && enemy && manhattan(me, enemy) < 12 ? enemy : null;
+    if (this.behaviour === 'flee' && !fleeing) { this.debug.mode = 'flee (nobody near)'; return pad; }
 
     let dest: { x: number; y: number; bottom: number } | null = null;
     let wantsAttack = false;
 
-    const danger = untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
+    const danger = fleeing ?? untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
     if (danger) {
       // Cornered on the ground: now and then a dodge roll away (or through it).
       if (me.grounded && manhattan(me, danger) < 2.2 && !me.rolling && Math.random() < 0.15) {
