@@ -179,20 +179,6 @@ function buildToolbar(): void {
     );
     return;
   }
-  if (host.inGame) {
-    // Inside the game: pick which of the match's robots to pose; the others are the targets.
-    const fighters = (game.scene.getScene('Game') as unknown as { fighters?: unknown[] } | null)?.fighters ?? [];
-    const pickRobot = labelledSelect('Robot', 'Which robot of the match you pose and tune; the other robots show their hurtboxes (red when an active hit circle reaches them).', fighters.map((_, i) => `Robot ${i + 1}`), (i) => { game.registry.set('editorFighter', i); });
-    (pickRobot.querySelector('select') as HTMLSelectElement).value = String(game.registry.get('editorFighter') ?? 0);
-    toolbar.replaceChildren(
-      check('Handles', 'Shows the orange bone knobs: drag one to turn that bone and the bones it carries (hold Shift to turn it alone). Drag the white square on the hips to move the whole body.', v.handles, (on) => (v.handles = on)),
-      check('Onion skin', 'Shows faint white copies of the robot at the key before and the key after this frame.', v.onion, (on) => (v.onion = on)),
-      pickRobot,
-      h('button', { cls: 'btn', textContent: 'Recentre', title: 'Brings the camera back to the robot.', onclick: () => stage?.recentre() }),
-      h('span', { cls: 'hint', textContent: 'Scrub the timeline to pose the real robot · Play (top) lets the match run' }),
-    );
-    return;
-  }
   toolbar.replaceChildren(
     check('Handles', 'Shows the orange bone knobs: drag one to turn that bone and the bones it carries (hold Shift to turn it alone). Drag the white square on the hips to move the whole body.', v.handles, (on) => (v.handles = on)),
     check('Onion skin', 'Shows faint white copies of the robot at the key before and the key after this frame, so you can see where the motion comes from and goes to.', v.onion, (on) => (v.onion = on)),
@@ -1037,7 +1023,7 @@ function buildArenaInspector(): void {
 // Inside the game: the editor's scenes join the running game (the robot stage over the match, the arena tools on it).
 if (host.inGame) {
   game.registry.set('store', store);
-  stage = game.scene.add('Editor', new StageScene(true), false) as StageScene;
+  stage = game.scene.add('Editor', StageScene, false) as StageScene;
   game.scene.add('Arena', new ArenaScene(true), false);
   stageEl.append(readout);
 }
