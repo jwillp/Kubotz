@@ -145,7 +145,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.arenaLayers = [];
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
-    for (const file of ['feet/foot.png', 'feet/foot_sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
+    for (const file of ['feet/foot.png', 'feet/foot-sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
     this.physicsWorld = new PhysicsWorld();
     const mapW = this.map.width * this.map.tileWidth;
 
@@ -449,7 +449,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const ctx = art.getContext('2d')!;
     // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
     const tile = (name: string) => this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement;
-    const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner_top_left.png'), tile('corner_bottom_left.png')];
+    const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner-top-left.png'), tile('corner-bottom-left.png')];
     let seed = 11;
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) {

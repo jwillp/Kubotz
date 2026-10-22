@@ -14,14 +14,14 @@ import {
  */
 const RECORDED: Record<string, string> = {
   'music-title': 'dashboard.mp3',
-  'music-game': 'TechnoTheme.mp3',
+  'music-game': 'techno-theme.mp3',
   shot: 'layzer.mp3',
-  punch: 'punch_tight.mp3', // HeavyPunch2 without its lead-in
-  step: 'step_tight.mp3', // step.mp3 without its silence and scuff; now the dodge (walking uses step-0..2)
-  'narrator-1': 'narrator_1.mp3',
-  'narrator-2': 'narrator_2.mp3',
-  'narrator-3': 'narrator_3.mp3',
-  'narrator-fight': 'narrator_fight.mp3',
+  punch: 'punch-tight.mp3', // HeavyPunch2 without its lead-in
+  step: 'step-tight.mp3', // step.mp3 without its silence and scuff; now the dodge (walking uses step-0..2)
+  'narrator-1': 'narrator-1.mp3',
+  'narrator-2': 'narrator-2.mp3',
+  'narrator-3': 'narrator-3.mp3',
+  'narrator-fight': 'narrator-fight.mp3',
 };
 
 const SYNTH: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {

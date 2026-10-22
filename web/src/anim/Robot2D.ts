@@ -18,7 +18,7 @@ interface Depth { z: number; round: number; follow: number }
 function depthOf(file: string): Depth {
   if (file.startsWith('head/')) return { z: 4, round: 0.78, follow: 60 };
   if (file.startsWith('torso/')) return { z: 0, round: 0.62, follow: 42 };
-  const back = file.includes('_sha');
+  const back = file.includes('-sha');
   const leg = file.startsWith('legs/') || file.startsWith('feet/');
   return { z: back ? -46 : 46, round: leg ? 0.45 : 0.38, follow: leg ? 30 : 48 };
 }
