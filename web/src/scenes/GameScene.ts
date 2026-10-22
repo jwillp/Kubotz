@@ -95,7 +95,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private camVisibleWidth = 30;
   /** The arena being played (index into ARENA_INFO). */
   private arena = 0;
-  /** The robots' specs from the join screen, by fighter index. */
+  /** The robots' specs from the setup screen, by fighter index. */
   specs: FighterSpec[] = [];
   /** The winning team, null for a draw; undefined while the match runs. */
   winnerTeam: number | null | undefined;
@@ -268,7 +268,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // ------------------------------------------------------------ arena preview
-  /** Set while the scene only shows the arena for the arena select (MatchSetup.preview). */
+  /** Set while the scene only shows the arena for the setup screen (MatchSetup.preview). */
   private preview = false;
 
   /** The arena alone, fitted into `rect`: lights, glow, portals and screen grade, nothing else. */

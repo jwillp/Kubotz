@@ -149,7 +149,7 @@ class StartButton extends Phaser.GameObjects.Container {
 }
 
 /**
- * The setup screen: arena, rules and robots on one page (it replaces the
+ * The setup screen: arena, rules and robots on one page (it replaced the
  * join screen and the arena select). The chosen arena fills the background,
  * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.

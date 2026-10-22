@@ -101,7 +101,7 @@ export const BONUS_RATES: Record<BonusRate, { label: string; min: number; max: n
 };
 export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
-/** What the menus (join, arena select) hand to GameScene. */
+/** What the setup screen hands to GameScene. */
 export interface MatchSetup {
   /** One per robot, in slot order (at most 4). */
   fighters: FighterSpec[];
@@ -113,7 +113,7 @@ export interface MatchSetup {
   /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
   minutes?: number;
   /**
-   * Arena select preview: no robots, music, HUD or rules; the whole arena
+   * Setup screen preview: no robots, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
   preview?: {
