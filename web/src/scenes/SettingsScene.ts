@@ -88,7 +88,7 @@ export class SettingsScene extends Phaser.Scene {
     this.back.on('pointerover', () => this.select(ROWS.length));
     this.back.on('pointerdown', () => { backDown = true; });
     this.back.on('pointerup', () => { if (backDown) this.close(); });
-    // Fullscreen (also F11 or a pad's Select anywhere); the label follows the screen.
+    // Fullscreen (also F11, Alt+Enter or a pad's Select anywhere); the label follows the screen.
     this.fullscreen = new PlateButton(this, width / 2 - 130, height / 2 + 196, 220, 48, '', { size: 24 });
     this.fullscreen.on('pointerover', () => this.select(ROWS.length + 1));
     this.fullscreen.on('pointerdown', () => this.toggleFullscreen());

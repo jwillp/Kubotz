@@ -47,12 +47,15 @@ export interface MatchResult {
   colors: number[];
   /** Per fighter, the texture of its player tag (see Kubotz.tagKey). */
   tags?: string[];
-  /** The K.O.s in order, each with the seconds before it (see game/Replay.ts). */
-  replays: KoReplay[];
+  /** The match's best moments, ranked within each kind: K.O.s, recoveries, combos (see game/Replay.ts). */
+  highlights: Highlight[];
   /** The arena had an outer hull texture (cube arenas), for drawing the replays. */
   hull: boolean;
   /** The arena's blocks (world pixels), for the replays' perspective faces. */
   blocks: { x: number; y: number; width: number; height: number }[];
+  /** The arena played (its backdrop and light), and its portals (world pixels). */
+  arena: number;
+  warpZones: { x: number; y: number; width: number; height: number }[];
 }
 
 /** One robot as drawn on one frame (see Robot2D.DrawState); hidden while dead. */
@@ -64,7 +67,20 @@ export interface RobotFrame {
   shield?: Shield;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
+  /** Its laser blade (hilt x, y, tip x, y), and the swing trail's newest edge (outer x, y, inner x, y). */
+  blade?: [number, number, number, number];
+  swing?: [number, number, number, number];
+  /** Power-up motes circling it (ImpactFx.aura keys). */
+  auras?: string[];
 }
+
+/**
+ * Any other image the match drew on a frame (K.O. debris, laser bolts, power-up
+ * balls, glows): texture, frame, x, y, origin x, y, scale x, y, rotation (rad),
+ * tint, alpha, blend mode, depth, flags (1 lit, 2 flipped), scan-out (0..1, debris)
+ * and an id that follows the same object from frame to frame.
+ */
+export type Prop = [string, string | number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
 
 /** A recorded frame: the match clock, the arena camera (centre, zoom, roll) and every robot. */
 export interface ReplayFrame {
@@ -75,21 +91,40 @@ export interface ReplayFrame {
   lights: number[];
   /** Sounds and impact effects started on this frame, replayed as the frame passes. */
   events: ReplayEvent[];
+  /** The other images drawn (see Prop), and the ambient light (it flashes with the lightning). */
+  props: Prop[];
+  ambient: number;
 }
 
-/** A sound (key, volume, detune) or an impact effect (an ImpactFx method and its arguments). */
+/** A sound (key, volume, detune), an effect (an ImpactFx or PortalFx method and its arguments), a .pe effect or power-up motes round a robot. */
 export type ReplayEvent =
   | { kind: 'sfx'; key: string; volume: number; detune: number }
-  | { kind: 'fx'; method: string; args: number[] };
+  | { kind: 'fx'; method: string; args: number[]; on?: 'portals' }
+  | { kind: 'pe'; name: string; x: number; y: number; tint?: number }
+  | { kind: 'twirl'; robot: number; color: number; ms: number };
 
-/** A K.O. and the frames around it: `blow` is the hit that sent the victim off (or the K.O. itself). */
-export interface KoReplay {
-  victim: number;
-  killer: number | null;
-  /** Match clock of the K.O. and of the blow. */
-  at: number;
-  blow: number;
+export type HighlightKind = 'ko' | 'recovery' | 'combo';
+
+/**
+ * One of the match's best moments and the frames around it. `subject` is the
+ * robot it happens to (the K.O.'d robot, the one recovering, the one comboed),
+ * `by` the opponent (null for a fall on its own); `focus` is the moment played
+ * in slow motion (the blow, the closest call, the last hit).
+ */
+export interface Highlight {
+  kind: HighlightKind;
+  subject: number;
+  by: number | null;
+  score: number;
+  focus: number;
   frames: ReplayFrame[];
+  /** Combo: hits and damage; recovery: how close to the blast zone it got (units); K.O.: it ended the match. */
+  hits?: number;
+  damage?: number;
+  margin?: number;
+  final?: boolean;
+  /** A combo or recovery ended in (or was) a K.O. */
+  ko?: boolean;
 }
 
 export const emptyStats = (): FighterStats => ({ kos: 0, falls: 0, damageDealt: 0, damageTaken: 0, hits: 0, longestCombo: 0 });

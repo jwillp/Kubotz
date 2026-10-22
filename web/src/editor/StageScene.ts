@@ -210,7 +210,7 @@ export class StageScene extends Phaser.Scene {
     const at = { x: 0, y: -1.2 * UNIT };
     if (!this.previewing || (this.previewing.handle.done && (this.previewing.again -= dt) <= 0)) {
       const def = this.effect(name);
-      if (def) this.previewing = { name, text, handle: this.particles.play(def, at.x, at.y, undefined, this.preview.flip), again: 350 };
+      if (def) this.previewing = { name, text, handle: this.particles.play(def, at.x, at.y, { flip: this.preview.flip }), again: 350 };
     }
     this.particles.update(dt * (this.rate || 1));
     // The robot for scale, standing to the side; nothing else of the animation stage.

@@ -77,10 +77,10 @@ export class Robot2D {
   /**
    * @param yaw degrees round the vertical axis: 0 faces right, 180 left (the
    *   turn, plus the clip's own yaw for spins)
-   * @param fx extra motion: lean (radians), squash (y scale), alpha, white flash, hit glitch, frame time
+   * @param fx extra motion: lean (radians), squash (y scale), alpha, white flash, hit glitch, frame time, a shade multiplied over the parts (replays: Kubotz out of the moment)
    */
   update(pose: Pose, maps: string[], x: number, bottom: number, yaw: number,
-    fx: { lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean; shield?: Shield; dtMs: number; snap?: boolean }): void {
+    fx: { lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean; shield?: Shield; dtMs: number; snap?: boolean; shade?: number }): void {
     this.lastDraw = { pose, maps, x, bottom, yaw, lean: fx.lean, squash: fx.squash, alpha: fx.alpha, flash: fx.flash, glitch: fx.glitch, shield: fx.shield };
     this.parts = this.rig.solve(pose, maps);
     // The art faces left: the container mirrors it, and yaw 180 mirrors it back.
@@ -118,7 +118,7 @@ export class Robot2D {
         .setPosition(p.tr.x * c + d.z * s, -p.tr.y)
         .setAngle(-(Math.atan2(uy, ux) * 180) / Math.PI)
         .setScale(p.tr.scaleX * len, p.tr.scaleY * (Math.abs(w) / len) * Math.sign(w));
-      if (fx.flash) img.setTintFill(0xffffff); else img.clearTint();
+      if (fx.flash) img.setTintFill(0xffffff); else if (fx.shade !== undefined) img.setTint(fx.shade); else img.clearTint();
       this.view.moveTo(img, depth);
     });
     this.drawShield(fx.shield, fx.squash);
