@@ -37,8 +37,8 @@ interface Particle {
   collide?: boolean; // stopped by the arena's walls and platforms
 }
 
-/** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
-interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
+/** A swing's smear: per sample, the striking point (o) and one nearer the body (i); a laser blade's from hilt (i) to tip (o). */
+interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; blade: boolean; }
 
 /** A streak of the K.O. smoke whipping out from the core, tapering to a point. */
 interface Wisp { x: number; y: number; angle: number; len: number; width: number; bend: number; age: number; life: number; color: number }
@@ -356,14 +356,35 @@ export class ImpactFx {
   clearTwirls(owner: object): void { this.twirls = this.twirls.filter((w) => w.owner !== owner); }
 
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
-  swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number): void {
+  /** @param blade a laser blade: the smear covers the whole blade, and follows its arc between frames. */
+  swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number, blade = false): void {
     let trail = this.trails.get(owner);
-    if (!trail) this.trails.set(owner, trail = { points: [], color });
+    if (!trail) this.trails.set(owner, trail = { points: [], color, blade });
     trail.color = color;
+    trail.blade = blade;
     if (at) {
       const last = trail.points[trail.points.length - 1];
       // A new swing starting far from the last one starts a new smear.
       if (last && Math.hypot(at.ox - last.ox, at.oy - last.oy) > UNIT * 2.5) trail.points = [];
+      // A blade turns a long way in a frame: the samples in between follow its arc round the hilt.
+      const prev = trail.points[trail.points.length - 1];
+      if (blade && prev) {
+        const a0 = Math.atan2(prev.oy - prev.iy, prev.ox - prev.ix);
+        let d = Math.atan2(at.oy - at.iy, at.ox - at.ix) - a0;
+        if (d > Math.PI) d -= 2 * Math.PI;
+        if (d < -Math.PI) d += 2 * Math.PI;
+        const l0 = Math.hypot(prev.ox - prev.ix, prev.oy - prev.iy);
+        const l1 = Math.hypot(at.ox - at.ix, at.oy - at.iy);
+        const steps = Math.min(6, Math.ceil(Math.abs(d) / 0.25));
+        for (let n = 1; n < steps; n++) {
+          const f = n / steps;
+          const ix = prev.ix + (at.ix - prev.ix) * f;
+          const iy = prev.iy + (at.iy - prev.iy) * f;
+          const ang = a0 + d * f;
+          const len = l0 + (l1 - l0) * f;
+          trail.points.push({ ix, iy, ox: ix + Math.cos(ang) * len, oy: iy + Math.sin(ang) * len, t: prev.t + (this.now - prev.t) * f });
+        }
+      }
       trail.points.push({ ...at, t: this.now });
     }
   }
@@ -509,9 +530,11 @@ export class ImpactFx {
         const k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
         const tail = i / pts.length;
         // The inner edge sits part-way out, so the smear thins towards the body.
-        const inA = { x: a.ix + (a.ox - a.ix) * 0.35, y: a.iy + (a.oy - a.iy) * 0.35 };
-        const inB = { x: b.ix + (b.ox - b.ix) * 0.35, y: b.iy + (b.oy - b.iy) * 0.35 };
-        g.fillStyle(trail.color, 0.32 * k * tail);
+        // (A laser blade smears along its whole length, in its own light.)
+        const inner = trail.blade ? 0.08 : 0.35;
+        const inA = { x: a.ix + (a.ox - a.ix) * inner, y: a.iy + (a.oy - a.iy) * inner };
+        const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
+        g.fillStyle(trail.color, (trail.blade ? 0.42 : 0.32) * k * tail);
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
         g.fillStyle(0xffffff, 0.12 * k * tail);
         const midA = { x: (a.ox + inA.x) / 2, y: (a.oy + inA.y) / 2 };

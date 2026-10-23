@@ -510,7 +510,7 @@ export class ResultsScene extends Phaser.Scene {
       drawBlade(this.sabers, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
     }
     const s = ra.swing;
-    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color);
+    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color, s?.[4] === 1);
     for (const key of ra.auras ?? []) this.impact.aura(owner, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;

@@ -5,7 +5,7 @@ import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, hitlagMs } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, SWORD_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
 import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
@@ -920,7 +920,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
       const arc = k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null;
-      this.impact.swing(k, arc, k.look.color);
+      this.impact.swing(k, arc, k.look.color, !!arc?.blade);
       // Invincibility and shield: the orb's motes keep circling the Kubot while they last.
       const auras: string[] = [];
       if (k.isAlive() && k.invincible) auras.push('invincibility');
@@ -932,7 +932,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const b = k.isAlive() ? k.blade() : null;
       drawn.set(k, {
         ...(b ? { blade: [b.x1, b.y1, b.x2, b.y2] as [number, number, number, number] } : {}),
-        ...(arc ? { swing: [arc.ox, arc.oy, arc.ix, arc.iy] as [number, number, number, number] } : {}),
+        ...(arc ? { swing: [arc.ox, arc.oy, arc.ix, arc.iy, arc.blade ? 1 : 0] as [number, number, number, number, number] } : {}),
         ...(auras.length ? { auras } : {}),
       });
       // Materializing: the same motes swirl round it in the hologram's cyan.
@@ -994,14 +994,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private lastTips = new Map<Kubotz, { x: number; y: number }>();
 
   /** The blade's arc while its tip moves fast (6 units/s or more), else null. */
-  private bladeArc(k: Kubotz, dtMs: number): { ox: number; oy: number; ix: number; iy: number } | null {
+  private bladeArc(k: Kubotz, dtMs: number): { ox: number; oy: number; ix: number; iy: number; blade: true } | null {
     const b = k.blade();
     const last = this.lastTips.get(k);
     if (!b) { this.lastTips.delete(k); return null; }
     this.lastTips.set(k, { x: b.x2, y: b.y2 });
     if (!last || dtMs <= 0) return null;
     const speed = Math.hypot(b.x2 - last.x, b.y2 - last.y) / (dtMs / 1000) / UNIT;
-    return speed >= 6 ? { ox: b.x2, oy: b.y2, ix: b.x1, iy: b.y1 } : null;
+    return speed >= 6 ? { ox: b.x2, oy: b.y2, ix: b.x1, iy: b.y1, blade: true } : null;
   }
 
   private drawSabers(now: number): void {
@@ -1137,10 +1137,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const attacker of this.fighters) {
       const box = attacker.isAlive() ? attacker.currentAttack() : null;
       if (!box) continue;
+      const swept = this.sweptCircles(attacker, box);
       for (const target of this.damageablesFor(attacker)) {
         if (box.hit.has(target)) continue;
         const hurt = target.hurtbox();
-        const at = box.circles.find((c) => Phaser.Geom.Intersects.CircleToRectangle(c, hurt));
+        const at = swept.find((c) => Phaser.Geom.Intersects.CircleToRectangle(c, hurt));
         if (!at) continue;
         box.hit.add(target);
         // Clash: two attacks of similar strength meeting cancel out (CLASH_THRESHOLD = 5).
@@ -1412,6 +1413,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       return true;
     }
     return false;
+  }
+
+  /**
+   * A laser blade's hit circles along its whole sweep through the frame, not
+   * only where it is now: a cleave turns the blade through a Kubot's width in
+   * a frame, so its tip would skip over what it passes.
+   */
+  private sweptCircles(attacker: Kubotz, box: AttackBox): Phaser.Geom.Circle[] {
+    const now = this.bladeNow.get(attacker);
+    if (!now || box.points[0]?.file !== SWORD_FILE) return box.circles;
+    const out = [...box.circles];
+    for (const bl of sweep(this.sweptFrom(attacker, now), now).slice(0, -1)) {
+      for (const f of [0.25, 0.5, 0.75, 1]) out.push(new Phaser.Geom.Circle(bl.x1 + (bl.x2 - bl.x1) * f, bl.y1 + (bl.y2 - bl.y1) * f, box.radius));
+    }
+    return out;
   }
 
   /** Kubotz running into a power-up ball kick it along. */

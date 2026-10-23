@@ -136,10 +136,12 @@ export const COMBO: Move[] = [
   { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [0.4, 0.8], all: true },
   { anim: 'kick', ms: 460, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.34, 0.76], all: true, ghosts: true },
 ];
+// Sword active windows follow the blade's sweep (measured on the clips): the cleaves hit from the
+// blade passing overhead, not once it has come to rest pointing at the floor.
 export const SWORD_COMBO: Move[] = [
-  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.36, 0.78] },
-  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.28, 0.66] },
-  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.35, 0.8], ghosts: true },
+  { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.24, 0.55] },
+  { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.24, 0.62] },
+  { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.31, 0.62], ghosts: true },
 ];
 /** Directional moves (SSB): dash attack, tilts, smashes (charged) and the five aerials. */
 export const DIR_MOVES: DirMoves = {
@@ -157,15 +159,15 @@ export const DIR_MOVES: DirMoves = {
   dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true },
 };
 export const SWORD_DIR_MOVES: DirMoves = {
-  dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8], ghosts: true },
+  dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.31, 0.62], ghosts: true },
   ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
   dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
   utilt: { anim: 'susmash', ms: 400, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 85 }, active: [0.38, 0.75] },
   usmash: { anim: 'susmash', ms: 560, points: bladePoints(), damage: 15, launch: { knockback: 17, angle: 85 }, active: [0.4, 0.72], ghosts: true },
-  fsmash: { anim: 'sfsmash', ms: 600, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [0.42, 0.68], ghosts: true },
+  fsmash: { anim: 'sfsmash', ms: 600, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [0.31, 0.6], ghosts: true },
   dsmash: { anim: 'sdsmash', ms: 520, points: bladePoints(), damage: 12, launch: { knockback: 14, angle: 25 }, active: [0.3, 0.75], both: true, ghosts: true },
   nair: { anim: 'snair', ms: 420, points: bladePoints(), damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], both: true, ghosts: true },
-  fair: { anim: 'slash2', ms: 360, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 40 }, active: [0.28, 0.66] },
+  fair: { anim: 'slash2', ms: 360, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 40 }, active: [0.24, 0.62] },
   bair: { anim: 'sbair', ms: 440, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.25, 0.72], behind: true },
   uair: { anim: 'suair', ms: 480, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 85 }, active: [0.2, 0.62], ghosts: true },
   dair: { anim: 'sdair', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: -70 }, active: [0.3, 1], ghosts: true },
@@ -743,7 +745,7 @@ export class Kubotz implements Damageable, Teamed {
    * The swing as it sweeps (from just before the active frames to their end):
    * the striking point and a point nearer the body, for the smear behind it.
    */
-  swingArc(): { ox: number; oy: number; ix: number; iy: number } | null {
+  swingArc(): { ox: number; oy: number; ix: number; iy: number; blade?: boolean } | null {
     const a = this.attack;
     if (!a) return null;
     const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
@@ -753,7 +755,7 @@ export class Kubotz implements Damageable, Teamed {
       const { sword: tip, swordBase: base } = PART_TIPS;
       const o = this.model.pointOn(SWORD_FILE, tip.x, tip.y);
       const i = this.model.pointOn(SWORD_FILE, base.x, base.y);
-      return o && i ? { ox: o.x, oy: o.y, ix: i.x, iy: i.y } : null;
+      return o && i ? { ox: o.x, oy: o.y, ix: i.x, iy: i.y, blade: true } : null;
     }
     const pts = a.points.flatMap((p) => this.model.pointsOn(p.file, p.x, p.y));
     if (pts.length === 0) return null;

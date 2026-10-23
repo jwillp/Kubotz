@@ -69,9 +69,23 @@ export function bladeContact(a: Blade, b: Blade): { x: number; y: number; dist: 
   return { x: (px + qx) / 2, y: (py + qy) / 2, dist: Math.hypot(px - qx, py - qy) };
 }
 
-/** A blade part-way (`t`, 0..1) from where it was last frame to where it is. */
+/**
+ * A blade part-way (`t`, 0..1) from where it was last frame to where it is:
+ * the emitter moved in a line, the blade turned about it (the short way), so
+ * a swing's tip follows its arc instead of cutting across it.
+ */
 export function lerpBlade(a: Blade, b: Blade, t: number): Blade {
-  return { x1: a.x1 + (b.x1 - a.x1) * t, y1: a.y1 + (b.y1 - a.y1) * t, x2: a.x2 + (b.x2 - a.x2) * t, y2: a.y2 + (b.y2 - a.y2) * t };
+  const x1 = a.x1 + (b.x1 - a.x1) * t;
+  const y1 = a.y1 + (b.y1 - a.y1) * t;
+  const angA = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
+  const angB = Math.atan2(b.y2 - b.y1, b.x2 - b.x1);
+  let d = angB - angA;
+  if (d > Math.PI) d -= 2 * Math.PI;
+  if (d < -Math.PI) d += 2 * Math.PI;
+  const ang = angA + d * t;
+  const lenA = Math.hypot(a.x2 - a.x1, a.y2 - a.y1);
+  const len = lenA + (Math.hypot(b.x2 - b.x1, b.y2 - b.y1) - lenA) * t;
+  return { x1, y1, x2: x1 + Math.cos(ang) * len, y2: y1 + Math.sin(ang) * len };
 }
 
 /** Sub-steps a frame is checked at: a swing sweeps the blade across a Kubot's width in a frame or two. */
