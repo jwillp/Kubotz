@@ -54,8 +54,8 @@ const TWIRL_FADE = 300;
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
-/** Dust, cel-shaded like the K.O. smoke: a cool grey rim round a pale body. */
-const DUST = { color: 0x58626f, body: 0xa3aebb };
+/** Dust, cel-shaded like Wind Waker's: a pale warm body over a soft, low-contrast cool shade. */
+const DUST = { color: 0x9aa3ad, body: 0xc9cdcf };
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -523,21 +523,19 @@ export class ImpactFx {
   }
 
   /**
-   * Dust, cel-shaded in flat layers like the K.O. smoke (rims, then bodies up
-   * and to the left in them, then a cream highlight on the bigger puffs): each
-   * puffs up fast, its body shrinks into the rim, and it collapses, no fading.
+   * Dust, flat and soft like Wind Waker's: a pale body with one low-contrast
+   * shade crescent under it to the lower right, no outline and no highlight.
+   * Shades go down first so the bodies run together into one cloud; each puff
+   * swells fast, its shade creeps over the body, and it collapses, no fading.
    */
   private drawDust(g: Phaser.GameObjects.Graphics): void {
     const dust = this.particles.filter((p) => p.kind === 'dust');
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.5, 1, f)); };
-    for (const p of dust) g.fillStyle(p.color, 1).fillCircle(p.x, p.y, radius(p));
+    for (const p of dust) { const r = radius(p); g.fillStyle(p.color, 1).fillCircle(p.x + r * 0.1, p.y + r * 0.12, r); }
     for (const p of dust) {
-      const r = radius(p) * (1 - 0.9 * smooth(0.3, 0.85, p.age / p.life));
-      g.fillStyle(p.body ?? p.color, 1).fillCircle(p.x - r * 0.12, p.y - r * 0.18, r * 0.76);
-    }
-    for (const p of dust) {
-      const r = radius(p) * (1 - smooth(0.2, 0.5, p.age / p.life));
-      if (r > 0.16 * UNIT) g.fillStyle(0xe6e9e1, 1).fillEllipse(p.x - r * 0.3, p.y - r * 0.38, r * 0.5, r * 0.3);
+      const r = radius(p);
+      const k = 1 - 0.6 * smooth(0.4, 0.9, p.age / p.life);
+      g.fillStyle(p.body ?? p.color, 1).fillCircle(p.x - r * 0.1 * k, p.y - r * 0.12 * k, r * 0.9 * k);
     }
   }
 
