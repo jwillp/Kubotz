@@ -161,6 +161,21 @@ export class Kubot2D {
     hitGlitch(this.view, f < 1 ? (1 - f) * (1 - f) * 0.6 + 0.4 * (1 - f) : 0, this.camera, hex);
   }
 
+  /**
+   * Cuts a part's image short at `x` (pixels of the image from its left; null
+   * shows it whole): a laser blade ending where it enters a wall.
+   */
+  cutImage(file: string, x: number | null): void {
+    for (const p of this.parts) {
+      if (p.file.name !== file) continue;
+      const img = this.images.get(p.name);
+      if (!img) continue;
+      if (x === null) { if (img.isCropped) img.setCrop(); continue; }
+      const f = img.frame;
+      img.setCrop(0, 0, Math.max(0, (x / p.file.width) * f.width), f.height);
+    }
+  }
+
   /** A fading copy of the Kubot as drawn now, in a colour (afterimages of fast moves). */
   ghost(color: number, life = 200, alpha = 0.5): void {
     let g = this.ghosts.find((q) => !q.view.visible);

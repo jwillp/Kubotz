@@ -5,7 +5,7 @@ import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, SWORD_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
+import { BLADE_EMITTER, BLADE_TIP, Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, SWORD_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
 import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
@@ -58,6 +58,8 @@ export function opaqueOutline(scene: Phaser.Scene, key: string): number[][] {
 
 /** Fixed blue lights over the platforms (main.ts maxLights must cover these + 2 + the pool). */
 const PLATFORM_LIGHTS = 20;
+/** How fast (units/s each) Kubotz standing in each other are eased apart. */
+const PUSH_APART = 5;
 
 export class GameScene extends Phaser.Scene implements ArenaHooks {
   fighters: Kubotz[] = [];
@@ -104,6 +106,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private bladeNow = new Map<Kubotz, Blade>();
   /** Resting blades crossed: when each pair last crackled and buzzed. */
   private crossedAt = new Map<string, { sparks: number; buzz: number }>();
+  /** When each blade last sparked where it enters a wall. */
+  private cutSparkAt = new Map<Kubotz, number>();
   private nextBonusAt = 0;
   /** The title screen's power-up setting. */
   private bonusRate = BONUS_RATES.normal;
@@ -197,6 +201,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.bladeWas = new Map();
     this.bladeNow = new Map();
     this.crossedAt = new Map();
+    this.cutSparkAt = new Map();
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
@@ -727,7 +732,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
     this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
-    this.recorder.watch(this.impact, ['hit', 'clash', 'bladeSparks', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'bladeSparks', 'bladeBurn', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -894,6 +899,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.update(now, dt, fighting);
     }
     this.physicsWorld.step(dt);
+    this.separateKubotz(dt);
     this.resolveSabers(now);
     this.resolveMelee(now);
     this.kickOrbs(now);
@@ -919,7 +925,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.render(now, dtMs);
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
-      const arc = k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null;
+      const arc = k.isAlive() ? this.clipArc(this.bladeArc(k, dtMs) ?? k.swingArc()) : null;
       this.impact.swing(k, arc, k.look.color, !!arc?.blade);
       // Invincibility and shield: the orb's motes keep circling the Kubot while they last.
       const auras: string[] = [];
@@ -1008,8 +1014,45 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const g = (this.sabers ??= this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD)).clear();
     for (const k of this.fighters) {
       const b = k.blade();
-      if (b) drawBlade(g, b.x1, b.y1, b.x2, b.y2, k.look.color, 0.9 + 0.1 * Math.sin(now * 0.09 + k.x));
+      if (!b) { k.model.cutImage(SWORD_FILE, null); continue; }
+      // As in Smash, the blade goes into walls and floors: it is drawn only up to where it enters, sparking there.
+      const t = this.bladeCut(b);
+      k.model.cutImage(SWORD_FILE, t < 1 ? BLADE_EMITTER.x + (BLADE_TIP.x - BLADE_EMITTER.x) * t : null);
+      const x2 = b.x1 + (b.x2 - b.x1) * t;
+      const y2 = b.y1 + (b.y2 - b.y1) * t;
+      if (t > 0) drawBlade(g, b.x1, b.y1, x2, y2, k.look.color, 0.9 + 0.1 * Math.sin(now * 0.09 + k.x));
+      if (t < 1 && now - (this.cutSparkAt.get(k) ?? -1e9) > 80) {
+        this.cutSparkAt.set(k, now);
+        this.impact.bladeBurn(x2, y2, k.look.color);
+      }
     }
+  }
+
+  /** A blade's swing smear stops at the wall or floor its blade goes into. */
+  private clipArc<T extends { ox: number; oy: number; ix: number; iy: number; blade?: boolean }>(arc: T | null): T | null {
+    if (!arc?.blade) return arc;
+    const t = this.bladeCut({ x1: arc.ix, y1: arc.iy, x2: arc.ox, y2: arc.oy });
+    return t < 1 ? { ...arc, ox: arc.ix + (arc.ox - arc.ix) * t, oy: arc.iy + (arc.oy - arc.iy) * t } : arc;
+  }
+
+  /** How far along a blade (0..1, emitter to tip) it enters a wall, floor or platform; 1 when it is clear. */
+  private bladeCut(b: Blade): number {
+    const dx = b.x2 - b.x1;
+    const dy = b.y2 - b.y1;
+    let first = 1;
+    for (const r of this.solids) {
+      // Liang-Barsky: where the segment enters the rectangle.
+      let t0 = 0;
+      let t1 = 1;
+      const clip = (p: number, q: number): boolean => {
+        if (p === 0) return q >= 0;
+        const t = q / p;
+        if (p < 0) { if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; }
+        return true;
+      };
+      if (clip(-dx, b.x1 - r.left) && clip(dx, r.right - b.x1) && clip(-dy, b.y1 - r.top) && clip(dy, r.bottom - b.y1) && t0 < first) first = t0;
+    }
+    return first;
   }
 
   /** Soft additive glow and a Light2D point light around lasers, blades, pick-ups, explosions and hits. */
@@ -1428,6 +1471,27 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       for (const f of [0.25, 0.5, 0.75, 1]) out.push(new Phaser.Geom.Circle(bl.x1 + (bl.x2 - bl.x1) * f, bl.y1 + (bl.y2 - bl.y1) * f, box.radius));
     }
     return out;
+  }
+
+  /**
+   * Kubotz standing in each other ease apart, as in Smash: two of them can't
+   * stand chest to chest trading blows, and swords keep some reach.
+   */
+  private separateKubotz(dt: number): void {
+    const free = this.fighters.filter((k) => k.isAlive() && k.grounded && !k.intangible && !k.heldBy && !k.grabbing && !k.bladeLocked && !k.onLedge);
+    for (let i = 0; i < free.length; i++) {
+      for (let j = i + 1; j < free.length; j++) {
+        const a = free[i];
+        const b = free[j];
+        if (Math.abs(a.y - b.y) > 0.5 * UNIT) continue;
+        const overlap = (a.body.width + b.body.width) / 2 - Math.abs(a.x - b.x);
+        if (overlap <= 0) continue;
+        const dir = a.x === b.x ? -1 : Math.sign(a.x - b.x);
+        const step = Math.min(overlap / 2, PUSH_APART * UNIT * dt);
+        a.body.setPosition(a.x + dir * step, a.y);
+        b.body.setPosition(b.x - dir * step, b.y);
+      }
+    }
   }
 
   /** Kubotz running into a power-up ball kick it along. */

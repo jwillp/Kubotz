@@ -56,6 +56,12 @@ export const SWORD_FILE = 'arms/lazer-sword.png';
 export const GUN_FILE = 'arms/gun-mk1.png';
 export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
 
+/** Laser sword hits launch this much harder than their table values (the blade should send Kubotz flying). */
+export const SWORD_KNOCKBACK = 1.3;
+/** The laser blade's emitter and tip on its image (pixels from the bottom-left), as drawn and lit. */
+export const BLADE_EMITTER = { x: 96, y: 68 };
+export const BLADE_TIP = { x: 298, y: 216 };
+
 /** Points from the sword's hilt to its tip, for the blade hitbox. */
 function bladePoints(): PartPoint[] {
   const { sword: t, swordBase: b } = PART_TIPS;
@@ -616,8 +622,8 @@ export class Kubotz implements Damageable, Teamed {
   /** The laser blade's emitter and tip (world pixels), while the sword is out. */
   blade(): { x1: number; y1: number; x2: number; y2: number } | null {
     if (this.weapon !== 'laserSword' || !this.isAlive() || this.carrying) return null;
-    const a = this.model.pointOn(SWORD_FILE, 96, 68);
-    const b = this.model.pointOn(SWORD_FILE, 298, 216);
+    const a = this.model.pointOn(SWORD_FILE, BLADE_EMITTER.x, BLADE_EMITTER.y);
+    const b = this.model.pointOn(SWORD_FILE, BLADE_TIP.x, BLADE_TIP.y);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
   }
 
@@ -1625,7 +1631,7 @@ export class Kubotz implements Damageable, Teamed {
       all: !!move.all,
       both: !!move.both,
       damage: Math.round(move.damage * power),
-      launch: { ...move.launch, knockback: move.launch.knockback * power },
+      launch: { ...move.launch, knockback: move.launch.knockback * power * (sword ? SWORD_KNOCKBACK : 1) },
       hit: new Set(),
       clashed: new Set(),
     };

@@ -165,6 +165,21 @@ export class ImpactFx {
     }
   }
 
+  /** A laser blade burning into a wall or floor: a white-hot spot, molten sparks spraying off it, a glow on the wall. */
+  bladeBurn(x: number, y: number, color: number): void {
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.14 * UNIT, grow: -0.08 * UNIT, life: 60 });
+    this.add({ kind: 'flash', x, y, color: mix(color, 0xffd27a, 0.5), size: 0.24 * UNIT, grow: -0.12 * UNIT, life: 80 });
+    for (let i = 0; i < 4; i++) {
+      const ang = rand(0, Math.PI * 2);
+      const speed = rand(6, 15) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - rand(2, 5) * UNIT,
+        color: i % 2 ? 0xffd27a : mix(color, 0xffffff, 0.5), size: rand(2, 3.5), life: rand(160, 320), gravity: 30 * UNIT, drag: 0.06,
+      });
+    }
+    this.flashes.push({ x, y, color: mix(color, 0xffd27a, 0.4), intensity: 1.2, at: this.now });
+  }
+
   /** A laser bolt ending on something. */
   pop(x: number, y: number, color: number): void {
     this.add({ kind: 'ring', x, y, color, size: 0.1 * UNIT, grow: 0.6 * UNIT, life: 180 });
@@ -536,11 +551,14 @@ export class ImpactFx {
         const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
         g.fillStyle(trail.color, (trail.blade ? 0.6 : 0.32) * k * tail);
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
-        g.fillStyle(0xffffff, 0.12 * k * tail);
-        const midA = { x: (a.ox + inA.x) / 2, y: (a.oy + inA.y) / 2 };
-        const midB = { x: (b.ox + inB.x) / 2, y: (b.oy + inB.y) / 2 };
+        g.fillStyle(0xffffff, (trail.blade ? 0.3 : 0.12) * k * tail);
+        // A blade's hot core runs its whole length, not just near the tip.
+        const core = trail.blade ? 0.85 : 0.5;
+        const midA = { x: a.ox + (inA.x - a.ox) * core, y: a.oy + (inA.y - a.oy) * core };
+        const midB = { x: b.ox + (inB.x - b.ox) * core, y: b.oy + (inB.y - b.oy) * core };
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, midB, midA], true);
-        g.lineStyle(0.1 * UNIT * k, 0xffffff, 0.85 * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
+        // The white-hot rim along the striking point's path (faint on a blade, whose whole length streaks).
+        g.lineStyle((trail.blade ? 0.04 : 0.1) * UNIT * k, 0xffffff, (trail.blade ? 0.45 : 0.85) * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
       }
     }
   }
