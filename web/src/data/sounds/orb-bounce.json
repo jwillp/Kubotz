@@ -1,0 +1,8 @@
+{
+  "note": "The power-up ball bouncing: a bright glassy tink.",
+  "length": 0.6,
+  "layers": [
+    {"name":"Tink","type":"ping","at":0,"freq":2640,"gain":0.3},
+    {"name":"Overtone","type":"ping","at":0.003,"freq":3950,"gain":0.1}
+  ]
+}

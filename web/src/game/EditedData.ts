@@ -3,6 +3,7 @@ import { loadMoves } from './Kubotz';
 import type { EffectData } from '../fx/ParticleEffect';
 import type { GameData } from './DataFiles';
 import { ARENA_IDS, loadArenas } from '../map/Arenas';
+import { loadSounds } from '../audio/Synth';
 
 /** Where the editor leaves its data for "Test in game". */
 export const EDITED_KEY = 'kubotz-editor-test';
@@ -22,6 +23,7 @@ export function useKeptEdits(): void {
   loadClips(docs.clips);
   loadMoves(docs.moves);
   if (docs.arenas) loadArenas(docs.arenas);
+  if (docs.sounds) loadSounds(docs.sounds);
   editedParticles = docs.particles ?? null;
 }
 
@@ -33,7 +35,7 @@ export let testArena: number | null = null;
 
 /**
  * Opened from the editor's "Test in game" (index.html?edited): plays the
- * clips, moves and particle effects the editor holds, saved or not, instead
+ * clips, moves, particle effects, arenas and sounds the editor holds, saved or not, instead
  * of src/data.
  */
 export function useEditedData(): boolean {
@@ -45,6 +47,7 @@ export function useEditedData(): boolean {
     loadMoves(docs.moves);
     editedParticles = docs.particles ?? null;
     if (docs.arenas) loadArenas(docs.arenas);
+    if (docs.sounds) loadSounds(docs.sounds);
     const arena = new URLSearchParams(location.search).get('arena');
     if (arena) { const i = ARENA_IDS.indexOf(arena); testArena = i > 0 ? i : null; }
     document.title = 'Kubotz (editor test)';

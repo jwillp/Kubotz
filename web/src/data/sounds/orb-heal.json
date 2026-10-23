@@ -1,0 +1,19 @@
+{
+  "note": "The health power-up: a warm rising chord with a soft sparkle.",
+  "length": 1.6,
+  "reverb": 0.4,
+  "layers": [
+    {"name":"Chord 1","type":"tone","at":0,"dur":1,"gain":0.11,"freq":{"from":507.5525,"to":523.25,"time":0.16667},"env":{"attack":0.125,"shape":"exp","k":2.6}},
+    {"name":"Chord 1 octave","type":"tone","at":0,"dur":0.8,"gain":0.025,"freq":{"from":1046.5},"env":{"attack":0.1,"shape":"exp","k":4}},
+    {"name":"Chord 2","type":"tone","at":0.09,"dur":0.955,"gain":0.11,"freq":{"from":639.4725,"to":659.25,"time":0.15917},"env":{"attack":0.11938,"shape":"exp","k":2.6}},
+    {"name":"Chord 2 octave","type":"tone","at":0.09,"dur":0.8,"gain":0.025,"freq":{"from":1318.5},"env":{"attack":0.1,"shape":"exp","k":4}},
+    {"name":"Chord 3","type":"tone","at":0.18,"dur":0.91,"gain":0.11,"freq":{"from":760.4703,"to":783.99,"time":0.15167},"env":{"attack":0.11375,"shape":"exp","k":2.6}},
+    {"name":"Chord 3 octave","type":"tone","at":0.18,"dur":0.8,"gain":0.025,"freq":{"from":1567.98},"env":{"attack":0.1,"shape":"exp","k":4}},
+    {"name":"Chord 4","type":"tone","at":0.27,"dur":0.865,"gain":0.11,"freq":{"from":1015.105,"to":1046.5,"time":0.14417},"env":{"attack":0.10813,"shape":"exp","k":2.6}},
+    {"name":"Chord 4 octave","type":"tone","at":0.27,"dur":0.8,"gain":0.025,"freq":{"from":2093},"env":{"attack":0.1,"shape":"exp","k":4}},
+    {"name":"Sparkle 1","type":"ping","at":0.25,"freq":2093,"gain":0.05},
+    {"name":"Sparkle 2","type":"ping","at":0.32,"freq":2637,"gain":0.05},
+    {"name":"Sparkle 3","type":"ping","at":0.39,"freq":3136,"gain":0.05},
+    {"name":"Sparkle 4","type":"ping","at":0.46,"freq":4186,"gain":0.05}
+  ]
+}

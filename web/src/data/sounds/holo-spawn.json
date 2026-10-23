@@ -1,0 +1,9 @@
+{
+  "note": "A Kubot materializing: a rising shimmer, scan-line crackle and a lock-in tone.",
+  "length": 1.9,
+  "layers": [
+    {"name":"Shimmer","type":"tone","at":0,"dur":1.9,"gain":0.12,"freq":{"from":220,"to":880,"curve":"exp","time":1.2},"wobble":{"rate":31,"depth":0.04},"partials":[[1,1],[1.503,0.45]],"env":{"attack":0.16667,"shape":"release","hold":1.25,"k":17.1}},
+    {"name":"Scan crackle","type":"noise","at":0,"dur":1.9,"gain":0.07,"filters":[{"type":"lowpass","cutoff":{"from":3023}}],"env":{"attack":0.16667,"shape":"release","hold":1.25,"k":17.1},"lfo":{"shape":"square","rate":14,"depth":0.75,"duty":0.3}},
+    {"name":"Lock-in","type":"tone","at":1.25,"dur":0.65,"gain":0.1,"freq":{"from":1318},"env":{"attack":0.0125,"shape":"exp","k":2.6}}
+  ]
+}

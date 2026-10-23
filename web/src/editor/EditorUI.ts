@@ -16,6 +16,9 @@ import type { TmxMap } from '../map/TmxMap';
 import { FRAME_MS, PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type PointKind } from './Store';
 import { Timeline } from './Timeline';
 import { host, store } from './Host';
+import { SoundView } from './SoundView';
+import { GLASS, type Envelope, type Layer, type Lfo, type NoiseLayer, type SoundDef, type Sweep } from '../audio/SoundDef';
+import { GAME_SOUNDS } from '../audio/Synth';
 
 /**
  * Kubotz Editor: tune the Kubotz' clips and moves (poses, hit circles,
@@ -23,7 +26,7 @@ import { host, store } from './Host';
  * arenas, then save them back to src/data. It runs on a page of its own
  * (editor.html, `npm run editor`) or inside the game (dev builds: the
  * title's Editor entry), drawn over the game's canvas: there it has the
- * Animation and Particles tabs (arenas are edited in a match, DevHud.ts).
+ * Animation, Particles and Sound tabs (arenas are edited in a match, DevHud.ts).
  */
 
 const root = document.getElementById('editor') ?? (host.gameEl ?? document.body).appendChild(Object.assign(document.createElement('div'), { id: 'editor' }));
@@ -48,12 +51,13 @@ const saveBtn = h('button', { cls: 'btn primary', textContent: 'Save', title: ho
   : 'Writes the changed files (Ctrl+S). On the published page it downloads them instead.' });
 const exportBtn = h('button', { cls: 'btn', textContent: 'Export', title: 'Writes the changed data files (src/data): on the dev server straight into the project, on a published page as downloads.', onclick: () => void exportFiles() });
 /** The editor's tabs: Kubot animation and moves, particle effects, and arenas (next). */
-type Tab = 'anim' | 'particles' | 'arena';
+type Tab = 'anim' | 'particles' | 'sound' | 'arena';
 let tab: Tab = 'anim';
 const tabBtn = (t: Tab, label: string, help: string) => { const b = h('button', { textContent: label, title: help, onclick: () => setTab(t) }); b.dataset.tab = t; return b; };
 const nav = h('nav', {},
   tabBtn('anim', 'Animation', 'Clips, poses, hit circles and particle events.'),
   tabBtn('particles', 'Particles', 'Particle effects: what they look like and how they move.'),
+  tabBtn('sound', 'Sound', 'The sounds made in code: layers of tones, noise and pings, with chorus, delay and reverb; play them and export them as WAV files.'),
   // Inside the game arenas are edited in a match (the dev HUD, F2).
   ...(host.inGame ? [] : [tabBtn('arena', 'Arena', 'Arenas: walls, platforms, portals, spawns, bonus spots, tiles and the room behind.')]));
 const filesLabel = h('span', { cls: 'files' });
@@ -122,7 +126,11 @@ const transport = h('div', { cls: 'transport' },
   info,
 );
 const timeline = new Timeline(store);
+const soundView = new SoundView(store, host.game);
+soundView.el.hidden = true;
 const main = h('main', {}, toolbar, stageEl, h('div', {}, transport, timeline.el));
+// Over the Kubot stage, which keeps its size (a Phaser canvas sized to nothing breaks).
+stageEl.append(soundView.el);
 const right = h('aside', { cls: 'right' });
 root.append(header, h('div', { cls: 'body' }, left, main, right));
 
@@ -164,6 +172,7 @@ function labelledSelect(label: string, help: string, options: string[], fn: (i: 
 }
 
 function buildToolbar(): void {
+  if (tab === 'sound') { buildSoundToolbar(); return; }
   const v = stage!.view;
   if (tab === 'arena') { buildArenaToolbar(); return; }
   if (tab === 'particles') {
@@ -234,6 +243,7 @@ async function exportFiles(): Promise<void> {
 function buildList(): void {
   if (tab === 'particles') { buildEffectList(); return; }
   if (tab === 'arena') { buildArenaList(); return; }
+  if (tab === 'sound') { buildSoundList(); return; }
   const q = search.value.trim().toLowerCase();
   const kids: HTMLElement[] = [];
   let group = '';
@@ -363,7 +373,7 @@ function buildInspector(): void {
   // The move: what the hit does, when, and where its circles are.
   const m = s.move();
   if (m) {
-    const name = s.sel.move!.table === 'combo' || s.sel.move!.table === 'swordCombo' ? `${s.sel.move!.table === 'combo' ? 'jab' : 'sword jab'} ${Number(s.sel.move!.key) + 1}` : s.sel.move!.key;
+    const name = s.sel.move!.table === 'combo' || s.sel.move!.table === 'bladeCombo' ? `${s.sel.move!.table === 'combo' ? 'jab' : 'blade jab'} ${Number(s.sel.move!.key) + 1}` : s.sel.move!.key;
     out.push(h('div', { cls: 'inspector-title', textContent: `Move · ${name}` }));
     out.push(section('hit', 'Hit', [grid(2,
       num('Damage %', 'Damage dealt to the Kubot that is hit.', () => s.move()!.damage, (v) => editMove((mm) => { mm.damage = v ?? 0; })),
@@ -381,7 +391,7 @@ function buildInspector(): void {
     out.push(section('circles', 'Hit circles', [
       grid(2,
         pick('Points', `Which parts strike: a set of points on the part images (fists, feet, blade...). Shared by ${s.pointSetUsers(m.points)} moves, so dragging a red dot moves it for all of them.`, Object.keys(s.docs.moves.pointSets), () => s.move()!.points, (v) => editMove((mm) => { mm.points = v; }, false)),
-        num('Radius units', 'Size of each hit circle (1 unit = one map tile). Empty uses the default: 0.35, or 0.3 for the sword.', () => s.move()!.radius, (v) => editMove((mm) => setOpt(mm, 'radius', v)), { step: 0.05, placeholder: m.points === 'blade' ? '0.3' : '0.35' }),
+        num('Radius units', 'Size of each hit circle (1 unit = one map tile). Empty uses the default: 0.35, or 0.3 for the plasma blade.', () => s.move()!.radius, (v) => editMove((mm) => setOpt(mm, 'radius', v)), { step: 0.05, placeholder: m.points === 'blade' ? '0.3' : '0.35' }),
       ),
       h('div', { cls: 'checks' },
         flag('every point hits', 'Off: only the point furthest forward strikes (the leading fist or foot). On: every point has a circle (spins, splits).', () => !!s.move()!.all, (v) => editMove((mm) => setOpt(mm, 'all', v || undefined), false)),
@@ -508,8 +518,8 @@ function filterProps(): void {
 
 function refreshInspector(): void {
   const s = store;
-  const next = tab === 'arena' ? arenaShape() : tab === 'particles' ? `p|${s.sel.effect}|${s.docs.particles[s.sel.effect]?.emitters.length}|${Object.keys(s.docs.particles).length}|${particleShape()}` : `${s.clipData.events?.length ?? 0}|${s.sel.clip}|${s.sel.move?.table}:${s.sel.move?.key}|${!!s.keyAt()}|${s.sel.bone}|${frames()}|${Math.round(s.sel.t * frames())}`;
-  if (next !== shape) { shape = next; if (tab === 'arena') buildArenaInspector(); else if (tab === 'particles') buildEffectInspector(); else buildInspector(); }
+  const next = tab === 'sound' ? soundShape() : tab === 'arena' ? arenaShape() : tab === 'particles' ? `p|${s.sel.effect}|${s.docs.particles[s.sel.effect]?.emitters.length}|${Object.keys(s.docs.particles).length}|${particleShape()}` : `${s.clipData.events?.length ?? 0}|${s.sel.clip}|${s.sel.move?.table}:${s.sel.move?.key}|${!!s.keyAt()}|${s.sel.bone}|${frames()}|${Math.round(s.sel.t * frames())}`;
+  if (next !== shape) { shape = next; if (tab === 'sound') buildSoundInspector(); else if (tab === 'arena') buildArenaInspector(); else if (tab === 'particles') buildEffectInspector(); else buildInspector(); }
   for (const b of bound) {
     if (document.activeElement === b.input) continue;
     const v = b.get();
@@ -528,9 +538,10 @@ function deleteKey(): void {
 let lastList = '';
 store.on(() => {
   const s = store;
-  const listShape = `${tab}|${s.sel.arena}|${Object.keys(s.docs.arenas).join()}|${Object.values(s.docs.arenas).map((a) => a.name + a.order).join()}|${s.sel.effect}|${Object.keys(s.docs.particles).join()}|${s.sel.clip}|${s.sel.move?.table}:${s.sel.move?.key}`;
+  const listShape = `${tab}|${s.sel.arena}|${Object.keys(s.docs.arenas).join()}|${Object.values(s.docs.arenas).map((a) => a.name + a.order).join()}|${s.sel.effect}|${Object.keys(s.docs.particles).join()}|${s.sel.sound}|${Object.keys(s.docs.sounds).join()}|${s.docs.sounds[s.sel.sound]?.layers.length}|${s.sel.clip}|${s.sel.move?.table}:${s.sel.move?.key}`;
   if (listShape !== lastList) { lastList = listShape; buildList(); stage?.clearEffects(); }
   refreshInspector();
+  if (tab === 'sound') soundView.update();
   const f = frames();
   const fr = Math.round(s.sel.t * f);
   const m = s.move();
@@ -557,6 +568,7 @@ window.addEventListener('keydown', (e) => {
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) store.redo(); else store.undo(); return; }
   if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); store.redo(); return; }
   if (tab === 'arena' && (e.key === 'Delete' || e.key === 'Backspace')) { deletePiece(); return; }
+  if (tab === 'sound' && e.key === ' ') { e.preventDefault(); if (soundView.playing) soundView.stop(); else soundView.play(); return; }
   if (tab !== 'anim') return;
   if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); if (e.shiftKey) jumpKey(-1); else step(-1); }
@@ -573,9 +585,14 @@ setTab('anim');
 function setTab(t: Tab): void {
   tab = t;
   for (const b of Array.from(nav.querySelectorAll<HTMLButtonElement>('button[data-tab]'))) b.classList.toggle('on', b.dataset.tab === t);
-  filesLabel.textContent = { anim: 'src/data/clips · src/data/moves', particles: 'src/data/particles', arena: 'src/data/arenas' }[t];
-  filesLabel.title = { anim: 'Where Save writes: one file per clip and one per move, only the ones you changed. The game reads them too.', particles: 'Where Save writes: one file per effect.', arena: 'Where Save writes: one file per arena.' }[t];
-  search.placeholder = { anim: 'Find a move or clip', particles: 'Find an effect', arena: 'Find an arena' }[t];
+  filesLabel.textContent = { anim: 'src/data/clips · src/data/moves', particles: 'src/data/particles', sound: 'src/data/sounds', arena: 'src/data/arenas' }[t];
+  filesLabel.title = { anim: 'Where Save writes: one file per clip and one per move, only the ones you changed. The game reads them too.', particles: 'Where Save writes: one file per effect.', sound: 'Where Save writes: one file per sound. Export WAV writes the rendered sounds to web/sound-exports.', arena: 'Where Save writes: one file per arena.' }[t];
+  search.placeholder = { anim: 'Find a move or clip', particles: 'Find an effect', sound: 'Find a sound', arena: 'Find an arena' }[t];
+  // The Sound tab has its own stage (the waveform) over the Kubot stage's.
+  root.classList.toggle('sound-tab', t === 'sound');
+  soundView.el.hidden = t !== 'sound';
+  if (t !== 'sound') soundView.stop();
+  if (t === 'sound') buildToolbar();
   // The arena has its own stage (ArenaScene); the other tabs share the Kubot's.
   if (!host.inGame && (game.scene.isActive('Editor') || game.scene.isSleeping('Editor'))) {
     if (t === 'arena') { game.scene.sleep('Editor'); game.scene.run('Arena'); } else { game.scene.sleep('Arena'); game.scene.run('Editor'); }
@@ -797,12 +814,13 @@ function fitStage(): void {
 if (host.inGame) new ResizeObserver(() => fitStage()).observe(stageEl);
 
 /** Inside the game: the editor opens (the title's Editor entry) or closes. */
-export function editorShown(on: boolean, which?: 'anim' | 'particles'): void {
+export function editorShown(on: boolean, which?: 'anim' | 'particles' | 'sound'): void {
   if (which) tab = which;
   root.hidden = !on;
   // A field focused when the editor closes never reports losing focus: give the game its keys back.
   game.input.keyboard!.enabled = true;
   if (!on) {
+    soundView.stop();
     if (game.scene.isActive('Editor')) game.scene.stop('Editor');
     return;
   }
@@ -1030,6 +1048,306 @@ function buildArenaInspector(): void {
   sectionsEl.replaceChildren(...out);
   filterProps();
 }
+
+// ------------------------------------------------------------------ the Sound tab
+const isGameSound = (k: string) => GAME_SOUNDS.includes(k);
+/** Sounds that mix this one in (a layer of theirs plays it). */
+const soundUsers = (key: string) => Object.entries(store.docs.sounds).filter(([k, d]) => k !== key && d.layers.some((l) => l.type === 'sound' && l.sound === key)).map(([k]) => k);
+const SOUND_GROUPS: [RegExp, string][] = [[/^(boom|step-|holo-)/, 'Kubotz'], [/^blade-/, 'Plasma Blades'], [/^portal-/, 'Arena'], [/^orb-/, 'Power-ups'], [/^ui-/, 'Menus']];
+const LAYER_NAMES: Record<Layer['type'], string> = { tone: 'Tone', noise: 'Noise', ping: 'Ping', sound: 'Sound' };
+const PLATE: [number, number, number][] = [[1, 0.13, 55], [2.698, 0.07, 70], [4.395, 0.045, 90], [7.023, 0.025, 120]];
+const NEW_LAYERS: Record<Layer['type'], () => Layer> = {
+  tone: () => ({ name: 'Tone', type: 'tone', at: 0, dur: 0.3, gain: 0.2, freq: { from: 440, to: 880, curve: 'exp' }, env: { attack: 0.005, shape: 'exp', k: 4 } }),
+  noise: () => ({ name: 'Noise', type: 'noise', at: 0, dur: 0.3, gain: 0.2, filters: [{ type: 'lowpass', cutoff: { from: 4000, to: 300, curve: 'exp' } }], env: { attack: 0.005, shape: 'exp', k: 5 } }),
+  ping: () => ({ name: 'Ping', type: 'ping', at: 0, freq: 2640, gain: 0.2 }),
+  sound: () => ({ name: 'Sound', type: 'sound', at: 0, gain: 0.8, sound: Object.keys(store.docs.sounds).find((k) => k !== store.sel.sound) ?? 'ui-confirm', pitch: 0 }),
+};
+
+const sound = (): SoundDef | undefined => store.docs.sounds[store.sel.sound];
+function editSound(fn: (d: SoundDef) => void, drag = true): void {
+  const key = store.sel.sound;
+  store.edit('sounds', (d) => fn(d.sounds[key]), drag);
+}
+function editLayer<L extends Layer>(i: number, fn: (l: L) => void, drag = true): void { editSound((d) => fn(d.layers[i] as L), drag); }
+
+/** A slider with its number beside it; `log` spreads the slider evenly over octaves (pitches). */
+function slide(label: string, help: string, get: () => number, set: (v: number) => void, o: { min: number; max: number; step?: number; log?: boolean; digits?: number }): HTMLElement {
+  const toPos = (v: number) => (o.log ? (Math.log(Math.max(o.min, v) / o.min) / Math.log(o.max / o.min)) * 1000 : v);
+  const fromPos = (p: number) => (o.log ? o.min * Math.pow(o.max / o.min, p / 1000) : p);
+  const range = h('input', { type: 'range', min: o.log ? '0' : String(o.min), max: o.log ? '1000' : String(o.max), step: o.log ? '1' : String(o.step ?? 0.001) });
+  const box = h('input', { type: 'number', step: String(o.step ?? 0.001) });
+  range.oninput = () => set(round(fromPos(Number(range.value)), o.digits ?? 4));
+  range.onchange = () => store.endDrag();
+  box.oninput = () => { if (box.value !== '' && Number.isFinite(Number(box.value))) set(Number(box.value)); };
+  box.onchange = () => store.endDrag();
+  bound.push({ input: range, get: () => String(toPos(get())) });
+  bound.push({ input: box, get: () => String(round(get(), o.digits ?? 4)) });
+  const el = h('label', { cls: 'field slide' }, h('span', { textContent: label }), h('div', { cls: 'slide-row' }, range, box));
+  el.dataset.help = help;
+  el.dataset.find = `${label} ${help}`.toLowerCase();
+  return el;
+}
+function text(label: string, help: string, get: () => string, set: (v: string) => void): HTMLElement {
+  const input = h('input', { type: 'text' });
+  input.onchange = () => set(input.value);
+  bound.push({ input, get });
+  return labelled('field', label, help, input);
+}
+function button(label: string, help: string, onclick: () => void, disabled = false): HTMLButtonElement {
+  const b = h('button', { cls: 'btn', textContent: label, onclick, disabled });
+  b.dataset.help = help;
+  return b;
+}
+
+function uniqueSound(base: string): string {
+  let n = base; let i = 2;
+  while (store.docs.sounds[n]) n = `${base}-${i++}`;
+  return n;
+}
+
+function buildSoundToolbar(): void {
+  const play = button('▶ Play', 'Plays the sound (Space). Clicking the waveform plays it too.', () => soundView.play());
+  play.classList.add('solid');
+  toolbar.replaceChildren(
+    play,
+    button('Stop', 'Stops playing (Space).', () => soundView.stop()),
+    button('Play layer', 'Plays only the picked layer (orange), without the others or the effects.', () => soundView.play(true)),
+    check('Loop', 'Plays the sound over and over.', soundView.loop, (on) => { soundView.loop = on; if (soundView.playing) soundView.play(); }),
+    check('Play after each change', 'Plays the sound each time you let go of a slider or change a value.', soundView.autoPlay, (on) => (soundView.autoPlay = on)),
+    button('Export WAV', 'Renders this sound to a WAV file (44.1 kHz, 16-bit): on the dev server into web/sound-exports, on a published page as a download.', () => void exportWavs([store.sel.sound])),
+    button('Export all WAVs', 'Renders every sound to WAV files (on a published page, one zip).', () => void exportWavs(Object.keys(store.docs.sounds))),
+    h('span', { cls: 'hint', textContent: 'Click a lane to pick a layer · drag it to move it in time' }),
+  );
+}
+
+async function exportWavs(keys: string[]): Promise<void> {
+  try { status.textContent = await soundView.exportWavs(keys); } catch (e) {
+    const code = (e as { code?: string }).code;
+    status.textContent = code === 'declined' ? 'Not exported' : `Export failed: ${(e as Error).message ?? String(e)}`;
+  }
+}
+
+function buildSoundList(): void {
+  const q = search.value.trim().toLowerCase();
+  const groups = new Map<string, HTMLElement[]>();
+  for (const key of Object.keys(store.docs.sounds).sort()) {
+    const d = store.docs.sounds[key];
+    if (q && !`${key} ${d.note ?? ''}`.toLowerCase().includes(q)) continue;
+    const group = isGameSound(key) ? SOUND_GROUPS.find(([re]) => re.test(key))?.[1] ?? 'Game' : 'New sounds';
+    const item = h('button', { cls: `item${store.sel.sound === key ? ' on' : ''}`, onclick: () => { store.select({ sound: key, layer: 0 }); soundView.play(); } },
+      key, h('small', { textContent: `${d.layers.length} layer${d.layers.length > 1 ? 's' : ''}` }));
+    item.dataset.help = d.note ?? (isGameSound(key) ? 'Played by the game.' : 'Not played by the game yet: mix it into another sound with a Sound layer, or export it.');
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group)!.push(item);
+  }
+  const kids: HTMLElement[] = [];
+  for (const g of ['Kubotz', 'Plasma Blades', 'Arena', 'Power-ups', 'Menus', 'Game', 'New sounds']) if (groups.has(g)) kids.push(h('div', { cls: 'group', textContent: g }), ...groups.get(g)!);
+  const add = button('+ New sound', 'Makes a new sound: one tone to start from.', () => {
+    const key = uniqueSound('new-sound');
+    store.edit('sounds', (d) => { d.sounds[key] = { note: 'A new sound.', length: 0.6, layers: [NEW_LAYERS.tone()] }; });
+    store.select({ sound: key, layer: 0 });
+  });
+  list.replaceChildren(...kids, h('div', { cls: 'list-actions' }, add));
+}
+
+/** What the inspector's layout depends on (not the values): it is rebuilt when this changes. */
+function soundShape(): string {
+  return `snd|${store.sel.sound}|${store.sel.layer}|${JSON.stringify(sound() ?? null, (k, v: unknown) => (typeof v === 'number' ? (k === 'count' ? v > 1 : 0) : v))}`;
+}
+
+/** A pitch or cutoff that can glide: from, to, how, how fast, over how long. */
+function sweepFields(i: number, label: string, get: (l: Layer) => Sweep, o: { min: number; max: number }, dur: number): HTMLElement[] {
+  const sw = () => get(sound()!.layers[i]);
+  const edit = (fn: (s: Sweep) => void, drag = true) => editLayer(i, (l) => fn(get(l)), drag);
+  const s = sw();
+  const out = [
+    slide(`${label}`, `Where it starts (Hz).`, () => sw().from, (v) => edit((x) => { x.from = Math.max(o.min, v); }), { ...o, log: true, digits: 1 }),
+    pick(`${label} glide`, 'How it moves to the end value: steady (no glide), linear, even (the same musical interval each moment), drop (falls fast then settles) or arch (out to the end value and back).',
+      [['none', 'steady'], ['linear', 'linear'], ['exp', 'even'], ['drop', 'drop'], ['arch', 'arch']],
+      () => (sw().to === undefined ? 'none' : sw().curve ?? 'linear'),
+      (v) => edit((x) => { if (v === 'none') { delete x.to; delete x.curve; delete x.k; delete x.time; } else { x.to ??= x.from * 2; x.curve = v as Sweep['curve']; } }, false)),
+  ];
+  if (s.to !== undefined) {
+    out.push(slide(`${label} to`, 'Where it ends (Hz).', () => sw().to ?? sw().from, (v) => edit((x) => { x.to = Math.max(o.min, v); }), { ...o, log: true, digits: 1 }));
+    if (s.curve === 'drop' || s.curve === 'arch') out.push(slide('Bend', s.curve === 'drop' ? 'How fast it drops.' : 'Leans the arch: below 1 it peaks early, above 1 late.', () => sw().k ?? (s.curve === 'drop' ? 6 : 1), (v) => edit((x) => { x.k = v; }), { min: 0.1, max: 30, step: 0.1 }));
+    out.push(slide('Glide time', 'Seconds the glide takes (0: the whole layer).', () => sw().time ?? 0, (v) => edit((x) => { if (v > 0) x.time = v; else delete x.time; }), { min: 0, max: Math.max(0.05, dur), step: 0.001 }));
+  }
+  return out;
+}
+
+function envFields(i: number): HTMLElement[] {
+  const env = (): Envelope => (sound()!.layers[i] as { env?: Envelope }).env ?? {};
+  const edit = (fn: (e: Envelope) => void, drag = true) => editLayer<Layer & { env?: Envelope }>(i, (l) => { l.env ??= {}; fn(l.env); }, drag);
+  const shape = env().shape ?? 'hold';
+  const out = [
+    slide('Attack', 'Seconds it takes to fade in.', () => env().attack ?? 0, (v) => edit((e) => { if (v > 0) e.attack = v; else delete e.attack; }), { min: 0, max: 0.5, step: 0.0005 }),
+    pick('Fade', 'How the level moves over the layer: hold (stays full), linear (down to the end level), decay (dies away), curve ((1 - t) to a power), arch (up and down), release (holds, then dies away).',
+      [['hold', 'hold'], ['linear', 'linear'], ['exp', 'decay'], ['pow', 'curve'], ['arch', 'arch'], ['release', 'release']], () => env().shape ?? 'hold', (v) => edit((e) => { e.shape = v as Envelope['shape']; }, false)),
+  ];
+  if (shape === 'exp' || shape === 'pow' || shape === 'release') out.push(slide(shape === 'pow' ? 'Power' : 'Decay speed', 'Higher dies away faster.', () => env().k ?? 4, (v) => edit((e) => { e.k = v; }), { min: 0.1, max: 40, step: 0.1 }));
+  if (shape === 'linear') out.push(slide('End level', 'The level it fades to (0 to 1).', () => env().end ?? 0, (v) => edit((e) => { e.end = v; }), { min: 0, max: 1, step: 0.01 }));
+  if (shape === 'release') out.push(slide('Hold', 'Seconds at full level before dying away.', () => env().hold ?? 0, (v) => edit((e) => { e.hold = v; }), { min: 0, max: 5, step: 0.01 }));
+  return out;
+}
+
+function lfoFields(i: number): HTMLElement[] {
+  const lfo = () => (sound()!.layers[i] as { lfo?: Lfo }).lfo;
+  const edit = (fn: (e: Lfo) => void, drag = true) => editLayer<Layer & { lfo?: Lfo }>(i, (l) => { if (l.lfo) fn(l.lfo); }, drag);
+  const out = [pick('Tremolo', 'Sways the level: sine (smooth) or square (chops it, for stutters and blips).', [['off', 'off'], ['sine', 'sine'], ['square', 'square']], () => lfo()?.shape ?? 'off',
+    (v) => editLayer<Layer & { lfo?: Lfo }>(i, (l) => { if (v === 'off') delete l.lfo; else l.lfo = { ...(l.lfo ?? { rate: 12, depth: 0.5 }), shape: v as Lfo['shape'] }; }, false))];
+  if (!lfo()) return out;
+  out.push(
+    slide('Tremolo rate', 'Cycles per second.', () => lfo()!.rate, (v) => edit((e) => { e.rate = v; }), { min: 0.1, max: 800, log: true, digits: 2 }),
+    slide('Tremolo depth', 'How much it lowers the level (0 to 1).', () => lfo()!.depth, (v) => edit((e) => { e.depth = v; }), { min: 0, max: 1, step: 0.01 }),
+  );
+  if (lfo()!.shape === 'square') out.push(slide('Duty', 'Below 0 the sound is on longer than off, above 0 shorter.', () => lfo()!.duty ?? 0, (v) => edit((e) => { e.duty = v; }), { min: -1, max: 1, step: 0.01 }));
+  return out;
+}
+
+/** Pairs or triples of numbers as text: "1:1, 1.5:0.4". */
+const tuplesText = (t: number[][] | undefined) => (t ?? []).map((p) => p.map((v) => round(v, 3)).join(':')).join(', ');
+const parseTuples = (s: string, n: number) => s.split(/[,;]/).map((p) => p.trim().split(/[:\s]+/).map(Number)).filter((p) => p.length === n && p.every(Number.isFinite));
+
+function layerFields(i: number): HTMLElement[] {
+  const def = sound()!;
+  const l = def.layers[i];
+  const L = <T extends Layer>() => sound()!.layers[i] as T;
+  const common = [
+    text('Name', 'What this layer is (only for you).', () => L().name ?? '', (v) => editLayer(i, (x) => { x.name = v.trim() || undefined; }, false)),
+    slide('Start', 'Seconds from the start of the sound.', () => L().at, (v) => editLayer(i, (x) => { x.at = Math.max(0, v); }), { min: 0, max: def.length, step: 0.001 }),
+    slide('Level', 'How loud this layer is.', () => L().gain, (v) => editLayer(i, (x) => { x.gain = v; }), { min: 0, max: 1.5, step: 0.001 }),
+  ];
+  const out: HTMLElement[] = [];
+  if (l.type === 'tone' || l.type === 'noise') common.push(slide('Length', 'Seconds the layer lasts.', () => L<typeof l>().dur, (v) => editLayer<typeof l>(i, (x) => { x.dur = Math.max(0.001, v); }), { min: 0.001, max: def.length, step: 0.001 }));
+  out.push(grid(2, ...common));
+  if (l.type === 'tone') {
+    const T = () => L<typeof l>();
+    const fields = [
+      pick('Wave', 'The oscillator: sine (pure), soft (a sine pushed into clipping: digital blips), square, saw, triangle.', ['sine', 'soft', 'square', 'saw', 'triangle'], () => T().wave ?? 'sine', (v) => editLayer<typeof l>(i, (x) => { x.wave = v as typeof l.wave; }, false)),
+      ...(l.wave === 'soft' ? [slide('Drive', 'How hard the soft wave clips: higher is buzzier.', () => T().drive ?? 2.2, (v) => editLayer<typeof l>(i, (x) => { x.drive = v; }), { min: 0.5, max: 10, step: 0.1 })] : []),
+      ...sweepFields(i, 'Pitch', (x) => (x as typeof l).freq, { min: 20, max: 16000 }, l.dur),
+      slide('Vibrato rate', 'Wobbles of the pitch per second (0: none).', () => T().wobble?.rate ?? 0, (v) => editLayer<typeof l>(i, (x) => { if (v > 0) x.wobble = { depth: 0.05, ...x.wobble, rate: v }; else delete x.wobble; }), { min: 0, max: 200, step: 0.1 }),
+      ...(l.wobble ? [slide(l.wobble.hz ? 'Vibrato Hz' : 'Vibrato depth', l.wobble.hz ? 'How far the pitch wobbles, in Hz.' : 'How far the pitch wobbles, as a fraction of it (0.05 = 5%).', () => T().wobble?.depth ?? 0, (v) => editLayer<typeof l>(i, (x) => { if (x.wobble) x.wobble.depth = v; }), { min: 0, max: l.wobble.hz ? 1000 : 0.5, step: l.wobble.hz ? 1 : 0.005 })] : []),
+      text('Voices', 'Extra voices at pitch ratios, as ratio:level pairs ("1:1, 2:0.3" adds an octave). Empty: one voice. A chorus of slightly detuned voices: "1:1, 1.01:0.7".', () => tuplesText(T().partials), (v) => editLayer<typeof l>(i, (x) => { const p = parseTuples(v, 2) as [number, number][]; if (p.length) x.partials = p; else delete x.partials; }, false)),
+    ];
+    out.push(grid(2, ...fields), h('div', { cls: 'sub', textContent: 'Level over time' }), grid(2, ...envFields(i), ...lfoFields(i)));
+  } else if (l.type === 'noise') {
+    const N = () => L<typeof l>();
+    const filterRows = (l.filters ?? []).map((f, fi) => {
+      const F = () => N().filters![fi];
+      const editF = (fn: (x: NonNullable<NoiseLayer['filters']>[number]) => void, drag = true) => editLayer<typeof l>(i, (x) => fn(x.filters![fi]), drag);
+      const rows: HTMLElement[] = [pick('Filter', 'lowpass keeps the lows (darker), highpass keeps the highs (thinner), bandpass keeps a band (resonant, for whooshes), tilt brightens gently.', ['lowpass', 'highpass', 'bandpass', 'tilt'], () => F().type,
+        (v) => editF((x) => { x.type = v as typeof x.type; if (v !== 'tilt') x.cutoff ??= { from: 2000 }; }, false))];
+      if (f.type === 'tilt') rows.push(slide('Amount', 'How much brighter (0 to 1).', () => F().amount ?? 0.5, (v) => editF((x) => { x.amount = v; }), { min: 0, max: 1, step: 0.01 }));
+      else rows.push(...sweepFields(i, 'Cutoff', (x) => (x as typeof l).filters![fi].cutoff ?? { from: 1000 }, { min: 20, max: 18000 }, l.dur));
+      if (f.type === 'bandpass') rows.push(slide('Resonance', 'Q: higher is a narrower, whistlier band.', () => F().q ?? 1.4, (v) => editF((x) => { x.q = v; }), { min: 0.3, max: 20, step: 0.05 }));
+      const rm = button('Remove filter', 'Takes this filter off.', () => editLayer<typeof l>(i, (x) => { x.filters!.splice(fi, 1); if (!x.filters!.length) delete x.filters; }, false));
+      return h('div', { cls: 'value-box' }, grid(2, ...rows), h('div', { cls: 'keyline' }, rm));
+    });
+    const addF = button('+ Filter', 'Adds a filter after the others (two lowpasses make a steeper one).', () => editLayer<typeof l>(i, (x) => { (x.filters ??= []).push({ type: 'lowpass', cutoff: { from: 2000 } }); }, false));
+    out.push(...filterRows, h('div', { cls: 'keyline' }, addF),
+      grid(2,
+        slide('Ring mod', 'A ring modulator\'s pitch (Hz): a metallic, synthetic grit. Set its depth above 0 to hear it.', () => N().ring?.freq ?? 200, (v) => editLayer<typeof l>(i, (x) => { x.ring = { depth: 0, ...x.ring, freq: v }; }), { min: 1, max: 4000, log: true, digits: 1 }),
+        slide('Ring depth', 'How much of the ring modulation (0: none).', () => N().ring?.depth ?? 0, (v) => editLayer<typeof l>(i, (x) => { if (v > 0) x.ring = { freq: 200, ...x.ring, depth: v }; else delete x.ring; }), { min: 0, max: 1, step: 0.01 }),
+      ),
+      h('div', { cls: 'sub', textContent: 'Level over time' }), grid(2, ...envFields(i), ...lfoFields(i)));
+  } else if (l.type === 'ping') {
+    const P = () => L<typeof l>();
+    const preset = () => { const p = JSON.stringify(P().partials ?? GLASS); return p === JSON.stringify(GLASS) ? 'glass' : p === JSON.stringify(PLATE) ? 'plate' : 'custom'; };
+    out.push(grid(2,
+      slide('Pitch', 'The struck note (Hz).', () => P().freq, (v) => editLayer<typeof l>(i, (x) => { x.freq = v; }), { min: 40, max: 12000, log: true, digits: 1 }),
+      pick('Material', 'What is struck: glass (rings long and bright) or a metal plate (short and dull). Edit the partials for your own.', [['glass', 'glass'], ['plate', 'metal plate'], ['custom', 'custom']], preset,
+        (v) => editLayer<typeof l>(i, (x) => { if (v === 'glass') delete x.partials; else if (v === 'plate') x.partials = PLATE.map((p) => [...p] as [number, number, number]); }, false)),
+      text('Partials', 'ratio:level:decay for each partial ("1:1:9, 2.32:0.55:14"); a higher decay dies faster.', () => tuplesText(P().partials ?? GLASS), (v) => editLayer<typeof l>(i, (x) => { const p = parseTuples(v, 3) as [number, number, number][]; if (p.length) x.partials = p; }, false)),
+      slide('Click', 'Seconds for the strike to come in (0: a hard click).', () => P().click ?? 0.0005, (v) => editLayer<typeof l>(i, (x) => { x.click = v; }), { min: 0, max: 0.02, step: 0.0001 }),
+      slide('Count', 'More than 1 scatters random pings: sparks, crackle.', () => P().count ?? 1, (v) => editLayer<typeof l>(i, (x) => { if (v > 1) x.count = Math.round(v); else { delete x.count; delete x.spread; delete x.freqTo; } }), { min: 1, max: 80, step: 1 }),
+      ...((l.count ?? 1) > 1 ? [
+        slide('Spread', 'Seconds the pings are scattered over (more of them early).', () => P().spread ?? 1, (v) => editLayer<typeof l>(i, (x) => { x.spread = v; }), { min: 0.01, max: 4, step: 0.01 }),
+        slide('Pitch to', 'Each ping takes a random pitch between Pitch and this.', () => P().freqTo ?? P().freq, (v) => editLayer<typeof l>(i, (x) => { x.freqTo = v; }), { min: 40, max: 12000, log: true, digits: 1 }),
+      ] : []),
+    ));
+  } else {
+    const S = () => L<typeof l>();
+    out.push(grid(2,
+      pick('Sound', 'Which sound this layer plays (with its own effects).', Object.keys(def === sound() ? store.docs.sounds : {}).filter((k) => k !== store.sel.sound).sort(), () => S().sound, (v) => editLayer<typeof l>(i, (x) => { x.sound = v; }, false)),
+      slide('Pitch', 'Semitones up or down (12 = an octave). Like a tape: higher also plays faster and shorter.', () => S().pitch ?? 0, (v) => editLayer<typeof l>(i, (x) => { x.pitch = v; }), { min: -24, max: 24, step: 0.1, digits: 1 }),
+    ));
+  }
+  out.push(h('div', { cls: 'keyline' },
+    button('Play layer', 'Plays only this layer.', () => { store.select({ layer: i }); soundView.play(true); }),
+    button(l.mute ? 'Unmute' : 'Mute', 'Leaves this layer out of the sound (it stays here to bring back).', () => editLayer(i, (x) => { if (x.mute) delete x.mute; else x.mute = true; }, false)),
+    button('Duplicate', 'Copies this layer (then change its pitch for a chorus or a harmony).', () => { editSound((d) => { d.layers.splice(i + 1, 0, JSON.parse(JSON.stringify(d.layers[i])) as Layer); }, false); store.select({ layer: i + 1 }); }),
+    button('Remove', 'Removes this layer.', () => { editSound((d) => { d.layers.splice(i, 1); }, false); store.select({ layer: Math.max(0, i - 1) }); }, def.layers.length < 2),
+  ));
+  return out;
+}
+
+function buildSoundInspector(): void {
+  bound = [];
+  const key = store.sel.sound;
+  const def = sound();
+  if (!def) { sectionsEl.replaceChildren(h('p', { cls: 'note', textContent: 'Pick a sound on the left.' })); return; }
+  const game = isGameSound(key);
+  const users = soundUsers(key);
+  const out: HTMLElement[] = [h('div', { cls: 'inspector-title', textContent: `Sound · ${key}` })];
+  const nameInput = h('input', { value: key, disabled: game });
+  nameInput.onchange = () => {
+    const next = nameInput.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    if (!next || next === key || store.docs.sounds[next]) { nameInput.value = key; return; }
+    store.edit('sounds', (d) => {
+      d.sounds[next] = d.sounds[key]; delete d.sounds[key];
+      for (const s of Object.values(d.sounds)) for (const l of s.layers) if (l.type === 'sound' && l.sound === key) l.sound = next;
+    }, false);
+    store.select({ sound: next });
+  };
+  const nameField = h('label', { cls: 'field' }, h('span', { textContent: 'Name' }), nameInput);
+  nameField.dataset.help = game ? 'The game plays this sound by this name, so it cannot be renamed.' : 'The sound\'s name and file name (src/data/sounds/<name>.json, <name>.wav).';
+  const ed = (fn: (d: SoundDef) => void, drag = true) => editSound(fn, drag);
+  out.push(section('sound', 'Sound', [
+    grid(2, nameField,
+      slide('Length', 'Seconds: everything after is cut (make room for reverb and echoes).', () => sound()!.length, (v) => ed((d) => { d.length = Math.max(0.02, v); }), { min: 0.02, max: 5, step: 0.01 }),
+      slide('Peak limit', 'Turns the whole sound down if its loudest point goes over this (0: off).', () => sound()!.normalize ?? 0, (v) => ed((d) => { if (v > 0) d.normalize = v; else delete d.normalize; }), { min: 0, max: 1, step: 0.01 }),
+      num('Noise seed', 'Which random noise and sparks it uses: change it for another take of the same sound.', () => sound()!.seed ?? 1, (v) => ed((d) => { d.seed = Math.round(v ?? 1); }, false), { step: 1, digits: 0 })),
+    grid(1, text('Note', 'What the sound is for.', () => sound()!.note ?? '', (v) => ed((d) => { d.note = v || undefined; }, false))),
+    h('div', { cls: 'keyline' },
+      button('Duplicate', 'Makes a copy of this sound to try changes on.', () => { const copy = uniqueSound(`${key}-copy`); store.edit('sounds', (d) => { d.sounds[copy] = JSON.parse(JSON.stringify(d.sounds[key])) as SoundDef; }, false); store.select({ sound: copy, layer: 0 }); }),
+      button('Delete', game ? 'The game plays this sound: it cannot be deleted.' : users.length ? `Mixed into ${users.join(', ')}: take it out of those first.` : 'Deletes this sound (its file goes on Save).',
+        () => { store.edit('sounds', (d) => { delete d.sounds[key]; }, false); store.select({ sound: Object.keys(store.docs.sounds)[0] ?? '', layer: 0 }); }, game || users.length > 0)),
+    h('p', { cls: 'note', textContent: game ? 'Played by the game.' : users.length ? `Mixed into ${users.join(', ')}.` : 'Not played by the game.' }),
+  ]));
+  const fx = <K extends 'delay' | 'chorus'>(k: K, dflt: NonNullable<SoundDef[K]>) => (fn: (e: NonNullable<SoundDef[K]>) => void) => ed((d) => { d[k] ??= { ...dflt }; fn(d[k]!); });
+  const delay = fx('delay', { time: 0.18, feedback: 0.35, mix: 0 });
+  const chorus = fx('chorus', { voices: 3, depth: 4, rate: 0.8, mix: 0 });
+  out.push(section('sound-fx', 'Effects', [
+    grid(2, slide('Reverb', 'A small room: how much of it (0: dry).', () => sound()!.reverb ?? 0, (v) => ed((d) => { if (v > 0) d.reverb = v; else delete d.reverb; }), { min: 0, max: 1, step: 0.01 })),
+    h('div', { cls: 'sub', textContent: 'Delay (echoes)' }),
+    grid(3,
+      slide('Mix', 'How loud the echoes are (0: off).', () => sound()!.delay?.mix ?? 0, (v) => delay((e) => { e.mix = v; }), { min: 0, max: 1, step: 0.01 }),
+      slide('Time', 'Seconds between echoes.', () => sound()!.delay?.time ?? 0.18, (v) => delay((e) => { e.time = Math.max(0.005, v); }), { min: 0.005, max: 1, step: 0.005 }),
+      slide('Feedback', 'How much of each echo comes back again (more: longer tail).', () => sound()!.delay?.feedback ?? 0.35, (v) => delay((e) => { e.feedback = Math.min(0.95, v); }), { min: 0, max: 0.95, step: 0.01 })),
+    h('div', { cls: 'sub', textContent: 'Chorus' }),
+    grid(2,
+      slide('Mix', 'How much of the chorus (0: off).', () => sound()!.chorus?.mix ?? 0, (v) => chorus((e) => { e.mix = v; }), { min: 0, max: 1, step: 0.01 }),
+      slide('Voices', 'Copies of the sound, each swaying on its own.', () => sound()!.chorus?.voices ?? 3, (v) => chorus((e) => { e.voices = Math.round(v); }), { min: 1, max: 6, step: 1 }),
+      slide('Depth', 'How far the voices sway (ms): more is more detuned.', () => sound()!.chorus?.depth ?? 4, (v) => chorus((e) => { e.depth = v; }), { min: 0.1, max: 20, step: 0.1 }),
+      slide('Rate', 'How fast they sway (per second).', () => sound()!.chorus?.rate ?? 0.8, (v) => chorus((e) => { e.rate = v; }), { min: 0.05, max: 8, step: 0.05 })),
+  ]));
+  def.layers.forEach((l, i) => {
+    // Only the picked layer is open; opening another picks it.
+    const sec = h('details', { cls: `section${i === store.sel.layer ? ' picked' : ''}`, open: i === store.sel.layer });
+    sec.dataset.id = `snd-layer-${i}`;
+    const sum = h('summary', {}, h('span', { textContent: `${i + 1} · ${LAYER_NAMES[l.type]}${l.name ? ` · ${l.name}` : ''}${l.mute ? ' (muted)' : ''}` }));
+    sum.addEventListener('click', (e) => { if (store.sel.layer !== i) { e.preventDefault(); store.select({ layer: i }); } });
+    sec.append(sum, ...layerFields(i));
+    out.push(sec);
+  });
+  out.push(h('div', { cls: 'keyline' }, ...(Object.keys(NEW_LAYERS) as Layer['type'][]).map((t) => button(`+ ${LAYER_NAMES[t]}`,
+    { tone: 'Adds a tone: an oscillator gliding in pitch.', noise: 'Adds noise through filters: hiss, whooshes, blasts.', ping: 'Adds a struck glass or metal ping (or scattered sparks).', sound: 'Adds another whole sound, at its own pitch and time: build sounds out of sounds.' }[t],
+    () => { editSound((d) => { d.layers.push(NEW_LAYERS[t]()); }, false); store.select({ layer: sound()!.layers.length - 1 }); }))));
+  sectionsEl.replaceChildren(...out);
+  filterProps();
+}
+soundView.onPick = (i) => { sectionsEl.querySelector(`details[data-id="snd-layer-${i}"]`)?.scrollIntoView({ block: 'nearest' }); };
 
 // Inside the game: the Kubot stage joins the running game (started when the editor opens).
 if (host.inGame) {

@@ -11,7 +11,7 @@ import { CEL, celPart } from '../fx/Cel';
 import { TvIdent } from '../fx/TvIdent';
 import { shutter } from '../ui/Plate';
 import { buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
-import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, SWORD_FILE, hex } from '../game/Kubotz';
+import { GUN_FILE, HEAD_FILES, PART_TIPS, SLOT_COLORS, BLADE_FILE, hex } from '../game/Kubotz';
 
 export const KUBOTZ_SCML = 'animations/kubotz.scml';
 export const MAIN_MAP = 'maps/debug-map.tmx';
@@ -62,7 +62,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg', 'maps/background.jpg');
     loadHeadingFont(this);
     this.load.image('p-hexa', 'particles/hexa.png');
-    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) this.load.image(`bonus-${b}`, `entities/bonus-${b}.png`);
+    for (const b of ['gun', 'health', 'jump', 'plasma-blade', 'shield', 'speed']) this.load.image(`bonus-${b}`, `entities/bonus-${b}.png`);
     this.load.image('bullet', 'entities/bullet.png');
     // LibGDX particle effects (full-on-scripting branch) and their images.
     for (const img of PARTICLE_IMAGES) this.load.image(`pe:${img}`, `particles/${img}`);
@@ -131,7 +131,7 @@ export class BootScene extends Phaser.Scene {
     const map = this.registry.get('map') as TmxMap;
     for (const file of spriter.allFiles()) { addNormalMap(this.textures, `kubotz:${file}`, { bevel: 5, detail: 0.4, strength: 1.5 }); await pace(); }
     for (const tile of map.tileImages.values()) { addNormalMap(this.textures, `tile:${tile.source}`, { bevel: 3, detail: 0.3, strength: 1 }); await pace(); }
-    for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) { addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 }); await pace(); }
+    for (const b of ['gun', 'health', 'jump', 'plasma-blade', 'shield', 'speed']) { addNormalMap(this.textures, `bonus-${b}`, { bevel: 4, detail: 0.3 }); await pace(); }
     step = 1;
     for (const [c, color] of SLOT_COLORS.entries()) {
       for (const file of HEAD_FILES) {
@@ -142,8 +142,8 @@ export class BootScene extends Phaser.Scene {
       // P1 / P2 / CPU tags in each Kubot colour, drawn in the heading font.
       for (const who of ['CPU', 'P1', 'P2']) makeTagTexture(this, `label-${who}:${hex(color)}`, who, color);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
-      this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
-      addNormalMap(this.textures, `sword:${hex(color)}`, {}, `kubotz:${SWORD_FILE}`);
+      this.recolor(`kubotz:${BLADE_FILE}`, `blade:${hex(color)}`, color, false);
+      addNormalMap(this.textures, `blade:${hex(color)}`, {}, `kubotz:${BLADE_FILE}`);
       await pace((c + 1) / SLOT_COLORS.length);
     }
     step = 2;
@@ -152,7 +152,7 @@ export class BootScene extends Phaser.Scene {
     const parts: [string, string][] = spriter.allFiles().map((f) => [`kubotz:${f}`, f]);
     for (const color of SLOT_COLORS) {
       for (const file of HEAD_FILES) parts.push([`head:${hex(color)}:${file}`, file]);
-      parts.push([`sword:${hex(color)}`, SWORD_FILE]);
+      parts.push([`blade:${hex(color)}`, BLADE_FILE]);
     }
     for (const [i, [key, file]] of parts.entries()) {
       this.textures.addCanvas(WORN + key, weather(this.textures.get(key).getSourceImage() as HTMLImageElement, file));
@@ -192,7 +192,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   /**
-   * Finds the sword's blade (hilt to tip) and the gun's muzzle on their images,
+   * Finds the plasma blade (hilt to tip) and the gun's muzzle on their images,
    * measured from the forearm pivot they share, for hitboxes and bullets.
    */
   private measureWeapons(): void {
@@ -205,23 +205,23 @@ export class BootScene extends Phaser.Scene {
       return { d: ctx.getImageData(0, 0, img.width, img.height).data, w: img.width, h: img.height };
     };
     // fore-arm.png pivot (0.0725, 0.111), y up
-    const sword = pixels(`kubotz:${SWORD_FILE}`);
-    const px = 0.0725 * sword.w;
-    const py = 0.111 * sword.h;
+    const bladeImg = pixels(`kubotz:${BLADE_FILE}`);
+    const px = 0.0725 * bladeImg.w;
+    const py = 0.111 * bladeImg.h;
     let tip = { x: 0, y: 0, d: -1 };
     let base = { x: 0, y: 0, d: 1e9 };
-    for (let y = 0; y < sword.h; y += 2) for (let x = 0; x < sword.w; x += 2) {
-      const i = (y * sword.w + x) * 4;
-      const [r, g, b, a] = [sword.d[i], sword.d[i + 1], sword.d[i + 2], sword.d[i + 3]];
+    for (let y = 0; y < bladeImg.h; y += 2) for (let x = 0; x < bladeImg.w; x += 2) {
+      const i = (y * bladeImg.w + x) * 4;
+      const [r, g, b, a] = [bladeImg.d[i], bladeImg.d[i + 1], bladeImg.d[i + 2], bladeImg.d[i + 3]];
       const max = Math.max(r, g, b);
       const glowing = a > 150 && max > 180 && (max - Math.min(r, g, b)) / max > 0.4;
       if (!glowing) continue;
-      const yy = sword.h - y;
+      const yy = bladeImg.h - y;
       const d = Math.hypot(x - px, yy - py);
       if (d > tip.d) tip = { x, y: yy, d };
       if (d < base.d && d > 60) base = { x, y: yy, d }; // skip the gem on the hilt
     }
-    if (tip.d > 0) { PART_TIPS.sword = { x: tip.x, y: tip.y }; PART_TIPS.swordBase = { x: base.x, y: base.y }; }
+    if (tip.d > 0) { PART_TIPS.bladeTip = { x: tip.x, y: tip.y }; PART_TIPS.bladeBase = { x: base.x, y: base.y }; }
     const gun = pixels(`kubotz:${GUN_FILE}`);
     let far = { x: 0, y: 0, d: -1 };
     for (let y = 0; y < gun.h; y += 2) for (let x = 0; x < gun.w; x += 2) {

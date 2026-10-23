@@ -37,13 +37,13 @@ Each step ends in a playable build and a commit.
 3. **Spriter animations** — TS player for `animations/kubotz.scml` (bones,
    objects, linear tweening, flip, character maps for weapons). States from
    `KubotzAnimationScript`: Idle, Running, Jumping, Falling, Punching,
-   Shooting, Sword slash.
+   Shooting, Plasma blade slash.
 4. **Combat** — punch hitbox (damage 3, duration 500 ms, cooldown), damage
    + knockback, health (100), mini health bars, death → respawn after 2 s at
    a player spawn, kills/deaths/lives per player.
 5. **Power-ups** — spawn every 5–10 s at bonus spawns (max 5, lifetime 20 s,
    effect 30 s), grab button picks up nearby ones. Effects: health, energy,
-   extra jump, Laser Gun Mk I/II (bullets), Laser Sword, invincibility, shield.
+   extra jump, Laser Gun Mk I/II (bullets), Plasma Blade, invincibility, shield.
 6. **Guard** — the owner asked for a Super Smash Bros.-style shield instead of
    a skill: hold the guard button to raise a bubble that soaks hits, drains
    while held and refills when released; breaking it stuns the Kubot.
@@ -92,7 +92,7 @@ Bugs fixed or unfinished features completed:
 - Holding up blocked running in the same frame; now you can run and jump together.
 - Health/energy power-ups gave 2% (`max * 1/50`) although commented 50%; now 50%.
 - Punch/kick animations never played (the state was only ever cleared); now they do,
-  along with Hit and Sword slash. The art is drawn ~30% larger to fill its 2-unit body.
+  along with Hit and Plasma blade slash. The art is drawn ~30% larger to fill its 2-unit body.
 - Knockback was always 0; hits now push a little.
 - A punch overlapping several fixtures (head, torso, legs) could hit several times;
   now each swing hits a target once.
@@ -161,8 +161,8 @@ port of Box2D, replaces Phaser Arcade — done:
   its painting on the faces, parts are stacked front to back in drawing order,
   and the `.scml` animations drive them (`SpriterAnimator`). Extra motion on top:
   3/4 view, turning round, run lean, landing squash, air-dodge spin, stun wobble.
-  Helmets and laser sword are painted in the player's colour.
-- Hitboxes follow the striking part: circles along the laser blade, the fist for
+  Helmets and plasma blade are painted in the player's colour.
+- Hitboxes follow the striking part: circles along the plasma blade, the fist for
   punches, the foot for air kicks; lasers leave from the gun barrel.
 - Arena blocks are extruded in 3D and textured with the original tile art; the
   background image becomes a distant backdrop; the camera keeps framing all Kubotz.
@@ -253,9 +253,9 @@ animations, combat moves that travel further, and a debug mode.
   curves (anticipation, snappy strikes, follow-through), and every switch
   between clips blends over a few frames. Clips: idle, run, jump, double jump
   flip, fall, land, crouch, guard, air dodge, hit (2), grab, shoot, jab,
-  cross, roundhouse kick, air kick, three sword slashes.
+  cross, roundhouse kick, air kick, three plasma blade slashes.
 - **Moves travel**: each strike carries the Kubot forward (lunge) on its
-  active frames, larger for later hits of a combo; the laser sword gets its own
+  active frames, larger for later hits of a combo; the plasma blade gets its own
   three-hit combo; the air kick dives.
 - **Debug mode** (F3 or `): Box2D fixtures, hurtboxes, attack and grab
   circles, the navigation graph and each CPU's path and state, per-Kubot
@@ -282,7 +282,7 @@ Kubotz' skeletons were broken (heads inside bodies).
   brightness detail), for the Kubot parts, the recoloured helmets and blades,
   the bonus chips and the arena tiles. The arena is baked into a canvas with a
   matching normal canvas. A warm key light and a cool rim light follow the
-  camera; a pool of 12 point lights goes to lasers, laser blades, power-ups,
+  camera; a pool of 12 point lights goes to lasers, plasma blades, power-ups,
   explosions and hits (brightest first).
 - **Glow**: the tiles' light strips are added on top of the lit arena so they
   glow and bloom; every block gets a lit cyan rim along its top.
@@ -316,7 +316,7 @@ forward, back, up and down airs).
     (backflip kick with a hop), down air (the dive kick). With nothing held:
     within 180 ms of a jump the attack is the backflip; falling faster than 6
     units/s it is the dive.
-  - Laser sword: slashes for the combo, thrust for the dash, low sweep slash,
+  - Plasma blade: slashes for the combo, thrust for the dash, low sweep slash,
     and air versions (overhead, rising, back cut over the shoulder, rising
     flip, plunging stab).
   - Every move has a launch angle (0 forwards, 90 up; the dives meteor at
@@ -338,7 +338,7 @@ forward, back, up and down airs).
 
 ## Phase 9 — Smash attacks, charged laser, real turns, lighting, ninja moves (2026-10-21)
 
-Owner feedback: ground attacks directional like Smash with sword versions;
+Owner feedback: ground attacks directional like Smash with plasma blade versions;
 the laser gun taps light shots and charges a heavy bolt with a longer
 cooldown and more recoil; turns looked like a flipped sheet of paper; the
 lights did nothing in a bright room; blue platforms should glow; a little
@@ -347,10 +347,10 @@ film grain and scanlines; the Kubotz moved like retro boxers.
 - **Smash inputs** (`Kubotz.handleActions`): a direction pressed within
   100 ms of the attack is a *smash*; holding the attack charges it (wind-up
   frozen, the Kubot shakes and flashes at full charge) for up to 1 s, +60%
-  damage and knockback. Forward smash = a lunging fire-gauntlet punch (sword:
+  damage and knockback. Forward smash = a lunging fire-gauntlet punch (plasma blade:
   leaping overhead cleave); down smash = a split kick hitting both sides
-  (sword: crouched spin slash). A direction already held, then attack, is a
-  *tilt*: forward tilt = side kick (sword: spinning slash), down tilt = low
+  (plasma blade: crouched spin slash). A direction already held, then attack, is a
+  *tilt*: forward tilt = side kick (plasma blade: spinning slash), down tilt = low
   sweep. Running fast + attack stays the dash attack, up + attack the
   backflip kick (so no separate up tilt / up smash).
 - **Laser gun**: a tap (≤ 160 ms) fires a light shot (60% damage); holding
@@ -391,7 +391,7 @@ film grain and scanlines; the Kubotz moved like retro boxers.
   slightly into it, 640 ms per stride at full speed.
 - **Feet on the ground**: planted clips grounded the feet's image corners,
   which are transparent; they now ground the feet's opaque outline.
-- **Lightsabers**: a white-hot core inside a coloured blade and a wide soft
+- **Lightblades**: a white-hot core inside a coloured blade and a wide soft
   halo, drawn additively over the blade art with a slight flicker.
 
 ### Phase 9c — owner feedback (2026-10-21)
@@ -423,7 +423,7 @@ film grain and scanlines; the Kubotz moved like retro boxers.
   fresh press of down is needed to drop again (CPUs drop again after a
   moment while holding down along a path).
 - **Bonus spawns**: never on a ball already there.
-- **Sword trail**: the swoosh follows the blade whenever its tip moves fast,
+- **Plasma blade trail**: the swoosh follows the blade whenever its tip moves fast,
   not only during strikes.
 - **Laser**: the smoke is gone; a bolt leaves a fading beam line and
   flickering square bits. Charging draws sparks in from all round into the
@@ -629,7 +629,7 @@ Done (2026-10-21), one build per step:
   re-jumps; the CPU still holds up and jumps on a cooldown, but not while
   it aims an up attack or special.
 - Up tilt (rising palm) and up smash (vertical scissor kick, chargeable);
-  sword versions use a new overhead arc (`susmash`). Up + attack in the
+  plasma blade versions use a new overhead arc (`susmash`). Up + attack in the
   jump squat cancels the jump into the up smash.
 - Right stick: smash on the ground (charges if A is held too), aerial in
   the air.
@@ -656,7 +656,7 @@ every feature branch starts from `dev`.
 | B | `feat/settings` | Settings screen: music, sound effects and visual effects volumes (VFX intensity), saved in the browser, reachable from the title screen and the pause menu mid-battle. |
 | C | `feat/match-setup` | Join screen: each human presses to join, picks a helmet and a colour; the colour is a faction (same colour = same team, no friendly damage, the last team standing wins); the number of CPUs and their colours. Then an arena select with a live preview of each arena. |
 | D | `feat/post-match` | The winners dance; "press to continue" prompt; a results screen with per-player stats (K.O.s, falls, damage dealt and taken, hits, longest combo) and a replay of each K.O.: the frames before it, slowing to slow motion at the blow. |
-| E | `feat/move-list` | Move list: every move and combo, grouped (ground, smash, air, special, sword, gun); the selected move plays on a Kubot in a loop with its input. |
+| E | `feat/move-list` | Move list: every move and combo, grouped (ground, smash, air, special, plasma blade, gun); the selected move plays on a Kubot in a loop with its input. |
 
 PRs B to E each build on the previous one where they touch the same scenes
 (C uses B's menu helpers, D uses C's teams), so they are stacked in that order.
@@ -755,9 +755,9 @@ PRs B to E each build on the previous one where they touch the same scenes
 
 - **Moves** on the title screen opens `MoveListScene`: a scrollable list
   grouped as ground, smash attacks, aerials, specials (ground and air),
-  laser sword, laser gun (tap and charged shot), grab and throws, defence
+  plasma blade, laser gun (tap and charged shot), grab and throws, defence
   and ledges (guard, air dodge, ledge climb / jump / roll / attack, taunt),
-  and combos (jab chain, sword chain, up tilt → up air, down tilt →
+  and combos (jab chain, plasma blade chain, up tilt → up air, down tilt →
   forward air, short hop nair → jab combo, down throw → Raptor Dash).
 - Each entry: P1 keyboard and Smash Ultimate gamepad inputs and a line
   with damage and launch read from the move tables of `Kubotz.ts`
@@ -767,7 +767,7 @@ PRs B to E each build on the previous one where they touch the same scenes
   and its length, the strike it plays, a held smash charge, a jump, a set
   velocity, a ledge get-up path, until-landing...). No per-move code.
 - The preview plays the steps on a `Kubot2D` in a loop with a 650 ms pause:
-  real clips, weapon maps (sword, gun, fire gauntlet), root motion and
+  real clips, weapon maps (plasma blade, gun, fire gauntlet), root motion and
   bursts as body travel, gravity and landing on a floor line (a ledge block
   for the ledge entries), afterimages, a glow on the striking points during
   the active frames, the guard bubble, laser bolts. Each entry is played
@@ -879,7 +879,7 @@ the Okuba Cloud / Exo 2 pairing.
   health bar (red under 30%), a thin amber guard bar, the shield as a cyan
   overlay, recharge as small cube pips in the helmet colour, K.O. count.
 - Status line above each card: power-up chips with a draining bar, GUARD
-  BROKEN (red), respawn countdown, ELIMINATED (card dims).
+  BROKEN (red), respawn countdown, TERMINATED (card dims).
 - Timer: a small chamfered plate top centre with a cyan underline.
 - Countdown and winner banner keep Okuba Cloud; the winner banner sits on a
   plate strip lit in the winner's colour.

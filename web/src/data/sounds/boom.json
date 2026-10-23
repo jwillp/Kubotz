@@ -1,0 +1,14 @@
+{
+  "note": "A Kubot blowing up: sub thump, laser zap, metallic blast, sparks and a power-down whine.",
+  "length": 2.2,
+  "seed": 1,
+  "reverb": 0.45,
+  "normalize": 0.95,
+  "layers": [
+    {"name":"Sub thump","type":"tone","at":0,"dur":0.7,"gain":0.55,"freq":{"from":120,"to":35,"curve":"drop","k":6},"env":{"attack":0.00233,"shape":"exp","k":4}},
+    {"name":"Laser zap","type":"tone","at":0,"dur":0.45,"gain":0.16,"freq":{"from":2400,"to":72,"curve":"exp"},"wobble":{"rate":84.44444,"depth":0.25},"env":{"attack":0.00225,"shape":"exp","k":3}},
+    {"name":"Blast","type":"noise","at":0,"dur":2.2,"gain":1.4,"filters":[{"type":"lowpass","cutoff":{"from":4590,"to":214,"curve":"drop","k":15.4}},{"type":"lowpass","cutoff":{"from":1566}}],"ring":{"freq":200,"depth":0.4},"env":{"attack":0.002,"shape":"exp","k":5.72}},
+    {"name":"Crackle","type":"ping","at":0,"freq":1800,"freqTo":5000,"count":34,"spread":1,"gain":0.05},
+    {"name":"Power-down whine","type":"tone","at":0.15,"dur":0.85714,"gain":0.035,"freq":{"from":900,"to":198,"curve":"exp"},"env":{"shape":"arch"}}
+  ]
+}

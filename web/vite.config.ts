@@ -4,6 +4,8 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'nod
 import { dirname, join, resolve } from 'node:path';
 
 const DATA = resolve(__dirname, 'src/data');
+/** Where the Sound tab's WAV export writes (dev server): the synth sounds rendered to files. */
+const WAVS = resolve(__dirname, 'sound-exports');
 
 /** A hash of everything in public/: a changed asset gets new URLs (BootScene), so no browser keeps a stale copy. */
 function publicHash(dir = 'public'): string {
@@ -29,6 +31,18 @@ function editorSave(): Plugin {
   return {
     name: 'kubotz-editor-save',
     configureServer(server) {
+      // The Sound tab's WAV export: POST /__editor/wav?file=<sound>.wav with the file's bytes, into sound-exports/.
+      server.middlewares.use('/__editor/wav', (req, res) => {
+        const file = new URL(req.url ?? '', 'http://x').searchParams.get('file') ?? '';
+        if (req.method !== 'POST' || !/^[a-z0-9-]+\.wav$/.test(file)) { res.statusCode = 400; res.end('not a sound file'); return; }
+        const chunks: Buffer[] = [];
+        req.on('data', (c: Buffer) => chunks.push(c));
+        req.on('end', () => {
+          mkdirSync(WAVS, { recursive: true });
+          writeFileSync(join(WAVS, file), Buffer.concat(chunks));
+          res.end('ok');
+        });
+      });
       server.middlewares.use('/__editor/save', (req, res) => {
         if (req.method !== 'POST') { res.statusCode = 405; res.end(); return; }
         let body = '';
