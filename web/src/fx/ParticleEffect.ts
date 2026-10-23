@@ -206,6 +206,8 @@ export interface PlayOptions {
   flip?: boolean;
   /** The whole effect bigger or smaller: particle size, speeds and birth area (a map emitter's Size). */
   scale?: number;
+  /** Draw depth of its particles, instead of the ParticleFx's own (a map emitter's layer). */
+  depth?: number;
 }
 
 interface Particle {
@@ -294,6 +296,7 @@ class RunningEmitter {
     const d = this.def;
     for (let i = 0; i < n; i++) {
       const img = this.fx.acquire(d.image, d.additive);
+      if (this.opts.depth !== undefined) img.setDepth(this.opts.depth);
       const life = this.lifeLow + this.lifeDiff * d.life.scale(percent);
       const p: Particle = {
         img, life, age: d.lifeOffset.active ? d.lifeOffset.newLow() : 0, wx: 0, wy: 0,

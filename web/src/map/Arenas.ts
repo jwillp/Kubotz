@@ -64,9 +64,17 @@ export type LightEffect = 'steady' | 'pulse' | 'flicker';
 /**
  * A light in the map (units): its colour ('#rrggbb'), how far it reaches
  * (radius, units), how strong it is, and whether it stays steady, pulses
- * slowly or flickers like a failing tube.
+ * slowly or flickers like a failing tube. Round (all around), or a cone:
+ * pointing at `angle` (degrees, 0 right, 90 down), `spread` degrees wide.
+ * Its glow is drawn on `layer` (default behind the arena).
  */
-export interface MapLight { x: number; y: number; color: string; radius: number; intensity: number; effect?: LightEffect }
+export interface MapLight {
+  x: number; y: number; color: string; radius: number; intensity: number; effect?: LightEffect;
+  shape?: 'round' | 'cone'; angle?: number; spread?: number; layer?: MapLayer;
+}
+/** A cone light's direction and width when the file leaves them out: pointing down, 60 degrees wide. */
+export const CONE_ANGLE = 90;
+export const CONE_SPREAD = 60;
 /** At most this many map lights are lit (main.ts maxLights covers them). */
 export const MAX_MAP_LIGHTS = 12;
 
@@ -75,7 +83,15 @@ export const MAX_MAP_LIGHTS = 12;
  * again `every` ms after it ends (0: at once) or only `once`, mirrored or
  * not, `scale` times its size, in one `tint` colour ('#rrggbb') or its own.
  */
-export interface MapEmitter { x: number; y: number; effect: string; every?: number; once?: boolean; flip?: boolean; scale?: number; tint?: string }
+export interface MapEmitter { x: number; y: number; effect: string; every?: number; once?: boolean; flip?: boolean; scale?: number; tint?: string; layer?: MapLayer }
+
+/**
+ * Where a light's glow or a particle effect is drawn: behind the arena's
+ * blocks (seen through the gaps), over the blocks but behind the Kubotz, or
+ * in front of everything.
+ */
+export type MapLayer = 'behind' | 'arena' | 'front';
+export const LAYER_DEPTH: Record<MapLayer, number> = { behind: 1.85, arena: 3, front: 14 };
 
 export type NpcBehaviour = 'attack' | 'flee' | 'idle';
 /**

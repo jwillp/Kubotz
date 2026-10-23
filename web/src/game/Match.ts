@@ -16,6 +16,8 @@ export interface FighterSpec {
   helmet: number;
   /** A CPU's level, 1 to 9 (see cpuReactionMs). */
   cpuLevel?: number;
+  /** A CPU that does nothing, a target to test on (the editor's matches). */
+  dummy?: boolean;
 }
 
 /** CPU levels: the highest a CPU can be set to, and the default. */

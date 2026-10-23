@@ -15,7 +15,7 @@ import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
-import { ARENAS, DEFAULT_BLAST, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
+import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -77,6 +77,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private perspective: ArenaPerspective | null = null;
   /** Ledges Kubotz can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
+  /** The arena's definition this match was built from (JSON): the dev HUD rebuilds the match when it changes. */
+  arenaBuilt = '';
   /** Top corners of solid blocks with no ledge (no room to hang or to climb onto), for the debug view and the editor. */
   blockedLedges: Ledge[] = [];
   private nav!: Nav;
@@ -185,6 +187,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
     this.arena = setup.arena;
     this.bakeScale = setup.preview ? PREVIEW_BAKE : 1;
+    this.arenaBuilt = JSON.stringify(ARENAS[setup.arena] ?? null);
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
@@ -216,6 +219,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           now: () => this.clock,
           nav: this.nav,
         }, cpuReactionMs(spec.cpuLevel));
+        if (spec.dummy) (controller as CpuController).behaviour = 'dummy';
       } else {
         // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
         humans++;
@@ -642,13 +646,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /** The arena's particle emitters, played over and over (see updateMapEmitters). */
-  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; once: boolean; scale: number; tint?: number; handle: ParticleHandle | null; wait: number; played: boolean }[] = [];
+  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; once: boolean; scale: number; tint?: number; depth?: number; handle: ParticleHandle | null; wait: number; played: boolean }[] = [];
 
   private startMapEmitters(): void {
     this.mapEmitters = (ARENAS[this.arena]?.emitters ?? []).flatMap((e) => {
       const def = (this.effects as Record<string, EffectDef>)[e.effect];
       const tint = e.tint ? parseInt(e.tint.replace('#', ''), 16) : undefined;
-      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, once: !!e.once, scale: e.scale ?? 1, tint, handle: null, wait: 0, played: false }] : [];
+      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, once: !!e.once, scale: e.scale ?? 1, tint, depth: e.layer ? LAYER_DEPTH[e.layer] : undefined, handle: null, wait: 0, played: false }] : [];
     });
   }
 
@@ -659,7 +663,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (m.handle) { m.handle = null; m.wait = m.every; }
       if (m.once && m.played) continue;
       if ((m.wait -= dtMs) > 0) continue;
-      m.handle = this.particles.play(m.def, m.x, m.y, { tint: m.tint, flip: m.flip, scale: m.scale });
+      m.handle = this.particles.play(m.def, m.x, m.y, { tint: m.tint, flip: m.flip, scale: m.scale, depth: m.depth });
       m.played = true;
     }
   }
@@ -1034,12 +1038,42 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     this.mapLights = (ARENAS[this.arena]?.lights ?? []).slice(0, MAX_MAP_LIGHTS).map((l, i) => {
       const color = parseInt(l.color.replace('#', ''), 16);
-      const glow = this.add.image(l.x * UNIT, l.y * UNIT, 'light-pool').setBlendMode(Phaser.BlendModes.ADD).setTint(color)
-        .setDisplaySize(l.radius * UNIT * 2, l.radius * UNIT * 2).setDepth(1.85);
-      return { light: this.lights.addLight(l.x * UNIT, l.y * UNIT, l.radius * UNIT, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
+      const x = l.x * UNIT, y = l.y * UNIT, r = l.radius * UNIT;
+      const depth = LAYER_DEPTH[l.layer ?? 'behind'];
+      if (l.shape !== 'cone') {
+        const glow = this.add.image(x, y, 'light-pool').setBlendMode(Phaser.BlendModes.ADD).setTint(color).setDisplaySize(r * 2, r * 2).setDepth(depth);
+        return { light: this.lights.addLight(x, y, r, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
+      }
+      // A cone: its glow a wedge from the lamp; the light itself (Light2D lights all around) set
+      // part way along it, so it falls mostly where the cone points.
+      const angle = Phaser.Math.DegToRad(l.angle ?? CONE_ANGLE);
+      const glow = this.add.image(x, y, this.coneTexture(l.spread ?? CONE_SPREAD)).setBlendMode(Phaser.BlendModes.ADD).setTint(color)
+        .setDisplaySize(r * 2, r * 2).setRotation(angle).setDepth(depth);
+      const light = this.lights.addLight(x + Math.cos(angle) * r * 0.5, y + Math.sin(angle) * r * 0.5, r * 0.65, color, l.intensity);
+      return { light, glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
     });
     this.updateMapLights(0);
     this.placeFixedLights();
+  }
+
+  /** A cone light's glow, pointing right from the middle of the texture, `spread` degrees wide (one texture per width). */
+  private coneTexture(spread: number): string {
+    const s = Phaser.Math.Clamp(Math.round(spread), 5, 360);
+    const key = `light-cone-${s}`;
+    if (this.textures.exists(key)) return key;
+    const c = this.textures.createCanvas(key, 256, 256)!;
+    const ctx = c.getContext();
+    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    // Soft sides: the wedge drawn blurred.
+    ctx.filter = 'blur(4px)';
+    ctx.fillStyle = g;
+    const half = Phaser.Math.DegToRad(s / 2);
+    ctx.beginPath(); ctx.moveTo(128, 128); ctx.arc(128, 128, 128, -half, half); ctx.closePath(); ctx.fill();
+    c.refresh();
+    return key;
   }
 
   /** The map's lights: pulsing ones breathe slowly, flickering ones drop out now and then like a failing tube. */

@@ -1,16 +1,17 @@
 import Phaser from 'phaser';
 import type { GameScene } from '../scenes/GameScene';
 import { ALL_LAYERS, type DebugLayers } from '../scenes/DebugScene';
-import { ARENA_IDS, ARENA_INFO, DEFAULT_SIZE } from '../map/Arenas';
+import { ARENAS, ARENA_IDS, ARENA_INFO, DEFAULT_SIZE } from '../map/Arenas';
 import { ArenaScene } from './ArenaScene';
 import { installHelp } from './Help';
 import { host, store } from './Host';
 import { Config } from '../config';
 import type { TmxMap } from '../map/TmxMap';
 import { PIECE_NAMES, POINT_KINDS, piecesOf, pointOf, setPoint, type ArenaPiece, type PointKind } from './Store';
-import { MAX_MAP_LIGHTS, arenaFromTmx, npcRecharges, warpExit, type ArenaData, type ArenaDef, type BlockLook, type LightEffect, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
+import { CONE_ANGLE, CONE_SPREAD, MAX_MAP_LIGHTS, arenaFromTmx, npcRecharges, warpExit, type ArenaData, type ArenaDef, type BlockLook, type LightEffect, type MapLayer, type MapLight, type NpcBehaviour, type TilePaint } from '../map/Arenas';
 import { MUSIC } from '../audio/Sounds';
 import { parseTmx } from '../map/TmxMap';
+import { CpuController } from '../game/Ai';
 import { addMusic } from '../game/Settings';
 import { ROOM_CHOICES } from '../fx/Backdrops';
 import './devhud.css';
@@ -177,21 +178,17 @@ export function installDevHud(game: Phaser.Game): void {
 
   // Edits to the arena playing rebuild the match once a drag or a typed value is done (debounced),
   // in play mode too (a new background).
-  const applied = new Map<string, string>();
+  // The match knows the arena it was built from (GameScene.arenaBuilt): it is rebuilt when that changed.
   let timer = 0;
+  const changed = (g: GameScene) => g.arena > 0 && JSON.stringify(ARENAS[g.arena] ?? null) !== g.arenaBuilt;
   store.on(() => {
     const g = match();
-    const id = g ? ARENA_IDS[g.arena] : undefined;
-    if (!g || !id) return;
-    const text = JSON.stringify(store.docs.arenas[id] ?? null);
-    if (!applied.has(id)) { applied.set(id, text); return; }
-    if (text === applied.get(id) || store.busy) return;
+    if (!g || !changed(g) || store.busy) return;
     clearTimeout(timer);
     timer = window.setTimeout(() => {
-      if (store.busy) return;
-      applied.set(id, JSON.stringify(store.docs.arenas[id] ?? null));
-      const i = ARENA_IDS.indexOf(id);
-      if (i > 0) playArena(i);
+      const now = match();
+      if (!now || store.busy || !changed(now)) return;
+      playArena(now.arena);
     }, 250);
   });
   store.on(() => { if (open) build(); });
@@ -337,6 +334,15 @@ export function installDevHud(game: Phaser.Game): void {
     sel.onchange = () => { const was = !!listening; stopListening(); set(sel.value); if (was && sel.value !== 'none') listen.click(); else listen.textContent = 'Listen'; };
     return h('label', { cls: 'dev-field', help: 'The music the match plays.' }, h('span', { textContent: 'Music' }), h('div', { cls: 'dev-row' }, sel, listen));
   };
+  /** Play mode: the players' CPUs fight, or stand still as dummies to test the map on (map NPCs keep their own behaviour). */
+  const cpuMode = (g: GameScene) => choose('CPUs', 'Fight: the CPUs play as in a match. Dummy: they do nothing at all, targets to test the map on.',
+    [['fight', 'Fight'], ['dummy', 'Dummy (do nothing)']], (g.setup?.fighters ?? []).every((f) => f.input !== 'CPU' || f.dummy) ? 'dummy' : 'fight', (v) => {
+      for (const f of g.setup?.fighters ?? []) if (f.input === 'CPU') f.dummy = v === 'dummy';
+      for (const k of g.fighters) if (!k.home && k.controller instanceof CpuController) k.controller.behaviour = v === 'dummy' ? 'dummy' : undefined;
+    });
+  /** Where a light's glow or a particle effect is drawn (its z-index). */
+  const layerField = (value: MapLayer, set: (v: MapLayer) => void) => choose('Layer', 'Where it is drawn: behind the arena\'s blocks (seen through the gaps), over the blocks but behind the Kubotz, or in front of everything.',
+    [['behind', 'Behind the arena'], ['arena', 'Over the arena, behind the Kubotz'], ['front', 'In front of everything']], value, (v) => set(v as MapLayer));
   const clampSize = (n: number, min: number, max: number) => Math.round(Phaser.Math.Clamp(n || min, min, max));
   const check = (label: string, help: string, on: boolean, set: (v: boolean) => void) => {
     const box = h('input', { type: 'checkbox', checked: on });
@@ -349,8 +355,6 @@ export function installDevHud(game: Phaser.Game): void {
     const p = store.sel.piece;
     const id = g ? ARENA_IDS[g.arena] : null;
     const a = id ? store.docs.arenas[id] : null;
-    // What the match was built from, before any edit from this panel.
-    if (id && !applied.has(id)) applied.set(id, JSON.stringify(a ?? null));
     const piecesNow = a && p ? piecesOf(a, p.kind)[p.index] : null;
     const next = `${open}|${editing}|${g?.arena}|${id}|${a?.description}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${a?.music}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
     if (next === shape || !open || !g) { refresh(); return; }
@@ -411,6 +415,7 @@ export function installDevHud(game: Phaser.Game): void {
             return h('label', { cls: 'dev-field dev-tint', help: 'Paints the whole effect one colour (its own colours when none is set).' }, h('span', { textContent: em.tint ? 'Colour' : 'Colour (its own)' }), h('div', { cls: 'dev-row' }, color, own));
           })(),
           check('Mirrored', 'Plays it mirrored left-right.', !!em.flip, (on) => editArena((x) => { if (on) x.emitters![p.index].flip = true; else delete x.emitters![p.index].flip; })),
+          layerField(em.layer ?? 'front', (v) => editArena((x) => { if (v === 'front') delete x.emitters![p.index].layer; else x.emitters![p.index].layer = v; })),
           h('p', { cls: 'dev-note', textContent: 'The effect itself (its particles, colours over life, speed...) is edited in the title\'s Editor, Particles.' }),
         );
       }
@@ -435,6 +440,12 @@ export function installDevHud(game: Phaser.Game): void {
           h('div', { cls: 'dev-grid' },
             num('Reach (units)', l.radius, (n) => setL((q) => { q.radius = Math.max(1, n); }), 1),
             num('Strength', l.intensity, (n) => setL((q) => { q.intensity = Math.max(0, n); }), 0.1)),
+          choose('Shape', 'Round: lights all around it. Cone: a beam in one direction, like a spotlight or a lamp under a ceiling.', [['round', 'round'], ['cone', 'cone']], l.shape ?? 'round',
+            (val) => setL((q) => { if (val === 'cone') q.shape = 'cone'; else { delete q.shape; delete q.angle; delete q.spread; } })),
+          (l.shape === 'cone' ? h('div', { cls: 'dev-grid' },
+            num('Direction °', l.angle ?? CONE_ANGLE, (n) => setL((q) => { q.angle = ((Math.round(n) % 360) + 360) % 360; }), 15),
+            num('Spread °', l.spread ?? CONE_SPREAD, (n) => setL((q) => { q.spread = Phaser.Math.Clamp(Math.round(n), 5, 360); }), 5)) : null)!,
+          layerField(l.layer ?? 'behind', (v) => setL((q) => { if (v === 'behind') delete q.layer; else q.layer = v; })),
           choose('Effect', 'Steady, a slow pulse, or a flicker like a failing tube.', [['steady', 'steady'], ['pulse', 'pulse'], ['flicker', 'flicker']], l.effect ?? 'steady',
             (val) => setL((q) => { if (val === 'steady') delete q.effect; else q.effect = val as LightEffect; })),
           (a.lights!.length > MAX_MAP_LIGHTS ? h('p', { cls: 'dev-note', textContent: `Only the first ${MAX_MAP_LIGHTS} lights are lit.` }) : null)!,
@@ -454,6 +465,7 @@ export function installDevHud(game: Phaser.Game): void {
       editing && a
         ? h('div', { cls: 'dev-row' }, undoBtn, redoBtn, h('button', { cls: 'btn', textContent: 'Fit', help: 'Shows the whole arena.', onclick: () => arena().recentre() }))
         : h('div', { cls: 'dev-row' }, pauseBtn, stepBtn, speed),
+      !editing && g.setup?.fighters.some((f) => f.input === 'CPU') ? cpuMode(g) : null,
     ].filter((x): x is HTMLDivElement => !!x));
     const [w, hh] = a?.size ?? DEFAULT_SIZE;
     panel.replaceChildren(...[
@@ -549,7 +561,7 @@ export function installDevHud(game: Phaser.Game): void {
     };
     game.events.on(Phaser.Core.Events.POST_STEP, ready);
     // Infinite recharges: a K.O. never ends the match (and the editing with it).
-    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: index, bonuses: 'normal', recharges: -1, editor: true });
+    game.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1, dummy: true }], arena: index, bonuses: 'normal', recharges: -1, editor: true });
   };
 
   // The DEV button shows in matches only; the panel closes when the match ends.

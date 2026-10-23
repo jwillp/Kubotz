@@ -37,9 +37,10 @@ export class CpuController implements Controller {
   /**
    * A map NPC's behaviour (arena files): 'attack' plays like any CPU, 'flee'
    * keeps away from the Kubotz near it, 'idle' stands its ground (it still
-   * hits back at whoever comes in reach). Players' CPUs leave it unset.
+   * hits back at whoever comes in reach). Players' CPUs leave it unset, or
+   * set 'dummy' (the editor's matches): it does nothing at all, a target.
    */
-  behaviour?: 'attack' | 'flee' | 'idle';
+  behaviour?: 'attack' | 'flee' | 'idle' | 'dummy';
   private linkSince = 0;
   /** Keep the attack held until then: a charged smash or laser bolt. */
   private holdAttackUntil = 0;
@@ -71,6 +72,7 @@ export class CpuController implements Controller {
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
     this.debug.dest = null;
+    if (this.behaviour === 'dummy') { this.debug.mode = 'dummy'; return pad; }
     if (me.heldBy) {
       // Mash out: a fresh button press every think, and a stick wiggle now and then.
       this.debug.mode = 'mash';

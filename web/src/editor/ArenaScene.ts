@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UNIT } from '../config';
 import { BACKDROPS, ROOMS, ROOM_H, ROOM_W, seeded } from '../fx/Backdrops';
-import { DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, warpExit, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
+import { CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, DEFAULT_SIZE, buildArenaMap, warpExit, type ArenaData, type Rect, type TilePaint } from '../map/Arenas';
 import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
 import { Fingers } from './Fingers';
@@ -236,10 +236,15 @@ export class ArenaScene extends Phaser.Scene {
       g.fillStyle(COLORS.npcs, 1).fillTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
       g.lineStyle(px(2), isSel('npcs', i) ? COLORS.sel : 0xffffff, 1).strokeTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
     });
-    // Lights: a disc in their colour, and a faint ring as far as they reach.
-    (a.lights ?? []).forEach(({ x, y, color, radius }, i) => {
+    // Lights: a disc in their colour, and a faint ring (or cone) as far as they reach.
+    (a.lights ?? []).forEach(({ x, y, color, radius, shape, angle, spread }, i) => {
       const c = parseInt(color.replace('#', ''), 16);
-      g.lineStyle(px(1.5), c, 0.35).strokeCircle(x * UNIT, y * UNIT, radius * UNIT);
+      g.lineStyle(px(1.5), c, 0.35);
+      if (shape === 'cone') {
+        const at = Phaser.Math.DegToRad(angle ?? CONE_ANGLE);
+        const half = Phaser.Math.DegToRad((spread ?? CONE_SPREAD) / 2);
+        g.beginPath(); g.moveTo(x * UNIT, y * UNIT); g.arc(x * UNIT, y * UNIT, radius * UNIT, at - half, at + half); g.closePath(); g.strokePath();
+      } else g.strokeCircle(x * UNIT, y * UNIT, radius * UNIT);
       g.fillStyle(c, 1).fillCircle(x * UNIT, y * UNIT, px(7));
       g.lineStyle(px(isSel('lights', i) ? 3 : 1.5), isSel('lights', i) ? COLORS.sel : 0xffffff, 1).strokeCircle(x * UNIT, y * UNIT, px(isSel('lights', i) ? 11 : 9));
     });
