@@ -681,8 +681,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const o of this.fighters) {
       // A raised shield can't be grabbed, nor a Kubot down on the floor or just let go of a grab.
       if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge || o.guarding || o.down || o.grabImmune) continue;
+      // Reach: from just in front (or overlapping) to 2.1 units ahead, 1.5 up or down (owner: a bit more generous).
       const ahead = (o.x - k.x) * k.facing;
-      if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
+      if (ahead < 0.1 * UNIT || ahead > 2.1 * UNIT || Math.abs(o.y - k.y) > 1.5 * UNIT) continue;
       if (ahead < bestD) { bestD = ahead; best = o; }
     }
     if (best) this.playSfx('punch', 0.25, -600);
