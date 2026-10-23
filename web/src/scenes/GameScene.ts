@@ -1425,7 +1425,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const i = Math.floor(this.clock / INTRO_FOCUS_MS);
     const k = this.fighters[i];
     // A little low, so the projector under the Kubot shows above the HUD cards.
-    return this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    // (No intro in the editor's rebuilds: the camera stays on the match.)
+    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
   }
 
   /** CameraSystem: lerp to the centre of all Kubotz (and new power-ups), zoom to fit them. */

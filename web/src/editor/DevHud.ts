@@ -74,8 +74,17 @@ export function installDevHud(game: Phaser.Game): void {
   let open = false;
   let editing = false;
 
+  /** A field's identity across rebuilds: its section, its label, and its place among that label's controls. */
+  const fieldKey = (el: HTMLElement): string => {
+    const section = el.closest('details')?.querySelector('summary')?.textContent ?? '';
+    const holder = el.closest('label') ?? el.parentElement;
+    const label = holder?.querySelector('span')?.textContent ?? el.textContent ?? '';
+    const index = holder ? [...holder.querySelectorAll('input, select, textarea, button')].indexOf(el) : 0;
+    return `${section}|${label}|${index}|${el.tagName}`;
+  };
+
   // Typing in the HUD's fields must not move the Kubotz (nor the game's captured keys swallow the typing).
-  panel.addEventListener('focusin', (e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) game.input.keyboard!.enabled = false; });
+  panel.addEventListener('focusin', (e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) game.input.keyboard!.enabled = false; });
   panel.addEventListener('focusout', () => { game.input.keyboard!.enabled = true; });
 
   /** Closing the HUD gives the match back as it plays: running, full speed, keys on, its camera its own. */
@@ -468,6 +477,10 @@ export function installDevHud(game: Phaser.Game): void {
       !editing && g.setup?.fighters.some((f) => f.input === 'CPU') ? cpuMode(g) : null,
     ].filter((x): x is HTMLDivElement => !!x));
     const [w, hh] = a?.size ?? DEFAULT_SIZE;
+    // The panel is rebuilt after each edit: keep its scroll and the field being typed in
+    // (else the arrows scroll the panel, and Enter sends it back to the top).
+    const scroll = panel.scrollTop;
+    const was = document.activeElement instanceof HTMLElement && panel.contains(document.activeElement) ? fieldKey(document.activeElement) : null;
     panel.replaceChildren(...[
       topBar,
       section('Arena',
@@ -493,6 +506,11 @@ export function installDevHud(game: Phaser.Game): void {
       (() => { const d = section('Show', ...layerBoxes.map((l) => l.el)); d.open = !editing; return d; })(),
       editing && a ? h('p', { cls: 'dev-note', textContent: `${w} x ${hh} units · ${a.walls.length} walls · ${a.platforms.length} platforms · ${a.warps.length} portals · ${a.spawns.length} spawns · ${a.bonus.length} bonus spots · ${a.emitters?.length ?? 0} particles · ${a.npcs?.length ?? 0} NPCs · ${a.lights?.length ?? 0} lights` }) : null,
     ].filter((el): el is HTMLElement => !!el));
+    panel.scrollTop = scroll;
+    if (was) {
+      const again = [...panel.querySelectorAll<HTMLElement>('input, select, textarea, button')].find((el) => fieldKey(el) === was);
+      again?.focus({ preventScroll: true });
+    }
     refresh();
   }
 

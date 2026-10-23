@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from '../fx/Grade';
 import { Config, UNIT } from '../config';
 import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { lit } from '../fx/NormalMaps';
@@ -135,7 +136,7 @@ export class Kubot2D {
     if (!this.hex) {
       this.hex = {
         fill: this.scene.add.image(0, 0, 'p-hexa'),
-        sheen: this.scene.add.image(0, 0, 'p-hexa').setBlendMode(Phaser.BlendModes.ADD),
+        sheen: this.scene.add.image(0, 0, 'p-hexa').setBlendMode(pureAdd(this.scene)),
       };
       this.view.add([this.hex.fill, this.hex.sheen]);
     }
@@ -174,7 +175,7 @@ export class Kubot2D {
     const v = g.view;
     v.setVisible(true).setPosition(this.view.x, this.view.y).setScale(this.view.scaleX, this.view.scaleY).setRotation(this.view.rotation);
     const list = this.view.list as Phaser.GameObjects.Image[];
-    while (v.list.length < list.length) v.add(this.scene.add.image(0, 0, '__DEFAULT').setBlendMode(Phaser.BlendModes.ADD));
+    while (v.list.length < list.length) v.add(this.scene.add.image(0, 0, '__DEFAULT').setBlendMode(pureAdd(this.scene)));
     (v.list as Phaser.GameObjects.Image[]).forEach((copy, i) => {
       const src = list[i];
       if (!src || !src.visible || src === this.hex?.fill || src === this.hex?.sheen) { copy.setVisible(false); return; }

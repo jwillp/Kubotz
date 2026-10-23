@@ -172,7 +172,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     // The blocks' depth faces and lit rims, as the match drew them.
     if (r.blocks?.length) {
-      const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+      const rims = this.add.graphics().setDepth(2.6).setBlendMode(pureAdd(this));
       this.perspective = new ArenaPerspective(this, r.blocks, [], rims);
       this.perspective.update(this.worldCam.midPoint);
     }
@@ -190,8 +190,8 @@ export class ResultsScene extends Phaser.Scene {
       this.owners.push({ x: 0, y: 0 });
     });
     // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
-    this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
-    this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
+    this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(pureAdd(this));
+    this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(pureAdd(this));
     this.holoG = this.add.graphics().setDepth(10.5);
     // Hit sparks, rings, dust and smoke replayed from the match's calls.
     this.impact = new ImpactFx(this);
