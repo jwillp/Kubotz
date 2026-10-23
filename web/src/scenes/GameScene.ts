@@ -135,7 +135,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private tactics = new Map<number, Tactic>();
   private plays = new Map<Kubotz, Play>();
   private nextPlaysAt = 0;
-  private tacticsShown = false;
   /** Behaviour view (F9): each CPU's job over its player tag, in the tag's font; the strategies show on the HUD. */
   showRoles = false;
   private roleTags = new Map<Kubotz, HeadingText>();
@@ -205,7 +204,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.tactics = new Map();
     this.plays = new Map();
     this.nextPlaysAt = 0;
-    this.tacticsShown = false;
     this.showRoles = false;
     this.roleTags = new Map();
     this.defeated = 0;
@@ -1697,12 +1695,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    * Otherwise: escort a teammate with the ball, go after an enemy with it,
    * or go and get it.
    */
-  /** Kubeball: the plays handed out again (every second, as the players move), and both strategies announced once it starts. */
+  /** Kubeball: the plays handed out again (every second, as the players move). The strategies show under the score in the behaviour view (F9). */
   private updatePlays(now: number): void {
-    if (!this.tacticsShown && now >= this.startedAt + 1300) {
-      this.tacticsShown = true;
-      this.events.emit('goal', -1, `RED: ${TACTICS[this.tactics.get(0)!]}   ·   BLUE: ${TACTICS[this.tactics.get(BALL_RIVAL)!]}`.toUpperCase());
-    }
     if (now < this.nextPlaysAt) return;
     this.nextPlaysAt = now + 1000;
     const pitch = this.pitch();
