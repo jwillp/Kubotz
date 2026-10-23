@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GradePipeline, GrainPipeline, screenFxOn, setPass } from '../fx/Grade';
-import { BACKDROPS, ROOM_H, ROOM_W, backdropOf, paintBolt, seeded, type BackdropTheme, type Room } from '../fx/Backdrops';
+import { ALL_THEMES, BACKDROPS, ROOM_H, ROOM_W, backdropOf, paintBolt, seeded, type BackdropTheme, type Room } from '../fx/Backdrops';
 
 interface Bokeh { img: Phaser.GameObjects.Image; x: number; y: number; depth: number; phase: number; drift: number; base: number; }
 interface Pulse { img: Phaser.GameObjects.Image; axis: 'x' | 'y'; line: number; pos: number; speed: number; len: number; }
@@ -12,7 +12,7 @@ interface Mote { img: Phaser.GameObjects.Image; x: number; y: number; vx: number
  * the arenas not shown yet, so changing arena never waits on the painting.
  */
 export function paintRoomOnce(scene: Phaser.Scene, n: number): void {
-  const th = BACKDROPS[n];
+  const th = ALL_THEMES[n];
   if (!th?.paint || scene.textures.exists(`room-${n}`)) return;
   const wall = document.createElement('canvas');
   const front = document.createElement('canvas');
@@ -76,7 +76,7 @@ export class BackdropScene extends Phaser.Scene {
     this.front = undefined;
     this.room = undefined;
     this.pulses = [];
-    const n = BACKDROPS.indexOf(th);
+    const n = ALL_THEMES.indexOf(th);
     if (th.paint) {
       paintRoomOnce(this, n);
       this.room = this.registry.get(`room-${n}`) as Room;
@@ -286,7 +286,7 @@ export class BackdropScene extends Phaser.Scene {
 
   private hazeTexture(th: BackdropTheme): string {
     if (th === BACKDROPS[0]) return 'haze';
-    const key = `haze-${BACKDROPS.indexOf(th)}`;
+    const key = `haze-${ALL_THEMES.indexOf(th)}`;
     if (!this.textures.exists(key)) {
       const c = this.textures.createCanvas(key, 4, 128)!;
       const ctx = c.getContext();

@@ -7,6 +7,8 @@ import { DATA_FILES, fromFiles } from '../game/DataFiles';
 import { editedParticles, testArena } from '../game/EditedData';
 import { addNormalMap } from '../fx/NormalMaps';
 import { WORN, weather } from '../fx/Surface';
+import { CEL, CelShift, celPart } from '../fx/Cel';
+import { NEON, neonPart } from '../fx/Neon';
 import { TvIdent } from '../fx/TvIdent';
 import { shutter } from '../ui/Plate';
 import { buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
@@ -122,7 +124,7 @@ export class BootScene extends Phaser.Scene {
     // Steps of the work, for the bar; between items it hands a frame back to the
     // load screen whenever it has run for a while (pace), so the screen never stalls.
     let step = 0;
-    const steps = 4;
+    const steps = 5;
     const pace = (within = 0) => this.pace(PHASES[1] + (1 - PHASES[1]) * Math.min(1, (step + within) / steps));
     // Normal maps so the lights shade the art: Kubot parts and bonus chips as
     // rounded metal shells, the arena tiles with a flatter bevel.
@@ -159,6 +161,33 @@ export class BootScene extends Phaser.Scene {
       await pace((i + 1) / parts.length);
     }
     step = 3;
+    // Cel copies of the clean parts (fx/Cel.ts), with the clean parts' normal maps for the toon lights.
+    const shift = new CelShift();
+    for (const [i, [key]] of parts.entries()) {
+      const source = this.textures.get(key).getSourceImage() as HTMLImageElement;
+      const copy = celPart(source);
+      this.textures.addCanvas(CEL + key, copy);
+      if (key.startsWith('kubotz:')) shift.add(source, copy);
+      addNormalMap(this.textures, CEL + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, key);
+      await pace((i + 1) / parts.length);
+    }
+    // The arena tiles recoloured the way the cel look recoloured the Kubotz (art unchanged),
+    // for the cel arena GameScene bakes beside the classic one.
+    for (const tile of map.tileImages.values()) {
+      const key = `tile:${tile.source}`;
+      this.textures.addCanvas(CEL + key, shift.apply(this.textures.get(key).getSourceImage() as HTMLImageElement));
+      addNormalMap(this.textures, CEL + key, { bevel: 3, detail: 0.3, strength: 1 }, key);
+      await pace();
+    }
+    // Neon copies of the clean, worn and cel parts (fx/Neon.ts).
+    for (const [i, [key]] of parts.entries()) {
+      for (const k of [key, WORN + key, CEL + key]) {
+        this.textures.addCanvas(NEON + k, neonPart(this.textures.get(k).getSourceImage() as HTMLCanvasElement));
+        addNormalMap(this.textures, NEON + k, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, k);
+      }
+      await pace((i + 1) / parts.length);
+    }
+    step = 4;
     this.measureWeapons();
     const g = this.make.graphics({}, false);
     g.fillStyle(0xffffff, 1).fillCircle(8, 8, 8);
