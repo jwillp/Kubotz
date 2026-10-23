@@ -22,7 +22,7 @@ import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
-import { Nav, NavBlock } from '../game/Nav';
+import { Nav, NavBlock, NavPortal } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
@@ -457,12 +457,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
-    this.nav = new Nav(this.blocks);
+    this.nav = new Nav(this.blocks, this.navPortals());
     this.blockedLedges = [];
     this.ledges = findLedges(this.blocks, this.blockedLedges);
     // The original map has a single PLAYER_SPAWN (the second Kubot was hard-coded
     // at (8, 7)): add mirrored and central spawns so up to four Kubotz start apart.
-    if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
+    if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks, this.navPortals()); return; }
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
     this.playerSpawns.push(
       new Phaser.Math.Vector2(mapW - first.x, first.y),
@@ -1305,6 +1305,29 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       ...this.debris.bodies.map((d) => ({ key: d, x: d.x, y: d.y, vx: d.vx, vy: d.vy ?? 0, teleport: (x: number, y: number) => d.setPosition(x, y) })),
     ];
     for (const m of movers) this.warp(m.key, m.x, m.y, m.vx, m.vy, (x, y) => m.teleport(x, y));
+  }
+
+  /** The portals as warp() uses them, for the CPU's paths. */
+  private navPortals(): NavPortal[] {
+    const zones = this.warpZones;
+    // Portals with their own exit: walked into from either side.
+    const out: NavPortal[] = zones.flatMap((z, i): NavPortal[] => {
+      const exit = this.warpExits[i];
+      if (!exit) return [];
+      const dy = exit.y - z.centerY;
+      return [
+        { top: z.top, bottom: z.bottom, enterX: z.x, dir: 1, exitX: exit.x, dy },
+        { top: z.top, bottom: z.bottom, enterX: z.right, dir: -1, exitX: exit.x, dy },
+      ];
+    });
+    // A pair without exits.
+    const pair = zones.filter((_, i) => !this.warpExits[i]);
+    if (pair.length !== 2 || zones.length !== 2) return out;
+    const [a, b] = pair[0].x < pair[1].x ? pair : [pair[1], pair[0]];
+    return [
+      { top: a.top, bottom: a.bottom, enterX: a.right, dir: -1, exitX: b.x - UNIT, dy: 0 },
+      { top: b.top, bottom: b.bottom, enterX: b.x, dir: 1, exitX: a.right + UNIT, dy: 0 },
+    ];
   }
 
   /**
