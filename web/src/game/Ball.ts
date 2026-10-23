@@ -14,61 +14,76 @@ import { propOf } from './Replay';
 export type BallKind = 'kubeball' | 'core' | 'hunter' | 'spark';
 
 const KINDS: Record<BallKind, { radius: number; color: number; grab: boolean; float: boolean }> = {
-  kubeball: { radius: Config.POWERUP_RADIUS, color: 0xdff3ff, grab: true, float: false },
-  core: { radius: Config.POWERUP_RADIUS * 1.1, color: 0xff7a3a, grab: true, float: false },
-  hunter: { radius: Config.POWERUP_RADIUS * 1.15, color: 0x2a2d33, grab: false, float: true },
-  spark: { radius: Config.POWERUP_RADIUS * 0.6, color: 0xffd84d, grab: true, float: true },
+  // Kubeball's ball and Skychase's Core are the same ball: dark glass with neon seams, in the Kube's cyan (no team's colour).
+  kubeball: { radius: Config.POWERUP_RADIUS, color: 0x3ef0ff, grab: true, float: false },
+  core: { radius: Config.POWERUP_RADIUS, color: 0x3ef0ff, grab: true, float: false },
+  hunter: { radius: Config.POWERUP_RADIUS * 1.2, color: 0xff3a4a, grab: false, float: true },
+  spark: { radius: Config.POWERUP_RADIUS * 0.55, color: 0xff3df0, grab: true, float: true },
 };
 
 /** After a drop or a throw, how long before anyone (the thrower first) can take it again (ms). */
 const NO_PICKUP_MS = 350;
 
-/** A ball's art, drawn once in the Kubotz' flat style: a lit sphere, its marks, a soft highlight. */
+/**
+ * A ball's art, drawn once in the Kubotz' flat style (no outlines): the
+ * ball, a dark glass sphere lit from inside along hex seams; the Spark, a
+ * small faceted crystal split magenta / cyan with broken ring arcs (a
+ * glitchy data shard, not a winged ball); a Hunter, a hovering hex drone
+ * with a red lens and two thruster pods.
+ */
 function ballTexture(scene: Phaser.Scene, kind: BallKind): string {
-  const key = `gameball:${kind}`;
+  const look = kind === 'kubeball' ? 'core' : kind;
+  const key = `gameball:${look}`;
   if (scene.textures.exists(key)) return key;
   const n = 96;
   const c = document.createElement('canvas');
   c.width = n; c.height = n;
   const ctx = c.getContext('2d')!;
-  const r = n / 2 - 2;
-  const sphere = (inner: string, outer: string) => {
-    const g = ctx.createRadialGradient(n * 0.4, n * 0.36, n * 0.05, n / 2, n / 2, r);
-    g.addColorStop(0, inner); g.addColorStop(1, outer);
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n / 2, n / 2, r, 0, Math.PI * 2); ctx.fill();
+  const m = n / 2;
+  const poly = (pts: [number, number][], fill: string | CanvasGradient) => {
+    ctx.fillStyle = fill; ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fill();
   };
-  const hex = (x: number, y: number, s: number, color: string) => {
-    ctx.fillStyle = color; ctx.beginPath();
-    for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + (i * Math.PI) / 3; ctx.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s); }
-    ctx.closePath(); ctx.fill();
-  };
-  if (kind === 'kubeball') {
-    sphere('#ffffff', '#7f9bb4');
-    hex(n / 2, n / 2, n * 0.13, '#1d2a3a');
-    for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5; hex(n / 2 + Math.cos(a) * n * 0.32, n / 2 + Math.sin(a) * n * 0.32, n * 0.09, '#2a3a4e'); }
-  } else if (kind === 'core') {
-    sphere('#ffc08a', '#b8361a');
-    ctx.fillStyle = 'rgba(255,240,200,0.55)'; ctx.fillRect(n * 0.1, n * 0.46, n * 0.8, n * 0.08);
-    hex(n / 2, n / 2, n * 0.12, '#ffe6b0');
-  } else if (kind === 'hunter') {
-    sphere('#5d6877', '#14171c');
-    // A red lens, like the black team's helmets.
-    const g = ctx.createRadialGradient(n * 0.55, n * 0.45, 1, n * 0.55, n * 0.45, n * 0.16);
-    g.addColorStop(0, '#ffb0a0'); g.addColorStop(0.5, '#ff2d2d'); g.addColorStop(1, '#5a0008');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n * 0.55, n * 0.45, n * 0.16, 0, Math.PI * 2); ctx.fill();
-  } else {
-    // The Spark: a gold ball with two thin wings.
-    ctx.fillStyle = 'rgba(255,255,240,0.85)';
-    ctx.beginPath(); ctx.moveTo(n * 0.5, n * 0.45); ctx.lineTo(n * 0.02, n * 0.18); ctx.lineTo(n * 0.12, n * 0.55); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(n * 0.5, n * 0.45); ctx.lineTo(n * 0.98, n * 0.18); ctx.lineTo(n * 0.88, n * 0.55); ctx.closePath(); ctx.fill();
-    ctx.save(); ctx.translate(n / 2, n / 2); ctx.scale(0.55, 0.55); ctx.translate(-n / 2, -n / 2);
-    sphere('#fff6c0', '#c88a10');
+  const hex = (x: number, y: number, r: number, rot = Math.PI / 6): [number, number][] =>
+    Array.from({ length: 6 }, (_, i) => [x + Math.cos(rot + (i * Math.PI) / 3) * r, y + Math.sin(rot + (i * Math.PI) / 3) * r]);
+  if (look === 'core') {
+    const g = ctx.createRadialGradient(m * 0.8, m * 0.72, n * 0.04, m, m, m - 2);
+    g.addColorStop(0, '#2a3d52'); g.addColorStop(1, '#070b12');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(m, m, m - 2, 0, Math.PI * 2); ctx.fill();
+    // Neon seams: a hex in the middle and spokes to the rim, glowing cyan.
+    ctx.save(); ctx.beginPath(); ctx.arc(m, m, m - 4, 0, Math.PI * 2); ctx.clip();
+    ctx.shadowColor = '#3ef0ff'; ctx.shadowBlur = 10;
+    ctx.strokeStyle = '#9ff8ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); hex(m, m, n * 0.17).forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.stroke();
+    for (const [x, y] of hex(m, m, n * 0.17)) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(m + (x - m) * 3.2, m + (y - m) * 3.2); ctx.stroke(); }
     ctx.restore();
+    const core = ctx.createRadialGradient(m, m, 0, m, m, n * 0.15);
+    core.addColorStop(0, '#ffffff'); core.addColorStop(0.5, '#7ff6ff'); core.addColorStop(1, 'rgba(62,240,255,0)');
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(m, m, n * 0.15, 0, Math.PI * 2); ctx.fill();
+  } else if (look === 'hunter') {
+    // Thruster pods either side, the hex body, a red lens.
+    for (const sx of [-1, 1]) {
+      poly([[m + sx * n * 0.28, m - n * 0.08], [m + sx * n * 0.47, m - n * 0.04], [m + sx * n * 0.47, m + n * 0.1], [m + sx * n * 0.28, m + n * 0.12]], '#2b3038');
+      poly([[m + sx * n * 0.44, m + n * 0.1], [m + sx * n * 0.47, m + n * 0.1], [m + sx * n * 0.47, m + n * 0.16], [m + sx * n * 0.44, m + n * 0.16]], '#ff6a3a');
+    }
+    const body = ctx.createLinearGradient(0, m - n * 0.3, 0, m + n * 0.3);
+    body.addColorStop(0, '#4d5764'); body.addColorStop(1, '#14171c');
+    poly(hex(m, m, n * 0.3, 0), body);
+    poly(hex(m, m, n * 0.2, 0), '#0c0f14');
+    const lens = ctx.createRadialGradient(m + 2, m - 1, 1, m, m, n * 0.13);
+    lens.addColorStop(0, '#ffd0c8'); lens.addColorStop(0.45, '#ff2d3a'); lens.addColorStop(1, '#4a0008');
+    ctx.fillStyle = lens; ctx.beginPath(); ctx.arc(m, m, n * 0.13, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // The Spark: a faceted crystal, its halves magenta and cyan, broken ring arcs round it.
+    ctx.lineWidth = 3; ctx.shadowBlur = 8;
+    for (const [from, to, col] of [[0.1, 1.2, '#ff3df0'], [1.9, 2.9, '#3ef0ff'], [3.5, 4.4, '#ff3df0'], [5.0, 5.9, '#3ef0ff']] as const) {
+      ctx.shadowColor = col; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(m, m, n * 0.4, from, to); ctx.stroke();
+    }
+    ctx.shadowBlur = 12; ctx.shadowColor = '#ff3df0';
+    poly([[m, m - n * 0.3], [m + n * 0.17, m], [m, m + n * 0.3]], '#3ef0ff');
+    poly([[m, m - n * 0.3], [m - n * 0.17, m], [m, m + n * 0.3]], '#ff3df0');
+    ctx.shadowBlur = 0;
+    poly([[m, m - n * 0.3], [m + n * 0.06, m - n * 0.02], [m, m + n * 0.12], [m - n * 0.06, m - n * 0.02]], 'rgba(255,255,255,0.75)');
   }
-  // A soft highlight, low (no outlines, no hard gloss).
-  const s = ctx.createRadialGradient(n * 0.36, n * 0.32, 0, n * 0.36, n * 0.32, n * 0.22);
-  s.addColorStop(0, 'rgba(255,255,255,0.35)'); s.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = s; ctx.fillRect(0, 0, n, n);
   scene.textures.addCanvas(key, c);
   addNormalMap(scene.textures, key);
   return key;
@@ -93,10 +108,12 @@ export class GameBall {
     this.color = k.color;
     this.body = new ItemBody(physics, spot.x, spot.y, this.radius);
     if (k.float) this.body.body.setGravityScale(0);
-    const size = this.radius * 2 * (kind === 'spark' ? 2.2 : 1);
+    const size = this.radius * 2 * (kind === 'spark' ? 2.2 : kind === 'hunter' ? 1.5 : 1);
     this.glow = scene.add.image(spot.x, spot.y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD)
       .setTint(kind === 'hunter' ? 0xff3a3a : k.color).setDisplaySize(size * 2.4, size * 2.4).setAlpha(kind === 'hunter' ? 0.25 : 0.5);
-    this.image = lit(scene.add.image(spot.x, spot.y, ballTexture(scene, kind))).setDisplaySize(size, size).setDepth(11);
+    // The ball and the Spark glow from inside (not lit by the arena); the drone is lit like the Kubotz.
+    const image = scene.add.image(spot.x, spot.y, ballTexture(scene, kind)).setDisplaySize(size, size).setDepth(11);
+    this.image = kind === 'hunter' ? lit(image) : image;
   }
 
   get grabbable(): boolean { return KINDS[this.kind].grab; }
@@ -109,6 +126,8 @@ export class GameBall {
    */
   canTake(k: Kubotz, now: number): boolean {
     if (!this.grabbable || this.carrier || now < this.pickupAt || !k.isAlive() || k.carrying || k.ball) return false;
+    // The Spark: only a grab right on it.
+    if (this.kind === 'spark') return Math.hypot(this.x - k.x, this.y - (k.y - 0.3 * UNIT)) < 1.0 * UNIT;
     const dx = (this.x - k.x) * k.facing;
     const dy = this.y - k.y;
     return dx > -0.8 * UNIT && dx < 1.9 * UNIT && dy > -2.2 * UNIT && dy < 1.6 * UNIT;
@@ -146,7 +165,10 @@ export class GameBall {
     const { x, y } = this;
     if (this.carrier) this.body.setPosition(x, y);
     const spin = this.carrier ? 0 : this.body.angle;
-    this.image.setPosition(x, y).setRotation(this.kind === 'spark' ? Math.sin(now / 40) * 0.25 : spin);
+    // A drone stays level, leaning into its flight; the Spark spins and flickers like a glitch.
+    const rot = this.kind === 'hunter' ? Phaser.Math.Clamp(this.body.vx / (40 * UNIT), -0.35, 0.35)
+      : this.kind === 'spark' ? now / 120 : spin;
+    this.image.setPosition(x, y).setRotation(rot).setAlpha(this.kind === 'spark' && Math.random() < 0.12 ? 0.35 : 1);
     this.glow.setPosition(x, y).setAlpha((this.kind === 'hunter' ? 0.2 : 0.45) + 0.1 * Math.sin(now / 160));
   }
 

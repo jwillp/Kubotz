@@ -130,6 +130,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Ball games: the balls (the ball or the Core first), the goals and their teams, and the score to reach (0: none). */
   balls: GameBall[] = [];
   private goals: { team: number; zone: Phaser.Geom.Rectangle }[] = [];
+  /** Skychase: the drones' laser bolts in flight, and what draws them. */
+  private droneShots: { x: number; y: number; vx: number; vy: number; until: number }[] = [];
+  private droneLasers?: Phaser.GameObjects.Graphics;
   private ballSpot = new Phaser.Math.Vector2();
   scoreLimit = 0;
   /** Training: CPUs defeated, how many to defeat, and when the next one may come in. */
@@ -188,6 +191,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.captures = [0, 0];
     this.balls = [];
     this.goals = [];
+    this.droneShots = [];
+    this.droneLasers = undefined;
     this.defeated = 0;
     this.nextFoeAt = 0;
   }
@@ -833,6 +838,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateHorde(now);
     this.updateFlags(now);
     this.updateBallGame(now);
+    if (this.balls.length) this.updateDroneShots(now, dt);
     this.updateTrial(now);
     const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
@@ -1487,6 +1493,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         const k = this.spawnFoe(team, black ? BLACK_COLOR : SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, black ? BLACK_HELMET : helmets[i % helmets.length], Infinity, this.countdownAt);
         k.hudless = true;
         k.role = i === have ? (sky ? 'interceptor' : 'guardian') : 'striker';
+        k.armed = k.weapon = MODES[this.mode].armed ?? 'none'; // Kubeball: swords for all
       }
     }
     const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
@@ -1590,7 +1597,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (!prey) return;
     const dx = prey.x - h.x; const dy = prey.y - h.y;
     const d = Math.max(1, Math.hypot(dx, dy));
-    const speed = 9 * UNIT;
+    const speed = 12 * UNIT;
+    // A laser now and then at its prey, when in range.
+    if (d < 16 * UNIT && now >= h.wander.until) {
+      h.wander.until = now + Phaser.Math.Between(1500, 2600);
+      this.droneShots.push({ x: h.x, y: h.y, vx: (dx / d) * DRONE_SHOT_SPEED, vy: (dy / d) * DRONE_SHOT_SPEED, until: now + 1400 });
+      this.playSfx('shot', 0.3, -400);
+    }
     // Turns towards its prey, never quite stopping.
     h.body.setVelocity(h.body.vx * 0.96 + (dx / d) * speed * 0.06, h.body.vy * 0.96 + (dy / d) * speed * 0.06);
     if (d < h.radius + 0.7 * UNIT && now >= h.kickedUntil) {
@@ -1603,19 +1616,42 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
+  /** Skychase: the drones' laser bolts fly straight; a hit knocks a Kubot away (and the ball out of its hands); walls stop them. */
+  private updateDroneShots(now: number, dt: number): void {
+    const g = this.droneLasers ??= this.add.graphics().setDepth(12).setBlendMode(Phaser.BlendModes.ADD);
+    g.clear();
+    this.droneShots = this.droneShots.filter((b) => {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (now >= b.until || this.solids.some((r) => r.contains(b.x, b.y))) return false;
+      const k = this.fighters.find((f) => f.isAlive() && f.hurtbox().contains(b.x, b.y));
+      if (k) {
+        k.struck(5, Math.sign(b.vx || 1) * 9 * UNIT, -5 * UNIT);
+        k.ball?.release(now, Math.sign(b.vx || 1) * 5 * UNIT, -7 * UNIT);
+        this.impact.hit(b.x, b.y, Math.sign(b.vx) || 1, 0xff3a4a, 0.8);
+        this.playSfx('punch', 0.35, -100);
+        return false;
+      }
+      const tx = b.x - b.vx * 0.035; const ty = b.y - b.vy * 0.035;
+      g.lineStyle(9, 0xff2d3a, 0.25).lineBetween(tx, ty, b.x, b.y);
+      g.lineStyle(3, 0xffd0d0, 0.95).lineBetween(tx, ty, b.x, b.y);
+      return true;
+    });
+  }
+
   private steerSpark(s: GameBall, now: number): void {
     const W = this.map.width * UNIT; const H = this.map.height * UNIT;
-    const near = this.fighters.filter((k) => k.isAlive() && Math.hypot(k.x - s.x, k.y - s.y) < 7 * UNIT)[0];
+    const near = this.fighters.filter((k) => k.isAlive() && Math.hypot(k.x - s.x, k.y - s.y) < 10 * UNIT)[0];
     if (now >= s.wander.until || near) {
       // A new spot to dart to: away from a Kubot coming close, else anywhere in the upper part of the arena.
       const x = near ? Phaser.Math.Clamp(s.x + Math.sign(s.x - near.x || 1) * 12 * UNIT, 8 * UNIT, W - 8 * UNIT) : Phaser.Math.FloatBetween(9 * UNIT, W - 9 * UNIT);
       const y = Phaser.Math.FloatBetween(5 * UNIT, H * 0.7);
-      s.wander = { x, y, until: now + Phaser.Math.Between(700, 1600) };
+      s.wander = { x, y, until: now + Phaser.Math.Between(350, 900) };
     }
     const dx = s.wander.x - s.x; const dy = s.wander.y - s.y;
     const d = Math.max(1, Math.hypot(dx, dy));
-    const speed = (near ? 19 : 9) * UNIT;
-    s.body.setVelocity(s.body.vx * 0.9 + (dx / d) * speed * 0.1, s.body.vy * 0.9 + (dy / d) * speed * 0.1);
+    // Very fast, and twitchy: sharp turns, sudden bursts away from anyone close.
+    const speed = (near ? 34 : 16) * UNIT;
+    s.body.setVelocity(s.body.vx * 0.82 + (dx / d) * speed * 0.18, s.body.vy * 0.82 + (dy / d) * speed * 0.18);
   }
 
   /**
@@ -1956,6 +1992,8 @@ const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
 /** Ball games: the black team's goal rifts, a pale steel (a black rift would not show). */
 const BLACK_GOAL = 0xc8d0dc;
+/** Skychase: the drones' laser bolts' speed (pixels/s). */
+const DRONE_SHOT_SPEED = 26 * UNIT;
 /** Skychase: the Spark comes out this long after "Fight" (ms). */
 const SPARK_AFTER_MS = 60000;
 /** Training: the CPUs' team, the black team (all one colour; they never fight each other). */

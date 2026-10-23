@@ -67,14 +67,15 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'battle',
     name: 'Kubeball',
     tagline: 'Red against blue, one ball, two goals.',
-    rules: ['Grab the ball and throw it, or strike it', 'No attacks with it in hand; any hit knocks it loose', 'Goal rifts high on the end walls', 'Goals or time: you choose'],
+    rules: ['A laser sword for everyone, all match', 'Grab the ball and throw it; no swinging with it', 'Any hit knocks it loose; goals high on the walls', 'Goals or time: you choose'],
     ball: 'kubeball',
+    armed: 'laserSword',
   },
   skychase: {
     group: 'battle',
     name: 'Skychase',
     tagline: 'Fly, throw, chase the Spark.',
-    rules: ['Five air jumps each; the Core through a ring: 10', 'Two Hunters chase anyone and knock them flying', 'After a minute the golden Spark: 30, and it ends', 'Points or time: you choose'],
+    rules: ['Five air jumps each; the Core through a ring: 10', 'Two Hunter drones chase and shoot anyone', 'After a minute the Spark: 30, and it ends', 'Points or time: you choose'],
     ball: 'skychase',
   },
   sandbox: {
