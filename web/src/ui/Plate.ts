@@ -296,9 +296,12 @@ export class ShutterScene extends Phaser.Scene {
         if (!swapped) { swapped = true; current(); this.scene.bringToTop(); }
       } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
       cover.setAlpha(a);
-      // Every camera on screen, every frame: cameras come and go as scenes start and stop.
-      clearTvCut(this.game);
-      for (const cam of [...liveCameras(this.game), this.cameras.main]) tvCut(cam, k, roll * 0.35 * k * k);
+      // Every camera on screen, every frame: cameras come and go as scenes start and stop. Only the
+      // ones gone from the screen lose the look: taking the pass off a camera still showing would
+      // build it afresh each frame, and a new pass draws nothing on its first frame (a plain fade).
+      const live = [...liveCameras(this.game), this.cameras.main];
+      clearTvCut(this.game, live);
+      for (const cam of live) tvCut(cam, k, roll * 0.35 * k * k);
       if (swapped && t >= CUT_IN + CUT_HOLD + CUT_OUT) {
         const next = this.waiting.shift();
         if (next) {
@@ -323,7 +326,7 @@ export class ShutterScene extends Phaser.Scene {
   }
 }
 
-/** Takes the screen change's TV look off every camera of every scene, running or not. */
-function clearTvCut(game: Phaser.Game): void {
-  for (const s of game.scene.getScenes(false)) for (const cam of s.cameras?.cameras ?? []) tvCut(cam, 0, 0);
+/** Takes the screen change's TV look off every camera of every scene, running or not, but those in `keep`. */
+function clearTvCut(game: Phaser.Game, keep: Phaser.Cameras.Scene2D.Camera[] = []): void {
+  for (const s of game.scene.getScenes(false)) for (const cam of s.cameras?.cameras ?? []) if (!keep.includes(cam)) tvCut(cam, 0, 0);
 }
