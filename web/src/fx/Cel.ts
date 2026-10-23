@@ -72,8 +72,8 @@ function tones(r: number, g: number, b: number): [Rgb, Rgb] {
     return [lit, rgb(towardBlue(h, 0.12), Math.min(1, s * 1.05 + 0.12), Math.min(1, v * 1.08 + 0.08) * 0.66)];
   }
   const l = 0.299 * r + 0.587 * g + 0.114 * b;
-  if (l <= 0.2) return [[0.15, 0.17, 0.28], [0.06, 0.06, 0.13]];
-  const step = Math.min(1, Math.round(l * 5) / 5 + 0.16);
+  if (l <= 0.2) return [[0.09, 0.1, 0.17], [0.035, 0.035, 0.08]];
+  const step = Math.min(1, Math.round(l * 5) / 5 + 0.06);
   const lit: Rgb = [step * 0.98, step, Math.min(1, step * 1.03 + 0.02)];
   const shadow: Rgb = [step * 0.52 + 0.02, step * 0.56 + 0.03, step * 0.74 + 0.08];
   return [lit, shadow];
@@ -133,6 +133,8 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement): HTMLCanva
 }
 
 const BINS = 16;
+/** How much of the Kubotz' colour change (beyond brightness) the tiles take. */
+const TINT = 0.35;
 const pixels = (src: HTMLImageElement | HTMLCanvasElement) => {
   const c = document.createElement('canvas');
   c.width = src.width; c.height = src.height;
@@ -173,7 +175,7 @@ export class CelShift {
     const g = new Float32Array(BINS * 3).fill(NaN);
     for (let k = 0; k < BINS; k++) {
       if (this.from[k * 4 + 3] < 50) continue;
-      for (let c = 0; c < 3; c++) g[k * 3 + c] = Math.min(2.5, Math.max(0.4, (this.to[k * 4 + c] + 1) / (this.from[k * 4 + c] + 1)));
+      for (let c = 0; c < 3; c++) g[k * 3 + c] = Math.min(1.8, Math.max(0.4, (this.to[k * 4 + c] + 1) / (this.from[k * 4 + c] + 1)));
     }
     for (let k = 0; k < BINS; k++) {
       if (!Number.isNaN(g[k * 3])) continue;
@@ -202,7 +204,10 @@ export class CelShift {
       // Between the two nearest bins, so the change runs smoothly with brightness.
       const f = Math.max(0, Math.min(BINS - 1, lumaOf(d, o) * BINS - 0.5));
       const k0 = Math.floor(f), k1 = Math.min(BINS - 1, k0 + 1), t = f - k0;
-      for (let ch = 0; ch < 3; ch++) d[o + ch] = Math.min(255, d[o + ch] * (g[k0 * 3 + ch] * (1 - t) + g[k1 * 3 + ch] * t));
+      // The brightness change in full, the colour change only partly: the tiles keep most of their own saturation.
+      const gain = [0, 1, 2].map((ch) => g[k0 * 3 + ch] * (1 - t) + g[k1 * 3 + ch] * t);
+      const lg = 0.299 * gain[0] + 0.587 * gain[1] + 0.114 * gain[2];
+      for (let ch = 0; ch < 3; ch++) d[o + ch] = Math.min(255, d[o + ch] * (lg + (gain[ch] - lg) * TINT));
     }
     ctx.putImageData(img, 0, 0);
     return c;
@@ -213,15 +218,14 @@ export class CelShift {
  * Phaser's Light2D shader with toon steps: each light's reach on a part is
  * cut into flat bands (none, half, full) with hard edges, so the arena lights
  * still play over the cel Kubotz, through their normal maps, without shading
- * them back into gradients. A floor under the arena's ambient light keeps the
- * flat tones readable in the dark arenas.
+ * them back into gradients. Same ambient and about the same strength as
+ * Light2D, so the Kubotz sit in the arena's light like the classic ones.
  */
 function toonFrag(lightFrag: string): string {
   return lightFrag
     .replace('#define SHADER_NAME PHASER_LIGHT_FS', '#define SHADER_NAME KUBOTZ_TOON_LIGHT_FS')
-    .replace('vec3 diffuse = light.color * diffuseFactor;', 'float lit = attenuation * diffuseFactor; float band = step(0.12, lit) * 0.5 + step(0.45, lit) * 0.5;')
-    .replace('finalColor += (attenuation * diffuse) * light.intensity;', 'finalColor += light.color * band * light.intensity * 0.3;')
-    .replace('vec4 colorOutput = vec4(uAmbientLightColor + finalColor, 1.0);', 'vec4 colorOutput = vec4(max(uAmbientLightColor, vec3(0.5)) + finalColor, 1.0);');
+    .replace('vec3 diffuse = light.color * diffuseFactor;', 'float lit = attenuation * diffuseFactor; float band = step(0.08, lit) * 0.35 + step(0.3, lit) * 0.35 + step(0.6, lit) * 0.3;')
+    .replace('finalColor += (attenuation * diffuse) * light.intensity;', 'finalColor += light.color * band * light.intensity * 0.8;');
 }
 
 class ToonLightPipeline extends Phaser.Renderer.WebGL.Pipelines.LightPipeline {
