@@ -6,7 +6,7 @@ import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../ga
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, hitlagMs } from '../game/Kubotz';
-import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
+import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
@@ -1246,26 +1246,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * A blade lock squares the pair up, frame after frame: the two Kubotz are
-   * set apart so their raised blades cross half-way along.
+   * A blade lock squares the pair up, frame after frame: each keeps its side
+   * and faces the other, set apart so their raised blades cross in an X.
    */
   private squareUp(lock: SaberLock): void {
-    const { a, b } = lock;
-    const ba = a.blade();
-    const bb = b.blade();
-    if (!ba || !bb) return;
-    const [l, bl, r, br] = a.x <= b.x ? [a, ba, b, bb] : [b, bb, a, ba];
-    // Each emitter's offset from its Kubot, and how far forward its blade reaches (towards the other).
+    const { left: l, right: r } = lock;
+    l.facing = 1;
+    r.facing = -1;
+    const bl = l.blade();
+    const br = r.blade();
+    if (!bl || !br) return;
+    // How far each blade reaches forwards, and its emitter's offset from its Kubot.
     const reachL = Math.max(0.3 * UNIT, bl.x2 - bl.x1);
     const reachR = Math.max(0.3 * UNIT, br.x1 - br.x2);
-    const gap = (reachL + reachR) / 2;
+    const gap = LOCK_CROSS * (reachL + reachR);
     const mid = (l.x + r.x) / 2;
-    const lx = mid - gap / 2 - (bl.x1 - l.x);
-    const rx = mid + gap / 2 - (br.x1 - r.x);
-    l.holdAt(lx);
-    r.holdAt(rx);
-    lock.x = mid;
-    lock.y = ((bl.y1 + bl.y2) / 2 + (br.y1 + br.y2) / 2) / 2;
+    l.holdAt(mid - gap / 2 - (bl.x1 - l.x));
+    r.holdAt(mid + gap / 2 - (br.x1 - r.x));
+    const c = bladeContact(bl, br);
+    lock.x = c.x;
+    lock.y = c.y;
   }
 
   /** Where the blade was last frame, unless it jumped (a respawn, a portal): then only where it is. */
@@ -1327,8 +1327,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     g.clear();
     const locked = new Set<Kubotz>();
     for (const l of this.saberLocks) {
-      const left = l.a.x <= l.b.x ? l.a : l.b;
-      const right = left === l.a ? l.b : l.a;
+      const { left, right } = l;
       // The meter pushed towards the right-hand Kubot is the left one winning.
       const lead = left === l.a ? l.meter : -l.meter;
       l.shown += (lead - l.shown) * 0.35;

@@ -185,7 +185,7 @@ export const SPECIALS = {
 } satisfies Record<string, Move>;
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
 
-/** A blade lock holds this point of the forward smash (its wind-up, blade raised forwards). */
+/** A blade lock won: the forward smash carries through from this point (its wind-up, blade raised). */
 const LOCK_POSE = 0.3;
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
 export const SMASH_CHARGE_MS = 1000;
@@ -652,18 +652,16 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   /**
-   * Starts or ends a blade lock (frozen by the arena meanwhile). Locked, both
-   * hold the forward smash's raised blade, so the blades cross; let go, the
-   * swing that met the other blade is dropped.
+   * Starts or ends a blade lock (frozen by the arena meanwhile). The swing
+   * that met the other blade is dropped: locked, the Kubot holds its blade
+   * up in front in its guard stance, the two blades crossed.
    */
   setBladeLock(on: boolean): void {
     this.bladeLocked = on;
     this.mashes = 0;
     this.lockPrev = { ...this.raw };
-    if (on) {
-      this.anim.play(SWORD_DIR_MOVES.fsmash.anim, { restart: true, ms: SWORD_DIR_MOVES.fsmash.ms, fade: 60 });
-      this.anim.freeze(LOCK_POSE);
-    } else this.cancelActions();
+    this.cancelActions();
+    if (on) this.anim.play(ANIM.IDLE, { restart: true, fade: 80 });
   }
 
   /** A blade lock won: the forward smash carries through from its raised blade, over the beaten `foe` (already struck). */

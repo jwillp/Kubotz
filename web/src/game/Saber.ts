@@ -18,6 +18,8 @@ export const CLASH_RECOIL = 7 * UNIT;
 export const LOCK_HOLD_MS = 80;
 /** Resting blades this close (px) are drawn crossing: they crackle (no collision). */
 export const BLADE_CROSS = 8;
+/** Locked blades cross this far along (0..1 of their reach towards each other). */
+export const LOCK_CROSS = 0.6;
 /** A lock needs this much damage between the two swings (a smash against a tilt, two smashes)... */
 export const LOCK_FORCE = 20;
 /** ...and blades crossing at least this square (degrees), not sliding along each other. */
@@ -116,8 +118,13 @@ export class SaberLock {
   /** The meter as drawn, easing after the real one. */
   shown = 0;
 
+  /** The Kubot on the left (facing right) and the one on the right, kept for the whole lock. */
+  readonly left: Kubotz;
+  readonly right: Kubotz;
+
   constructor(readonly a: Kubotz, readonly b: Kubotz, public x: number, public y: number, readonly startedAt: number) {
     this.endsAt = startedAt + LOCK_MS;
+    [this.left, this.right] = a.x <= b.x ? [a, b] : [b, a];
   }
 
   /** Adds the presses since the last frame; returns the winner, 'draw', or null while it goes on. */
