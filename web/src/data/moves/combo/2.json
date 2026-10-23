@@ -1,0 +1,9 @@
+{
+  "anim": "cross",
+  "ms": 360,
+  "points": "fists",
+  "damage": 4,
+  "launch": {"knockback":4,"angle":20,"stun":340},
+  "active": [0.4,0.8],
+  "all": true
+}

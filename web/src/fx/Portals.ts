@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from './Grade';
 import { UNIT } from '../config';
 import { fx } from '../game/Settings';
 
@@ -26,7 +27,7 @@ export class PortalFx {
   constructor(scene: Phaser.Scene, zones: Phaser.Geom.Rectangle[], lit = true, colors: Map<Phaser.Geom.Rectangle, number> = new Map()) {
     // Behind the Kubotz, so they step out of the rift.
     this.back = scene.add.graphics().setDepth(9.3);
-    this.glow = scene.add.graphics().setDepth(9.4).setBlendMode(Phaser.BlendModes.ADD);
+    this.glow = scene.add.graphics().setDepth(9.4).setBlendMode(pureAdd(scene));
     const sorted = [...zones].sort((p, q) => p.x - q.x);
     this.portals = sorted.map((zone) => {
       // A strong light: it washes the walls, floor and Kubotz round the portal.
@@ -37,7 +38,7 @@ export class PortalFx {
     });
     // A bright halo round each rift, over the scenery.
     this.halos = this.portals.map((p) => scene.add.image(p.zone.centerX, p.zone.centerY, 'glow').setDepth(9.45)
-      .setBlendMode(Phaser.BlendModes.ADD).setTint(p.color).setDisplaySize(UNIT * 5, p.zone.height * 1.9));
+      .setBlendMode(pureAdd(scene)).setTint(p.color).setDisplaySize(UNIT * 5, p.zone.height * 1.9));
   }
 
   /** A body came out of the portal nearest x, at height y: a flare. */

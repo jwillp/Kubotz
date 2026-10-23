@@ -1,0 +1,9 @@
+{
+  "anim": "usmash",
+  "ms": 520,
+  "points": "frontFoot",
+  "damage": 13,
+  "launch": {"knockback":16,"angle":88},
+  "active": [0.4,0.68],
+  "ghosts": true
+}

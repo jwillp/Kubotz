@@ -1,0 +1,9 @@
+{
+  "anim": "susmash",
+  "ms": 560,
+  "points": "blade",
+  "damage": 15,
+  "launch": {"knockback":17,"angle":85},
+  "active": [0.4,0.72],
+  "ghosts": true
+}

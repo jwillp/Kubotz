@@ -1,0 +1,8 @@
+{
+  "anim": "jab",
+  "ms": 260,
+  "points": "fists",
+  "damage": 3,
+  "launch": {"knockback":3,"angle":15,"stun":280},
+  "active": [0.3,0.72]
+}

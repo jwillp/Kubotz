@@ -1,0 +1,10 @@
+{
+  "anim": "kick",
+  "ms": 460,
+  "points": "feet",
+  "damage": 6,
+  "launch": {"knockback":13,"angle":55},
+  "active": [0.34,0.76],
+  "all": true,
+  "ghosts": true
+}

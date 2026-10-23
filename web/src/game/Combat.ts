@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from '../fx/Grade';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 
@@ -35,7 +36,7 @@ export class Bullet {
     this.sprite = scene.add.image(x, y, Bullet.texture(scene, shooter)).setDepth(12);
     this.sprite.setDisplaySize(1.1 * UNIT * (0.6 + 0.4 * size), 0.6 * UNIT * size);
     this.sprite.setFlipX(vx > 0);
-    this.sprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.sprite.setBlendMode(pureAdd(scene));
     this.expiresAt = now + Config.BULLET_LIFESPAN;
   }
 

@@ -1,0 +1,8 @@
+{
+  "anim": "throwD",
+  "ms": 480,
+  "release": 0.48,
+  "damage": 6,
+  "launch": {"knockback":10,"angle":75,"growth":0.8},
+  "dir": 1
+}

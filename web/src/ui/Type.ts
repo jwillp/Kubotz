@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GlitchBursts, type GlitchBurstOptions } from '../fx/GlitchBursts';
 import '@fontsource/exo-2/500.css';
 import '@fontsource/exo-2/700.css';
 import '@fontsource/exo-2/800.css';
@@ -77,6 +78,8 @@ export interface HeadingOptions {
   tint?: number;
   /** Neon glow around the letters, like the logo; null for none. */
   glow?: number | null;
+  /** The logo's glitch bursts (see fx/GlitchBursts), on by default; false for none. */
+  glitch?: boolean | GlitchBurstOptions;
 }
 
 /** Lays out `text` in the heading font at `size` px: glyphs with their place on a line starting at (0, 0). */
@@ -114,6 +117,8 @@ export class HeadingText extends Phaser.GameObjects.Image {
   private static count = 0;
   private readonly key = `heading:${HeadingText.count++}`;
   private content = '';
+  /** Its glitch bursts, unless made without. */
+  bursts: GlitchBursts | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, text: string, readonly size: number,
     private tint_ = 0xffffff, private glow: number | null = NEON) {
@@ -180,10 +185,13 @@ export class HeadingText extends Phaser.GameObjects.Image {
   }
 }
 
-/** A heading centred on (x, y); see HeadingText. */
+/** A heading centred on (x, y), glitching now and then like the logo; see HeadingText. */
 export function heading(scene: Phaser.Scene, x: number, y: number, text: string, size: number,
-  { tint = 0xffffff, glow = NEON }: HeadingOptions = {}): HeadingText {
-  return scene.add.existing(new HeadingText(scene, x, y, text, size, tint, glow));
+  { tint = 0xffffff, glow = NEON, glitch = true }: HeadingOptions = {}): HeadingText {
+  const t = scene.add.existing(new HeadingText(scene, x, y, text, size, tint, glow));
+  // Tears scaled to the letters: a screen title (56 px) tears like the logo.
+  if (glitch) t.bursts = new GlitchBursts(t, { coarse: Phaser.Math.Clamp(size / 56, 0.5, 1.4), ...(glitch === true ? {} : glitch) });
+  return t;
 }
 
 /** Keeps the characters the heading font has. */

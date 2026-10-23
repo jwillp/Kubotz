@@ -17,6 +17,8 @@ export interface FighterSpec {
   helmet: number;
   /** A CPU's level, 1 to 9 (see cpuReactionMs). */
   cpuLevel?: number;
+  /** A CPU that does nothing, a target to test on (the editor's matches). */
+  dummy?: boolean;
 }
 
 /** CPU levels: the highest a CPU can be set to, and the default. */
@@ -167,6 +169,14 @@ export interface MatchSetup {
    * Setup screen preview: no Kubotz, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
+  /** Started from the in-game editor: no intro, countdown or music, the Kubotz straight in. */
+  editor?: boolean;
+  /**
+   * The editor rebuilding the arena under a match: each Kubot of the specs
+   * where it was (body centre, pixels), facing, health and lives as they
+   * were, already there (no hologram, no spawn sound).
+   */
+  keep?: { x: number; y: number; facing: 1 | -1; health: number; lives: number }[];
   preview?: {
     x: number; y: number; width: number; height: number;
     /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */
@@ -196,9 +206,9 @@ export const BLACK_COLOR = 0x2a2d33;
 export const BLACK_TAG = 0x8d96a6;
 export const isBlackTeam = (f: Teamed): boolean => f.team === BLACK_TEAM;
 
-/** The players' teams with at least one Kubot still in the match (not eliminated); the black team never counts. */
-export function teamsLeft(fighters: { team: number; eliminated: boolean }[]): number[] {
-  return [...new Set(fighters.filter((f) => !f.eliminated && !isBlackTeam(f)).map((f) => f.team))];
+/** The players' teams with at least one Kubot still in the match (not eliminated); the black team and the map's NPCs (they have a home spot) never count. */
+export function teamsLeft(fighters: { team: number; eliminated: boolean; home?: unknown }[]): number[] {
+  return [...new Set(fighters.filter((f) => !f.eliminated && !isBlackTeam(f) && !f.home).map((f) => f.team))];
 }
 
 /** The default match: P1 against a CPU on the original arena. */

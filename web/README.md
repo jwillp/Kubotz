@@ -26,6 +26,24 @@ npm run build
 npm run preview    # serves dist/ on http://localhost:4173
 ```
 
+## Dev tools
+
+In a dev build (`npm run dev`, or `npm run build:editor` into dist-editor/):
+
+- **Title → Editor**: the animation and particle editor (poses, keys, hit
+  circles, active frames, launches, particle events; particle effects).
+- **In a match, F2** (or the DEV button): the dev HUD over the running
+  match: pause, step and slow motion; physics bodies, hit and hurt boxes,
+  AI paths and Kubot states; and the arena tools (move, resize and add
+  walls, platforms, portals, spawns, bonus spots, particle emitters, lights
+  and NPCs: hostile CPUs of the map, black team, Attack, Flee or Idle; the
+  arena's background and music). Each change rebuilds the match there; Save
+  keeps it in the browser, Export writes the arena's file.
+
+`npm run editor` opens the same editor on a page of its own (editor.html).
+Save writes the changed files in `src/data` (clips, moves, particles,
+arenas). `npm run build` (production) leaves all of this out.
+
 ## Play
 
 Pick a mode on the title screen (mouse, arrows + Enter, or keys 1-5).
@@ -52,6 +70,8 @@ the side openings warp you across. Last Kubot standing wins.
 ```
 web/
   src/main.ts              Phaser game config
+  src/data/                clips, moves, particle effects and arenas (JSON, one file each, written by the editor)
+  src/editor/              the editor (editor.html)
   src/config.ts            tuning values copied from Config.java / Constants.java
   src/spriter/Spriter.ts   small SCML runtime (bones, tweening, character maps)
   src/map/TmxMap.ts        TMX reader (base64 + gzip layers, object layer)

@@ -177,7 +177,7 @@ export class HudScene extends Phaser.Scene {
     g.fillStyle(0x000000, 0.25).fillRect(SLAB - 3, 0, 3, CARD_H);
     drawStrip(g, 0, CARD_H - 1, CARD_W - 14, CARD_H - 1, color, 2);
     const who = k.tagKey.slice('label-'.length).split(':')[0];
-    const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color });
+    const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color, glitch: false }); // a player tag, not a title
     const name = this.add.text(SLAB + 10, 8, k.name, body(15, { fontStyle: '800' }));
     const opponent = MODES[this.game_.mode].trial && k.index >= this.game_.specs.length;
     const team = this.add.text(CARD_W - 8, 10, opponent ? 'OPPONENT' : `${TEAM_NAMES[k.team] ?? (isBlackTeam(k) ? 'Black' : '')} team`.toUpperCase(),
@@ -260,7 +260,9 @@ export class HudScene extends Phaser.Scene {
     // Recharge: cube pips in the helmet colour.
     // Horde's bonus recharges add pips; a training CPU shows its own (one).
     const foe = MODES[this.game_.mode].trial && k.index >= this.game_.specs.length;
-    const recharges = foe ? k.lives : Math.max(this.game_.recharges, k.lives);
+    // (Below 0: infinite, as an arena's test match sets it.)
+    const all = this.game_.recharges < 0 ? Infinity : this.game_.recharges;
+    const recharges = foe ? k.lives : Math.max(all, k.lives);
     card.infinite.setVisible(!Number.isFinite(recharges));
     if (!Number.isFinite(recharges)) { card.kills.setText(`K.O. ${k.kills}`); return this.drawStatus(k, card, time, stunned); }
     const step = Math.min(16, (w - 70) / Math.max(1, recharges - 1));
@@ -306,7 +308,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onCountdown(word: string): void {
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140, { glitch: { first: 0 } }).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
     this.glitchTitle(t, 650);

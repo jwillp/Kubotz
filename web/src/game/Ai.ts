@@ -55,6 +55,13 @@ export class CpuController implements Controller {
   private link: Link | null = null;
   /** What it is doing, where to, and the path planned (for the debug view). */
   readonly debug: { mode: string; dest: { x: number; y: number } | null; path: Link[] } = { mode: '', dest: null, path: [] };
+  /**
+   * A map NPC's behaviour (arena files): 'attack' plays like any CPU, 'flee'
+   * keeps away from the Kubotz near it, 'idle' stands its ground (it still
+   * hits back at whoever comes in reach). Players' CPUs leave it unset, or
+   * set 'dummy' (the editor's matches): it does nothing at all, a target.
+   */
+  behaviour?: 'attack' | 'flee' | 'idle' | 'dummy';
   private linkSince = 0;
   /** Keep the attack held until then: a charged smash or laser bolt. */
   private holdAttackUntil = 0;
@@ -96,6 +103,7 @@ export class CpuController implements Controller {
       pad.attack = true;
       return pad;
     }
+    if (this.behaviour === 'dummy') { this.debug.mode = 'dummy'; return pad; }
     if (me.heldBy) {
       // Mash out: a fresh button press every think (two now and then), and a stick wiggle.
       this.debug.mode = 'mash';
@@ -138,6 +146,17 @@ export class CpuController implements Controller {
 
     let enemy: Kubotz | null = null;
     for (const e of enemies) if (!enemy || manhattan(me, e) < manhattan(me, enemy)) enemy = e;
+    // An idle NPC only strikes at a Kubot right in front of it; a fleeing one runs from any Kubot nearby.
+    if (this.behaviour === 'idle') {
+      this.debug.mode = 'idle (NPC)';
+      if (enemy && Math.abs(enemy.x - me.x) < 1.3 * UNIT && Math.abs(enemy.y - me.y) < 1.5 * UNIT) {
+        if (Math.sign(enemy.x - me.x) !== me.facing) pad[enemy.x < me.x ? 'left' : 'right'] = true;
+        else pad.attack = true;
+      }
+      return pad;
+    }
+    const fleeing = this.behaviour === 'flee' && enemy && manhattan(me, enemy) < 12 ? enemy : null;
+    if (this.behaviour === 'flee' && !fleeing) { this.debug.mode = 'flee (nobody near)'; return pad; }
 
     // A job (Capture the Flag): a set enemy, a leash round the flag, a place to go.
     const job = this.world.objective?.(me) ?? null;
@@ -158,7 +177,7 @@ export class CpuController implements Controller {
     let dest: { x: number; y: number; bottom: number } | null = null;
     let wantsAttack = false;
 
-    const danger = untouchable[0] ?? (enemy && !job && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
+    const danger = fleeing ?? untouchable[0] ?? (enemy && !job && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
     if (danger) {
       // Cornered on the ground: now and then a dodge roll away (or through it).
       if (me.grounded && manhattan(me, danger) < 2.2 && !me.rolling && Math.random() < 0.15) {
@@ -380,6 +399,11 @@ export class CpuController implements Controller {
         this.linkSince = now;
       }
     }
+    // Through a soft platform: set off from wherever it stands on the way.
+    if (this.link?.through && mine?.id === this.link.from) {
+      this.link = nav.from(this.link, me.x);
+      this.debug.path[0] = this.link;
+    }
     const l = this.link;
     if (!l) return 'here';
     if (now - this.linkSince > 5000) { // something went wrong: plan again
@@ -402,12 +426,15 @@ export class CpuController implements Controller {
     let fromMin = l.fromMin;
     let fromMax = l.fromMax;
     let toX = l.toX;
+    // The last move, onto the destination's surface: land near it.
+    const last = l.through && nav.surfaceAt(dest.x, dest.bottom)?.id === target.id;
+    if (last && l.kind === 'drop') toX = clampTo(dest.x, target.x1 + UNIT / 2, target.x2 - UNIT / 2);
     if (l.kind === 'jump' && target.soft && fromMax - fromMin > UNIT) {
       // Jumping up through a platform: not right under the Kubot standing on
       // it, Kubotz bump into each other.
       const sides = [dest.x - 2 * UNIT, dest.x + 2 * UNIT].map((x) => clampTo(x, fromMin, fromMax));
       const aim = Math.abs(sides[0] - dest.x) >= Math.abs(sides[1] - dest.x) ? sides[0] : sides[1];
-      if (Math.abs(aim - dest.x) > UNIT) {
+      if (last && Math.abs(aim - dest.x) > UNIT) {
         fromMin = Math.max(fromMin, aim - 0.6 * UNIT);
         fromMax = Math.min(fromMax, aim + 0.6 * UNIT);
         toX = aim;
@@ -418,6 +445,7 @@ export class CpuController implements Controller {
       if (me.x < fromMin || me.x > fromMax) steer(clampTo(me.x, fromMin, fromMax), 0);
       else if (l.kind === 'jump') { pad.up = true; steer(toX, 0.3 * UNIT); }
       else if (l.kind === 'drop') pad.down = true;
+      else if (l.kind === 'warp') steer(l.fromX + Math.sign(l.fromX - me.x) * UNIT, 0); // run on through
       else steer(l.fromX + Math.sign(l.fromX - me.x || l.toX - me.x) * UNIT, 0);
       return 'moving';
     }

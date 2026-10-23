@@ -1,0 +1,21 @@
+{
+  "emitters": [
+    {
+      "name": "DeathDust",
+      "image": "hexa.png",
+      "additive": true,
+      "duration": {"low":[200,200]},
+      "count": [0,300],
+      "emission": {"low":[0,0],"high":[250,250],"curve":[[0,1]]},
+      "life": {"low":[0,0],"high":[500,1000],"curve":[[0,1],[0.66,1],[1,0.3]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0,0],"high":[1,1],"curve":[[0,1]]},
+      "velocity": {"low":[0,0],"high":[1,4],"curve":[[0,1]]},
+      "angle": {"low":[0,360],"high":[360,360],"curve":[[0,0],[0.999,0],[1,0]]},
+      "colors": [[0,0.047058824,0.23921569,1]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0],[0.58219177,0.2982456],[0.86986303,0.42105263],[1,0]]}
+    }
+  ]
+}

@@ -27,6 +27,8 @@ export interface PadState {
   analog?: boolean;
   /** Stick only: a direction slammed from the centre this frame (a flick: dash, smash, drop through). */
   flick?: boolean;
+  /** Stick only: flicked down this frame (drops through a soft platform). */
+  flickDown?: boolean;
   /** The right stick (C-stick) pushed this frame: a smash on the ground, an aerial in the air. */
   cstick?: 'up' | 'down' | 'left' | 'right';
 }
@@ -170,10 +172,11 @@ export class HumanController implements Controller {
     const my = Math.abs(ay);
     // Flicks: a stick axis slammed past FULL soon after it was centred.
     let flick = false;
+    let flickDown = false;
     if (mx < DEAD) { this.centredAt.x = now; this.dashing = false; }
     else if (mx > FULL && now - this.centredAt.x <= FLICK_MS) { flick = true; this.dashing = true; this.centredAt.x = -1e9; }
     if (my < DEAD) this.centredAt.y = now;
-    else if (my > FULL && now - this.centredAt.y <= FLICK_MS) { flick = true; this.centredAt.y = -1e9; }
+    else if (my > FULL && now - this.centredAt.y <= FLICK_MS) { flick = true; flickDown = ay > 0; this.centredAt.y = -1e9; }
     if (mx > TILT || my > TILT) {
       s.left ||= ax < -TILT; s.right ||= ax > TILT;
       s.up ||= ay < -TILT; s.down ||= ay > TILT;
@@ -186,6 +189,7 @@ export class HumanController implements Controller {
       }
       s.analog = true;
       if (flick) s.flick = true;
+      if (flickDown) s.flickDown = true;
     }
     const trigger = (i: number) => (pad.buttons[i]?.value ?? 0) > TRIGGER;
     const pressed = (names: readonly PadButtonName[], on = btn) => names.some((n) => on(BTN[n]));

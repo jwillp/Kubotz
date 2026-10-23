@@ -1,0 +1,40 @@
+{
+  "emitters": [
+    {
+      "name": "kjh",
+      "image": "star.png",
+      "additive": true,
+      "duration": {"low":[300,300]},
+      "count": [0,10],
+      "emission": {"low":[0,0],"high":[200,200],"curve":[[0,1]]},
+      "life": {"low":[300,300],"high":[200,2000],"curve":[[0,1],[0.89041096,0.5882353],[0.9931507,0]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0.01,0.01],"high":[0.02,1],"curve":[[0,1],[0.51369864,0.23529412],[1,0]]},
+      "velocity": {"low":[0,0],"high":[4,8],"curve":[[0,1]]},
+      "angle": {"low":[0,0],"high":[0,360],"curve":[[0,1]]},
+      "rotation": {"low":[0,180],"high":[360,360],"curve":[[0,1],[1,0]]},
+      "colors": [[0,1,0.88235295,0]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0],[0.2,1],[0.8,0.75],[1,0]]}
+    },
+    {
+      "name": "PiouRouge",
+      "image": "star2.png",
+      "additive": true,
+      "duration": {"low":[300,300]},
+      "count": [0,10],
+      "emission": {"low":[0,0],"high":[200,200],"curve":[[0,1]]},
+      "life": {"low":[300,300],"high":[200,2000],"curve":[[0,1],[0.89041096,0.5882353],[0.9931507,0]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0.01,0.01],"high":[0.02,1],"curve":[[0,1],[0.51369864,0.23529412],[1,0]]},
+      "velocity": {"low":[0,0],"high":[4,8],"curve":[[0,1]]},
+      "angle": {"low":[0,0],"high":[0,360],"curve":[[0,1]]},
+      "rotation": {"low":[0,180],"high":[360,360],"curve":[[0,1],[1,0]]},
+      "colors": [[0,1,0,0]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0],[0.2,1],[0.8,0.75],[1,0]]}
+    }
+  ]
+}
