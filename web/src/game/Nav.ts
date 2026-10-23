@@ -5,14 +5,20 @@ import { UNIT } from '../config';
  * map; for a platformer it is simpler and more reliable to run A* on the
  * surfaces Kubotz can stand on, linked by the moves between them: jump up to a
  * platform (through it from below when it is soft), drop through a soft
- * platform, run off an edge, or jump across a gap.
+ * platform, run off an edge, jump across a gap, or run through a portal.
  */
 
 export interface NavBlock { x: number; y: number; width: number; height: number; soft: boolean; }
 
 export interface Surface { id: number; x1: number; x2: number; y: number; soft: boolean; }
 
-export type MoveKind = 'jump' | 'drop' | 'fall';
+export type MoveKind = 'jump' | 'drop' | 'fall' | 'warp';
+
+/**
+ * A portal (GameScene.warp): a Kubot whose middle is in [top, bottom] and
+ * moving in `dir` past `enterX` comes out at `exitX`, `dy` lower.
+ */
+export interface NavPortal { top: number; bottom: number; enterX: number; dir: -1 | 1; exitX: number; dy: number; }
 
 export interface Link {
   from: number;
@@ -23,6 +29,12 @@ export interface Link {
   fromMax: number;
   toX: number; // where to aim on the arrival surface (px)
   cost: number;
+  /**
+   * Straight up or down through a soft platform: it can set off anywhere in
+   * [fromMin, fromMax] and lands right above or below. fromX / toX are the
+   * middle of that stretch until a path picks the spot (Nav.path).
+   */
+  through?: boolean;
 }
 
 const MAX_JUMP_UP = 12 * UNIT; // three jumps of 5 units, with some margin
@@ -35,8 +47,10 @@ export class Nav {
   /** Every link, for the debug view. */
   allLinks(): Link[] { return [...this.links.values()].flat(); }
   private links = new Map<number, Link[]>();
+  /** Where each portal is entered and where it leads (for the A* estimate). */
+  private shortcuts: { from: { x: number; y: number }; to: { x: number; y: number } }[] = [];
 
-  constructor(blocks: NavBlock[]) {
+  constructor(blocks: NavBlock[], portals: NavPortal[] = []) {
     blocks.forEach((b) => {
       // The parts of a top with solid blocks standing on it (or hanging just
       // above it) are not places to stand: keep the free stretches.
@@ -49,6 +63,24 @@ export class Nav {
       for (const [x1, x2] of free) this.surfaces.push({ id: this.surfaces.length, x1, x2, y: b.y, soft: b.soft });
     });
     for (const a of this.surfaces) this.links.set(a.id, this.surfaces.flatMap((b) => (a === b ? [] : this.link(a, b, blocks))));
+    for (const p of portals) this.portal(p);
+  }
+
+  /** Run into a portal from a surface in its lane; out on the other side. */
+  private portal(p: NavPortal): void {
+    for (const a of this.surfaces) {
+      const mid = a.y - UNIT; // the middle of a Kubot standing there
+      if (mid < p.top || mid > p.bottom) continue;
+      if (p.dir < 0 ? a.x1 >= p.enterX : a.x2 <= p.enterX) continue;
+      const b = this.surfaceAt(p.exitX, a.y + p.dy - 1);
+      if (!b || b === a) continue;
+      const fromX = p.enterX + p.dir * UNIT / 2;
+      this.links.get(a.id)!.push({
+        from: a.id, to: b.id, kind: 'warp', fromX, toX: p.exitX, fromMin: a.x1, fromMax: a.x2,
+        cost: 2 + Math.max(0, b.y - a.y) / UNIT * 0.8,
+      });
+      this.shortcuts.push({ from: { x: fromX, y: a.y }, to: { x: p.exitX, y: b.y } });
+    }
   }
 
   private link(a: Surface, b: Surface, blocks: NavBlock[]): Link[] {
@@ -76,7 +108,7 @@ export class Nav {
       // Up. A soft platform above can be jumped through from below.
       if (b.soft && overlap >= UNIT) {
         const x = clamp((b.x1 + b.x2) / 2, ov1 + UNIT / 2, ov2 - UNIT / 2);
-        out.push({ ...make('jump', x, x), fromMin: ov1 + UNIT / 4, fromMax: ov2 - UNIT / 4 });
+        out.push({ ...make('jump', x, x), fromMin: ov1 + UNIT / 2, fromMax: ov2 - UNIT / 2, through: true });
       } else if (overlap > 0) {
         // A solid block above: take off beside it, then land on its edge.
         for (const side of [-1, 1]) {
@@ -94,7 +126,7 @@ export class Nav {
       // Down: drop through a soft platform, or run off an edge.
       if (a.soft && overlap >= UNIT) {
         const x = clamp((a.x1 + a.x2) / 2, ov1 + UNIT / 2, ov2 - UNIT / 2);
-        out.push({ ...make('drop', x, x), fromMin: ov1 + UNIT / 4, fromMax: ov2 - UNIT / 4 });
+        out.push({ ...make('drop', x, x), fromMin: ov1 + UNIT / 2, fromMax: ov2 - UNIT / 2, through: true });
       } else {
         for (const side of [-1, 1]) {
           const fromX = side < 0 ? a.x1 - UNIT * 0.7 : a.x2 + UNIT * 0.7;
@@ -138,11 +170,24 @@ export class Nav {
     return best;
   }
 
-  /** A* from one surface to another; returns the moves to make, in order. */
+  /**
+   * The move as made from x: a link through a soft platform sets off where the
+   * Kubot already is (or the nearest spot of its stretch) and goes straight up
+   * or down; the others set off from their one take-off point.
+   */
+  from(l: Link, x: number): Link {
+    if (!l.through) return l;
+    const fromX = Math.min(l.fromMax, Math.max(l.fromMin, x));
+    return { ...l, fromX, toX: fromX };
+  }
+
+  /** A* from one surface to another; returns the moves to make, in order (set off from where they start). */
   path(from: Surface, to: Surface, startX: number): Link[] | null {
     if (from.id === to.id) return [];
     const centre = (s: Surface) => ({ x: (s.x1 + s.x2) / 2, y: s.y });
-    const h = (s: Surface) => Math.hypot(centre(s).x - centre(to).x, centre(s).y - centre(to).y) / UNIT;
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y) / UNIT;
+    // Straight there, or through a portal when that is shorter.
+    const h = (s: Surface) => Math.min(dist(centre(s), centre(to)), ...this.shortcuts.map((c) => dist(centre(s), c.from) + dist(c.to, centre(to))));
     const g = new Map<number, number>([[from.id, 0]]);
     const xAt = new Map<number, number>([[from.id, startX]]);
     const came = new Map<number, Link>();
@@ -156,7 +201,8 @@ export class Nav {
       }
       if (cur === to.id) break;
       open.delete(cur);
-      for (const l of this.links.get(cur) ?? []) {
+      for (const link of this.links.get(cur) ?? []) {
+        const l = this.from(link, xAt.get(cur)!);
         // Walking to the take-off point counts too.
         const cost = g.get(cur)! + Math.abs(l.fromX - xAt.get(cur)!) / UNIT + l.cost;
         if (cost < (g.get(l.to) ?? Infinity)) {

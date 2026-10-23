@@ -6,16 +6,16 @@ import type { ArenaData } from '../map/Arenas';
 /**
  * The game data as files under src/data, one per clip and one per move:
  *   clips/<clip>.json
- *   moves/<table>/<move>.json   (combo and sword-combo moves are numbered 1, 2, 3)
+ *   moves/<table>/<move>.json   (combo and blade-combo moves are numbered 1, 2, 3)
  *   moves/point-sets.json, moves/hurtbox.json
  *   particles/<effect>.json
  *   arenas/<arena>.json
  * The editor writes the same layout back (fileTexts).
  */
 
-const TABLES = { combo: 'combo', swordCombo: 'sword-combo', dir: 'dir', swordDir: 'sword-dir', specials: 'specials', throws: 'throws' } as const;
+const TABLES = { combo: 'combo', bladeCombo: 'blade-combo', dir: 'dir', bladeDir: 'blade-dir', specials: 'specials', throws: 'throws' } as const;
 type Table = keyof typeof TABLES;
-const LISTS: Table[] = ['combo', 'swordCombo'];
+const LISTS: Table[] = ['combo', 'bladeCombo'];
 
 /** Clips and moves from files keyed by their path under src/data. */
 export interface GameData { clips: Record<string, ClipData>; moves: MovesData; particles: Record<string, EffectData>; arenas: Record<string, ArenaData> }
@@ -25,7 +25,7 @@ export function fromFiles(files: Record<string, unknown>): GameData {
   const clips: Record<string, ClipData> = {};
   const particles: Record<string, EffectData> = {};
   const arenas: Record<string, ArenaData> = {};
-  const moves = { pointSets: {}, combo: [], swordCombo: [], dir: {}, swordDir: {}, specials: {}, throws: {}, hurtbox: { width: 1, height: 2.8 } } as unknown as MovesData;
+  const moves = { pointSets: {}, combo: [], bladeCombo: [], dir: {}, bladeDir: {}, specials: {}, throws: {}, hurtbox: { width: 1, height: 2.8 } } as unknown as MovesData;
   const byTable = moves as unknown as Record<Table, Record<string, MoveData> | MoveData[]>;
   for (const [path, data] of Object.entries(files).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))) {
     const m = /^(clips|moves|particles|arenas)\/(?:([a-z-]+)\/)?([^/]+)\.json$/.exec(path);
