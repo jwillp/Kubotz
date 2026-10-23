@@ -218,9 +218,11 @@ export function installDevHud(game: Phaser.Game): void {
   };
   const topBar = h('div', { cls: 'dev-top' },
     h('div', { cls: 'dev-head' }, h('strong', { textContent: 'DEV' }), status, h('button', { cls: 'btn', textContent: 'Close', help: 'Hides the dev HUD (F2); the match plays on.', onclick: () => setOpen(false) })),
-    h('div', { cls: 'dev-row' }, pauseBtn, stepBtn, speed, undoBtn, redoBtn),
     h('div', { cls: 'dev-row' }, saveBtn, exportBtn, revertBtn),
   );
+  // The mode box, at the top: Play mode or Edit mode, and that mode's controls (filled by build()).
+  const modeBox = h('div', { cls: 'dev-modebox' });
+  topBar.insertBefore(modeBox, topBar.children[1]);
 
   // ---------------------------------------------------------------- the palette (drag onto the map)
   /** Drags a palette element onto the map: a label follows the pointer and the piece lands where it is let go (a tap: the middle of the view). */
@@ -444,6 +446,15 @@ export function installDevHud(game: Phaser.Game): void {
         ...extra,
         h('div', { cls: 'dev-row' }, h('button', { cls: 'btn', textContent: 'Delete', help: 'Removes this piece (Delete key).', onclick: () => deletePiece() })));
     }
+    // The mode box: the toggle (an arena that can be edited), then the mode's own controls.
+    modeBox.replaceChildren(...[
+      a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.'  },
+        h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
+        h('button', { cls: `btn${editing ? ' on' : ''}`, textContent: 'Edit mode', onclick: () => { setEditing(true); shape = ''; build(); } })) : null,
+      editing && a
+        ? h('div', { cls: 'dev-row' }, undoBtn, redoBtn, h('button', { cls: 'btn', textContent: 'Fit', help: 'Shows the whole arena.', onclick: () => arena().recentre() }))
+        : h('div', { cls: 'dev-row' }, pauseBtn, stepBtn, speed),
+    ].filter((x): x is HTMLDivElement => !!x));
     const [w, hh] = a?.size ?? DEFAULT_SIZE;
     panel.replaceChildren(...[
       topBar,
@@ -461,10 +472,6 @@ export function installDevHud(game: Phaser.Game): void {
         // Then the art: the room behind it and its music.
         a ? choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })) : null,
         a ? musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })) : null,
-        a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
-          h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
-          h('button', { cls: `btn${editing ? ' on' : ''}`, textContent: 'Edit mode', onclick: () => { setEditing(true); shape = ''; build(); } })) : null,
-        editing && a ? h('div', { cls: 'dev-row' }, h('button', { cls: 'btn', textContent: 'Fit', help: 'Shows the whole arena.', onclick: () => arena().recentre() })) : null,
       ),
       // Edit mode: the elements, then the picked piece's settings right under them, then the tile brush.
       editing && a ? section('Elements', h('p', { cls: 'dev-note', textContent: 'Drag one onto the map (or tap it: it lands in the middle of the view).' }), palette) : null,

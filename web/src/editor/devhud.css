@@ -56,3 +56,6 @@
 .dev-swatch.on { border-color: #ffb547; }
 .dev-tint input[type=color] { width: 44px; height: 28px; padding: 0; border: 1px solid #2b323d; background: none; }
 .dev-field textarea { color: inherit; font: inherit; resize: vertical; }
+.dev-modebox { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid #2b323d; border-radius: 8px; background: #151a22; }
+.dev-modebox .dev-mode { margin-top: 0; }
+.dev-modebox .dev-row { margin-top: 0; }
