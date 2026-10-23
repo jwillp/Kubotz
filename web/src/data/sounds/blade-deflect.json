@@ -1,0 +1,14 @@
+{
+  "note": "A laser bolt batted back by a Plasma Blade: a zap bent off the blade, with a thump of the hum.",
+  "length": 0.6,
+  "seed": 1,
+  "reverb": 0.25,
+  "normalize": 0.95,
+  "layers": [
+    {"name":"Zap kick","type":"tone","at":0,"dur":0.0384,"gain":0.22,"freq":{"from":1400,"to":2480},"wobble":{"rate":81.25,"depth":0.12},"env":{"attack":0.00267,"shape":"linear","end":0.84}},
+    {"name":"Zap off","type":"tone","at":0.0384,"dur":0.2816,"gain":0.185,"freq":{"from":2500,"to":750,"curve":"exp"},"wobble":{"rate":81.25,"depth":0.12},"env":{"attack":0.001,"shape":"pow","k":1.4}},
+    {"name":"Hum thump","type":"tone","at":0,"dur":0.22,"gain":0.15,"clip":1.2,"partials":[[1,1],[2,0.55],[3,0.4],[5,0.22],[1.012,0.7],[2.024,0.3]],"freq":{"from":190,"to":130,"curve":"drop","k":6},"env":{"attack":0.00073,"shape":"exp","k":7}},
+    {"name":"Hiss","type":"noise","at":0,"dur":0.12,"gain":0.12,"filters":[{"type":"bandpass","q":2,"cutoff":{"from":3200}}],"env":{"shape":"linear"}},
+    {"name":"Ping","type":"ping","at":0,"freq":3520,"gain":0.05}
+  ]
+}

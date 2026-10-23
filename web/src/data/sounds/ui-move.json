@@ -1,0 +1,9 @@
+{
+  "note": "Menu: the cursor moving.",
+  "length": 0.3,
+  "reverb": 0.2,
+  "layers": [
+    {"name":"Blip","type":"tone","at":0,"dur":0.04,"gain":0.14,"freq":{"from":1150,"to":1650},"env":{"attack":0.00067,"shape":"linear"}},
+    {"name":"Tick","type":"ping","at":0.004,"freq":3136,"gain":0.06}
+  ]
+}

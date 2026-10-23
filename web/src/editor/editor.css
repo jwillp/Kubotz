@@ -111,3 +111,17 @@ details.section > :not(summary) { margin: 0 10px 10px; }
 #editor.in-game header, #editor.in-game aside, #editor.in-game .toolbar, #editor.in-game .transport, #editor.in-game .timeline { pointer-events: auto; }
 #editor.in-game #stage { background: transparent; pointer-events: none; }
 #editor.in-game main { background: transparent; }
+
+/* The Sound tab: the waveform and layer lanes in the stage's place, sliders in the inspector. */
+.sound-view { position: absolute; inset: 0; z-index: 2; background: #0d1015; }
+.sound-wave { display: block; touch-action: none; cursor: pointer; }
+#editor.in-game .sound-view { pointer-events: auto; }
+/* A slider is a whole row: label, slider, value. */
+.fields > .field.slide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 8px; }
+.field.slide > span { flex: 0 0 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.field.slide .slide-row { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 70px; gap: 6px; align-items: center; }
+.field.slide input[type=range] { padding: 0; border: 0; background: transparent; accent-color: var(--accent); }
+.field.slide input[type=number] { padding: 3px 5px; }
+.sub { color: var(--dim); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; margin: 10px 0 4px; }
+details.section.picked > summary { color: var(--accent); }
+#editor.sound-tab .body { grid-template-columns: 236px minmax(0, 1fr) 380px; }

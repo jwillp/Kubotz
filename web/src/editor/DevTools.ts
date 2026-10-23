@@ -48,7 +48,7 @@ function showErrors(root: HTMLElement): void {
 
 let ui: typeof import('./EditorUI') | null = null;
 
-/** The title's Editor entry: a menu of the editors (Animations, Particles, Arena) and Back to the title. */
+/** The title's Editor entry: a menu of the editors (Animations, Particles, Sounds, Arena) and Back to the title. */
 class EditorMenuScene extends Phaser.Scene {
   private items: PlateButton[] = [];
   private selected = 0;
@@ -65,6 +65,7 @@ class EditorMenuScene extends Phaser.Scene {
     const entries: [string, () => void][] = [
       ['Animations', () => void this.openEditor('anim')],
       ['Particles', () => void this.openEditor('particles')],
+      ['Sounds', () => void this.openEditor('sound')],
       // A new map from scratch, straight into a match there with the dev HUD in edit mode.
       ['Arena', () => { this.scene.stop(); host.newArenaMatch?.(); }],
       ['Back', () => shutter(this, () => this.scene.start('Title'), 'back')],
@@ -97,7 +98,7 @@ class EditorMenuScene extends Phaser.Scene {
   }
 
   /** Opens the editor on a tab; the menu waits (paused, so its keys do nothing) until Back. */
-  private async openEditor(which: 'anim' | 'particles'): Promise<void> {
+  private async openEditor(which: 'anim' | 'particles' | 'sound'): Promise<void> {
     ui ??= await import('./EditorUI');
     this.scene.pause();
     ui.editorShown(true, which);
