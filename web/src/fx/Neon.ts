@@ -6,7 +6,7 @@ import { boxBlur } from './NormalMaps';
  * neon, and a cyan rim along their upper edges and a magenta one along their
  * lower edges, like two coloured lights on either side. A brighter halo in the
  * neon team colour around each Kubot keeps the teams readable on the darker
- * arenas. Over the classic or the cel look (fx/Cel.ts); T in a match.
+ * arenas. Over the classic or the cel look (fx/Cel.ts); Y in a match.
  */
 export const NEON = 'neon:';
 

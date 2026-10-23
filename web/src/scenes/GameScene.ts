@@ -429,14 +429,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         .sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y))[0];
       if (target) target.health = 0;
     });
-    // Y: the cel-shaded Kubotz or the classic ones (fx/Cel.ts), switched in place.
-    kb.on('keydown-Y', () => {
+    // T: the toon (cel-shaded) Kubotz or the classic ones (fx/Cel.ts), switched in place.
+    kb.on('keydown-T', () => {
       setCel(!cel.on);
       for (const [img, key] of this.celSwaps) this.applyCel(img, key);
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, cel.on ? 'Toon' : 'Classic', 0xffffff);
     });
-    // T: the neon look over either (fx/Neon.ts), switched in place.
-    kb.on('keydown-T', () => this.toggleNeon());
+    // Y: the neon look over either (fx/Neon.ts), switched in place.
+    kb.on('keydown-Y', () => this.toggleNeon());
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn Kubotz' : 'Clean Kubotz', 0xffffff);
@@ -1361,7 +1361,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * T: switches the neon look on or off in place (over classic or toon), the
+   * Y: switches the neon look on or off in place (over classic or toon), the
    * match going on: Kubotz parts (their textures follow neon.on) and halos,
    * the tiles, rims and lights, the grade and the backdrop behind.
    */

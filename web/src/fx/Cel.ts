@@ -10,17 +10,18 @@ import { boxBlur } from './NormalMaps';
  * than just darker; big glossy parts (helmets, visors) catch a small hard
  * white shine. No texture, no gradients, no outlines. The arena lights reach
  * them in toon steps (ToonLightPipeline below).
- * Y in a match; neon (T, fx/Neon.ts) goes over either.
+ * T in a match; neon (Y, fx/Neon.ts) goes over either.
  */
 export const CEL = 'cel:';
 
-const STYLE_KEY = 'kubotz.toon';
+// New key: everyone starts on classic again, whatever the earlier toon-first builds saved.
+const STYLE_KEY = 'kubotz.toon-look';
 
-/** ?toon=1 / ?toon=0, else the last choice, on by default. */
+/** ?toon=1 / ?toon=0, else the last choice, off (classic) by default. */
 function startStyle(): boolean {
   const q = new URLSearchParams(location.search).get('toon');
   if (q) return q !== '0';
-  try { const v = localStorage.getItem(STYLE_KEY); return v === null ? true : v === '1'; } catch { return true; }
+  try { const v = localStorage.getItem(STYLE_KEY); return v === null ? false : v === '1'; } catch { return false; }
 }
 
 export const cel = { on: startStyle() };
