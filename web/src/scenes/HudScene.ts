@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Config } from '../config';
+import { Config, UNIT } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { TEAM_NAMES } from '../game/Match';
@@ -29,7 +29,13 @@ interface Card {
   status: Phaser.GameObjects.Text;
   /** The status shown (its chip is redrawn only when it changes). */
   shown: string;
+  /** 0..1: how see-through it is now, while a Kubot is behind it. */
+  fade: number;
 }
+
+/** How faint a HUD card gets while a Kubot is behind it, and how fast it fades (per second). */
+const BEHIND_ALPHA = 0.25;
+const FADE_SPEED = 8;
 
 /**
  * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
@@ -138,7 +144,7 @@ export class HudScene extends Phaser.Scene {
     const chip = this.add.graphics();
     const status = this.add.text(SLAB + 8, -14, '', body(11, { fontStyle: '800' })).setOrigin(0, 0.5);
     c.add([g, tag, name, team, bars, kills, chip, status]);
-    return { container: c, bars, kills, chip, status, shown: '' };
+    return { container: c, bars, kills, chip, status, shown: '', fade: 0 };
   }
 
   update(): void {
@@ -228,7 +234,25 @@ export class HudScene extends Phaser.Scene {
       chip.lineStyle(1, tone, 0.9).strokeRect(SLAB, -24, cw, 20);
       if (left > 0) chip.fillStyle(tone, 1).fillRect(SLAB + 2, -7, (cw - 4) * left, 2);
     }
-    card.container.setAlpha(k.eliminated ? 0.45 : 1);
+    // A Kubot behind the card (or its status chip): the card fades, like Smash's, so the fight shows through.
+    const behind = this.kubotBehind(card.container.x, card.container.y - 24, CARD_W, CARD_H + 24);
+    card.fade = Phaser.Math.Clamp(card.fade + (behind ? 1 : -1) * FADE_SPEED * this.game.loop.delta / 1000, 0, 1);
+    card.container.setAlpha((k.eliminated ? 0.45 : 1) * Phaser.Math.Linear(1, BEHIND_ALPHA, card.fade));
+  }
+
+  /** Whether a Kubot still in the fight is drawn (on screen) over this rectangle, in screen px. */
+  private kubotBehind(x: number, y: number, w: number, h: number): boolean {
+    const cam = this.game_.cameras.main;
+    const view = cam.worldView;
+    return this.game_.fighters.some((k) => {
+      if (!k.isAlive()) return false;
+      // Its body and head (about 1 x 2.6 units), and its tag.
+      const sx = (k.x - view.x) * cam.zoom;
+      const top = (k.y - view.y - 2 * UNIT) * cam.zoom;
+      const bottom = (k.y - view.y + UNIT) * cam.zoom;
+      const half = 0.6 * UNIT * cam.zoom;
+      return sx + half > x && sx - half < x + w && bottom > y && top < y + h;
+    });
   }
 
   private onCountdown(word: string): void {

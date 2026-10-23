@@ -1519,7 +1519,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.placeFixedLights();
     // Not in the intro (it shows one Kubot at a time) nor once the match is won.
     const shown = this.fighters.filter((k) => k.isAlive() && !k.home && !k.eliminated).map((k) => ({ x: k.x, y: k.y, color: k.look.color }));
-    this.bubbles?.update(shown, HUD_TOP, HUD_BOTTOM, !focus && this.winnerTeam === undefined);
+    // (Under the HUD is still in view: the cards fade over a Kubot behind them.)
+    this.bubbles?.update(shown, 0, 0, !focus && this.winnerTeam === undefined);
   }
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
