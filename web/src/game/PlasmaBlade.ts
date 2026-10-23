@@ -23,9 +23,11 @@ export const LOCK_CROSS = 0.6;
 /** How far (px) the pair slides towards the losing side at the end of the bar. */
 export const LOCK_SHOVE = 0.7 * UNIT;
 /** A lock needs this much damage between the two swings (a smash against a tilt, two smashes)... */
-export const LOCK_FORCE = 20;
+export const LOCK_FORCE = 16;
 /** ...and blades crossing at least this square (degrees), not sliding along each other. */
-export const LOCK_ANGLE = 30;
+export const LOCK_ANGLE = 25;
+/** A swing this strong (a smash) into a ready blade locks the blades; weaker ones clang off it. */
+export const LOCK_SOLO = 12;
 /** How long a lock can last (ms); then whoever is ahead wins, or both spring apart on a draw. */
 export const LOCK_MS = 2600;
 /** How far each press pushes the lock (the meter runs -1..1). */

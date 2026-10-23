@@ -542,18 +542,20 @@ export class ImpactFx {
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1];
         const b = pts[i];
-        const k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
-        const tail = i / pts.length;
+        let k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
+        let tail = i / pts.length;
+        // A plasma blade's streak stays bright along its sweep, fading late.
+        if (trail.blade) { k = Math.sqrt(k); tail = Math.sqrt(tail); }
         // The inner edge sits part-way out, so the smear thins towards the body.
         // (A plasma blade smears along its whole length, in its own light.)
         const inner = trail.blade ? 0.08 : 0.35;
         const inA = { x: a.ix + (a.ox - a.ix) * inner, y: a.iy + (a.oy - a.iy) * inner };
         const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
-        g.fillStyle(trail.color, (trail.blade ? 0.6 : 0.32) * k * tail);
+        g.fillStyle(trail.color, (trail.blade ? 0.85 : 0.32) * k * tail);
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
-        g.fillStyle(0xffffff, (trail.blade ? 0.3 : 0.12) * k * tail);
+        g.fillStyle(trail.blade ? mix(trail.color, 0xffffff, 0.6) : 0xffffff, (trail.blade ? 0.55 : 0.12) * k * tail);
         // A blade's hot core runs its whole length, not just near the tip.
-        const core = trail.blade ? 0.85 : 0.5;
+        const core = trail.blade ? 0.7 : 0.5;
         const midA = { x: a.ox + (inA.x - a.ox) * core, y: a.oy + (inA.y - a.oy) * core };
         const midB = { x: b.ox + (inB.x - b.ox) * core, y: b.oy + (inB.y - b.oy) * core };
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, midB, midA], true);

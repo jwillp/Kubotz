@@ -208,6 +208,15 @@ export class CpuController implements Controller {
 
     if (wantsAttack && enemy) {
       const facingEnemy = Math.sign(dx) === me.facing || Math.abs(dx) < 4;
+      // Plasma blades: a swing coming is answered with a swing, so blades meet (clangs and blade locks).
+      const ex = enemy.x - me.x;
+      if (me.weapon === 'plasmaBlade' && enemy.weapon === 'plasmaBlade' && enemy.attacking && me.grounded
+        && Math.abs(ex) < 2.6 * UNIT && Math.abs(enemy.y - me.y) < UNIT && Math.random() < 0.55) {
+        pad[ex > 0 ? 'right' : 'left'] = true;
+        pad.attack = true;
+        if (Math.random() < 0.4) pad.smash = true;
+        return pad;
+      }
       const ranged = me.weapon === 'laserGunMkI' || me.weapon === 'laserGunMkII';
       const reach = me.weapon === 'plasmaBlade' ? 1.8 : 1.3;
       if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) {

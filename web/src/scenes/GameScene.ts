@@ -6,7 +6,7 @@ import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../ga
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { BLADE_EMITTER, BLADE_TIP, Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, BLADE_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
-import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, BladeLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/PlasmaBlade';
+import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_SOLO, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, BladeLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/PlasmaBlade';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
@@ -1263,7 +1263,44 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         }
       }
     }
+    this.blockSwings(swings, now);
     this.crossRestingBlades(now);
+  }
+
+  /**
+   * A swing meeting a ready blade (held up by a Kubot facing it, not busy)
+   * clangs off it: neither is hurt, the swinger springs back. A smash into
+   * it, face to face, locks the blades instead.
+   */
+  private blockSwings(swings: { k: Kubotz; s: NonNullable<ReturnType<Kubotz['bladeSwing']>> }[], now: number): void {
+    for (const { k: a, s: sa } of swings) {
+      for (const b of this.fighters) {
+        if (b === a || a.bladeLocked || b.bladeLocked || b.intangible || !b.bladeReady || !canHurt(a, b)) continue;
+        if (sa.box.clashed.has(b) || sa.box.hit.has(b) || (a.x - b.x) * b.facing <= 0) continue;
+        const bb = b.blade();
+        if (!bb) continue;
+        const c = sweptContact(this.sweptFrom(a, sa.blade), sa.blade, undefined, bb);
+        if (!c) continue;
+        const faceToFace = a.facing !== b.facing && (b.x - a.x) * a.facing > 0;
+        const lock = faceToFace && sa.box.damage >= LOCK_SOLO && crossAngle(c.a, c.b) >= LOCK_ANGLE;
+        const away = a.x < b.x ? -1 : 1;
+        a.clashWith(b, away, lock ? 0 : CLASH_RECOIL);
+        b.clashWith(a, -away, lock ? 0 : CLASH_RECOIL * 0.5);
+        this.impact.clash(c.x, c.y);
+        if (lock) {
+          for (const k of [a, b]) { k.setBladeLock(true); k.freeze(LOCK_HOLD_MS); }
+          this.bladeLocks.push(new BladeLock(a, b, c.x, c.y, now));
+          this.playSfx('blade-clash', 0.7, -300);
+          this.shake(0.3);
+        } else {
+          const lag = hitlagMs(sa.box.damage);
+          a.freeze(lag);
+          b.freeze(lag);
+          this.playSfx('blade-clash', 0.5, Phaser.Math.Between(-100, 250));
+          this.shake(0.1);
+        }
+      }
+    }
   }
 
   /**

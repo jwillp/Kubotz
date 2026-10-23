@@ -648,6 +648,13 @@ export class Kubotz implements Damageable, Teamed {
     this.recoilVx = dirX * speed;
   }
 
+  /** Its plasma blade held up ready (not swinging, reeling, dodging or grappling): a swing into it clangs off. */
+  get bladeReady(): boolean {
+    const now = this.hooks.now();
+    return this.weapon === 'plasmaBlade' && !this.carrying && this.isAlive() && !this.attack && !this.charging
+      && now >= this.hitstunUntil && !this.tumbling && !this.dodging && !this.heldBy && !this.holding && !this.down && !this.onLedge;
+  }
+
   /** Moves a frozen Kubot sideways (a blade lock squares the pair up): it stays there until the freeze ends. */
   holdAt(x: number): void {
     this.body.setPosition(x, this.y);
