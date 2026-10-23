@@ -145,6 +145,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private droneShots: { x: number; y: number; vx: number; vy: number; until: number }[] = [];
   private droneLasers?: Phaser.GameObjects.Graphics;
   private ballSpot = new Phaser.Math.Vector2();
+  /** Kubeball: each play's platform, red's four then blue's (guardian, defender, support, striker). */
+  private roleSpots: Phaser.Math.Vector2[] = [];
   scoreLimit = 0;
   /** Training: CPUs defeated, how many to defeat, and when the next one may come in. */
   defeated = 0;
@@ -202,6 +204,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.captures = [0, 0];
     this.balls = [];
     this.goals = [];
+    this.roleSpots = [];
     this.droneShots = [];
     this.droneLasers = undefined;
     this.tactics = new Map();
@@ -224,6 +227,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (mode.sandbox) this.specs = [...this.specs.slice(0, 1), { input: 'CPU', team: 1, helmet: 7, cpuLevel: 5 }];
     this.recharges = mode.sandbox || mode.ctf || mode.ball ? Infinity : mode.trial ? TRAINING_RECHARGES : setup.recharges ?? Config.NB_LIVES;
     this.target = setup.target ?? 10;
+    // ?marks=glow,ring,quietCpu,captain,colors: only those player marks (to compare them).
+    const wanted = new URLSearchParams(window.location.search).get('marks');
+    if (wanted !== null) for (const key of Object.keys(this.marks) as (keyof typeof this.marks)[]) this.marks[key] = wanted.split(',').includes(key);
+    this.humanGlows = new Map();
+    this.markG = undefined; // (the last match's were destroyed with it)
+    this.chevrons = undefined;
     this.scoreLimit = mode.ball ? setup.target ?? 0 : 0;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
@@ -498,6 +507,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           break;
         case 'GOAL_0': case 'GOAL_1':
           this.goals.push({ team: o.type === 'GOAL_0' ? 0 : BALL_RIVAL, zone: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height) });
+          break;
+        case 'ROLE_SPOT_0': case 'ROLE_SPOT_1': case 'ROLE_SPOT_2': case 'ROLE_SPOT_3':
+        case 'ROLE_SPOT_4': case 'ROLE_SPOT_5': case 'ROLE_SPOT_6': case 'ROLE_SPOT_7':
+          this.roleSpots[Number(o.type.slice(10))] = this.spawnPoint(o);
           break;
         case 'BALL_SPOT':
           this.ballSpot.set(o.x + o.width / 2, o.y + o.height / 2);
@@ -903,6 +916,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.drawGlows();
     this.drawSabers(now);
     this.drawRoleTags();
+    this.drawMarks(now);
     const amb = this.lights.ambientColor;
     this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now), {
       kubot: (k) => drawn.get(k) ?? {},
@@ -1527,7 +1541,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     // Kubeball: each team plays a strategy, picked at random for the match.
-    if (!sky) for (const team of [0, BALL_RIVAL]) { this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER)); this.nextCaptainAt.set(team, this.countdownAt + Config.COUNTDOWN + 20000); }
+    // Kubeball: both teams start in Two-Two, everyone on their play's platform.
+    if (!sky) for (const team of [0, BALL_RIVAL]) { this.tactics.set(team, 'twoTwo'); this.nextCaptainAt.set(team, this.countdownAt + Config.COUNTDOWN + 20000); }
+    if (!sky) this.placeByRole();
     // Kubeball: roles over everyone and the strategies under the score, always.
     if (!sky) this.showRoles = true;
     const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
@@ -1712,9 +1728,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextPlaysAt = now + 1000;
     const pitch = this.pitch();
     if (!pitch) return;
+    const prev = this.plays;
     this.plays = new Map();
     for (const [team, tactic] of this.tactics) {
-      for (const [k, play] of assignPlays(this.teamOf(team), tactic, pitch)) this.plays.set(k, play);
+      for (const [k, play] of assignPlays(this.teamOf(team), tactic, pitch, prev)) this.plays.set(k, play);
     }
   }
 
@@ -1732,6 +1749,55 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (k.controller instanceof CpuController && k.controller.dummy) return `dummy ${k.controller.dummy}`;
     return k.role ?? null;
   }
+
+  /**
+   * Telling Kubotz apart in a team of one colour: human players glow with
+   * their own accent (P1 white, P2 yellow, P3 cyan, P4 magenta) and stand on
+   * a ring of it; CPU tags are smaller and dimmer; a Kubeball captain wears a
+   * gold chevron over its tag. Each can be turned off (marks, ?marks=).
+   */
+  marks = { glow: true, ring: true, quietCpu: true, captain: true, colors: true };
+  private markG?: Phaser.GameObjects.Graphics;
+  private humanGlows = new Map<Kubotz, Phaser.FX.Glow>();
+
+  /** A human's accent: P1 white, P2 yellow, P3 cyan, P4 magenta (white for all with `colors` off). */
+  accentOf(k: Kubotz): number {
+    const n = Number((k.name.match(/^P(\d)$/) ?? [])[1] ?? 1);
+    return this.marks.colors ? [0xffffff, 0xffd84d, 0x5ff2ff, 0xff6ad5][(n - 1) % 4] : 0xffffff;
+  }
+
+  private drawMarks(now: number): void {
+    const g = this.markG ??= this.add.graphics().setDepth(9.95).setBlendMode(Phaser.BlendModes.ADD);
+    const top = this.chevrons ??= this.add.graphics().setDepth(22);
+    g.clear(); top.clear();
+    const zoom = this.cameras.main.zoom;
+    const captains = this.tactics.size ? [...this.tactics.keys()].map((t) => this.captainOf(t)) : [];
+    for (const k of this.fighters) {
+      const human = k.controller.label !== 'CPU';
+      const shown = k.isAlive() && now >= k.appearAt;
+      // The glow: added once, strength set every frame.
+      if (human && !this.humanGlows.has(k) && k.model.view.postFX) this.humanGlows.set(k, k.model.view.postFX.addGlow(this.accentOf(k), 0, 0, false, 0.1, 10));
+      const fx = this.humanGlows.get(k);
+      if (fx) { fx.color = this.accentOf(k); fx.outerStrength = this.marks.glow && shown ? 2.4 + 0.6 * Math.sin(now / 200) : 0; }
+      if (human && this.marks.ring && shown) {
+        const c = this.accentOf(k);
+        const a = 0.55 + 0.2 * Math.sin(now / 180);
+        g.lineStyle(4 / zoom, c, a).strokeEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
+        g.fillStyle(c, a * 0.25).fillEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
+      }
+      k.tagStyle = !human && this.marks.quietCpu ? { scale: 0.72, alpha: 0.6 } : { scale: 1, alpha: 1 };
+      // The captain's chevron, gold, over its tag.
+      if (this.marks.captain && shown && captains.includes(k)) {
+        const y = k.body.top - UNIT * 0.75 - (this.showRoles ? 92 : 58) / zoom;
+        const w = 16 / zoom; const h = 10 / zoom; const t = 5 / zoom;
+        top.fillStyle(0xffd84d, 1).fillPoints([
+          new Phaser.Math.Vector2(k.x - w, y - h), new Phaser.Math.Vector2(k.x, y), new Phaser.Math.Vector2(k.x + w, y - h),
+          new Phaser.Math.Vector2(k.x + w, y - h + t), new Phaser.Math.Vector2(k.x, y + t), new Phaser.Math.Vector2(k.x - w, y - h + t),
+        ], true);
+      }
+    }
+  }
+  private chevrons?: Phaser.GameObjects.Graphics;
 
   /** The behaviour view (F9): each Kubot's job (a human's as the CPUs read it), in the player tag's font and its team's glow, just above the tag. */
   private drawRoleTags(): void {
@@ -2013,7 +2079,50 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return k;
   }
 
+  /** A Kubeball play's platform for a team, or undefined. */
+  private roleSpot(team: number, play: Play | undefined, nth = 0): Phaser.Math.Vector2 | undefined {
+    const order: Play[] = ['goalie', 'defender', 'support', 'attacker'];
+    let i = play ? order.indexOf(play) : -1;
+    if (play === 'attacker' && nth > 0) i = 2; // Two-Two's second striker: the high platform
+    if (i < 0) return undefined;
+    return this.roleSpots[(team === 0 ? 0 : 4) + i];
+  }
+
+  /**
+   * Kubeball's start: Two-Two's four jobs (humans take the strikers' first),
+   * and everyone materializes on their job's platform.
+   */
+  private placeByRole(): void {
+    for (const team of [0, BALL_RIVAL]) {
+      const mates = this.teamOf(team);
+      const slots: Play[] = ['attacker', 'attacker', 'defender', 'goalie'];
+      const humans = mates.filter((k) => k.controller.label !== 'CPU');
+      const cpus = mates.filter((k) => k.controller.label === 'CPU');
+      for (const k of [...humans, ...cpus.reverse()]) this.plays.set(k, slots.shift() ?? 'attacker');
+      let strikers = 0;
+      for (const k of mates) {
+        const play = this.plays.get(k);
+        const spot = this.roleSpot(team, play, play === 'attacker' ? strikers++ : 0);
+        if (!spot) continue;
+        const at = k.index < this.specs.length ? this.introAt[k.index] : this.countdownAt;
+        k.teleport(spot.x, spot.y);
+        k.facing = team === 0 ? 1 : -1;
+        this.holo.start(k, at, (x, y) => k.teleport(x, y), spot.y, this.countdownAt);
+      }
+    }
+    this.nextPlaysAt = this.countdownAt + Config.COUNTDOWN + 3000; // keep the start's jobs a moment
+  }
+
   private respawn(k: Kubotz): void {
+    // Kubeball: back on the platform of its job.
+    const play = this.plays.get(k);
+    const own = this.tactics.size ? this.roleSpot(k.team, play === 'free' ? 'attacker' : play) : undefined;
+    if (own) {
+      k.respawn(own.x, own.y);
+      this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), own.y);
+      this.playSfx('holo-spawn', 0.45);
+      return;
+    }
     // Capture the Flag: back at its own base. Otherwise the spawn point farthest from the other Kubotz.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
     const spawn = MODES[this.mode].ctf || MODES[this.mode].ball ? Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team)) : [...this.playerSpawns].sort((p, q) => {

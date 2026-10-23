@@ -35,6 +35,8 @@ export interface ArenaDef {
   goals?: [team: number, x: number, y: number, w: number, h: number][];
   /** Ball games: where the ball is put into play (its centre). */
   ball?: [x: number, y: number];
+  /** Kubeball: where each play starts and comes back to (feet), red's then blue's: guardian, defender, support, striker. */
+  roleSpots?: [x: number, y: number][];
 }
 
 /** One Kube's size in units: the default arena size. */
@@ -121,6 +123,8 @@ export const ARENAS: (ArenaDef | null)[] = [
     bonus: [[52, 12], [28, 8], [76, 8]],
     goals: [[0, 6, 6, 1, 6], [1, 97, 6, 1, 6]],
     ball: [52, 13.5], // on the top middle platform: everyone has to climb for it
+    // Each team's four platforms, one per play: under the goal, low, high, nearest the middle.
+    roleSpots: [[11, 16], [20, 25], [28, 11], [35, 20], [93, 16], [84, 25], [76, 11], [69, 20]],
   },
   {
     // Skychase: a tall open tower, three ring rifts high on each side wall, a hole in the floor.
@@ -218,6 +222,7 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     ...(def.portals ?? []).map(([x, y, w, h]) => obj('PORTAL', x, y, w, h)),
     ...(def.goals ?? []).map(([team, x, y, w, h]) => obj(`GOAL_${team}`, x, y, w, h)),
     ...(def.ball ? [obj('BALL_SPOT', def.ball[0] - 0.5, def.ball[1] - 0.5, 1, 1)] : []),
+    ...(def.roleSpots ?? []).map(([x, y], i) => obj(`ROLE_SPOT_${i}`, x - 0.5, y - 1, 1, 1)),
   ];
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };

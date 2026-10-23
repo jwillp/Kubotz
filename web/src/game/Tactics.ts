@@ -50,7 +50,7 @@ export function progress(k: { x: number; team: number }, p: Pitch): number {
  * the other half they count as attackers, at home as defence, and the CPUs
  * take what is left, the ones nearest home defending.
  */
-export function assignPlays(team: Kubotz[], tactic: Tactic, p: Pitch): Map<Kubotz, Play> {
+export function assignPlays(team: Kubotz[], tactic: Tactic, p: Pitch, prev: Map<Kubotz, Play> = new Map()): Map<Kubotz, Play> {
   const plays = new Map<Kubotz, Play>();
   const humans = team.filter((k) => k.controller.label !== 'CPU');
   const cpus = team.filter((k) => k.controller.label === 'CPU').sort((a, b) => progress(a, p) - progress(b, p));
@@ -68,11 +68,16 @@ export function assignPlays(team: Kubotz[], tactic: Tactic, p: Pitch): Map<Kubot
     : team.length === 2 ? ['defender', 'attacker'] : ['attacker'];
   const take = (play: Play) => { const i = slots.indexOf(play); if (i >= 0) { slots.splice(i, 1); return true; } return false; };
   for (const h of [...humans].sort((a, b) => progress(b, p) - progress(a, p))) {
-    const forward = progress(h, p) > 0.5;
+    // A little stubborn: an attacker stays one until back near home, a defender until well forward.
+    const forward = prev.get(h) === 'attacker' ? progress(h, p) > 0.2 : progress(h, p) > 0.5;
     const got = forward ? (take('attacker') && 'attacker') : (take('defender') && 'defender') || (take('goalie') && 'goalie');
     plays.set(h, got || slots.shift() || 'attacker');
   }
-  // CPUs nearest home defend.
+  // CPUs keep the play they had when it is still free; the others nearest home defend.
+  for (const k of [...cpus]) {
+    const had = prev.get(k);
+    if (had && take(had)) { plays.set(k, had); cpus.splice(cpus.indexOf(k), 1); }
+  }
   const defence = slots.filter((s) => s === 'goalie' || s === 'defender'); // goalie first
   const attack = slots.filter((s) => s === 'attacker');
   for (const k of cpus) plays.set(k, defence.shift() ?? attack.shift() ?? 'attacker');

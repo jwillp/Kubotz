@@ -323,6 +323,8 @@ export class Kubotz implements Damageable, Teamed {
   /** Ball games: the ball in its hands. No card on the HUD (the CPUs filling the teams, guardians). */
   ball: GameBall | null = null;
   hudless = false;
+  /** Its player tag's size and opacity (CPU tags are quieter in team matches). */
+  tagStyle = { scale: 1, alpha: 1 };
   /** Jumps it gets back at each respawn, and the share of gravity it falls under (Skychase: more jumps, a slow fall). */
   baseJumps: number = Config.NB_JUMPS;
   lowGravity = 1;
@@ -1761,7 +1763,7 @@ export class Kubotz implements Damageable, Teamed {
     // Constant on-screen size whatever the camera zoom.
     const zoom = this.scene.cameras.main.zoom;
     const y = this.body.top - UNIT * 0.75;
-    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom).setAlpha(now < this.appearAt ? 0 : 1);
+    this.tag.setPosition(this.x, y - 6).setScale((0.42 / zoom) * this.tagStyle.scale).setAlpha(now < this.appearAt ? 0 : this.tagStyle.alpha);
     // The HUD cards carry health; over the Kubot it shows only while low (red),
     // so close fights stay readable.
     const low = this.health <= 30;
