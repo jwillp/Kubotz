@@ -1331,6 +1331,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
+      // Kubeball: a K.O.'d Kubot sits out until the next goal (a power play for the other side).
+      if (MODES[this.mode].ball === 'kubeball') k.respawnAt = Infinity;
       if (MODES[this.mode].trial && k.team !== HORDE_TEAM && k.eliminated) { this.defeated++; this.events.emit('trial', this.defeated); }
       this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} ELIMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
     }
@@ -1603,8 +1605,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.endMatch(a === b ? null : a > b ? 0 : BALL_RIVAL, now);
       return;
     }
-    // Only the ball goes back to the middle: everyone runs back for it.
+    // Only the ball goes back to the middle: everyone runs back for it. Kubeball: whoever sat out comes back.
     this.balls[0].reset(now + 1200);
+    for (const k of this.fighters) if (!k.isAlive() && !Number.isFinite(k.respawnAt)) k.respawnAt = now + 600;
   }
 
   /**
@@ -2140,10 +2143,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private focusPoints(): { x: number; y: number }[] {
     // Capture the Flag (a giant arena): the camera follows the human players only.
     if (MODES[this.mode].ctf) return this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
-    // Ball games: the human players and the ball (the CPUs all over the arena would hold the camera wide).
+    // Ball games: the human players and the ball (the CPUs all over the arena would hold the camera wide);
+    // with no human in play (all K.O.'d), the ball and whoever is near it.
     if (MODES[this.mode].ball && this.balls[0]) {
+      const ball = this.balls[0];
       const humans = this.fighters.filter((f) => f.isAlive() && f.controller.label !== 'CPU');
-      return [...humans, this.balls[0]];
+      if (humans.length) return [...humans, ball];
+      const near = this.fighters.filter((f) => f.isAlive() && Math.hypot(f.x - ball.x, f.y - ball.y) < 14 * UNIT);
+      return [ball, ...near];
     }
     const alive = this.fighters.filter((f) => f.isAlive());
     // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
@@ -2183,7 +2190,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
       const aspect = this.scale.width / this.scale.height;
       // After the match the camera closes in on the dancing winner.
-      const wanted = this.winnerTeam !== undefined ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
+      // Ball games: zoomed out as far as it takes to keep the players and the ball in view (up to the whole pitch).
+      const widest = MODES[this.mode].ball ? Math.max(58, this.map.width + 6) : 58;
+      const wanted = this.winnerTeam !== undefined ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, widest);
       this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
       this.camTarget.copy(this.centerOfFighters());
     }
