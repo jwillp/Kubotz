@@ -679,17 +679,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
     this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
-    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'landDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
       speed: { min: 60, max: 220 }, lifespan: 500, scale: { start: 0.8, end: 0 }, blendMode: 'ADD', emitting: false,
     }).setDepth(15);
-  }
-
-  private fx(name: ParticleName, x: number, y: number, tint?: number): void {
-    this.particles.play(this.effects[name], x, y, tint);
-    this.recorder.particles(name, x, y, tint);
   }
 
   // -------------------------------------------------------------- ArenaHooks
@@ -711,7 +706,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   dust(x: number, y: number): void {
-    this.fx('landingDust', x, y);
+    this.impact.landDust(x, y);
   }
 
   /** Jumping off and landing: the subtle run dust, kicked out to both sides. */
@@ -1365,7 +1360,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.kill(now);
       // A map NPC comes back after its own delay.
       if (k.home?.respawnMs !== undefined) k.respawnAt = now + k.home.respawnMs;
-      this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
+      this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} TERMINATED` : 'K.O.', k.look.color);
     }
     // Last team standing: the match ends when one team (or nobody) is left.
     if (this.winnerTeam === undefined) {
