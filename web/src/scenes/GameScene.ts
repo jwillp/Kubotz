@@ -1761,7 +1761,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Debug view (F3): each team's strategy in this mode, or null. */
   strategyLine(): string | null {
-    if (this.tactics.size) return [...this.tactics].map(([t, tac]) => `${t === 0 ? 'RED' : 'BLUE'} ${TACTICS[tac]} (captain ${this.captainOf(t)?.name ?? '-'})`).join('   ·   ');
+    if (this.tactics.size) return [...this.tactics].map(([t, tac]) => `${t === 0 ? 'RED' : 'BLUE'} ${TACTICS[tac]}`).join('   ·   ');
     const m = MODES[this.mode];
     if (m.ctf) return `RED strikers + ${CTF_GUARDIANS} guardians   ·   BLUE ${this.specs.length} strikers, ${CTF_INTERCEPTORS} interceptors, ${CTF_GUARDIANS} guardians`;
     if (m.ball === 'skychase') return 'each team: a Spark seeker, the rest go for the Core';
@@ -2096,8 +2096,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    // Ball games: eight Kubotz hitting each other would keep the camera shaking; a third as much.
-    const tame = MODES[this.mode].ball ? 0.35 : 1;
+    // Kubeball: eight Kubotz hitting each other would keep the camera shaking; a third as much.
+    const tame = MODES[this.mode].ball === 'kubeball' ? 0.35 : 1;
     this.trauma = Math.min(1, this.trauma + amount * vfx() * tame);
   }
 
