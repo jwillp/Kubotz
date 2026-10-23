@@ -1,15 +1,17 @@
 import Phaser from 'phaser';
 import { sfxVolume } from '../game/Settings';
-import { SYNTH_SOUNDS, type UiSoundKind } from './Synth';
+import { soundDefs, synthSamples, type UiSoundKind } from './Synth';
 
 /**
  * Every sound in the game, by key, in one place.
  *
  * RECORDED: the original Kubotz recordings (release v0.1-alpha music and
  * sounds), converted to mp3 in public/audio.
- * SYNTH: sounds made in code at boot, added for the web port: the
- * SYNTH_SOUNDS table at the end of Synth.ts (it stays free of Phaser so a
- * worker can run it, audio/SynthWorker.ts).
+ * SYNTH: sounds made in code at boot, added for the web port: one file
+ * each in src/data/sounds (boom, orb-bounce, orb-pickup, orb-heal, step-0..2,
+ * holo-spawn, portal-warp, ui-move, ui-tick, ui-confirm, ui-back, ui-scan),
+ * rendered by audio/SoundDef.ts (free of Phaser so a worker can run it,
+ * audio/SynthWorker.ts). The editor's Sound tab edits them and exports WAVs.
  */
 const RECORDED: Record<string, string> = {
   'music-title': 'dashboard.mp3',
@@ -57,11 +59,11 @@ export async function makeSynthSounds(scene: Phaser.Scene, pause: () => Promise<
       worker.onerror = (err) => { worker.terminate(); reject(err); };
       // A page that blocks workers may never answer: then make them here.
       setTimeout(() => { worker.terminate(); reject(new Error('synth worker timed out')); }, 10000);
-      worker.postMessage({ rate: ctx.sampleRate });
+      worker.postMessage({ rate: ctx.sampleRate, defs: soundDefs() });
     });
   } catch {
-    for (const [key, make] of Object.entries(SYNTH_SOUNDS)) {
-      if (!scene.cache.audio.exists(key)) scene.cache.audio.add(key, make(ctx));
+    for (const key of Object.keys(soundDefs())) {
+      if (!scene.cache.audio.exists(key)) add(key, synthSamples(key, ctx.sampleRate));
       await pause();
     }
   }

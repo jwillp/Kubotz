@@ -1,0 +1,11 @@
+{
+  "note": "A soft metal boot step (variant 3).",
+  "length": 0.35,
+  "seed": 3,
+  "reverb": 0.18,
+  "layers": [
+    {"name":"Heel thud","type":"tone","at":0,"dur":0.09,"gain":0.42,"freq":{"from":120,"to":70,"curve":"drop","k":8},"env":{"attack":0.00075,"shape":"exp","k":9}},
+    {"name":"Plate","type":"ping","at":0.004,"freq":404.2,"gain":1,"click":0.00033,"partials":[[1,0.13,55],[2.69767,0.07,70],[4.39535,0.045,90],[7.02326,0.025,120]]},
+    {"name":"Scuff","type":"noise","at":0,"dur":0.03,"gain":0.09,"filters":[{"type":"lowpass","cutoff":{"from":3023}}],"env":{"shape":"exp","k":3.6}}
+  ]
+}

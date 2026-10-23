@@ -1,0 +1,9 @@
+{
+  "note": "Menu: a value stepping.",
+  "length": 0.3,
+  "reverb": 0.12,
+  "layers": [
+    {"name":"Blip","type":"tone","at":0,"dur":0.025,"gain":0.13,"freq":{"from":760},"env":{"attack":0.00031,"shape":"linear"}},
+    {"name":"Tick","type":"ping","at":0.002,"freq":1975,"gain":0.035}
+  ]
+}
