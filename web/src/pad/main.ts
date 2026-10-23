@@ -1,193 +1,95 @@
 import '@fontsource/exo-2/600.css';
 import '@fontsource/exo-2/700.css';
+import './pad.css';
+import { B, onStatus, releaseAll, startLink } from './link';
+import { bindTouches, SlideButtons } from './touch';
+import type { Layout } from './layouts/layout';
+import { classic } from './layouts/classic';
+import { swipe } from './layouts/swipe';
+import { zones } from './layouts/zones';
+import { lean } from './layouts/lean';
+import { onehand } from './layouts/onehand';
 
 /**
- * The phone pad (pad.html): a gamepad laid out like the owner's Xbox-style
- * pad, sent to the game through the dev server's relay (tools/phone-pads.ts)
- * and seen there as one more browser gamepad (src/net/PhonePads.ts).
- * Buttons use the standard mapping's indices (game/Input.ts BTN); the stick
- * floats: it centres wherever the thumb lands on the left half.
+ * The phone pad (pad.html): sends its buttons and sticks to the game through
+ * the dev server's relay (see link.ts), where it is one more browser gamepad.
+ * Several layouts to compare how each one plays, picked on the layout screen
+ * (kept on the phone; ?layout= picks one too). The top bar is the same in all
+ * of them: Quit (Select), the connection, Start, and the layout screen.
  */
 
-const ID_KEY = 'kubotz.phonePad.id';
-const id = (() => {
-  try {
-    const kept = localStorage.getItem(ID_KEY);
-    if (kept) return kept;
-    const made = Math.random().toString(36).slice(2, 10);
-    localStorage.setItem(ID_KEY, made);
-    return made;
-  } catch {
-    return Math.random().toString(36).slice(2, 10);
-  }
-})();
+const LAYOUTS: Layout[] = [classic, swipe, zones, lean, onehand];
+const LAYOUT_KEY = 'kubotz.phonePad.layout';
 
-const status = document.getElementById('status')!;
-const statusTitle = status.querySelector('strong')!;
-const detail = document.getElementById('detail')!;
-const zone = document.getElementById('stickZone')!;
-const base = document.getElementById('base')!;
-const knob = document.getElementById('knob')!;
-const hint = document.getElementById('hint')!;
+const stage = document.getElementById('stage')!;
+const chooser = document.getElementById('chooser')!;
+const bar = document.getElementById('bar')!;
 
-// What is held: a bit per standard button, and the stick.
-let buttons = 0;
-let sx = 0;
-let sy = 0;
-let sent = '';
-let ws: WebSocket | null = null;
-
-function send(force = false): void {
-  const msg = JSON.stringify({ t: 's', b: buttons, x: +sx.toFixed(3), y: +sy.toFixed(3) });
-  if (!force && msg === sent) return;
-  sent = msg;
-  if (ws?.readyState === WebSocket.OPEN) ws.send(msg);
-}
-
-function setStatus(on: boolean, title: string, text: string): void {
-  status.classList.toggle('off', !on);
-  statusTitle.textContent = title;
-  detail.textContent = text;
-}
-
-function connect(): void {
-  setStatus(false, 'Connecting', `looking for the game at ${location.host}`);
-  const sock = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/__pads?role=phone`);
-  sock.onopen = () => {
-    ws = sock;
-    sock.send(JSON.stringify({ t: 'hi', id, name: navigator.userAgent }));
-    send(true);
-    setStatus(true, 'Connected', 'press A in the game to join');
-  };
-  sock.onmessage = (e) => {
-    const msg = JSON.parse(String(e.data)) as { t: string; text?: string; ms?: number };
-    if (msg.t === 'slot') setStatus(true, msg.text ?? 'Connected', 'press A in the game to join');
-    if (msg.t === 'buzz') navigator.vibrate?.(msg.ms ?? 30);
-  };
-  sock.onclose = () => {
-    if (ws === sock) ws = null;
-    setStatus(false, 'Disconnected', 'trying again…');
-    setTimeout(connect, 1500);
-  };
-}
-
-// Buttons: each touch presses the button under it, and slides from one button to the next.
-const buttonEls = [...document.querySelectorAll<HTMLElement>('[data-btn]')];
-const touchButton = new Map<number, HTMLElement | null>();
-
-function buttonAt(x: number, y: number): HTMLElement | null {
-  return (document.elementFromPoint(x, y) as HTMLElement | null)?.closest<HTMLElement>('[data-btn]') ?? null;
-}
-
-function refreshButtons(): void {
-  let held = 0;
-  for (const el of touchButton.values()) if (el) held |= 1 << Number(el.dataset.btn);
-  const pressedNow = held & ~buttons;
-  for (const el of buttonEls) el.classList.toggle('on', (held & (1 << Number(el.dataset.btn))) !== 0);
-  if (pressedNow) navigator.vibrate?.(8);
-  buttons = held;
-  send();
-}
-
-// The stick: centred where the thumb lands, full tilt at RADIUS of the base.
-let stickTouch: number | null = null;
-let ox = 0;
-let oy = 0;
-const radius = () => base.offsetWidth * 0.38;
-
-function placeBase(x: number, y: number): void {
-  const r = zone.getBoundingClientRect();
-  base.style.left = `${x - r.left}px`;
-  base.style.top = `${y - r.top}px`;
-}
-
-function moveStick(x: number, y: number): void {
-  const R = radius();
-  let dx = (x - ox) / R;
-  let dy = (y - oy) / R;
-  const len = Math.hypot(dx, dy);
-  if (len > 1) { dx /= len; dy /= len; }
-  sx = dx; sy = dy;
-  knob.style.transform = `translate(${dx * R}px, ${dy * R}px)`;
-  send();
-}
-
-function releaseStick(): void {
-  stickTouch = null;
-  sx = sy = 0;
-  knob.style.transform = '';
-  base.classList.remove('on');
-  send();
-}
-
-function onStart(e: TouchEvent): void {
-  e.preventDefault();
-  wakeUp();
-  for (const t of e.changedTouches) {
-    if (stickTouch === null && zone.contains(t.target as Node)) {
-      stickTouch = t.identifier;
-      ox = t.clientX; oy = t.clientY;
-      placeBase(ox, oy);
-      base.classList.add('on');
-      hint.style.opacity = '0';
-      moveStick(ox, oy);
-    } else {
-      touchButton.set(t.identifier, buttonAt(t.clientX, t.clientY));
-    }
-  }
-  refreshButtons();
-}
-
-function onMove(e: TouchEvent): void {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === stickTouch) moveStick(t.clientX, t.clientY);
-    else if (touchButton.has(t.identifier)) touchButton.set(t.identifier, buttonAt(t.clientX, t.clientY));
-  }
-  refreshButtons();
-}
-
-function onEnd(e: TouchEvent): void {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === stickTouch) releaseStick();
-    touchButton.delete(t.identifier);
-  }
-  refreshButtons();
-}
-
-document.addEventListener('touchstart', onStart, { passive: false });
-document.addEventListener('touchmove', onMove, { passive: false });
-document.addEventListener('touchend', onEnd, { passive: false });
-document.addEventListener('touchcancel', onEnd, { passive: false });
-
-// Mouse too, so the pad can be tried on a PC: one pointer, buttons only, or the stick.
-let mouseOn: 'stick' | 'btn' | null = null;
-document.addEventListener('mousedown', (e) => {
-  if (zone.contains(e.target as Node)) { mouseOn = 'stick'; ox = e.clientX; oy = e.clientY; placeBase(ox, oy); base.classList.add('on'); moveStick(ox, oy); }
-  else { mouseOn = 'btn'; touchButton.set(-1, buttonAt(e.clientX, e.clientY)); refreshButtons(); }
-});
-document.addEventListener('mousemove', (e) => {
-  if (mouseOn === 'stick') moveStick(e.clientX, e.clientY);
-  else if (mouseOn === 'btn') { touchButton.set(-1, buttonAt(e.clientX, e.clientY)); refreshButtons(); }
-});
-document.addEventListener('mouseup', () => {
-  if (mouseOn === 'stick') releaseStick();
-  touchButton.delete(-1);
-  refreshButtons();
-  mouseOn = null;
+onStatus((s) => {
+  bar.classList.toggle('off', !s.on);
+  bar.querySelector('strong')!.textContent = s.title;
+  bar.querySelector('.detail')!.textContent = s.text;
+  chooser.querySelector('.conn')!.textContent = `${s.title} · ${s.text}`;
 });
 
-// On the first touch: full screen, landscape, and keep the screen awake (each where the phone allows it).
+// The top bar: Quit and Start slide like any button; Layouts opens the layout screen.
+bar.querySelector<HTMLElement>('.quit')!.dataset.btn = String(B.SELECT);
+bar.querySelector<HTMLElement>('.start')!.dataset.btn = String(B.START);
+const barButtons = new SlideButtons(bar, 'bar');
+bindTouches(bar, { start: (f) => barButtons.start(f), move: (f) => barButtons.move(f), end: (f) => barButtons.end(f) });
+bar.querySelector('.layouts')!.addEventListener('click', () => showChooser(true));
+document.querySelector('#turn .other')!.addEventListener('click', () => showChooser(true));
+
+let current: Layout | null = null;
+let teardown: (() => void) | null = null;
+
+function use(layout: Layout): void {
+  teardown?.();
+  releaseAll();
+  stage.replaceChildren();
+  const root = document.createElement('div');
+  stage.append(root);
+  teardown = layout.mount(root);
+  current = layout;
+  document.body.classList.toggle('portrait', !!layout.portrait);
+  bar.querySelector('.layouts b')!.textContent = layout.name;
+  try { localStorage.setItem(LAYOUT_KEY, layout.id); } catch { /* private mode */ }
+  for (const el of chooser.querySelectorAll<HTMLElement>('[data-layout]')) el.classList.toggle('current', el.dataset.layout === layout.id);
+  const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+  if (document.fullscreenElement) void orientation.lock?.(layout.portrait ? 'portrait' : 'landscape').catch(() => {});
+}
+
+function showChooser(on: boolean): void {
+  if (on) releaseAll();
+  chooser.classList.toggle('show', on);
+}
+
+chooser.querySelector('.list')!.innerHTML = LAYOUTS.map((l, i) => `
+  <button data-layout="${l.id}"><span class="n">${i + 1}</span><span class="t"><strong>${l.name}</strong>${l.blurb}</span>${l.portrait ? '<em>upright</em>' : ''}</button>`).join('');
+for (const el of chooser.querySelectorAll<HTMLButtonElement>('[data-layout]')) {
+  el.addEventListener('click', () => {
+    wakeUp();
+    use(LAYOUTS.find((l) => l.id === el.dataset.layout)!);
+    showChooser(false);
+  });
+}
+chooser.querySelector('.close')!.addEventListener('click', () => showChooser(false));
+
+// On the first touch: full screen, the layout's orientation, and keep the screen awake (each where the phone allows it).
 let awake = false;
 function wakeUp(): void {
   if (awake) return;
   awake = true;
   void document.documentElement.requestFullscreen?.().catch(() => {}).then(() =>
-    (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.('landscape').catch(() => {}));
+    (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.(current?.portrait ? 'portrait' : 'landscape').catch(() => {}));
   void (navigator as Navigator & { wakeLock?: { request(t: 'screen'): Promise<unknown> } }).wakeLock?.request('screen').catch(() => {});
 }
+document.addEventListener('touchstart', wakeUp, { passive: true });
 
-// Heartbeat: the latest state again now and then, so a dropped message never leaves a button stuck.
-setInterval(() => send(true), 500);
-connect();
+const asked = new URLSearchParams(location.search).get('layout');
+const kept = (() => { try { return localStorage.getItem(LAYOUT_KEY); } catch { return null; } })();
+const first = LAYOUTS.find((l) => l.id === asked) ?? LAYOUTS.find((l) => l.id === kept);
+use(first ?? classic);
+// First visit: start on the layout screen so every layout gets a try.
+if (!first) showChooser(true);
+startLink();

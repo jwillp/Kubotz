@@ -35,7 +35,7 @@ import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
 import { MenuInput } from './MenuInput';
-import { buzzPhone } from '../net/PhonePads';
+import { buzzPhone, sendPhoneInfo } from '../net/PhonePads';
 
 /** The arena: InGameScreen + the gameplay systems that work across entities. */
 /** The top and bottom opaque pixel of every other column of an image (pixels from its bottom-left). */
@@ -154,6 +154,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     Object.assign(this.debugState, { on: false, timeScale: 1, frozen: false, steps: 0, holdCamera: false, show: { ...ALL_LAYERS } });
     this.fighters = [];
     this.lastHealth.clear();
+    this.phoneHits.clear();
     this.mapLights = [];
     this.orbs = [];
     this.bullets = [];
@@ -821,12 +822,36 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Health per fighter last frame, for the phone pads' rumble. */
   private lastHealth = new Map<Kubotz, number>();
 
-  /** A hit buzzes the phone of the Kubot it lands on (phones only: see net/PhonePads.ts). */
-  private buzzPhones(): void {
+  /** Hits taken per fighter (and the last one's damage), for the phones' own screen. */
+  private phoneHits = new Map<Kubotz, { hits: number; hit: number }>();
+  private phoneInfoAt = 0;
+
+  /**
+   * A hit buzzes the phone of the Kubot it lands on, and a few times a second
+   * each phone gets its Kubot's health, lives and the like (phones only: see net/PhonePads.ts).
+   */
+  private buzzPhones(time: number): void {
+    const info = time >= this.phoneInfoAt;
+    if (info) this.phoneInfoAt = time + 150;
     for (const k of this.fighters) {
       const before = this.lastHealth.get(k) ?? k.health;
       this.lastHealth.set(k, k.health);
-      if (k.health < before && k.controller instanceof HumanController) buzzPhone(k.controller.padIndex, Math.min(200, 30 + (before - k.health) * 6));
+      if (!(k.controller instanceof HumanController)) continue;
+      const pad = k.controller.padIndex;
+      const hits = this.phoneHits.get(k) ?? { hits: 0, hit: 0 };
+      this.phoneHits.set(k, hits);
+      if (k.health < before) {
+        buzzPhone(pad, Math.min(200, 30 + (before - k.health) * 6));
+        hits.hits++;
+        hits.hit = before - k.health;
+      }
+      if (info) sendPhoneInfo(pad, {
+        health: (k.health / Config.KUBOTZ_HEALTH) * 100, lives: k.lives, guard: k.guard / Config.GUARD_MAX,
+        color: `#${k.look.color.toString(16).padStart(6, '0')}`,
+        weapon: k.weapon === 'none' ? '' : k.weapon === 'laserSword' ? 'Laser sword' : 'Laser gun',
+        powerUps: k.powerUps.map((p) => POWER_UPS[p.type].label), kills: k.kills,
+        hit: hits.hit, hits: hits.hits, alive: k.isAlive(),
+      });
     }
   }
 
@@ -834,7 +859,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (!this.preview) this.commands?.update(time);
     if (this.paused) return;
     if (this.preview) { this.updatePreview(deltaMs); return; }
-    this.buzzPhones();
+    this.buzzPhones(time);
     // Debug time controls: slow motion, or frozen and stepped frame by frame.
     const d = this.debugState;
     let dtMs = Math.min(deltaMs, 50) * d.timeScale;

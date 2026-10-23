@@ -47,6 +47,26 @@ export function buzzPhone(index: number, ms: number): void {
   for (const [id, p] of pads) if (p.index === index && p.connected) socket?.send(JSON.stringify({ t: 'buzz', id, ms }));
 }
 
+/** What a phone's own screen shows about its Kubot (the one-hand layout: src/pad/link.ts PadInfo). */
+export interface PhoneInfo {
+  health: number; lives: number; guard: number; color: string;
+  weapon: string; powerUps: string[]; kills: number; hit: number; hits: number; alive: boolean;
+}
+
+/** Sends a phone pad its Kubot's state, if the pad at this index is a phone (when it changed, and each second). */
+export function sendPhoneInfo(index: number, info: PhoneInfo): void {
+  for (const [id, p] of pads) {
+    if (p.index !== index || !p.connected) continue;
+    const msg = JSON.stringify({ t: 'info', id, ...info, health: Math.round(info.health * 10) / 10, guard: Math.round(info.guard * 100) / 100 });
+    const last = lastInfo.get(id);
+    const now = performance.now();
+    if (last?.msg === msg && now - last.at < 1000) return;
+    lastInfo.set(id, { msg, at: now });
+    socket?.send(msg);
+  }
+}
+const lastInfo = new Map<string, { msg: string; at: number }>();
+
 function padFor(id: string): VirtualPad {
   let p = pads.get(id);
   if (!p) {
