@@ -337,6 +337,7 @@ export class CpuController implements Controller {
       if (me.x < fromMin || me.x > fromMax) steer(clampTo(me.x, fromMin, fromMax), 0);
       else if (l.kind === 'jump') { pad.up = true; steer(toX, 0.3 * UNIT); }
       else if (l.kind === 'drop') pad.down = true;
+      else if (l.kind === 'warp') steer(l.fromX + Math.sign(l.fromX - me.x) * UNIT, 0); // run on through
       else steer(l.fromX + Math.sign(l.fromX - me.x || l.toX - me.x) * UNIT, 0);
       return 'moving';
     }
