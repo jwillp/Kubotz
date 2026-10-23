@@ -67,7 +67,7 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'sports',
     name: 'Kubeball',
     tagline: 'Red against blue, one ball, two goals.',
-    rules: ['Grab the ball, run it up, throw it in the goal', 'No attacks with it in hand; any hit knocks it loose', 'After a goal only the ball goes back to the middle', 'Goals or time: you choose'],
+    rules: ['Shoot it into the goal: 2 points; run it in: 1', 'No attacks with it in hand; any hit knocks it loose', 'After a goal only the ball goes back to the middle', 'Points or time: you choose'],
     ball: 'kubeball',
   },
   skychase: {
@@ -160,10 +160,13 @@ export function hordeWave(n: number, players: number): { count: number; level: n
 /** Ball games: each team is filled up to this many with CPUs. */
 export const BALL_TEAM_SIZE = 4;
 /** Ball games: the score to reach, picked on the setup screen (0: no limit, time decides). */
-export const KUBEBALL_GOALS = [3, 5, 7, 10, 0];
+export const KUBEBALL_POINTS = [5, 7, 10, 15, 0];
 export const SKYCHASE_POINTS = [100, 150, 200, 0];
 /** Skychase: the Core through a ring, and the Spark caught (which ends the match). */
 export const CORE_POINTS = 10;
+/** Kubeball: running the ball into the goal, and shooting it in (thrown, kicked, struck). */
+export const KUBEBALL_RUN_IN = 1;
+export const KUBEBALL_SHOT = 2;
 export const SPARK_POINTS = 30;
 /** Skychase: air jumps and how much gravity is left (it plays like flying). */
 export const SKYCHASE_JUMPS = 6;

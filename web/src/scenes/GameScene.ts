@@ -12,7 +12,7 @@ import { GameBall } from '../game/Ball';
 import { assignPlays, playObjective, TACTIC_ORDER, TACTICS, type Pitch, type Play, type Tactic } from '../game/Tactics';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
-import { BALL_TEAM_SIZE, CORE_POINTS, SKYCHASE_GRAVITY, SKYCHASE_JUMPS, SPARK_POINTS, CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
+import { BALL_TEAM_SIZE, CORE_POINTS, KUBEBALL_RUN_IN, KUBEBALL_SHOT, SKYCHASE_GRAVITY, SKYCHASE_JUMPS, SPARK_POINTS, CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
 import type { ParticleName } from './BootScene';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
@@ -1598,10 +1598,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           const t = ball.lastTouch;
           const scorer = t && t.by.team === by ? t.by : null;
           const [a, b] = this.captures;
-          const pts = ball.kind === 'core' ? CORE_POINTS : 1;
+          // Kubeball: run in with the ball 1, shoot it in (thrown, kicked, struck) 2 — the harder one is worth more.
+          const runIn = !!ball.carrier;
+          const pts = ball.kind === 'core' ? CORE_POINTS : runIn ? KUBEBALL_RUN_IN : KUBEBALL_SHOT;
           const wins = !!this.scoreLimit && (by === 0 ? a : b) + pts >= this.scoreLimit;
           this.recorder.goal(scorer ? scorer.index : null, now, t ? Math.hypot(ball.x - t.x, ball.y - t.y) / UNIT : 0, t && Number.isFinite(t.at) ? now - t.at : 0, wins);
-          this.score(by, ball.kind === 'core' ? CORE_POINTS : 1, now, ball.kind === 'core' ? `+${CORE_POINTS}` : 'GOAL');
+          this.score(by, pts, now, ball.kind === 'core' ? `${CORE_POINTS} POINTS` : runIn ? 'RUN IN  1' : 'SHOT  2');
           return;
         }
       } else if (ball.kind === 'hunter') {

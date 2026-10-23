@@ -8,7 +8,7 @@ import {
   BONUS_RATES, CPU_LEVEL, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
   type BonusRate, type FighterSpec, type MatchSetup,
 } from '../game/Match';
-import { CTF_CAPTURES, KUBEBALL_GOALS, SKYCHASE_POINTS, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
+import { CTF_CAPTURES, KUBEBALL_POINTS, SKYCHASE_POINTS, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
 import { ARENA_INFO, arenaOf, isModeArena, type ArenaMode } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
 import type { SpriterData } from '../spriter/Spriter';
@@ -341,7 +341,7 @@ export class SetupScene extends Phaser.Scene {
   private ballScore(): number {
     const ball = MODES[this.mode].ball;
     if (!ball) return 0;
-    return this.state.score?.[ball] ?? (ball === 'kubeball' ? 5 : 150);
+    return this.state.score?.[ball] ?? (ball === 'kubeball' ? 7 : 150);
   }
 
   /** Training: one player, slot 1 only. */
@@ -402,7 +402,7 @@ export class SetupScene extends Phaser.Scene {
       case 'recharges': {
         const ball = MODES[this.mode].ball;
         if (ball) {
-          const list = ball === 'kubeball' ? KUBEBALL_GOALS : SKYCHASE_POINTS;
+          const list = ball === 'kubeball' ? KUBEBALL_POINTS : SKYCHASE_POINTS;
           s.score = { ...s.score, [ball]: list[(list.indexOf(this.ballScore()) + d + list.length) % list.length] };
           break;
         }
@@ -628,7 +628,7 @@ export class SetupScene extends Phaser.Scene {
     // Rules: values, and the focused one glows.
     const fixed = this.fixedRecharges();
     const ball = MODES[this.mode].ball;
-    this.rules.recharges.title.setText(ball === 'kubeball' ? 'GOALS' : ball ? 'POINTS' : 'RECHARGES');
+    this.rules.recharges.title.setText(ball ? 'POINTS' : 'RECHARGES');
     this.rules.recharges.value.setText(ball ? (this.ballScore() || '∞').toString()
       : fixed === null ? String(s.recharges) : Number.isFinite(fixed) ? String(fixed) : '∞');
     // The time box: the training's target, Capture the Flag's captures, else the time limit.
