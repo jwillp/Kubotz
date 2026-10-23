@@ -106,7 +106,14 @@ const FLICK_MS = 70;
 /** Keyboard player, optionally merged with a connected gamepad. */
 export class HumanController implements Controller {
   private keys: Record<keyof KeyBinding, Phaser.Input.Keyboard.Key[]>;
-  private prevPad = { grab: false, taunt: false, cx: 0, cy: 0 };
+  private prevPad = { grab: false, taunt: false, cx: 0, cy: 0, left: false, right: false };
+  /**
+   * Kubeball captains: the D-pad's left / right pressed this frame (-1, 1; 0
+   * when not), read by the match to switch the team's strategy. While
+   * `sideSwitches` is on, left / right do that instead of taunting.
+   */
+  side: -1 | 0 | 1 = 0;
+  sideSwitches = false;
   /** When each stick axis was last centred, and whether the stick is dashing (flicked sideways, until centred). */
   private centredAt = { x: 0, y: 0 };
   private dashing = false;
@@ -128,6 +135,7 @@ export class HumanController implements Controller {
   }
 
   read(): PadState {
+    this.side = 0;
     const held = (k: Phaser.Input.Keyboard.Key[]) => k.some((key) => key.isDown);
     const just = (k: Phaser.Input.Keyboard.Key[]) => k.some((key) => Phaser.Input.Keyboard.JustDown(key));
     const s: PadState = {
@@ -180,7 +188,12 @@ export class HumanController implements Controller {
     s.guard ||= pressed(PAD_BINDING.guard, trigger);
     const grab = pressed(PAD_BINDING.grab);
     s.grab ||= grab && !this.prevPad.grab;
-    const taunt = pressed(PAD_BINDING.taunt);
+    const left = btn(BTN.LEFT); const right = btn(BTN.RIGHT);
+    if (this.sideSwitches) {
+      if (left && !this.prevPad.left) this.side = -1;
+      if (right && !this.prevPad.right) this.side = 1;
+    }
+    const taunt = pressed(this.sideSwitches ? PAD_BINDING.taunt.filter((n) => n !== 'LEFT' && n !== 'RIGHT') : PAD_BINDING.taunt);
     s.taunt ||= taunt && !this.prevPad.taunt;
     // Right stick: one smash (or aerial) each time it is pushed out of the centre.
     const cx = axis(2);
@@ -188,6 +201,6 @@ export class HumanController implements Controller {
     const cOut = Math.max(Math.abs(cx), Math.abs(cy)) > 0.6;
     const wasOut = Math.max(Math.abs(this.prevPad.cx), Math.abs(this.prevPad.cy)) > 0.6;
     if (cOut && !wasOut) s.cstick = Math.abs(cx) > Math.abs(cy) ? (cx < 0 ? 'left' : 'right') : (cy < 0 ? 'up' : 'down');
-    this.prevPad = { grab, taunt, cx, cy };
+    this.prevPad = { grab, taunt, cx, cy, left, right };
   }
 }

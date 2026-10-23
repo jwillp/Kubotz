@@ -117,7 +117,7 @@ export const ARENAS: (ArenaDef | null)[] = [
     spawns: [[12, 28], [18, 28], [24, 28], [18, 22], [68, 28], [62, 28], [56, 28], [62, 22]],
     bonus: [[40, 14], [26, 8], [54, 8]],
     goals: [[0, 6, 6, 1, 6], [1, 73, 6, 1, 6]],
-    ball: [40, 24],
+    ball: [40, 15.5], // on the top middle platform: everyone has to climb for it
   },
   {
     // Skychase: a tall open tower, three ring rifts high on each side wall, a hole in the floor.

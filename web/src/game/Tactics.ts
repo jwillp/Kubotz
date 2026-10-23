@@ -35,6 +35,8 @@ export interface Pitch {
   width: number;
   /** The top of the ground under a point (so CPUs run along the floor to a ball in the air instead of hopping at it). */
   ground(x: number, y: number): number;
+  /** The top of a surface over x by height: 0 the floor, 1 the first platform up, 2 the next (the highest there is). */
+  perch(x: number, level: number): number;
 }
 
 /** How far a Kubot is up the pitch, from its own goal (0) to the other (1). */
@@ -77,18 +79,26 @@ export function assignPlays(team: Kubotz[], tactic: Tactic, p: Pitch): Map<Kubot
   return plays;
 }
 
-/** A CPU's objective in Kubeball, by its play. */
-export function playObjective(k: Kubotz, play: Play, team: Kubotz[], plays: Map<Kubotz, Play>, p: Pitch): Objective {
+/**
+ * A CPU's objective in Kubeball, by its play. Like real team sports, only
+ * one player per team presses the ball (the nearest, not the goalie unless
+ * the ball is at its goal); the others take up positions off it, spread
+ * over the pitch and its platforms (an attacker ahead and high to receive a
+ * pass, a support behind the ball, a defender between the ball and the
+ * goal, marking an attacker in its half), so the teams do not flock onto
+ * the ball. Any enemy coming close is fought.
+ */
+export function playObjective(k: Kubotz, play: Play, team: Kubotz[], plays: Map<Kubotz, Play>, p: Pitch, enemies: Kubotz[]): Objective {
   const ball = p.ball;
   const dir = Math.sign(p.enemyGoal(k.team).x - p.ownGoal(k.team).x) || 1;
   const own = p.ownGoal(k.team);
   const dist = (q: { x: number; y: number }) => Math.hypot(q.x - k.x, q.y - k.y);
-  const onGround = (x: number, y: number) => ({ x, y: p.ground(x, y) });
-  // The ball is chased like a power-up ball: the AI's own A* run to it, grabbing it once in reach.
-  const getBall: Objective = { ball: { x: ball.x, y: ball.y } };
+  const clampX = (x: number) => Math.min(p.width - 8 * UNIT, Math.max(8 * UNIT, x));
   const carrier = ball.carrier;
   const enemyCarrier = carrier && carrier.team !== k.team ? carrier : null;
   const inHalf = (x: number) => (x - p.width / 2) * dir < 0; // in this team's own half
+  const alive = team.filter((t) => t.isAlive());
+  const nearOwnGoal = Math.hypot(ball.x - own.x, ball.y - own.y) < 12 * UNIT;
 
   // With the ball: a Spearhead support passes to its attacker when it is ahead and in reach; else to the goal.
   if (k.ball) {
@@ -98,47 +108,47 @@ export function playObjective(k: Kubotz, play: Play, team: Kubotz[], plays: Map<
       return { goal: { x: spear.x, y: spear.body.bottom }, fightWithin: 0.5, grab: Math.sign(spear.x - k.x) === k.facing };
     }
     // Under the goal (on the platform below it), then up and in.
-    const under = onGround(goal.x - dir * 4 * UNIT, goal.y + 2 * UNIT);
+    const under = { x: goal.x - dir * 4 * UNIT, y: p.ground(goal.x - dir * 4 * UNIT, goal.y + 2 * UNIT) };
     const close = Math.abs(k.x - goal.x) < 9 * UNIT && Math.abs(k.y - goal.y) < 9 * UNIT;
     return { goal: close ? goal : under, fightWithin: 1, grab: close }; // a CPU's throw aims itself
   }
 
+  // The presser: the one teammate nearest the ball (a goalie only when the ball is at its goal).
+  const pressers = alive.filter((t) => !t.ball && (plays.get(t) !== 'goalie' || nearOwnGoal));
+  const target = enemyCarrier ?? ball;
+  const presser = pressers.sort((a, b) => Math.hypot(a.x - target.x, a.y - target.y) - Math.hypot(b.x - target.x, b.y - target.y))[0];
+  if (k === presser && (!carrier || enemyCarrier)) return enemyCarrier ? { target: enemyCarrier } : { ball: { x: ball.x, y: ball.y } };
+
+  // Everyone else: a position, kept apart from the teammates' (no two within 3 units).
+  const spot = (x: number, level: number) => {
+    let sx = clampX(x);
+    for (const t of alive) if (t !== k && Math.abs(t.x - sx) < 3 * UNIT && Math.abs(t.y - k.y) < 2 * UNIT) sx = clampX(sx + (team.indexOf(k) % 2 ? 4 : -4) * UNIT);
+    return { goal: { x: sx, y: p.perch(sx, level) }, fightWithin: 2 };
+  };
+  const mate = carrier && carrier.team === k.team ? carrier : null;
+  const lead = mate ?? ball;
   switch (play) {
     case 'goalie': {
-      // Home, under the goal; anything coming close gets dealt with.
-      const post = onGround(own.x + dir * 4 * UNIT, own.y + 2 * UNIT);
+      const post = { x: own.x + dir * 4 * UNIT, y: p.ground(own.x + dir * 4 * UNIT, own.y + 2 * UNIT) };
       if (enemyCarrier && Math.hypot(enemyCarrier.x - own.x, enemyCarrier.y - own.y) < 14 * UNIT) return { target: enemyCarrier };
-      if (!carrier && Math.hypot(ball.x - own.x, ball.y - own.y) < 12 * UNIT) return getBall;
       return { leash: { x: post.x, y: post.y - UNIT, r: 6 } };
     }
     case 'defender': {
-      // The own third; further up while the ball is in the other half; no carrier gets past.
-      const deep = inHalf(ball.x) ? 0.25 : 0.38;
-      const centre = onGround(own.x + dir * p.width * deep, own.y + 20 * UNIT);
-      if (enemyCarrier && inHalf(enemyCarrier.x)) return { target: enemyCarrier };
-      if (!carrier && Math.abs(ball.x - centre.x) < (inHalf(ball.x) ? 10 : 15) * UNIT) return getBall;
-      return { leash: { x: centre.x, y: centre.y - UNIT, r: inHalf(ball.x) ? 10 : 15 } };
+      // Mark the enemy attacker furthest into this half; else between the ball and the goal (further up while the ball is away).
+      const threat = enemies.filter((e) => e.isAlive() && inHalf(e.x)).sort((a, b) => (a.x - b.x) * dir)[0];
+      if (threat && dist(threat) < 14 * UNIT) return { target: threat };
+      return spot(own.x + (lead.x - own.x) * (inHalf(lead.x) ? 0.35 : 0.5), 0);
     }
-    case 'attacker': {
-      const mate = carrier && carrier.team === k.team ? carrier : null;
-      if (mate) return { goal: onGround(mate.x + dir * 2 * UNIT, mate.y), fightWithin: 4 }; // escort: clear the way
-      if (enemyCarrier) return { target: enemyCarrier };
-      return getBall;
-    }
-    case 'support': {
-      const spear = team.find((t) => plays.get(t) === 'attacker' && t.isAlive());
-      if (enemyCarrier && dist(enemyCarrier) < 9 * UNIT) return { target: enemyCarrier };
-      if (!carrier && spear && dist(ball) < Math.hypot(spear.x - ball.x, spear.y - ball.y) - 2 * UNIT) return getBall;
-      if (spear) return { goal: onGround(spear.x - dir * 2.5 * UNIT * (team.indexOf(k) % 2 ? 1 : -0.6), spear.y), fightWithin: 3 };
-      return getBall;
-    }
+    case 'attacker':
+      // Ahead of the play, high, open for a pass.
+      return spot(lead.x + dir * 8 * UNIT, 1);
+    case 'support':
+      // Behind the ball, on a platform over it: a pass back, a second chance.
+      return spot(lead.x - dir * 4 * UNIT, 1 + (team.indexOf(k) % 2));
     default: {
-      // Total Football: the two nearest to the ball go for it (or its carrier), the rest hold the line between it and the goal.
-      const nearest = [...team].filter((t) => t.isAlive()).sort((a, b) => Math.hypot(a.x - ball.x, a.y - ball.y) - Math.hypot(b.x - ball.x, b.y - ball.y));
-      const chase = nearest.indexOf(k) < 2;
-      if (carrier && carrier.team === k.team) return { goal: onGround(carrier.x + dir * 2 * UNIT, carrier.y), fightWithin: 4 };
-      if (chase) return enemyCarrier ? { target: enemyCarrier } : getBall;
-      return { goal: onGround((ball.x + own.x) / 2, ball.y), fightWithin: 2.5 };
+      // Total Football: whoever is not pressing spreads out, one ahead, one behind, alternating heights.
+      const i = alive.indexOf(k);
+      return spot(lead.x + (i % 2 ? 7 : -5) * dir * UNIT, i % 3 === 0 ? 0 : 1);
     }
   }
 }

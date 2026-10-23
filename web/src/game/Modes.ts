@@ -67,7 +67,7 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'sports',
     name: 'Kubeball',
     tagline: 'Red against blue, one ball, two goals.',
-    rules: ['Shoot it into the goal: 2 points; run it in: 1', 'No attacks with it in hand; any hit knocks it loose', 'After a goal only the ball goes back to the middle', 'Points or time: you choose'],
+    rules: ['Shoot it into the goal: 2 points; run it in: 1', 'No attacks with it in hand; any hit knocks it loose', 'Captains switch strategy: D-pad left / right (Q / E)', 'Points or time: you choose'],
     ball: 'kubeball',
   },
   skychase: {

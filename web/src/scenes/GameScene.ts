@@ -133,6 +133,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private goals: { team: number; zone: Phaser.Geom.Rectangle }[] = [];
   /** Kubeball: each team's strategy, everyone's play in it (handed out again every second), and when next. */
   private tactics = new Map<number, Tactic>();
+  /** Kubeball: when each CPU captain next weighs its strategy; P1's keyboard switch this frame (Q / E). */
+  private nextCaptainAt = new Map<number, number>();
+  private keySide: -1 | 0 | 1 = 0;
   private plays = new Map<Kubotz, Play>();
   private nextPlaysAt = 0;
   /** Behaviour view (F9): each CPU's job over its player tag, in the tag's font; the strategies show on the HUD. */
@@ -202,6 +205,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.droneShots = [];
     this.droneLasers = undefined;
     this.tactics = new Map();
+    this.nextCaptainAt = new Map();
+    this.keySide = 0;
     this.plays = new Map();
     this.nextPlaysAt = 0;
     this.showRoles = false;
@@ -328,6 +333,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Back from the settings or controls (drawn over the paused match): the Esc or Start that closed them must not unpause too.
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.commands?.reset());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.RESUME));
+    // Kubeball: P1's keyboard captain switch.
+    kb.on('keydown-Q', () => { if (!this.paused && this.tactics.size) this.keySide = -1; });
+    kb.on('keydown-E', () => { if (!this.paused && this.tactics.size) this.keySide = 1; });
     kb.on('keydown-TAB', (e: KeyboardEvent) => { e.preventDefault(); if (!this.paused && MODES[this.mode].sandbox) this.cycleDummy(); });
     kb.on('keydown-V', () => {
       look25.on = !look25.on;
@@ -858,6 +866,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateFlags(now);
     this.updateBallGame(now);
     if (this.balls.length) this.updateDroneShots(now, dt);
+    if (this.tactics.size) this.updateCaptains(now);
     this.updateTrial(now);
     const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
@@ -1518,7 +1527,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     // Kubeball: each team plays a strategy, picked at random for the match.
-    if (!sky) for (const team of [0, BALL_RIVAL]) this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER));
+    if (!sky) for (const team of [0, BALL_RIVAL]) { this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER)); this.nextCaptainAt.set(team, this.countdownAt + Config.COUNTDOWN + 20000); }
+    // Kubeball: roles over everyone and the strategies under the score, always.
+    if (!sky) this.showRoles = true;
     const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
     this.balls = [new GameBall(this, this.physicsWorld, sky ? 'core' : 'kubeball', spot)];
     if (sky) {
@@ -1710,11 +1721,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Debug view (F3): a Kubot's job in its mode (Kubeball play, CTF / Skychase role, sandbox dummy), or null. */
   roleOf(k: Kubotz): string | null {
     let play: string | undefined = this.plays.get(k);
-    // Total Football: attacker while one of the two going for the ball, defender while holding the line.
+    // Total Football: the one pressing the ball and whoever spreads ahead are attackers, whoever spreads behind a defender.
     if (play === 'free' && this.balls[0]) {
       const b = this.balls[0];
-      const nearest = this.teamOf(k.team).filter((t) => t.isAlive()).sort((p, q) => Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y));
-      play = nearest.indexOf(k) < 2 ? 'attacker' : 'defender';
+      const mates = this.teamOf(k.team).filter((t) => t.isAlive());
+      const nearest = [...mates].sort((p, q) => Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y));
+      play = nearest[0] === k || mates.indexOf(k) % 2 ? 'attacker' : 'defender';
     }
     if (play) return play + (k.controller.label === 'CPU' ? '' : ' (read)');
     if (k.controller instanceof CpuController && k.controller.dummy) return `dummy ${k.controller.dummy}`;
@@ -1738,11 +1750,48 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Debug view (F3): each team's strategy in this mode, or null. */
   strategyLine(): string | null {
-    if (this.tactics.size) return [...this.tactics].map(([t, tac]) => `${t === 0 ? 'RED' : 'BLUE'} ${TACTICS[tac]}`).join('   ·   ');
+    if (this.tactics.size) return [...this.tactics].map(([t, tac]) => `${t === 0 ? 'RED' : 'BLUE'} ${TACTICS[tac]} (captain ${this.captainOf(t)?.name ?? '-'})`).join('   ·   ');
     const m = MODES[this.mode];
     if (m.ctf) return `RED strikers + ${CTF_GUARDIANS} guardians   ·   BLUE ${this.specs.length} strikers, ${CTF_INTERCEPTORS} interceptors, ${CTF_GUARDIANS} guardians`;
     if (m.ball === 'skychase') return 'each team: a Spark seeker, the rest go for the Core';
     return null;
+  }
+
+  /** Kubeball: each team's captain, its first human player (or, with none, its first CPU). */
+  captainOf(team: number): Kubotz | undefined {
+    const mates = this.teamOf(team);
+    return mates.find((k) => k.controller.label !== 'CPU') ?? mates[0];
+  }
+
+  /**
+   * Kubeball captains switch their team's strategy: a human with the pad's
+   * D-pad left / right (P1 on the keyboard: Q / E); a CPU captain every 20 s
+   * by the score: behind by two or more, Spearhead; behind, Total Football;
+   * ahead by two or more, Two-Two.
+   */
+  private updateCaptains(now: number): void {
+    for (const team of [...this.tactics.keys()]) {
+      const cap = this.captainOf(team);
+      if (!cap) continue;
+      if (cap.controller instanceof HumanController) {
+        cap.controller.sideSwitches = true;
+        const d = cap.controller.side || (cap.controller.label === 'P1' ? this.keySide : 0);
+        if (d) this.setTactic(team, TACTIC_ORDER[(TACTIC_ORDER.indexOf(this.tactics.get(team)!) + d + TACTIC_ORDER.length) % TACTIC_ORDER.length], cap);
+      } else if (now >= this.nextCaptainAt.get(team)! ) {
+        this.nextCaptainAt.set(team, now + 20000);
+        const diff = this.captures[team === 0 ? 0 : 1] - this.captures[team === 0 ? 1 : 0];
+        const pick: Tactic | null = diff <= -2 ? 'spearhead' : diff < 0 ? 'total' : diff >= 2 ? 'twoTwo' : null;
+        if (pick && pick !== this.tactics.get(team)) this.setTactic(team, pick, cap);
+      }
+    }
+    this.keySide = 0;
+  }
+
+  private setTactic(team: number, tactic: Tactic, by: Kubotz): void {
+    this.tactics.set(team, tactic);
+    this.nextPlaysAt = 0; // hand the plays out again now
+    this.floatText(by.x, by.body.top - UNIT * 1.6, TACTICS[tactic].toUpperCase(), by.look.color);
+    this.playSfx('holo-spawn', 0.25, 500);
   }
 
   /** Kubeball's pitch, as the plays see it. */
@@ -1756,6 +1805,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       enemyGoal: (team) => goal(team === 0 ? BALL_RIVAL : 0),
       width: this.map.width * UNIT,
       ground: (x, y) => this.solids.filter((r) => x >= r.x && x <= r.right && r.y >= y - 4).reduce((top, r) => Math.min(top, r.y), this.map.height * UNIT),
+      perch: (x, level) => {
+        const tops = [...new Set(this.solids.filter((r) => x >= r.x - 2 * UNIT && x <= r.right + 2 * UNIT && r.y > 4 * UNIT).map((r) => r.y))].sort((a, b) => b - a);
+        return tops[Math.min(level, tops.length - 1)] ?? this.map.height * UNIT;
+      },
     };
   }
 
@@ -1765,7 +1818,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Kubeball: the team's strategy.
     if (main.kind === 'kubeball') {
       const pitch = this.pitch();
-      if (pitch) return playObjective(k, this.plays.get(k) ?? 'free', this.teamOf(k.team), this.plays, pitch);
+      if (pitch) return playObjective(k, this.plays.get(k) ?? 'free', this.teamOf(k.team), this.plays, pitch, this.fighters.filter((f) => f.team !== k.team));
     }
     const dist = (p: { x: number; y: number }) => Math.hypot(p.x - k.x, p.y - k.y);
     const at = (r: Phaser.Geom.Rectangle) => ({ x: r.centerX, y: r.centerY });
