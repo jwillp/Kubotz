@@ -152,6 +152,19 @@ export class ImpactFx {
     this.flashes.push({ x, y, color: 0xffe27a, intensity: 7, at: this.now });
   }
 
+  /** Two resting laser blades crossed: a few small sparks crackling where they touch, in both colours. */
+  bladeSparks(x: number, y: number, a: number, b: number): void {
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.12 * UNIT, grow: -0.08 * UNIT, life: 60 });
+    for (let i = 0; i < 4; i++) {
+      const ang = rand(0, Math.PI * 2);
+      const speed = rand(4, 11) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - rand(1, 3) * UNIT,
+        color: i === 0 ? 0xffffff : mix(i % 2 ? a : b, 0xffffff, 0.45), size: rand(2, 3.2), life: rand(130, 240), gravity: 24 * UNIT, drag: 0.08,
+      });
+    }
+  }
+
   /** A laser bolt ending on something. */
   pop(x: number, y: number, color: number): void {
     this.add({ kind: 'ring', x, y, color, size: 0.1 * UNIT, grow: 0.6 * UNIT, life: 180 });

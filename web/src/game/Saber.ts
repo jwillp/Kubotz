@@ -16,6 +16,8 @@ export const BLADE_TOUCH = 0.5 * UNIT;
 export const CLASH_RECOIL = 7 * UNIT;
 /** A lock keeps both frozen this far ahead, frame after frame. */
 export const LOCK_HOLD_MS = 80;
+/** Resting blades this close (px) are drawn crossing: they crackle (no collision). */
+export const BLADE_CROSS = 8;
 /** A lock needs this much damage between the two swings (a smash against a tilt, two smashes)... */
 export const LOCK_FORCE = 20;
 /** ...and blades crossing at least this square (degrees), not sliding along each other. */

@@ -6,7 +6,7 @@ import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../ga
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, hitlagMs } from '../game/Kubotz';
-import { BLADE_TOUCH, CLASH_RECOIL, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
+import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
@@ -102,6 +102,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Each swinging laser blade last frame and now, so blades and bolts sweeping past each other between frames still meet. */
   private bladeWas = new Map<Kubotz, Blade>();
   private bladeNow = new Map<Kubotz, Blade>();
+  /** Resting blades crossed: when each pair last crackled and buzzed. */
+  private crossedAt = new Map<string, { sparks: number; buzz: number }>();
   private nextBonusAt = 0;
   /** The title screen's power-up setting. */
   private bonusRate = BONUS_RATES.normal;
@@ -194,6 +196,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.lockPrompts = new Map();
     this.bladeWas = new Map();
     this.bladeNow = new Map();
+    this.crossedAt = new Map();
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
@@ -724,7 +727,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
     this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
-    this.recorder.watch(this.impact, ['hit', 'clash', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'bladeSparks', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
@@ -1216,6 +1219,30 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         }
       }
     }
+    this.crossRestingBlades(now);
+  }
+
+  /**
+   * Blades crossed while not both swinging don't collide (as in Smash, a
+   * sword is only solid in its attack), but they crackle: small sparks where
+   * they touch and a faint electric buzz.
+   */
+  private crossRestingBlades(now: number): void {
+    const armed = this.fighters.map((k) => ({ k, blade: k.isAlive() && !k.bladeLocked ? k.blade() : null }));
+    for (let i = 0; i < armed.length; i++) {
+      for (let j = i + 1; j < armed.length; j++) {
+        const { k: a, blade: ba } = armed[i];
+        const { k: b, blade: bb } = armed[j];
+        if (!ba || !bb || (this.bladeNow.has(a) && this.bladeNow.has(b))) continue;
+        const c = bladeContact(ba, bb);
+        if (c.dist > BLADE_CROSS) continue;
+        const key = `${i}:${j}`;
+        const t = this.crossedAt.get(key) ?? { sparks: -1e9, buzz: -1e9 };
+        if (now - t.sparks > 90) { t.sparks = now; this.impact.bladeSparks(c.x, c.y, a.look.color, b.look.color); }
+        if (now - t.buzz > 420) { t.buzz = now; this.playSfx('saber-clash', 0.07, Phaser.Math.Between(500, 900)); }
+        this.crossedAt.set(key, t);
+      }
+    }
   }
 
   /**
@@ -1337,18 +1364,32 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const [k, t] of this.lockPrompts) if (!locked.has(k)) t.setVisible(false);
   }
 
-  /** A laser bolt caught by an enemy's saber swing flies back off the blade, now that Kubot's (Saber.ts). */
+  /**
+   * A laser bolt meeting an enemy's laser blade (Saber.ts): a swing bats it
+   * back, now that Kubot's; a blade at rest just stops it.
+   */
   private deflect(b: Bullet, box: Phaser.Geom.Rectangle, now: number, dt: number): boolean {
     for (const k of this.fighters) {
       if (!k.isAlive() || k.intangible || !canHurt(b.shooter, k)) continue;
       const s = k.saberSwing();
-      if (!s) continue;
+      const resting = s ? null : k.blade();
+      if (!s && !resting) continue;
       // The bolt's path this frame, against the blade's sweep.
       const back = Math.abs(b.vx) * dt;
       const backY = Math.abs(b.vy) * dt;
       const reach = new Phaser.Geom.Rectangle(box.x - BLADE_TOUCH - back, box.y - BLADE_TOUCH - backY,
         box.width + 2 * (BLADE_TOUCH + back), box.height + 2 * (BLADE_TOUCH + backY));
       const touches = (bl: Blade) => Phaser.Geom.Intersects.LineToRectangle(new Phaser.Geom.Line(bl.x1, bl.y1, bl.x2, bl.y2), reach);
+      if (resting) {
+        // A resting blade only stops what actually runs into it (no swing's reach).
+        const path = new Phaser.Geom.Rectangle(box.x - back, box.y - backY, box.width + 2 * back, box.height + 2 * backY);
+        if (!Phaser.Geom.Intersects.LineToRectangle(new Phaser.Geom.Line(resting.x1, resting.y1, resting.x2, resting.y2), path)) continue;
+        this.impact.bladeSparks(b.x, b.y, b.shooter.look.color, k.look.color);
+        this.popBullet(b);
+        this.playSfx('saber-clash', 0.22, 500);
+        return true;
+      }
+      if (!s) continue;
       // Sent where the swing goes: forwards (backwards for a back swing, away for a spin), its launch angle flattened.
       const dir = s.box.both ? (b.x < k.x ? -1 : 1) : s.box.behind ? -k.facing : k.facing;
       // Through its active frames the swing covers the blade's reach on its side, like a reflector, not only the blade's edge.
