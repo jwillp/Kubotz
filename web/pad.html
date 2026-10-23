@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#05080f" />
+    <title>Kubotz pad</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root { --bg: #05080f; --plate: #121a2a; --plate-hi: #1c2740; --ink: #e8eefc; --dim: #7d8aa8; --red: #ff4a4a; --size: min(19vh, 10.5vw); }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; touch-action: none;
+        user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; font-family: 'Exo 2', system-ui, sans-serif; }
+      body { background: radial-gradient(ellipse at 50% 120%, #1a2440 0%, var(--bg) 70%); }
+      #pad { position: fixed; inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+      .btn { position: absolute; display: grid; place-items: center; border-radius: 50%; background: var(--plate);
+        box-shadow: inset 0 -4px 0 #0008, 0 0 0 1px #ffffff14; font-weight: 700; transition: transform 40ms, background 40ms; }
+      .btn b { font-size: calc(var(--size) * 0.36); line-height: 1; }
+      .btn small { position: absolute; bottom: 14%; font-size: calc(var(--size) * 0.14); color: var(--dim); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+      .btn.on { transform: scale(.93); background: var(--plate-hi); box-shadow: inset 0 2px 0 #0008, 0 0 18px var(--glow, #ff4a4a88); }
+      .face { width: var(--size); height: var(--size); }
+      .face.a { --glow: #4fe08a99; } .face.a b { color: #4fe08a; }
+      .face.b { --glow: #ff4a4a99; } .face.b b { color: #ff5a5a; }
+      .face.x { --glow: #4aa8ff99; } .face.x b { color: #57a9ff; }
+      .face.y { --glow: #ffd24a99; } .face.y b { color: #ffd24a; }
+      #faces { position: absolute; right: 4vw; bottom: 6vh; width: calc(var(--size) * 2.9); height: calc(var(--size) * 2.9); }
+      .a { left: 50%; bottom: 0; transform: translateX(-50%); } .a.on { transform: translateX(-50%) scale(.93); }
+      .y { left: 50%; top: 0; transform: translateX(-50%); } .y.on { transform: translateX(-50%) scale(.93); }
+      .x { left: 0; top: 50%; transform: translateY(-50%); } .x.on { transform: translateY(-50%) scale(.93); }
+      .b { right: 0; top: 50%; transform: translateY(-50%); } .b.on { transform: translateY(-50%) scale(.93); }
+
+      .shoulder { top: 3vh; width: calc(var(--size) * 1.35); height: calc(var(--size) * 0.62); border-radius: 14px; }
+      .shoulder b { font-size: calc(var(--size) * 0.22); }
+      .shoulder small { position: static; display: block; font-size: calc(var(--size) * 0.12); }
+      .shoulder span { text-align: center; }
+      .lt { left: 3vw; } .lb { left: calc(3vw + var(--size) * 1.5); }
+      .rt { right: 3vw; } .rb { right: calc(3vw + var(--size) * 1.5); }
+
+      .small { width: calc(var(--size) * 0.9); height: calc(var(--size) * 0.42); border-radius: 999px; top: 4vh; }
+      .small b { font-size: calc(var(--size) * 0.15); letter-spacing: .06em; }
+      .select { left: calc(50% - var(--size) * 1); } .start { left: calc(50% + var(--size) * 0.1); }
+      .taunt { width: calc(var(--size) * 0.9); height: calc(var(--size) * 0.42); border-radius: 999px; left: calc(50% - var(--size) * 0.45); bottom: 6vh; }
+      .taunt b { font-size: calc(var(--size) * 0.15); letter-spacing: .06em; }
+
+      #stickZone { position: absolute; left: 0; top: 22vh; bottom: 0; width: 46vw; }
+      #base { position: absolute; width: calc(var(--size) * 2.2); height: calc(var(--size) * 2.2); border-radius: 50%; margin: calc(var(--size) * -1.1) 0 0 calc(var(--size) * -1.1);
+        background: radial-gradient(circle, #0a1020 0%, #121a2a 70%); box-shadow: 0 0 0 1px #ffffff14, inset 0 0 24px #0009; left: 22vw; top: 45%; pointer-events: none; }
+      #knob { position: absolute; left: 50%; top: 50%; width: calc(var(--size) * 1); height: calc(var(--size) * 1); margin: calc(var(--size) * -0.5) 0 0 calc(var(--size) * -0.5);
+        border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2a3756, #161f33); box-shadow: inset 0 -4px 0 #0008, 0 0 0 1px #ffffff22; }
+      #base.on #knob { box-shadow: inset 0 -4px 0 #0008, 0 0 18px #ff4a4a77; }
+      #hint { position: absolute; left: 22vw; top: calc(45% + var(--size) * 1.25); transform: translateX(-50%); color: var(--dim); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; pointer-events: none; }
+
+      #status { position: absolute; left: 50%; top: calc(4vh + var(--size) * 0.55); transform: translateX(-50%); text-align: center; font-size: 13px; color: var(--dim); white-space: nowrap; pointer-events: none; }
+      #status strong { display: block; font-size: 20px; color: var(--ink); letter-spacing: .06em; }
+      #status.off strong { color: var(--red); }
+
+      #turn { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; background: var(--bg); font-size: 18px; color: var(--dim); }
+      #turn strong { display: block; color: var(--ink); font-size: 26px; margin-bottom: 8px; }
+      @media (orientation: portrait) { #turn { display: grid; } }
+    </style>
+  </head>
+  <body>
+    <div id="pad">
+      <div id="stickZone"><div id="base"><div id="knob"></div></div><div id="hint">Move</div></div>
+
+      <div class="btn shoulder lt" data-btn="6"><span><b>LT</b><small>Shield</small></span></div>
+      <div class="btn shoulder lb" data-btn="4"><span><b>LB</b><small>Grab</small></span></div>
+      <div class="btn shoulder rb" data-btn="5"><span><b>RB</b><small>Grab</small></span></div>
+      <div class="btn shoulder rt" data-btn="7"><span><b>RT</b><small>Shield</small></span></div>
+
+      <div class="btn small select" data-btn="8"><b>QUIT</b></div>
+      <div class="btn small start" data-btn="9"><b>START</b></div>
+      <div id="status" class="off"><strong>Connecting</strong><span id="detail">looking for the game</span></div>
+      <div class="btn taunt" data-btn="12"><b>TAUNT</b></div>
+
+      <div id="faces">
+        <div class="btn face y" data-btn="3"><b>Y</b><small>Jump</small></div>
+        <div class="btn face x" data-btn="2"><b>X</b><small>Legs</small></div>
+        <div class="btn face b" data-btn="1"><b>B</b><small>Jump</small></div>
+        <div class="btn face a" data-btn="0"><b>A</b><small>Fists</small></div>
+      </div>
+    </div>
+    <div id="turn"><div><strong>Turn your phone sideways</strong>The pad is laid out like a gamepad.</div></div>
+    <script type="module" src="/src/pad/main.ts"></script>
+  </body>
+</html>

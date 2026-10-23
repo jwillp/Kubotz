@@ -13,10 +13,13 @@ import { ResultsScene } from './scenes/ResultsScene';
 import { ShutterScene } from './ui/Plate';
 import { installFullscreen } from './ui/Fullscreen';
 import { useEditedData, useKeptEdits } from './game/EditedData';
+import { installPhonePads } from './net/PhonePads';
 
 // Dev builds: the edits saved in this browser; opened from the editor's "Test in game": its data.
 useKeptEdits();
 useEditedData();
+// Phones on the same network as gamepads (pad.html, through the dev server's relay).
+installPhonePads();
 
 // 1280x768 (5:3), the resolution of the original HUD mock-up and close to its 80x48 viewport.
 const game = new Phaser.Game({

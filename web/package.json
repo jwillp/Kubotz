@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "pads": "vite --host 0.0.0.0 --port 5180 --strictPort",
     "editor": "vite --open /editor.html",
     "build:editor": "tsc --noEmit && KUBOTZ_EDITOR=1 vite build",
     "build": "tsc --noEmit && vite build",
@@ -17,8 +18,10 @@
     "planck": "^1.5.0"
   },
   "devDependencies": {
+    "@types/ws": "^8.18.2",
     "typescript": "5.9.3",
     "vite": "7.1.12",
-    "vitest": "3.2.4"
+    "vitest": "3.2.4",
+    "ws": "^8.22.0"
   }
 }

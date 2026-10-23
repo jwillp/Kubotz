@@ -19,6 +19,7 @@ import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
 import { BACKDROPS, backdropOf } from '../fx/Backdrops';
 import { uiSound } from '../audio/Sounds';
+import { phoneName } from '../net/PhonePads';
 
 /**
  * What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody.
@@ -64,7 +65,7 @@ const deviceLabel = (s: Seat): string => {
   if (d === 'CPU') return `CPU Lv ${s.level}`;
   if (d === 'OFF') return 'Off';
   if (d === 'PAD') return 'Gamepad';
-  return `Gamepad ${d + 1}`;
+  return phoneName(d) ?? `Gamepad ${d + 1}`;
 };
 const deviceBlurb = (s: Seat): string => {
   const d = s.device;

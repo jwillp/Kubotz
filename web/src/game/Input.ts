@@ -117,7 +117,7 @@ export class HumanController implements Controller {
    * @param binding keyboard keys, or null for a gamepad-only player
    * @param padIndex the gamepad merged in (-1: none)
    */
-  constructor(private scene: Phaser.Scene, binding: KeyBinding | null, readonly label: 'P1' | 'P2', private padIndex: number, readonly name?: string) {
+  constructor(private scene: Phaser.Scene, binding: KeyBinding | null, readonly label: 'P1' | 'P2', readonly padIndex: number, readonly name?: string) {
     const kb = scene.input.keyboard!;
     const keyboard = binding !== null;
     const make = (names: string[]) => (keyboard ? names.map((n) => kb.addKey(n, true)) : []);

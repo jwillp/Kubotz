@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { phonePads } from './tools/phone-pads';
 
 const DATA = resolve(__dirname, 'src/data');
 
@@ -66,11 +67,11 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     define: { __ASSETS_VERSION__: JSON.stringify(publicHash()), __EDITOR__: JSON.stringify(editor) },
-    plugins: [editorSave()],
+    plugins: [editorSave(), phonePads()],
     build: {
       outDir: editor ? 'dist-editor' : 'dist',
       chunkSizeWarningLimit: 2000,
-      rollupOptions: { input: { main: resolve(__dirname, 'index.html'), ...(editor ? { editor: resolve(__dirname, 'editor.html') } : {}) } },
+      rollupOptions: { input: { main: resolve(__dirname, 'index.html'), pad: resolve(__dirname, 'pad.html'), ...(editor ? { editor: resolve(__dirname, 'editor.html') } : {}) } },
     },
   };
 });
