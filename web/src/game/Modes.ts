@@ -66,10 +66,9 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   kubeball: {
     group: 'battle',
     name: 'Kubeball',
-    tagline: 'Red against blue, one ball, two goals.',
-    rules: ['A laser sword for everyone, all match', 'Grab the ball and throw it; no swinging with it', 'Any hit knocks it loose; goals high on the walls', 'Goals or time: you choose'],
+    tagline: 'Red against black, one ball, two goals.',
+    rules: ['Grab the ball, run it up, throw it in the goal', 'No attacks with it in hand; any hit knocks it loose', 'After a goal only the ball goes back to the middle', 'Goals or time: you choose'],
     ball: 'kubeball',
-    armed: 'laserSword',
   },
   skychase: {
     group: 'battle',
@@ -159,7 +158,7 @@ export function hordeWave(n: number, players: number): { count: number; level: n
 }
 
 /** Ball games: each team is filled up to this many with CPUs. */
-export const BALL_TEAM_SIZE = 3;
+export const BALL_TEAM_SIZE = 4;
 /** Ball games: the score to reach, picked on the setup screen (0: no limit, time decides). */
 export const KUBEBALL_GOALS = [3, 5, 7, 10, 0];
 export const SKYCHASE_POINTS = [100, 150, 200, 0];

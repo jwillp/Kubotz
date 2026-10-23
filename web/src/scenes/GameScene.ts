@@ -9,6 +9,7 @@ import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../g
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
+import { assignPlays, playObjective, TACTIC_ORDER, TACTICS, type Pitch, type Play, type Tactic } from '../game/Tactics';
 import { Bullet } from '../game/Combat';
 import { BLACK_COLOR, BLACK_TEAM, BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, isBlackTeam, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
 import { BALL_TEAM_SIZE, CORE_POINTS, SKYCHASE_GRAVITY, SKYCHASE_JUMPS, SPARK_POINTS, CTF_CAPTURES, CTF_DAMAGE, CTF_GUARDIANS, CTF_INTERCEPTORS, DUMMY_MODES, TRAINING_RECHARGES, trainingFoes, HORDE_BONUS_EVERY, HORDE_TEAM, HORDE_WAVES, hordeWave, MODES, type MatchMode } from '../game/Modes';
@@ -130,6 +131,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Ball games: the balls (the ball or the Core first), the goals and their teams, and the score to reach (0: none). */
   balls: GameBall[] = [];
   private goals: { team: number; zone: Phaser.Geom.Rectangle }[] = [];
+  /** Kubeball: each team's strategy, everyone's play in it (handed out again every second), and when next. */
+  private tactics = new Map<number, Tactic>();
+  private plays = new Map<Kubotz, Play>();
+  private nextPlaysAt = 0;
+  private tacticsShown = false;
   /** Skychase: the drones' laser bolts in flight, and what draws them. */
   private droneShots: { x: number; y: number; vx: number; vy: number; until: number }[] = [];
   private droneLasers?: Phaser.GameObjects.Graphics;
@@ -193,6 +199,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.goals = [];
     this.droneShots = [];
     this.droneLasers = undefined;
+    this.tactics = new Map();
+    this.plays = new Map();
+    this.nextPlaysAt = 0;
+    this.tacticsShown = false;
     this.defeated = 0;
     this.nextFoeAt = 0;
   }
@@ -1496,6 +1506,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         k.armed = k.weapon = MODES[this.mode].armed ?? 'none'; // Kubeball: swords for all
       }
     }
+    // Kubeball: each team plays a strategy, picked at random for the match.
+    if (!sky) for (const team of [0, BLACK_TEAM]) this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER));
     const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
     this.balls = [new GameBall(this, this.physicsWorld, sky ? 'core' : 'kubeball', spot)];
     if (sky) {
@@ -1518,7 +1530,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (k.ball) {
       // Up throws high and a little forwards (the goals are high), down drops it, else a long throw. A CPU throws up at a goal above it.
       const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).sort((a, b) => Math.abs(a.centerX - k.x) - Math.abs(b.centerX - k.x))[0];
-      const up = k.pad.up || (k.controller.label === 'CPU' && !!goal && goal.centerY < k.y - 2 * UNIT);
+      // A CPU in reach of the goal aims at its middle: an arc that gets there in flight (the ball falls under the world's gravity).
+      if (k.controller.label === 'CPU' && goal && Math.abs(goal.centerX - k.x) < 12 * UNIT) {
+        // Not perfect: off by up to two units high or low, more from further away.
+        const miss = Phaser.Math.FloatBetween(-1, 1) * (1 + Math.abs(goal.centerX - k.x) / (10 * UNIT)) * UNIT;
+        const dx = goal.centerX - k.x; const dy = goal.centerY + miss - k.y;
+        const t = Math.max(0.25, Math.abs(dx) / (13 * UNIT));
+        k.ball.release(now, dx / t, (dy - 0.5 * Config.GRAVITY * UNIT * t * t) / t);
+        this.playSfx('orb-bounce', 0.5, 300);
+        return true;
+      }
+      const up = k.pad.up;
       const vy = up ? -17 * UNIT : k.pad.down ? 6 * UNIT : -6 * UNIT;
       k.ball.release(now, k.facing * (up ? 11 : 17) * UNIT + k.body.vx * 0.4, vy);
       this.playSfx('orb-bounce', 0.5, 300);
@@ -1543,17 +1565,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.endMatch(a === b ? null : a > b ? 0 : BLACK_TEAM, now);
       return;
     }
-    const main = this.balls[0];
-    main.reset(now + 1200);
-    if (main.kind === 'kubeball') {
-      // Kickoff: everyone back to their end.
-      for (const k of this.fighters) {
-        if (!k.isAlive()) continue;
-        const spawn = Phaser.Utils.Array.GetRandom(this.teamSpawns(k.team));
-        k.respawn(spawn.x + Phaser.Math.Between(-12, 12), spawn.y);
-        this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), spawn.y);
-      }
-    }
+    // Only the ball goes back to the middle: everyone runs back for it.
+    this.balls[0].reset(now + 1200);
   }
 
   /**
@@ -1564,6 +1577,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private updateBallGame(now: number): void {
     if (!this.balls.length || this.winnerTeam !== undefined) return;
     const fighting = now >= this.startedAt;
+    if (this.tactics.size) this.updatePlays(now);
     // Skychase: the Spark comes out after a while, high over the middle.
     if (MODES[this.mode].ball === 'skychase' && !this.balls.some((b) => b.kind === 'spark') && now >= this.startedAt + SPARK_AFTER_MS) {
       this.balls.push(new GameBall(this, this.physicsWorld, 'spark', { x: this.ballSpot.x, y: 6 * UNIT }));
@@ -1661,9 +1675,44 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
    * Otherwise: escort a teammate with the ball, go after an enemy with it,
    * or go and get it.
    */
+  /** Kubeball: the plays handed out again (every second, as the players move), and both strategies announced once it starts. */
+  private updatePlays(now: number): void {
+    if (!this.tacticsShown && now >= this.startedAt + 1300) {
+      this.tacticsShown = true;
+      this.events.emit('goal', -1, `RED: ${TACTICS[this.tactics.get(0)!]}   ·   BLACK: ${TACTICS[this.tactics.get(BLACK_TEAM)!]}`.toUpperCase());
+    }
+    if (now < this.nextPlaysAt) return;
+    this.nextPlaysAt = now + 1000;
+    const pitch = this.pitch();
+    if (!pitch) return;
+    this.plays = new Map();
+    for (const [team, tactic] of this.tactics) {
+      for (const [k, play] of assignPlays(this.teamOf(team), tactic, pitch)) this.plays.set(k, play);
+    }
+  }
+
+  /** Kubeball's pitch, as the plays see it. */
+  private pitch(): Pitch | null {
+    const ball = this.balls[0];
+    const goal = (team: number) => { const r = this.goalsOf(team)[0]; return { x: r?.centerX ?? 0, y: r?.centerY ?? 0 }; };
+    if (!ball || !this.goals.length) return null;
+    return {
+      ball,
+      ownGoal: (team) => goal(team),
+      enemyGoal: (team) => goal(team === 0 ? BLACK_TEAM : 0),
+      width: this.map.width * UNIT,
+      ground: (x, y) => this.solids.filter((r) => x >= r.x && x <= r.right && r.y >= y - 4).reduce((top, r) => Math.min(top, r.y), this.map.height * UNIT),
+    };
+  }
+
   private ballObjective(k: Kubotz): Objective | null {
     const main = this.balls[0];
     if (!main) return null;
+    // Kubeball: the team's strategy.
+    if (main.kind === 'kubeball') {
+      const pitch = this.pitch();
+      if (pitch) return playObjective(k, this.plays.get(k) ?? 'free', this.teamOf(k.team), this.plays, pitch);
+    }
     const dist = (p: { x: number; y: number }) => Math.hypot(p.x - k.x, p.y - k.y);
     const at = (r: Phaser.Geom.Rectangle) => ({ x: r.centerX, y: r.centerY });
     if (k.ball) {

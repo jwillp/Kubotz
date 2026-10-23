@@ -260,7 +260,8 @@ export class CpuController implements Controller {
       this.stuckSince = 0;
     }
     this.lastX = me.x;
-    const stuck = this.stuckSince && now - this.stuckSince > 250;
+    // Held up a while (not a teammate brushing past): hop over it.
+    const stuck = this.stuckSince && now - this.stuckSince > 600;
 
     if (dy < -1.2 * UNIT || stuck || me.body.wall !== 0) pad.up = true;
     else if (dy > 2 * UNIT && close) pad.down = true;

@@ -42,10 +42,10 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
     { color: BLACK_COLOR, helmet: 3, weapon: 'weapon_laserSword', flag: SLOT_COLORS[0], face: -1 },
   ],
   kubeball: [
-    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', face: 1 },
-    { color: SLOT_COLORS[0], helmet: 8, weapon: 'weapon_laserSword', face: 1 },
-    { color: BLACK_COLOR, helmet: 3, weapon: 'weapon_laserSword', face: -1 },
-    { color: BLACK_COLOR, helmet: 3, weapon: 'weapon_laserSword', face: -1 },
+    { color: SLOT_COLORS[0], helmet: 0, face: 1 },
+    { color: SLOT_COLORS[0], helmet: 8, face: 1 },
+    { color: BLACK_COLOR, helmet: 3, face: -1 },
+    { color: BLACK_COLOR, helmet: 3, face: -1 },
   ],
   skychase: [
     { color: SLOT_COLORS[0], helmet: 8, face: 1 },
