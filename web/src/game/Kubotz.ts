@@ -460,10 +460,7 @@ export class Kubotz implements Damageable, Teamed {
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
     this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
-    // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
-    // Neon: a brighter, wider halo in the neon version of that colour.
-    if (neon.on) this.model.view.postFX?.addGlow(neonColor(color), 1.5, 0, false, 0.1, 10);
-    else this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
+    this.restyle();
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
@@ -1731,6 +1728,21 @@ export class Kubotz implements Damageable, Teamed {
       }
       g.fillStyle(this.look.color, 1).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
     }
+  }
+
+  private halo?: Phaser.FX.Glow;
+
+  /**
+   * A soft outer glow in the player's colour, so Kubotz stay apart in a close
+   * fight (WebGL only); neon: a brighter, wider halo in the neon version of
+   * that colour. Called again when the look changes (the parts follow on their own).
+   */
+  restyle(): void {
+    const fx = this.model.view.postFX;
+    if (!fx) return;
+    if (this.halo) fx.remove(this.halo);
+    const color = this.look.color;
+    this.halo = neon.on ? fx.addGlow(neonColor(color), 1.5, 0, false, 0.1, 10) : fx.addGlow(color, 0.7, 0, false, 0.1, 6);
   }
 
   destroy(): void {
