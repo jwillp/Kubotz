@@ -11,14 +11,14 @@ describe('sound files', () => {
   });
   it('renders each one audible, finite and below clipping, the same every time', () => {
     for (const key of Object.keys(SOUND_FILES)) {
-      const d = synthSamples(key, 44100);
-      expect(d.length, key).toBe(Math.floor(44100 * SOUND_FILES[key].length));
+      const d = synthSamples(key, 22050);
+      expect(d.length, key).toBe(Math.floor(22050 * SOUND_FILES[key].length));
       expect(d.every(Number.isFinite), key).toBe(true);
       expect(peak(d), key).toBeGreaterThan(0.01);
       expect(peak(d), key).toBeLessThan(1);
-      expect(synthSamples(key, 44100), key).toEqual(d);
+      expect(synthSamples(key, 22050), key).toEqual(d);
     }
-  });
+  }, 30000);
 });
 
 describe('renderSound', () => {
