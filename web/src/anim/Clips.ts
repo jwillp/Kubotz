@@ -65,11 +65,16 @@ const YAY: Pose = {
   ...S, torso: 94, head: 100, y: 6, shoulderF: 82, armF: 92, handF: 96, shoulderB: -62, armB: -24, handB: -10,
   thighF: -56, legF: -94, thighB: -110, legB: -120,
 };
+/** READY with both fists up in a boxer's guard, between the hits of the jab combo. */
+const GUARD: Pose = { ...READY, torso: 78, head: 86, shoulderF: -66, armF: 52, handF: 62, shoulderB: -78, armB: 58, handB: 68 };
 /** Knees to the chest, in the air. */
 const TUCK: Pose = {
   torso: 75, head: 80, thighF: 10, legF: -120, footF: -100, thighB: -20, legB: -140, footB: -110,
   shoulderF: -40, armF: 40, shoulderB: -30, armB: 20,
 };
+
+/** Upright in the air, knees bent, for the fist aerials. */
+const AIR: Pose = { torso: 84, head: 90, tilt: 6, thighF: -40, legF: -110, footF: -90, thighB: -120, legB: -150, footB: -120, shoulderF: -60, armF: 40, shoulderB: -70, armB: 30 };
 
 const FIELDS = [...BONES, 'x', 'y', 'tilt', 'spin', 'yaw'] as const;
 
@@ -167,10 +172,22 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
+  /**
+   * Grab (Fox, 36 frames): both hands drawn to the hip, then a low two-handed
+   * snatch out in front with a step (frame 6); held, then back.
+   */
   grab: clip('grab', 300, [
     { t: 0, pose: FIGHT },
-    { t: 0.4, pose: { ...READY, tilt: 10, x: 20, torso: 80, shoulderF: -5, armF: 0, handF: 0, shoulderB: 0, armB: 5, handB: 5, thighF: -35, legF: -90 }, ease: 'snap' },
-    { t: 1, pose: FIGHT },
+    { t: 0.16, pose: { ...READY, torso: 84, head: 88, shoulderF: -110, armF: -40, handF: -20, shoulderB: -118, armB: -50, handB: -30 }, ease: 'out' },
+    { t: 0.4, pose: {
+    ...READY, tilt: 10, x: 24, torso: 72, head: 80, shoulderF: -10, armF: -6, handF: -2, shoulderB: -4, armB: 0, handB: 4,
+    thighF: -28, legF: -90, thighB: -138, legB: -130,
+  }, ease: 'snap' },
+    { t: 0.62, pose: {
+    ...READY, tilt: 10, x: 26, torso: 73, head: 81, shoulderF: -12, armF: -8, handF: -4, shoulderB: -6, armB: -2, handB: 2,
+    thighF: -28, legF: -90, thighB: -138, legB: -130,
+  } },
+    { t: 1, pose: { ...FIGHT, x: 16 }, ease: 'inOut' },
   ]),
 
   shoot: clip('shoot', 260, [
@@ -180,45 +197,257 @@ export const CLIPS: Record<string, Clip> = {
   ]),
 
   // -------------------------------------------------------------- combat
-  /** Combo 1: a palm strike, stepping in. */
-  jab: clip('jab', 260, [
+  /**
+   * Jab 1 (Fox, 17 frames): a snapped lead straight, out on frame 2 and
+   * held to frame 4, then the fist comes back to the guard.
+   */
+  jab1: clip('jab1', 283, [
     { t: 0, pose: FIGHT },
-    { t: 0.2, pose: { ...READY, torso: 82, x: -8, shoulderF: -70, armF: 70, handF: 80, shoulderB: -100, armB: -60 }, ease: 'out' },
-    { t: 0.42, pose: { ...READY, torso: 66, tilt: 10, x: 38, shoulderF: 2, armF: 4, handF: 70, shoulderB: -150, armB: -170, thighF: -26, legF: -92, thighB: -140, legB: -130 }, ease: 'snap' },
-    { t: 0.7, pose: { ...READY, torso: 67, tilt: 10, x: 40, shoulderF: -2, armF: 0, handF: 66, shoulderB: -148, armB: -168, thighF: -26, legF: -92, thighB: -140, legB: -130 } },
-    { t: 1, pose: { ...READY, x: 30 }, ease: 'inOut' },
+    { t: 0.12, pose: {
+    ...GUARD, torso: 72, head: 82, tilt: 10, x: 22, shoulderF: 6, armF: 4, handF: 8,
+    thighF: -30, legF: -100, thighB: -134, legB: -124,
+  }, ease: 'snap' },
+    { t: 0.3, pose: {
+    ...GUARD, torso: 73, head: 83, tilt: 10, x: 24, shoulderF: 2, armF: 0, handF: 4,
+    thighF: -30, legF: -100, thighB: -134, legB: -124,
+  } },
+    { t: 0.66, pose: { ...GUARD, x: 16 }, ease: 'inOut' },
+    { t: 1, pose: { ...GUARD, x: 16 } },
   ]),
 
-  /** Combo 2: a spinning back fist, the whole body whipping round. */
-  cross: clip('cross', 360, [
-    { t: 0, pose: { ...READY, x: 30 } },
-    { t: 0.2, pose: { ...READY, yaw: 110, torso: 82, x: 36, shoulderB: -70, armB: 40, handB: 50, shoulderF: -110, armF: -50 }, ease: 'in' },
-    { t: 0.46, pose: {
-    ...READY, yaw: 335, torso: 76, head: 84, tilt: 8, x: 74, shoulderB: 2, armB: 4, handB: 4, shoulderF: -150, armF: -150,
-    thighF: -30, legF: -90, thighB: -142, legB: -132,
-  }, ease: 'out' },
-    { t: 0.75, pose: {
-    ...READY, yaw: 360, torso: 77, head: 85, tilt: 8, x: 78, shoulderB: -2, armB: 0, handB: 0, shoulderF: -148, armF: -148,
-    thighF: -30, legF: -90, thighB: -142, legB: -132,
+  /**
+   * Jab 2 (Fox, 20 frames): the rear straight, the hips and shoulder driven
+   * through so the body leans into it (the shoulders turn towards the
+   * viewer so the back fist clears the helmet); out on frame 2.
+   */
+  jab2: clip('jab2', 333, [
+    { t: 0, pose: { ...GUARD, x: 16 } },
+    { t: 0.1, pose: {
+    ...GUARD, yaw: 35, torso: 60, head: 76, tilt: 14, x: 50, shoulderB: 6, armB: 4, handB: 8, shoulderF: -150, armF: 30, handF: 40,
+    thighF: -22, legF: -88, thighB: -144, legB: -134,
+  }, ease: 'snap' },
+    { t: 0.3, pose: {
+    ...GUARD, yaw: 35, torso: 61, head: 77, tilt: 14, x: 52, shoulderB: 2, armB: 0, handB: 4, shoulderF: -150, armF: 30, handF: 40,
+    thighF: -22, legF: -88, thighB: -144, legB: -134,
   } },
-    { t: 1, pose: { ...READY, yaw: 360, x: 70 }, ease: 'inOut' },
+    { t: 0.7, pose: { ...GUARD, x: 44 }, ease: 'inOut' },
+    { t: 1, pose: { ...GUARD, x: 44 } },
   ]),
 
-  /** Combo 3: a jumping spin hook kick that launches. */
-  kick: clip('kick', 460, [
-    { t: 0, pose: { ...READY, x: 70 } },
-    { t: 0.2, pose: { ...CROUCH, x: 74, y: -6, torso: 70, shoulderF: -140, armF: -120, shoulderB: -40, armB: 40 }, ease: 'out' },
-    { t: 0.48, pose: {
-    torso: 112, head: 104, tilt: -8, x: 140, y: 60, yaw: 345,
-    thighF: 26, legF: 30, footF: 55, thighB: -110, legB: -160, footB: -140,
-    shoulderF: 160, armF: 175, shoulderB: -175, armB: -170,
+  /**
+   * Jab finisher (Fox, 38 frames): from the guard the front knee chambers
+   * and snaps out into a high side kick on frame 3, the body leaning away
+   * and the arms pulled in for balance; held, re-chambered, set down.
+   */
+  jabEnd: clip('jabEnd', 633, [
+    { t: 0, pose: { ...GUARD, x: 44 } },
+    { t: 0.045, pose: {
+    ...GUARD, torso: 96, head: 96, tilt: -4, x: 48, thighF: 46, legF: -128, footF: -108,
+    shoulderF: -120, armF: -30, shoulderB: -140, armB: -70,
   }, ease: 'out' },
-    { t: 0.76, pose: {
-    torso: 106, head: 100, tilt: -6, x: 150, y: 30, yaw: 360,
-    thighF: 14, legF: 4, footF: 30, thighB: -112, legB: -158, footB: -136,
-    shoulderF: 150, armF: 165, shoulderB: -170, armB: -165,
+    { t: 0.1, pose: {
+    torso: 126, head: 104, tilt: -12, x: 78, thighF: 16, legF: 12, footF: 36, thighB: -102, legB: -114, footB: -92,
+    shoulderF: -100, armF: 70, handF: 80, shoulderB: -150, armB: -118, handB: -110,
+  }, ease: 'snap' },
+    { t: 0.34, pose: {
+    torso: 124, head: 103, tilt: -11, x: 82, thighF: 12, legF: 8, footF: 32, thighB: -102, legB: -114, footB: -92,
+    shoulderF: -98, armF: 72, handF: 82, shoulderB: -148, armB: -116, handB: -108,
   } },
-    { t: 1, pose: { ...READY, x: 146, yaw: 360 }, ease: 'inOut' },
+    { t: 0.56, pose: { ...GUARD, torso: 98, head: 96, tilt: -4, x: 84, thighF: 40, legF: -124, footF: -104 }, ease: 'inOut' },
+    { t: 1, pose: { ...GUARD, x: 92 }, ease: 'inOut' },
+  ]),
+
+  // ------------------------------------------- fist moves (A), Fox's timings
+  /** Fist forward tilt (Fox's 23 frames): a coiled stepping hook, the shoulders swung through. */
+  pftilt: clip('pftilt', 383, [
+    { t: 0, pose: FIGHT },
+    { t: 0.18, pose: { ...GUARD, torso: 92, head: 92, x: -4, shoulderF: -130, armF: 20, handF: 30 }, ease: 'out' },
+    { t: 0.28, pose: {
+    ...GUARD, torso: 70, head: 80, tilt: 12, x: 40, shoulderF: 6, armF: 28, handF: 38, shoulderB: -130, armB: -40, handB: -30,
+    thighF: -24, legF: -90, thighB: -142, legB: -132,
+  }, ease: 'snap' },
+    { t: 0.42, pose: {
+    ...GUARD, torso: 71, head: 81, tilt: 12, x: 42, shoulderF: 4, armF: 26, handF: 36, shoulderB: -128, armB: -38, handB: -28,
+    thighF: -24, legF: -90, thighB: -142, legB: -132,
+  } },
+    { t: 1, pose: { ...GUARD, x: 36 }, ease: 'inOut' },
+  ]),
+
+  /** Fist down tilt (Fox's 27 frames): crouched, the fist drawn to the hip and driven at the shins. */
+  pdtilt: clip('pdtilt', 450, [
+    { t: 0, pose: CROUCH },
+    { t: 0.16, pose: { ...CROUCH, torso: 90, head: 92, tilt: -2, shoulderF: -150, armF: -30, handF: -20, shoulderB: -60, armB: 50 }, ease: 'out' },
+    { t: 0.26, pose: {
+    ...CROUCH, torso: 50, head: 64, tilt: 12, x: 26, shoulderF: -40, armF: -42, handF: -40, shoulderB: -150, armB: -100,
+    thighF: -4, legF: -120, footF: -96, thighB: -90, legB: -165, footB: -110,
+  }, ease: 'snap' },
+    { t: 0.42, pose: {
+    ...CROUCH, torso: 51, head: 65, tilt: 12, x: 28, shoulderF: -42, armF: -44, handF: -42, shoulderB: -150, armB: -100,
+    thighF: -4, legF: -120, footF: -96, thighB: -90, legB: -165, footB: -110,
+  } },
+    { t: 1, pose: { ...CROUCH, x: 22 }, ease: 'inOut' },
+  ]),
+
+  /** Fist dash attack (Fox's 31 frames): a flying punch, the body stretched flat behind the fist. */
+  pdash: clip('pdash', 517, [
+    { t: 0, pose: READY },
+    { t: 0.1, pose: { ...CROUCH, torso: 70, head: 76, x: 12, shoulderF: -140, armF: -100, shoulderB: -40, armB: 20 }, ease: 'out' },
+    { t: 0.14, pose: {
+    tilt: 34, torso: 40, head: 52, x: 80, y: 40, shoulderF: 10, armF: 8, handF: 8, shoulderB: -170, armB: -176, handB: -170,
+    thighF: -150, legF: -158, footF: -150, thighB: -168, legB: -174, footB: -160,
+  }, ease: 'snap' },
+    { t: 0.5, pose: {
+    tilt: 30, torso: 42, head: 54, x: 160, y: 26, shoulderF: 8, armF: 6, handF: 6, shoulderB: -168, armB: -174, handB: -168,
+    thighF: -140, legF: -150, footF: -140, thighB: -160, legB: -170, footB: -156,
+  } },
+    { t: 0.68, pose: { ...CROUCH, torso: 70, x: 182 }, ease: 'in' },
+    { t: 1, pose: { ...READY, x: 186 }, ease: 'inOut' },
+  ]),
+
+  /** Fist up smash (Fox's 55 frames, held on frame 2): a coil, then a leaping double uppercut. */
+  pusmash: clip('pusmash', 917, [
+    { t: 0, pose: FIGHT },
+    { t: 0.036, pose: { ...CROUCH, torso: 70, head: 74, y: -10, shoulderF: -150, armF: -130, shoulderB: -150, armB: -130 }, ease: 'out' },
+    { t: 0.145, pose: {
+    torso: 92, head: 100, y: 44, x: 10, thighF: -78, legF: -96, footF: -96, thighB: -104, legB: -114, footB: -100,
+    shoulderF: 86, armF: 90, handF: 92, shoulderB: 80, armB: 88, handB: 92,
+  }, ease: 'snap' },
+    { t: 0.26, pose: {
+    torso: 93, head: 101, y: 48, x: 10, thighF: -80, legF: -98, footF: -98, thighB: -104, legB: -116, footB: -100,
+    shoulderF: 88, armF: 92, handF: 94, shoulderB: 82, armB: 90, handB: 94,
+  } },
+    { t: 0.42, pose: { ...CROUCH, torso: 76, y: -4, x: 10 }, ease: 'in' },
+    { t: 1, pose: { ...FIGHT, x: 10 }, ease: 'inOut' },
+  ]),
+
+  /** Fist down smash (Fox's 52 frames, held on frame 2): fists raised, then both slam the floor, one each side. */
+  pdsmash: clip('pdsmash', 867, [
+    { t: 0, pose: FIGHT },
+    { t: 0.04, pose: { ...READY, torso: 96, head: 100, y: 6, shoulderF: 120, armF: 100, handF: 100, shoulderB: 110, armB: 95, handB: 95 }, ease: 'out' },
+    { t: 0.115, pose: {
+    ...CROUCH, torso: 74, head: 70, y: -20, thighF: 10, legF: -110, footF: -92, thighB: -120, legB: -175, footB: -130,
+    shoulderF: -50, armF: -86, handF: -90, shoulderB: -130, armB: -94, handB: -90,
+  }, ease: 'snap' },
+    { t: 0.3, pose: {
+    ...CROUCH, torso: 75, head: 71, y: -19, thighF: 10, legF: -110, footF: -92, thighB: -120, legB: -175, footB: -130,
+    shoulderF: -52, armF: -88, handF: -92, shoulderB: -128, armB: -92, handB: -88,
+  } },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Fist neutral air (Fox's 38 frames): a spin with both fists flung out, front and back. */
+  pnair: clip('pnair', 633, [
+    { t: 0, pose: TUCK },
+    { t: 0.1, pose: {
+    ...AIR, yaw: 70, torso: 94, head: 98, shoulderF: 2, armF: 0, handF: 0, shoulderB: 178, armB: 180, handB: 180,
+  }, ease: 'out' },
+    { t: 0.35, pose: { ...AIR, yaw: 210, torso: 94, head: 98, shoulderF: 2, armF: 0, handF: 0, shoulderB: 178, armB: 180, handB: 180 }, ease: 'linear' },
+    { t: 0.6, pose: { ...AIR, yaw: 360, torso: 94, head: 98, shoulderF: 0, armF: -2, handF: -2, shoulderB: 176, armB: 178, handB: 178 }, ease: 'linear' },
+    { t: 1, pose: { ...TUCK, yaw: 360 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Fist forward air (Fox's 43 frames, five hits): a flurry of straights, fists alternating. */
+  pfair: clip('pfair', 717, [
+    { t: 0, pose: TUCK },
+    ...[0.16, 0.25, 0.35, 0.47, 0.6].map((t, i): Key => ({
+      t,
+      pose: i % 2 === 0
+        ? { ...AIR, x: 4 * i, shoulderF: 4, armF: 2, handF: 4, shoulderB: -100, armB: 60, handB: 70 }
+        : { ...AIR, yaw: 22, x: 4 * i, shoulderB: 2, armB: 0, handB: 2, shoulderF: -110, armF: 60, handF: 70 },
+      ease: 'snap',
+    })),
+    { t: 0.72, pose: { ...AIR, yaw: 22, x: 16, shoulderB: 0, armB: -2, handB: 0, shoulderF: -110, armF: 60, handF: 70 } },
+    { t: 1, pose: TUCK, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Fist back air (Fox's 48 frames): the body whips round and a spinning back fist lands behind on frame 9. */
+  pbair: clip('pbair', 800, [
+    { t: 0, pose: TUCK },
+    { t: 0.12, pose: { ...AIR, yaw: 90, shoulderB: -60, armB: 60, handB: 70, shoulderF: -110, armF: 50 }, ease: 'in' },
+    { t: 0.19, pose: { ...AIR, yaw: 180, torso: 80, shoulderB: 4, armB: 2, handB: 2, shoulderF: -130, armF: 40 }, ease: 'snap' },
+    { t: 0.36, pose: { ...AIR, yaw: 186, torso: 81, shoulderB: 2, armB: 0, handB: 0, shoulderF: -128, armF: 42 } },
+    { t: 0.62, pose: { ...AIR, yaw: 360 }, ease: 'inOut' },
+    { t: 1, pose: { ...TUCK, yaw: 360 }, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Fist up air (Fox's 35 frames): fists pulled to the chest, then both driven straight up. */
+  puair: clip('puair', 583, [
+    { t: 0, pose: TUCK },
+    { t: 0.18, pose: { ...AIR, shoulderF: -60, armF: 70, handF: 80, shoulderB: -70, armB: 70, handB: 80 }, ease: 'out' },
+    { t: 0.26, pose: {
+    ...AIR, torso: 96, head: 104, tilt: -4, shoulderF: 88, armF: 90, handF: 92, shoulderB: 82, armB: 86, handB: 90,
+    thighF: -80, legF: -100, footF: -90, thighB: -110, legB: -120, footB: -100,
+  }, ease: 'snap' },
+    { t: 0.45, pose: {
+    ...AIR, torso: 96, head: 104, tilt: -4, shoulderF: 90, armF: 92, handF: 94, shoulderB: 84, armB: 88, handB: 92,
+    thighF: -80, legF: -100, footF: -90, thighB: -110, legB: -120, footB: -100,
+  } },
+    { t: 1, pose: TUCK, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Fist down air (Fox's 49 frames): both fists raised overhead, then a double hammer down that spikes. */
+  pdair: clip('pdair', 817, [
+    { t: 0, pose: TUCK },
+    { t: 0.1, pose: { ...AIR, torso: 100, head: 104, tilt: -6, shoulderF: 140, armF: 120, handF: 120, shoulderB: 130, armB: 115, handB: 115 }, ease: 'out' },
+    { t: 0.2, pose: {
+    ...AIR, torso: 66, head: 70, tilt: 14, shoulderF: -78, armF: -84, handF: -84, shoulderB: -84, armB: -88, handB: -88,
+    thighF: -20, legF: -120, footF: -100,
+  }, ease: 'snap' },
+    { t: 0.47, pose: {
+    ...AIR, torso: 67, head: 71, tilt: 14, shoulderF: -80, armF: -86, handF: -86, shoulderB: -86, armB: -90, handB: -90,
+    thighF: -20, legF: -120, footF: -100,
+  } },
+    { t: 1, pose: TUCK, ease: 'inOut' },
+  ], { planted: false }),
+
+  /** Leg up tilt (Fox, 27 frames): a scorpion kick, the body bent forwards and the back leg swung up over the head on frame 3. */
+  kutilt: clip('kutilt', 450, [
+    { t: 0, pose: FIGHT },
+    { t: 0.06, pose: { ...READY, torso: 62, head: 66, tilt: 12, thighB: 210, legB: 200, footB: 210, shoulderF: -120, armF: -60, shoulderB: -100, armB: -40 }, ease: 'out' },
+    { t: 0.11, pose: {
+    ...READY, torso: 42, head: 54, tilt: 20, thighF: -80, legF: -100, footF: -90, thighB: 128, legB: 146, footB: 166,
+    shoulderF: -120, armF: -60, shoulderB: -100, armB: -40,
+  }, ease: 'snap' },
+    { t: 0.26, pose: {
+    ...READY, torso: 40, head: 52, tilt: 22, thighF: -82, legF: -100, footF: -90, thighB: 72, legB: 44, footB: 62,
+    shoulderF: -122, armF: -62, shoulderB: -102, armB: -42,
+  }, ease: 'linear' },
+    { t: 0.5, pose: { ...READY, torso: 70, head: 76, tilt: 8, thighB: -40, legB: -100, footB: -90 }, ease: 'inOut' },
+    { t: 1, pose: FIGHT, ease: 'inOut' },
+  ]),
+
+  /** Leg forward smash (Fox, 45 frames, held on frame 4): the body turns its back, then a spinning back kick high on frame 13 and round to the front. */
+  kfsmash: clip('kfsmash', 750, [
+    { t: 0, pose: FIGHT },
+    { t: 0.09, pose: { ...GUARD, yaw: 90, torso: 96, head: 92, thighF: -60, legF: -110, thighB: -40, legB: -150, footB: -130 }, ease: 'out' },
+    { t: 0.29, pose: {
+    ...GUARD, yaw: 180, torso: 60, head: 64, tilt: 16, x: 60, thighF: -96, legF: -100, footF: -88, thighB: 160, legB: 164, footB: 190,
+  }, ease: 'snap' },
+    { t: 0.4, pose: {
+    ...GUARD, yaw: 184, torso: 61, head: 65, tilt: 16, x: 62, thighF: -96, legF: -100, footF: -88, thighB: 158, legB: 162, footB: 188,
+  } },
+    { t: 0.64, pose: { ...READY, yaw: 360, x: 70 }, ease: 'inOut' },
+    { t: 1, pose: { ...READY, yaw: 360, x: 70 } },
+  ]),
+
+  /**
+   * Down special, the Plasma Kick (Falcon Kick, 68 frames): a crouch with the
+   * knee drawn up, then a flying kick low along the floor from frame 13, the
+   * rear knee folded behind; the landing.
+   */
+  falconKick: clip('falconKick', 1133, [
+    { t: 0, pose: FIGHT },
+    { t: 0.15, pose: { ...CROUCH, torso: 100, head: 98, tilt: -6, thighF: 30, legF: -130, footF: -110, shoulderF: 140, armF: 160, shoulderB: -150, armB: -160 }, ease: 'in' },
+    { t: 0.19, pose: {
+    torso: 120, head: 108, tilt: -14, y: 10, thighF: -6, legF: -8, footF: 20, thighB: -120, legB: -170, footB: -130,
+    shoulderF: 150, armF: 170, shoulderB: -160, armB: -170,
+  }, ease: 'snap' },
+    { t: 0.5, pose: {
+    torso: 118, head: 106, tilt: -12, y: 6, thighF: -8, legF: -10, footF: 18, thighB: -122, legB: -170, footB: -130,
+    shoulderF: 148, armF: 168, shoulderB: -158, armB: -168,
+  } },
+    { t: 0.66, pose: { ...CROUCH, torso: 80 }, ease: 'in' },
+    { t: 1, pose: READY, ease: 'inOut' },
   ]),
 
   /** In the air: a diving kick. */
@@ -269,6 +498,65 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 110 }, ease: 'inOut' },
   ]),
 
+  /**
+   * Sword up tilt (Link, 35 frames, hits 8 to 12): the blade dipped low in
+   * front, then an arc up past the face and over the head to behind, the
+   * body rolling back under it and up onto the toes.
+   */
+  sutilt: clip('sutilt', 583, [
+    { t: 0, pose: FIGHT },
+    { t: 0.12, pose: { ...READY, torso: 74, head: 80, tilt: 8, y: -4, shoulderF: -70, armF: -72, handF: -70, shoulderB: -110, armB: -70 }, ease: 'out' },
+    { t: 0.2, pose: { ...READY, torso: 88, head: 100, tilt: 2, y: 8, shoulderF: 20, armF: 40, handF: 44, shoulderB: -120, armB: -100 }, ease: 'snap' },
+    { t: 0.27, pose: { ...READY, torso: 102, head: 112, tilt: -8, y: 14, shoulderF: 88, armF: 100, handF: 102, thighF: -60, legF: -92, thighB: -116, legB: -110 }, ease: 'linear' },
+    { t: 0.34, pose: { ...READY, torso: 114, head: 116, tilt: -16, y: 10, shoulderF: 150, armF: 170, handF: 174, thighF: -60, legF: -92, thighB: -116, legB: -110 }, ease: 'linear' },
+    { t: 0.5, pose: { ...READY, torso: 110, head: 108, tilt: -12, y: 2, shoulderF: 160, armF: 178, handF: 180 }, ease: 'out' },
+    { t: 1, pose: READY, ease: 'inOut' },
+  ]),
+
+  /**
+   * Sword dash attack (Link, 56 frames, hits 20 to 23): a running leap with
+   * the blade raised behind the head, then the chop comes down as the feet
+   * land, the body folded over the blade on the floor, and a slow rise.
+   */
+  sdash: clip('sdash', 933, [
+    { t: 0, pose: READY },
+    { t: 0.1, pose: { ...CROUCH, torso: 70, head: 78, x: 14, shoulderF: 30, armF: 90, handF: 90, shoulderB: -40, armB: 30 }, ease: 'out' },
+    { t: 0.24, pose: {
+    torso: 104, head: 108, tilt: -10, x: 70, y: 70, shoulderF: 140, armF: 176, handF: 178, shoulderB: 110, armB: 150,
+    thighF: 10, legF: -100, footF: -90, thighB: -100, legB: -170, footB: -150,
+  }, ease: 'out' },
+    { t: 0.32, pose: {
+    torso: 86, head: 94, tilt: 6, x: 118, y: 44, shoulderF: 70, armF: 86, handF: 88, shoulderB: 60, armB: 90,
+    thighF: -30, legF: -100, footF: -84, thighB: -120, legB: -160, footB: -130,
+  }, ease: 'in' },
+    { t: 0.36, pose: {
+    ...READY, torso: 50, head: 62, tilt: 24, x: 150, shoulderF: -56, armF: -74, handF: -78, shoulderB: -70, armB: -50,
+    thighF: -10, legF: -70, footF: -52, thighB: -160, legB: -170, footB: -134,
+  }, ease: 'snap' },
+    { t: 0.5, pose: {
+    ...READY, torso: 52, head: 64, tilt: 24, x: 154, shoulderF: -60, armF: -78, handF: -82, shoulderB: -72, armB: -52,
+    thighF: -10, legF: -70, footF: -52, thighB: -160, legB: -170, footB: -134,
+  } },
+    { t: 0.78, pose: { ...READY, torso: 68, head: 76, tilt: 12, x: 156, shoulderF: -50, armF: -60, handF: -60 }, ease: 'inOut' },
+    { t: 1, pose: { ...READY, x: 156 }, ease: 'inOut' },
+  ]),
+
+  /**
+   * Sword forward air (Link, 51 frames, hits 16 and 24): a chop down from
+   * over the head, then Link spins right round for a second, flat cut; here
+   * the body turns once on itself (yaw) with the blade held out, so the
+   * second cut sweeps all the way round.
+   */
+  sfair: clip('sfair', 850, [
+    { t: 0, pose: TUCK },
+    { t: 0.18, pose: { ...AIR, torso: 104, head: 106, tilt: -8, shoulderF: 140, armF: 176, handF: 178, shoulderB: 110, armB: 150 }, ease: 'out' },
+    { t: 0.3, pose: { ...AIR, torso: 66, head: 74, tilt: 16, shoulderF: -40, armF: -62, handF: -64, shoulderB: -60, armB: -40, thighF: 10, legF: -110 }, ease: 'snap' },
+    { t: 0.36, pose: { ...AIR, yaw: 60, torso: 80, head: 86, tilt: 6, shoulderF: -10, armF: -6, handF: -4, shoulderB: -150, armB: -170 }, ease: 'in' },
+    { t: 0.47, pose: { ...AIR, yaw: 300, torso: 82, head: 88, tilt: 6, shoulderF: 0, armF: 0, handF: 0, shoulderB: -150, armB: -170 }, ease: 'linear' },
+    { t: 0.56, pose: { ...AIR, yaw: 360, torso: 82, head: 88, tilt: 6, shoulderF: -4, armF: -4, handF: -4, shoulderB: -150, armB: -170 }, ease: 'out' },
+    { t: 1, pose: { ...TUCK, yaw: 360 }, ease: 'inOut' },
+  ], { planted: false }),
+
   /** Up tilt: a rising palm thrust straight overhead. */
   utilt: clip('utilt', 340, [
     { t: 0, pose: FIGHT },
@@ -284,28 +572,41 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: READY, ease: 'inOut' },
   ]),
 
-  /** Up smash: coils low (held while charging), then a vertical scissor kick straight up. */
-  usmash: clip('usmash', 520, [
+  /** Leg up smash (Fox, 55 frames, held on frame 2): a coil, then a back flip with the front leg whipped straight up. */
+  usmash: clip('usmash', 917, [
     { t: 0, pose: FIGHT },
-    { t: 0.3, pose: { ...CROUCH, torso: 70, y: -10, shoulderF: -150, armF: -130, shoulderB: -150, armB: -130 }, ease: 'out' },
-    { t: 0.46, pose: {
-    torso: 100, head: 100, tilt: -2, x: 44, y: 28, thighF: 64, legF: 76, footF: 104, thighB: -92, legB: -100, footB: -80,
-    shoulderF: -140, armF: -160, handF: -160, shoulderB: -120, armB: -150,
+    { t: 0.036, pose: { ...CROUCH, torso: 70, y: -10, shoulderF: -150, armF: -130, shoulderB: -150, armB: -130 }, ease: 'out' },
+    { t: 0.145, pose: {
+    torso: 102, head: 104, spin: -50, y: 24, thighF: 92, legF: 96, footF: 120, thighB: -100, legB: -110, footB: -90,
+    shoulderF: -140, armF: -150, shoulderB: -130, armB: -140,
   }, ease: 'snap' },
-    { t: 0.7, pose: {
-    torso: 100, head: 100, tilt: -2, x: 46, y: 20, thighF: 68, legF: 80, footF: 108, thighB: -92, legB: -100, footB: -80,
-    shoulderF: -138, armF: -158, handF: -158, shoulderB: -118, armB: -148,
-  } },
-    { t: 1, pose: FIGHT, ease: 'inOut' },
+    { t: 0.22, pose: {
+    torso: 102, head: 104, spin: -110, y: 40, thighF: 96, legF: 100, footF: 124, thighB: -96, legB: -108, footB: -88,
+    shoulderF: -140, armF: -150, shoulderB: -130, armB: -140,
+  }, ease: 'linear' },
+    { t: 0.4, pose: { ...TUCK, spin: -300, y: 34 }, ease: 'linear' },
+    { t: 0.52, pose: { ...CROUCH, spin: -360 }, ease: 'out' },
+    { t: 1, pose: { ...FIGHT, spin: -360 }, ease: 'inOut' },
   ]),
 
-  /** Sword up smash (and, quicker, up tilt): the blade sweeps from low in front, over the head, to behind. */
-  susmash: clip('susmash', 560, [
+  /**
+   * Sword up smash (Link, 77 frames, held on frame 5, hits on 10, 25 and
+   * 41): three sweeps over the head. Link twists his torso for each; here
+   * the whole body turns a little each way (yaw) and leans into them: front
+   * to back, back to front, front to back, each arc wider than the last.
+   */
+  susmash: clip('susmash', 1283, [
     { t: 0, pose: FIGHT },
-    { t: 0.3, pose: { ...CROUCH, y: -8, shoulderF: -150, armF: -170, handF: -170 }, ease: 'out' },
-    { t: 0.44, pose: { ...READY, torso: 96, head: 100, y: 16, shoulderF: 30, armF: 40, handF: 40 }, ease: 'snap' },
-    { t: 0.56, pose: { ...READY, torso: 108, head: 108, tilt: -8, y: 18, shoulderF: 95, armF: 100, handF: 100 }, ease: 'linear' },
-    { t: 0.72, pose: { ...READY, torso: 112, head: 110, tilt: -10, y: 10, shoulderF: 150, armF: 160, handF: 160 }, ease: 'out' },
+    { t: 0.065, pose: { ...CROUCH, y: -10, yaw: -20, shoulderF: -150, armF: -172, handF: -172, shoulderB: -40, armB: 30 }, ease: 'out' },
+    { t: 0.13, pose: { ...READY, torso: 92, head: 100, y: 12, yaw: 0, shoulderF: 40, armF: 60, handF: 62 }, ease: 'snap' },
+    { t: 0.2, pose: { ...READY, torso: 108, head: 110, tilt: -10, y: 14, yaw: 20, shoulderF: 130, armF: 164, handF: 166 }, ease: 'out' },
+    { t: 0.28, pose: { ...READY, torso: 106, head: 108, tilt: -8, y: 8, yaw: 20, shoulderF: 152, armF: 176, handF: 178 }, ease: 'inOut' },
+    { t: 0.33, pose: { ...READY, torso: 94, head: 102, y: 14, yaw: 0, shoulderF: 90, armF: 100, handF: 102 }, ease: 'snap' },
+    { t: 0.4, pose: { ...READY, torso: 80, head: 88, tilt: 8, y: 10, yaw: -24, shoulderF: 10, armF: 20, handF: 20 }, ease: 'out' },
+    { t: 0.48, pose: { ...READY, torso: 82, head: 90, tilt: 8, y: 4, yaw: -24, shoulderF: -14, armF: -10, handF: -8 }, ease: 'inOut' },
+    { t: 0.54, pose: { ...READY, torso: 96, head: 104, y: 16, yaw: 0, shoulderF: 60, armF: 80, handF: 82 }, ease: 'snap' },
+    { t: 0.62, pose: { ...READY, torso: 112, head: 114, tilt: -14, y: 18, yaw: 24, shoulderF: 140, armF: 172, handF: 176, thighF: -60, legF: -92, thighB: -116, legB: -110 }, ease: 'out' },
+    { t: 0.74, pose: { ...READY, torso: 108, head: 108, tilt: -10, y: 6, yaw: 16, shoulderF: 156, armF: 180, handF: 182 }, ease: 'inOut' },
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
@@ -340,27 +641,38 @@ export const CLIPS: Record<string, Clip> = {
   ], { loop: true }),
 
   // ------------------------------------------------------- special moves (B)
-  /** Neutral special, the Ion Punch: a long coil with the burning fist drawn back, then a huge lunging punch. */
-  ionPunch: clip('ionPunch', 900, [
+  /**
+   * Neutral special, the Ion Punch (Falcon Punch, 103 frames): the body turns
+   * away and the fist is drawn back past the head while the open front hand
+   * aims (frames 8 to 50), then a huge lunging punch lands on frame 53, deep
+   * and low, held while the Kubot slowly rises.
+   */
+  ionPunch: clip('ionPunch', 1717, [
     { t: 0, pose: FIGHT },
-    { t: 0.15, pose: { ...READY, torso: 96, x: -6, shoulderF: -60, armF: 60, handF: 70 }, ease: 'out' },
-    { t: 0.5, pose: {
-    ...READY, torso: 106, head: 98, tilt: -12, x: -24, y: -6, thighF: -28, legF: -112, thighB: -148, legB: -126, footB: -100,
-    shoulderF: -172, armF: 160, handF: 165, shoulderB: 10, armB: 40, handB: 50,
+    { t: 0.09, pose: {
+    ...READY, yaw: 28, torso: 92, head: 92, x: -4, shoulderF: -150, armF: -90, handF: -80, shoulderB: -20, armB: 10, handB: 20,
   }, ease: 'out' },
-    { t: 0.57, pose: {
-    ...READY, torso: 108, head: 99, tilt: -13, x: -28, y: -7, thighF: -28, legF: -112, thighB: -148, legB: -126, footB: -100,
-    shoulderF: -174, armF: 158, handF: 163, shoulderB: 12, armB: 42, handB: 52,
-  } },
-    { t: 0.64, pose: {
-    ...READY, torso: 58, head: 72, tilt: 22, x: 190, thighF: -10, legF: -66, footF: -48, thighB: -160, legB: -170, footB: -134,
-    shoulderF: 2, armF: 0, handF: 0, shoulderB: -160, armB: -172,
+    { t: 0.24, pose: {
+    ...READY, yaw: 40, torso: 104, head: 96, tilt: -10, x: -18, y: -4, thighF: -30, legF: -112, thighB: -146, legB: -126, footB: -100,
+    shoulderF: -176, armF: 152, handF: 160, shoulderB: 8, armB: 22, handB: 70,
+  }, ease: 'inOut' },
+    { t: 0.49, pose: {
+    ...READY, yaw: 44, torso: 108, head: 98, tilt: -13, x: -26, y: -8, thighF: -26, legF: -114, thighB: -150, legB: -124, footB: -100,
+    shoulderF: -178, armF: 148, handF: 156, shoulderB: 12, armB: 26, handB: 74,
+  }, ease: 'inOut' },
+    { t: 0.515, pose: {
+    ...READY, yaw: 0, torso: 56, head: 70, tilt: 22, x: 196, thighF: -6, legF: -64, footF: -46, thighB: -162, legB: -172, footB: -136,
+    shoulderF: 2, armF: 0, handF: 0, shoulderB: -162, armB: -174, handB: -170,
   }, ease: 'snap' },
-    { t: 0.86, pose: {
-    ...READY, torso: 60, head: 74, tilt: 20, x: 198, thighF: -10, legF: -66, footF: -48, thighB: -160, legB: -170, footB: -134,
-    shoulderF: 0, armF: -2, handF: -2, shoulderB: -158, armB: -170,
+    { t: 0.56, pose: {
+    ...READY, torso: 57, head: 71, tilt: 22, x: 200, thighF: -6, legF: -64, footF: -46, thighB: -162, legB: -172, footB: -136,
+    shoulderF: 0, armF: -2, handF: -2, shoulderB: -160, armB: -172, handB: -168,
   } },
-    { t: 1, pose: { ...READY, x: 180 }, ease: 'inOut' },
+    { t: 0.86, pose: {
+    ...READY, torso: 64, head: 76, tilt: 16, x: 204, thighF: -14, legF: -76, footF: -56, thighB: -156, legB: -164, footB: -128,
+    shoulderF: -10, armF: -6, handF: -4, shoulderB: -150, armB: -160, handB: -156,
+  }, ease: 'inOut' },
+    { t: 1, pose: { ...READY, x: 196 }, ease: 'inOut' },
   ]),
 
   /** Side special, the Raptor Dash: a low sprinting lunge, then a rising uppercut. */
@@ -385,19 +697,24 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: READY, ease: 'inOut' },
   ]),
 
-  /** Up special, the Shadow Dive: a rising uppercut that spins up into a tuck. */
+  /**
+   * Up special, the Shadow Dive (Falcon Dive): a crouch, then a diagonal leap
+   * reaching up and forwards with the open front hand, legs trailing; at the
+   * top a forward flip into the fall.
+   */
   shadowDive: clip('shadowDive', 640, [
-    { t: 0, pose: { ...READY, y: -6 } },
-    { t: 0.12, pose: {
-    torso: 96, head: 100, thighF: 0, legF: -100, footF: -80, thighB: -110, legB: -120, footB: -90,
-    shoulderF: 80, armF: 88, handF: 92, shoulderB: -100, armB: -60,
+    { t: 0, pose: { ...CROUCH, y: -6, shoulderF: -120, armF: -80, shoulderB: -110, armB: -70 } },
+    { t: 0.14, pose: {
+    torso: 98, head: 104, tilt: 18, thighF: -96, legF: -104, footF: -84, thighB: -76, legB: -96, footB: -70,
+    shoulderF: 72, armF: 76, handF: 84, shoulderB: -130, armB: -118,
   }, ease: 'snap' },
-    { t: 0.55, pose: {
-    torso: 96, head: 100, spin: -360, thighF: 0, legF: -100, footF: -80, thighB: -110, legB: -120, footB: -90,
-    shoulderF: 80, armF: 88, handF: 92, shoulderB: -100, armB: -60,
-  }, ease: 'linear' },
-    { t: 0.8, pose: { ...TUCK, spin: -360 }, ease: 'out' },
-    { t: 1, pose: { ...TUCK, torso: 86, spin: -360, shoulderF: -20, armF: 10, shoulderB: -160, armB: -170 }, ease: 'inOut' },
+    { t: 0.48, pose: {
+    torso: 100, head: 106, tilt: 16, thighF: -100, legF: -108, footF: -86, thighB: -70, legB: -92, footB: -66,
+    shoulderF: 80, armF: 84, handF: 92, shoulderB: -134, armB: -122,
+  } },
+    { t: 0.68, pose: { ...TUCK, spin: 200, shoulderF: 0, armF: 60 }, ease: 'in' },
+    { t: 0.86, pose: { ...TUCK, spin: 360 }, ease: 'out' },
+    { t: 1, pose: { ...TUCK, torso: 88, spin: 360, thighF: -40, legF: -110, thighB: -100, legB: -130 }, ease: 'inOut' },
   ], { planted: false }),
 
   // ------------------------------------------------- directional moves (SSB)
@@ -410,12 +727,12 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 190 }, ease: 'inOut' },
   ]),
 
-  /** Down tilt: a low sweep of the front leg that pops the target up. */
-  dtilt: clip('dtilt', 380, [
+  /** Leg down tilt (Fox, 27 frames): crouched, the front leg chambers and snaps out low along the floor on frame 7. */
+  dtilt: clip('dtilt', 450, [
     { t: 0, pose: CROUCH },
-    { t: 0.22, pose: { ...CROUCH, torso: 92, tilt: -4, thighF: -110, legF: -140, footF: -120, thighB: -40, legB: -150, shoulderF: -120, armF: -60 }, ease: 'out' },
-    { t: 0.45, pose: { ...CROUCH, torso: 70, head: 76, tilt: 10, x: 24, thighF: -4, legF: -8, footF: -30, thighB: -35, legB: -160, footB: -115, shoulderF: -70, armF: -40, handF: -40, shoulderB: -20, armB: -110 }, ease: 'snap' },
-    { t: 0.7, pose: { ...CROUCH, torso: 71, head: 77, tilt: 10, x: 26, thighF: -8, legF: -12, footF: -34, thighB: -35, legB: -160, footB: -115, shoulderF: -72, armF: -42, handF: -42, shoulderB: -20, armB: -110 } },
+    { t: 0.16, pose: { ...CROUCH, torso: 92, tilt: -4, thighF: -110, legF: -140, footF: -120, thighB: -40, legB: -150, shoulderF: -120, armF: -60 }, ease: 'out' },
+    { t: 0.26, pose: { ...CROUCH, torso: 70, head: 76, tilt: 10, x: 24, thighF: -4, legF: -8, footF: -30, thighB: -35, legB: -160, footB: -115, shoulderF: -70, armF: -40, handF: -40, shoulderB: -20, armB: -110 }, ease: 'snap' },
+    { t: 0.42, pose: { ...CROUCH, torso: 71, head: 77, tilt: 10, x: 26, thighF: -8, legF: -12, footF: -34, thighB: -35, legB: -160, footB: -115, shoulderF: -72, armF: -42, handF: -42, shoulderB: -20, armB: -110 } },
     { t: 1, pose: { ...CROUCH, x: 20 }, ease: 'inOut' },
   ]),
 
@@ -454,37 +771,76 @@ export const CLIPS: Record<string, Clip> = {
   ], { planted: false }),
 
   // Sword versions.
-  /** Sword down tilt: a low sweep of the blade along the ground. */
-  sdtilt: clip('sdtilt', 380, [
+  /**
+   * Sword down tilt (Link, 30 frames, hits 10 and 11): crouched low, the
+   * blade pulled back past the hip, then a long thrust along the floor with
+   * the whole body stretched after it, almost on one knee.
+   */
+  sdtilt: clip('sdtilt', 500, [
     { t: 0, pose: CROUCH },
-    { t: 0.22, pose: { ...CROUCH, torso: 90, tilt: -4, shoulderF: -170, armF: -170, handF: -170, thighF: -40 }, ease: 'out' },
-    { t: 0.45, pose: { ...CROUCH, torso: 66, head: 72, tilt: 12, x: 16, shoulderF: -42, armF: -34, handF: -34, shoulderB: -40, armB: -110, thighF: -8, legF: -100 }, ease: 'snap' },
-    { t: 0.7, pose: { ...CROUCH, torso: 67, head: 73, tilt: 12, x: 18, shoulderF: -36, armF: -28, handF: -28, shoulderB: -40, armB: -110, thighF: -8, legF: -100 } },
-    { t: 1, pose: { ...CROUCH, x: 24 }, ease: 'inOut' },
+    { t: 0.18, pose: { ...CROUCH, torso: 92, head: 92, tilt: -4, x: -8, shoulderF: -168, armF: -178, handF: -176, shoulderB: -40, armB: 20, thighF: -30 }, ease: 'out' },
+    { t: 0.3, pose: {
+    ...CROUCH, torso: 52, head: 62, tilt: 18, x: 34, y: -6, shoulderF: -28, armF: -16, handF: -12, shoulderB: -60, armB: -120,
+    thighF: 0, legF: -92, footF: -78, thighB: -120, legB: -176, footB: -140,
+  }, ease: 'snap' },
+    { t: 0.42, pose: {
+    ...CROUCH, torso: 53, head: 63, tilt: 18, x: 38, y: -6, shoulderF: -24, armF: -12, handF: -8, shoulderB: -60, armB: -120,
+    thighF: 0, legF: -92, footF: -78, thighB: -120, legB: -176, footB: -140,
+  } },
+    { t: 0.7, pose: { ...CROUCH, torso: 66, head: 74, tilt: 10, x: 34, shoulderF: -50, armF: -36, handF: -30 }, ease: 'inOut' },
+    { t: 1, pose: { ...CROUCH, x: 30 }, ease: 'inOut' },
   ]),
 
-  /** Sword back air: a cut behind, the blade arm reaching back over the shoulder. */
-  sbair: clip('sbair', 440, [
+  /** Sword back air (Link's 30 frames, two hits): the blade whipped behind twice, frames 6 and 15. */
+  sbair: clip('sbair', 500, [
     { t: 0, pose: { ...TUCK, torso: 100, head: 104, shoulderF: 40, armF: 60, handF: 60 } },
-    { t: 0.3, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 170, armF: 178, handF: 178, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'snap' },
-    { t: 0.7, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 176, armF: 184, handF: 184, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 } },
+    { t: 0.2, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 170, armF: 178, handF: 178, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'snap' },
+    { t: 0.34, pose: { torso: 104, head: 102, tilt: -6, shoulderF: 110, armF: 120, handF: 120, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'inOut' },
+    { t: 0.5, pose: { torso: 114, head: 100, tilt: -12, shoulderF: -176, armF: -170, handF: -170, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'snap' },
+    { t: 0.62, pose: { torso: 114, head: 100, tilt: -12, shoulderF: -178, armF: -172, handF: -172, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 } },
     { t: 1, pose: { ...TUCK, torso: 86 }, ease: 'inOut' },
   ], { planted: false }),
 
-  /** Sword up air: a rising flip with the blade swinging up and over. */
-  suair: clip('suair', 480, [
-    { t: 0, pose: { ...TUCK, spin: 0, shoulderF: -130, armF: -150, handF: -150 } },
-    { t: 0.28, pose: { torso: 100, head: 104, spin: -70, shoulderF: 30, armF: 50, handF: 50, shoulderB: -130, armB: -100, thighF: 10, legF: -110, thighB: -70, legB: -150 }, ease: 'snap' },
-    { t: 0.55, pose: { torso: 98, head: 102, spin: -210, shoulderF: 70, armF: 90, handF: 90, shoulderB: -130, armB: -100, thighF: 10, legF: -110, thighB: -70, legB: -150 }, ease: 'linear' },
-    { t: 0.82, pose: { ...TUCK, spin: -330, shoulderF: 20, armF: 40 }, ease: 'out' },
-    { t: 1, pose: { ...TUCK, torso: 86, spin: -360 }, ease: 'inOut' },
+  /**
+   * Sword up air (Link, 59 frames, hits 11 to 13 then held to 40): the blade
+   * drawn down beside the hip, then a thrust straight up with the whole body
+   * stretched after it, legs trailing, held at the top.
+   */
+  suair: clip('suair', 983, [
+    { t: 0, pose: { ...TUCK, shoulderF: -60, armF: -40, handF: -40 } },
+    { t: 0.1, pose: { ...TUCK, torso: 80, head: 84, tilt: 6, shoulderF: -110, armF: -80, handF: -70, shoulderB: -100, armB: -60 }, ease: 'out' },
+    { t: 0.185, pose: {
+    torso: 98, head: 108, tilt: -6, shoulderF: 92, armF: 92, handF: 92, shoulderB: -130, armB: -110,
+    thighF: -80, legF: -110, footF: -96, thighB: -110, legB: -140, footB: -116,
+  }, ease: 'snap' },
+    { t: 0.4, pose: {
+    torso: 100, head: 110, tilt: -8, shoulderF: 96, armF: 96, handF: 96, shoulderB: -130, armB: -110,
+    thighF: -84, legF: -112, footF: -98, thighB: -112, legB: -142, footB: -118,
+  } },
+    { t: 0.68, pose: {
+    torso: 98, head: 106, tilt: -6, shoulderF: 90, armF: 90, handF: 90, shoulderB: -126, armB: -106,
+    thighF: -70, legF: -110, footF: -94, thighB: -106, legB: -136, footB: -114,
+  } },
+    { t: 1, pose: { ...TUCK, torso: 86, shoulderF: 20, armF: 40, handF: 40 }, ease: 'inOut' },
   ], { planted: false }),
 
-  /** Sword down air: a plunging stab, blade under the feet. */
-  sdair: clip('sdair', 420, [
+  /**
+   * Sword down air (Link, 79 frames, hits 14 to 19 then held): the blade
+   * lifted over the head, then flipped point down and driven under the
+   * feet with both arms, the body stretched tall behind it, held to the floor.
+   */
+  sdair: clip('sdair', 1317, [
     { t: 0, pose: { ...TUCK, shoulderF: 60, armF: 100, handF: 100 } },
-    { t: 0.3, pose: { torso: 104, head: 106, tilt: 10, shoulderF: -50, armF: -66, handF: -66, shoulderB: 60, armB: 120, thighF: -40, legF: -150, footF: -130, thighB: -120, legB: -170, footB: -140 }, ease: 'snap' },
-    { t: 1, pose: { torso: 102, head: 104, tilt: 12, shoulderF: -52, armF: -68, handF: -68, shoulderB: 64, armB: 124, thighF: -44, legF: -152, footF: -132, thighB: -124, legB: -172, footB: -142 } },
+    { t: 0.1, pose: { ...TUCK, torso: 104, head: 108, tilt: -8, shoulderF: 130, armF: 160, handF: 162, shoulderB: 110, armB: 140 }, ease: 'out' },
+    { t: 0.14, pose: { ...TUCK, torso: 100, head: 104, shoulderF: 60, armF: -20, handF: -60, shoulderB: 50, armB: 0 }, ease: 'in' },
+    { t: 0.18, pose: {
+    torso: 96, head: 96, tilt: 4, shoulderF: -84, armF: -90, handF: -92, shoulderB: -78, armB: -88,
+    thighF: -14, legF: -126, footF: -108, thighB: -140, legB: -176, footB: -142,
+  }, ease: 'snap' },
+    { t: 1, pose: {
+    torso: 96, head: 94, tilt: 4, shoulderF: -86, armF: -90, handF: -92, shoulderB: -80, armB: -88,
+    thighF: -16, legF: -128, footF: -110, thighB: -142, legB: -176, footB: -142,
+  } },
   ], { planted: false }),
 
   /** Tumbling through the air after a big hit (loops). */
@@ -521,12 +877,22 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 }, ease: 'inOut' },
   ]),
 
-  /** Forward throw: a heave out with both arms. */
-  throwF: clip('throwF', 440, [
+  /** Forward throw (Fox): a lean back, then a one-handed palm shove with a step, the Kubot let go on frame 10. */
+  throwF: clip('throwF', 33 * 1000 / 60, [
     { t: 0, pose: { ...READY, tilt: 6, x: 14, torso: 82, shoulderF: -2, armF: 6, shoulderB: 8, armB: 14 } },
-    { t: 0.3, pose: { ...READY, tilt: -8, x: -10, torso: 104, head: 100, shoulderF: -40, armF: -20, shoulderB: -30, armB: -10, thighF: -30, legF: -110 }, ease: 'out' },
-    { t: 0.45, pose: { ...READY, tilt: 16, x: 60, torso: 62, head: 74, shoulderF: 24, armF: 30, handF: 34, shoulderB: 30, armB: 36, thighF: -20, legF: -76, thighB: -150, legB: -160 }, ease: 'snap' },
-    { t: 1, pose: FIGHT, ease: 'inOut' },
+    { t: 0.14, pose: {
+    ...READY, tilt: -6, x: 2, torso: 100, head: 98, shoulderF: -130, armF: -20, handF: 20, shoulderB: -60, armB: 60, handB: 70,
+    thighF: -36, legF: -112,
+  }, ease: 'out' },
+    { t: 0.27, pose: {
+    ...READY, tilt: 14, x: 52, torso: 62, head: 76, shoulderF: 8, armF: 14, handF: 84, shoulderB: -130, armB: -150,
+    thighF: -18, legF: -82, thighB: -150, legB: -152,
+  }, ease: 'snap' },
+    { t: 0.6, pose: {
+    ...READY, tilt: 13, x: 54, torso: 64, head: 77, shoulderF: 6, armF: 12, handF: 82, shoulderB: -128, armB: -148,
+    thighF: -18, legF: -82, thighB: -150, legB: -152,
+  } },
+    { t: 1, pose: { ...FIGHT, x: 40 }, ease: 'inOut' },
   ]),
 
   /** Back throw: a full spin, slinging the robot out behind. */
@@ -604,97 +970,139 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Forward tilt: a chambered side kick, the body leaning away from it. */
-  ftilt: clip('ftilt', 380, [
+  /** Leg forward tilt (Fox, 23 frames): the hips turn away and the knee chambers, then a roundhouse at waist height on frame 6. */
+  ftilt: clip('ftilt', 383, [
     { t: 0, pose: FIGHT },
-    { t: 0.25, pose: { ...READY, torso: 104, head: 96, tilt: -6, x: 12, thighF: 50, legF: -125, footF: -100, shoulderF: -60, armF: 40, shoulderB: -110, armB: -60 }, ease: 'out' },
-    { t: 0.42, pose: {
-    ...READY, torso: 128, head: 108, tilt: -12, x: 64, thighF: 6, legF: 2, footF: 28, thighB: -100, legB: -112, footB: -92,
-    shoulderF: -170, armF: -160, shoulderB: 165, armB: 175,
+    { t: 0.14, pose: {
+    ...GUARD, yaw: -30, torso: 98, head: 96, tilt: -4, thighF: 40, legF: -120, footF: -100,
+  }, ease: 'out' },
+    { t: 0.26, pose: {
+    ...GUARD, yaw: -14, torso: 122, head: 104, tilt: -12, x: 30, thighF: 4, legF: 2, footF: 28, thighB: -100, legB: -112, footB: -92,
   }, ease: 'snap' },
-    { t: 0.7, pose: {
-    ...READY, torso: 126, head: 107, tilt: -12, x: 68, thighF: 4, legF: 0, footF: 26, thighB: -100, legB: -112, footB: -92,
-    shoulderF: -168, armF: -158, shoulderB: 163, armB: 173,
+    { t: 0.4, pose: {
+    ...GUARD, yaw: -12, torso: 121, head: 103, tilt: -11, x: 32, thighF: 2, legF: 0, footF: 26, thighB: -100, legB: -112, footB: -92,
   } },
-    { t: 1, pose: { ...READY, x: 62 }, ease: 'inOut' },
+    { t: 0.62, pose: { ...GUARD, torso: 96, x: 30, thighF: 36, legF: -118, footF: -98 }, ease: 'inOut' },
+    { t: 1, pose: { ...FIGHT, x: 28 }, ease: 'inOut' },
   ]),
 
-  /** Forward smash: the burning fist. Coils (held while charging), then a long lunging punch. */
-  fsmash: clip('fsmash', 560, [
+  /** Fist forward smash (Fox's 45 frames, held on frame 4): the fire gauntlet drawn back, then a long lunging punch on frame 13. */
+  fsmash: clip('fsmash', 750, [
     { t: 0, pose: FIGHT },
-    { t: 0.3, pose: {
-    ...READY, torso: 104, head: 96, tilt: -10, x: -16, y: -4, thighF: -30, legF: -110, thighB: -146, legB: -126, footB: -100,
+    { t: 0.09, pose: {
+    ...READY, yaw: 30, torso: 104, head: 96, tilt: -10, x: -16, y: -4, thighF: -30, legF: -110, thighB: -146, legB: -126, footB: -100,
     shoulderF: -172, armF: 160, handF: 165, shoulderB: -20, armB: 40, handB: 50,
   }, ease: 'out' },
-    { t: 0.46, pose: {
+    { t: 0.29, pose: {
     ...READY, torso: 60, head: 74, tilt: 20, x: 150, thighF: -12, legF: -68, footF: -50, thighB: -158, legB: -168, footB: -132,
     shoulderF: 2, armF: 0, handF: 0, shoulderB: -160, armB: -172,
   }, ease: 'snap' },
-    { t: 0.66, pose: {
+    { t: 0.5, pose: {
     ...READY, torso: 62, head: 76, tilt: 18, x: 160, thighF: -12, legF: -68, footF: -50, thighB: -158, legB: -168, footB: -132,
     shoulderF: 0, armF: -2, handF: -2, shoulderB: -158, armB: -170,
   } },
     { t: 1, pose: { ...READY, x: 150 }, ease: 'inOut' },
   ]),
 
-  /** Down smash: drops into a split, kicking out both ways at once. */
-  dsmash: clip('dsmash', 480, [
+  /** Leg down smash (Fox, 52 frames, held on frame 2): dropped into a split, both legs out flat along the floor on frame 6. */
+  dsmash: clip('dsmash', 867, [
     { t: 0, pose: FIGHT },
-    { t: 0.3, pose: { ...CROUCH, torso: 92, head: 94, y: -8, thighF: -10, legF: -140, thighB: -170, legB: -150, shoulderF: 30, armF: 120, shoulderB: 20, armB: 120 }, ease: 'out' },
-    { t: 0.44, pose: {
+    { t: 0.038, pose: { ...CROUCH, torso: 92, head: 94, y: -8, thighF: -10, legF: -140, thighB: -170, legB: -150, shoulderF: 30, armF: 120, shoulderB: 20, armB: 120 }, ease: 'out' },
+    { t: 0.115, pose: {
     torso: 92, head: 96, thighF: -6, legF: -8, footF: 4, thighB: -174, legB: -172, footB: -262,
     shoulderF: 125, armF: 150, handF: 160, shoulderB: 55, armB: 30, handB: 20,
   }, ease: 'snap' },
-    { t: 0.7, pose: {
+    { t: 0.3, pose: {
     torso: 90, head: 95, thighF: -5, legF: -7, footF: 6, thighB: -175, legB: -173, footB: -264,
     shoulderF: 122, armF: 148, handF: 158, shoulderB: 58, armB: 32, handB: 22,
   } },
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Sword forward tilt: a full spinning slash, the blade sweeping round flat. */
-  sftilt: clip('sftilt', 420, [
+  /**
+   * Sword forward tilt (Link, 39 frames, hits 15 to 19): the blade swung up
+   * and back over the shoulder while the body leans away, then a huge
+   * overhead chop that carries the chest forwards and down with it, the
+   * blade finishing level at waist height, far out in front.
+   */
+  sftilt: clip('sftilt', 650, [
     { t: 0, pose: FIGHT },
-    { t: 0.22, pose: { ...READY, yaw: 40, torso: 82, x: 10, shoulderF: -150, armF: -168, handF: -168, shoulderB: -40, armB: 30 }, ease: 'out' },
-    { t: 0.48, pose: { ...READY, yaw: 300, torso: 72, tilt: 8, x: 64, shoulderF: -8, armF: -4, handF: -4, shoulderB: -150, armB: -170, thighF: -28, legF: -92, thighB: -142, legB: -132 }, ease: 'linear' },
-    { t: 0.72, pose: { ...READY, yaw: 360, torso: 73, tilt: 8, x: 72, shoulderF: -10, armF: -8, handF: -8, shoulderB: -150, armB: -170, thighF: -28, legF: -92, thighB: -142, legB: -132 }, ease: 'out' },
-    { t: 1, pose: { ...READY, yaw: 360, x: 66 }, ease: 'inOut' },
-  ]),
-
-  /** Sword forward smash: blade raised overhead (held while charging), then a leaping cleave. */
-  sfsmash: clip('sfsmash', 600, [
-    { t: 0, pose: FIGHT },
-    { t: 0.3, pose: {
-    ...READY, torso: 104, head: 98, tilt: -10, x: -14, shoulderF: 150, armF: 172, handF: 172, shoulderB: 140, armB: 160,
-    thighF: -30, legF: -112, thighB: -146, legB: -126,
-  }, ease: 'out' },
-    { t: 0.46, pose: {
-    ...READY, torso: 58, head: 70, tilt: 22, x: 150, y: 10, shoulderF: -42, armF: -52, handF: -52, shoulderB: -60, armB: -40,
-    thighF: -12, legF: -72, footF: -50, thighB: -158, legB: -168, footB: -132,
+    { t: 0.14, pose: { ...READY, torso: 100, head: 100, tilt: -6, x: -8, shoulderF: 70, armF: 120, handF: 120, shoulderB: 60, armB: 110 }, ease: 'out' },
+    { t: 0.28, pose: {
+    ...READY, torso: 110, head: 104, tilt: -14, x: -16, shoulderF: 140, armF: 172, handF: 176, shoulderB: 120, armB: 150,
+    thighF: -40, legF: -114, thighB: -140, legB: -126,
+  }, ease: 'inOut' },
+    { t: 0.34, pose: { ...READY, torso: 96, head: 96, tilt: 0, x: 10, shoulderF: 96, armF: 100, handF: 100, shoulderB: 70, armB: 90 }, ease: 'in' },
+    { t: 0.385, pose: {
+    ...READY, torso: 56, head: 68, tilt: 22, x: 56, shoulderF: -6, armF: -8, handF: -8, shoulderB: -50, armB: -40,
+    thighF: -18, legF: -78, footF: -56, thighB: -150, legB: -160, footB: -128,
   }, ease: 'snap' },
-    { t: 0.68, pose: {
-    ...READY, torso: 60, head: 72, tilt: 20, x: 158, shoulderF: -48, armF: -58, handF: -58, shoulderB: -62, armB: -42,
-    thighF: -12, legF: -72, footF: -50, thighB: -158, legB: -168, footB: -132,
+    { t: 0.5, pose: {
+    ...READY, torso: 58, head: 70, tilt: 22, x: 60, shoulderF: -12, armF: -14, handF: -12, shoulderB: -54, armB: -44,
+    thighF: -18, legF: -78, footF: -56, thighB: -150, legB: -160, footB: -128,
   } },
-    { t: 1, pose: { ...READY, x: 150 }, ease: 'inOut' },
+    { t: 0.72, pose: { ...READY, torso: 72, head: 80, tilt: 10, x: 52, shoulderF: -30, armF: -28, handF: -24, thighF: -28, legF: -90 }, ease: 'inOut' },
+    { t: 1, pose: { ...READY, x: 44 }, ease: 'inOut' },
   ]),
 
-  /** Sword down smash: crouched, a flat spin slash round both sides. */
-  sdsmash: clip('sdsmash', 520, [
+  /**
+   * Sword forward smash (Link, 50 frames, hits 17 and 18, held on frame 6):
+   * both hands on the hilt raised high behind the head, the body coiled
+   * back; then a leaping two-handed chop that lands far forwards, the blade
+   * driven down to the floor and the body folded over it.
+   */
+  sfsmash: clip('sfsmash', 833, [
     { t: 0, pose: FIGHT },
-    { t: 0.3, pose: { ...CROUCH, yaw: 0, torso: 76, y: -6, shoulderF: -150, armF: -170, handF: -170, shoulderB: -40, armB: 40 }, ease: 'out' },
-    { t: 0.5, pose: { ...CROUCH, yaw: 200, torso: 70, y: -10, shoulderF: -30, armF: -22, handF: -22, shoulderB: -150, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'linear' },
-    { t: 0.72, pose: { ...CROUCH, yaw: 360, torso: 70, y: -10, shoulderF: -30, armF: -22, handF: -22, shoulderB: -150, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'linear' },
+    { t: 0.12, pose: {
+    ...READY, torso: 108, head: 102, tilt: -14, x: -20, shoulderF: 146, armF: 176, handF: 178, shoulderB: 136, armB: 166,
+    thighF: -34, legF: -116, thighB: -148, legB: -126, footB: -102,
+  }, ease: 'out' },
+    { t: 0.26, pose: {
+    torso: 100, head: 100, tilt: -4, x: 40, y: 40, shoulderF: 110, armF: 130, handF: 132, shoulderB: 100, armB: 126,
+    thighF: 0, legF: -104, footF: -90, thighB: -110, legB: -168, footB: -140,
+  }, ease: 'in' },
+    { t: 0.34, pose: {
+    ...READY, torso: 48, head: 60, tilt: 26, x: 160, shoulderF: -56, armF: -74, handF: -78, shoulderB: -64, armB: -56,
+    thighF: -8, legF: -66, footF: -46, thighB: -162, legB: -172, footB: -136,
+  }, ease: 'snap' },
+    { t: 0.5, pose: {
+    ...READY, torso: 50, head: 62, tilt: 26, x: 166, shoulderF: -60, armF: -78, handF: -82, shoulderB: -66, armB: -58,
+    thighF: -8, legF: -66, footF: -46, thighB: -162, legB: -172, footB: -136,
+  } },
+    { t: 0.76, pose: { ...READY, torso: 70, head: 76, tilt: 12, x: 160, shoulderF: -40, armF: -50, handF: -50 }, ease: 'inOut' },
+    { t: 1, pose: { ...READY, x: 156 }, ease: 'inOut' },
+  ]),
+
+  /**
+   * Sword down smash (Link, 56 frames, held on frame 4, hits 12 and 24): a
+   * low sweep in front from a deep crouch, then Link turns to cut behind;
+   * here the body swings right round (yaw) carrying the blade with it, and
+   * dips again for the second cut.
+   */
+  sdsmash: clip('sdsmash', 933, [
+    { t: 0, pose: FIGHT },
+    { t: 0.07, pose: { ...CROUCH, torso: 84, y: -6, shoulderF: -166, armF: -178, handF: -178, shoulderB: -40, armB: 40 }, ease: 'out' },
+    { t: 0.16, pose: { ...CROUCH, torso: 70, head: 76, tilt: 10, y: -12, shoulderF: -70, armF: -56, handF: -52, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'in' },
+    { t: 0.21, pose: { ...CROUCH, torso: 62, head: 70, tilt: 14, y: -12, x: 10, shoulderF: -26, armF: -14, handF: -12, shoulderB: -140, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'snap' },
+    { t: 0.3, pose: { ...CROUCH, torso: 64, head: 72, tilt: 14, y: -12, x: 10, shoulderF: -22, armF: -10, handF: -8, shoulderB: -140, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 } },
+    { t: 0.36, pose: { ...CROUCH, yaw: 90, torso: 80, y: -4, x: 6, shoulderF: -120, armF: -140, handF: -140 }, ease: 'in' },
+    { t: 0.43, pose: { ...CROUCH, yaw: 180, torso: 62, head: 70, tilt: 14, y: -12, x: 0, shoulderF: -26, armF: -14, handF: -12, shoulderB: -140, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 }, ease: 'snap' },
+    { t: 0.56, pose: { ...CROUCH, yaw: 184, torso: 64, head: 72, tilt: 14, y: -12, x: 0, shoulderF: -22, armF: -10, handF: -8, shoulderB: -140, armB: -170, thighF: -4, legF: -110, thighB: -150, legB: -150 } },
+    { t: 0.72, pose: { ...CROUCH, yaw: 300, torso: 80, shoulderF: -80, armF: -60, handF: -60 }, ease: 'inOut' },
     { t: 1, pose: { ...READY, yaw: 360 }, ease: 'inOut' },
   ]),
 
-  /** Sword neutral air: spinning with the blade held out flat. */
-  snair: clip('snair', 420, [
-    { t: 0, pose: { ...TUCK, shoulderF: -120, armF: -150, handF: -150 } },
-    { t: 0.2, pose: { ...TUCK, yaw: 80, torso: 92, shoulderF: -6, armF: -2, handF: -2, shoulderB: -150, armB: -170 }, ease: 'out' },
-    { t: 0.5, pose: { ...TUCK, yaw: 250, torso: 92, shoulderF: -6, armF: -2, handF: -2, shoulderB: -150, armB: -170 }, ease: 'linear' },
-    { t: 0.76, pose: { ...TUCK, yaw: 360, torso: 92, shoulderF: -8, armF: -4, handF: -4, shoulderB: -150, armB: -170 }, ease: 'linear' },
-    { t: 1, pose: { ...TUCK, torso: 84, yaw: 360 }, ease: 'inOut' },
+  /**
+   * Sword neutral air (Link, 38 frames, hits 7 and 8, then the blade stays
+   * out to 31): the blade swung down from over the shoulder into a long
+   * thrust forwards, held with the legs tucked and the body leaning in.
+   */
+  snair: clip('snair', 633, [
+    { t: 0, pose: { ...TUCK, torso: 96, head: 100, shoulderF: 120, armF: 160, handF: 162 } },
+    { t: 0.1, pose: { ...TUCK, torso: 104, head: 106, tilt: -8, shoulderF: 150, armF: 176, handF: 178, shoulderB: -120, armB: -90 }, ease: 'out' },
+    { t: 0.19, pose: { ...TUCK, torso: 72, head: 80, tilt: 16, shoulderF: 4, armF: 2, handF: 2, shoulderB: -140, armB: -110, thighF: 20, legF: -120, thighB: -40, legB: -150 }, ease: 'snap' },
+    { t: 0.8, pose: { ...TUCK, torso: 74, head: 82, tilt: 14, shoulderF: -4, armF: -6, handF: -6, shoulderB: -140, armB: -110, thighF: 20, legF: -120, thighB: -40, legB: -150 } },
+    { t: 1, pose: { ...TUCK, torso: 84, shoulderF: -40, armF: -30, handF: -30 }, ease: 'inOut' },
   ], { planted: false }),
 };
 

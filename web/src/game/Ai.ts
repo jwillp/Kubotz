@@ -53,6 +53,7 @@ export class CpuController implements Controller {
     } else {
       // actions are one-frame presses, unless charging
       this.state.attack = this.state.attack && now < this.holdAttackUntil;
+      this.state.kick = this.state.kick && now < this.holdAttackUntil;
       this.state.grab = false;
       this.state.smash = false;
       this.state.special = false;
@@ -187,6 +188,8 @@ export class CpuController implements Controller {
           pad.down = true; // a low sweep now and then
         }
         if (me.grounded && Math.sign(dx) !== me.facing && Math.abs(dx) > 4) pad[dx < 0 ? 'left' : 'right'] = true;
+        // Fists (A) or legs (X), about half and half; the sword stays on A.
+        if (pad.attack && me.weapon !== 'laserSword' && Math.random() < 0.5) { pad.attack = false; pad.kick = true; }
       } else if (!ranged && Math.abs(dx) > 3 * UNIT && Math.abs(dx) < 6 * UNIT && Math.abs(dy) < UNIT && me.grounded
         && Math.random() < 0.05) {
         // The Raptor Dash closes the gap.

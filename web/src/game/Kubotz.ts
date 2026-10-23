@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import { feel } from './Feel';
-import { Animator } from '../anim/Animator';
+import { Animator, type Blade } from '../anim/Animator';
 import type { Rig } from '../anim/Rig';
 import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import { Controller, PadState, emptyPad } from './Input';
@@ -50,12 +50,17 @@ export interface AttackBox {
 export const SWORD_FILE = 'arms/lazer-sword.png';
 export const GUN_FILE = 'arms/gun-mk1.png';
 export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
+/** The laser sword for the animator: the blade from hilt to tip, kept above the floor. */
+export const BLADE: Blade = { file: SWORD_FILE, points: [PART_TIPS.swordBase, PART_TIPS.sword] };
 
 /** Points from the sword's hilt to its tip, for the blade hitbox. */
 function bladePoints(): PartPoint[] {
   const { sword: t, swordBase: b } = PART_TIPS;
   return [0.25, 0.5, 0.75, 1].map((f) => ({ file: SWORD_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
 }
+
+/** Melee and Ultimate frame data, at 60 frames a second. */
+export const FRAME = 1000 / 60;
 
 /** Clips of anim/Clips.ts. */
 const ANIM = {
@@ -113,7 +118,16 @@ export interface Move {
   behind?: boolean; all?: boolean; both?: boolean; maps?: string[]; ghosts?: boolean;
   /** Specials: a velocity (units/s, x forwards; null keeps that axis) held for the first `sustain` share of the move. */
   burst?: [number | null, number | null]; sustain?: number;
+  /** Specials: when the burst starts (0..1; at once by default). */
+  burstFrom?: number;
+  /** Combo moves: from this point (0..1) a buffered press starts the next move. */
+  cancel?: number;
+  /** Smashes: where the wind-up is held while charging (0..1; 0.3 by default). */
+  hold?: number;
 }
+
+/** A button's moves: the neutral move on the ground (a combo when several) and the directional ones. */
+export interface MoveSet { combo: Move[]; dir: DirMoves }
 
 /** Attack + direction, Super Smash Bros. style. */
 type Dir = 'neutral' | 'forward' | 'back' | 'up' | 'down';
@@ -122,48 +136,73 @@ export type DirMoves = Record<'dash' | 'ftilt' | 'dtilt' | 'utilt' | 'fsmash' | 
 const LIMBS = [...FISTS, ...FEET];
 
 /**
- * The unarmed ground combo: three presses chain a palm strike, a spinning
- * back fist and a jumping spin kick. The first two push lightly and stun
- * briefly so the next hit connects; the kick launches.
+ * The unarmed ground combo, Fox's (SSB Ultimate frame data, 60 frames a
+ * second): Jab 1, a lead straight out on frame 2; Jab 2, the rear straight;
+ * and the jab finisher, a high side kick that launches. The first two stun
+ * so the next connects, and a press during them is taken from `cancel` on
+ * (Fox: Jab 2 from frame 5, the finisher from frame 6).
  */
 export const COMBO: Move[] = [
-  { anim: 'jab', ms: 260, points: FISTS, damage: 3, launch: { knockback: 3, angle: 15, stun: 280 }, active: [0.3, 0.72] },
-  { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [0.4, 0.8], all: true },
-  { anim: 'kick', ms: 460, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.34, 0.76], all: true, ghosts: true },
+  { anim: 'jab1', ms: 17 * FRAME, points: FISTS, damage: 3, launch: { knockback: 3, angle: 15, stun: 280 }, active: [1 / 17, 4 / 17], cancel: 5 / 17 },
+  { anim: 'jab2', ms: 20 * FRAME, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [1 / 20, 4 / 20], cancel: 6 / 20 },
+  { anim: 'jabEnd', ms: 38 * FRAME, points: FEET, damage: 6, launch: { knockback: 13, angle: 40 }, active: [2 / 38, 12 / 38], ghosts: true },
 ];
+/** The laser sword combo (A): the classic one (kept): an overhead slash, a rising slash with a hop, a lunging thrust. */
 export const SWORD_COMBO: Move[] = [
   { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.36, 0.78] },
   { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.28, 0.66] },
   { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.35, 0.8], ghosts: true },
 ];
-/** Directional moves (SSB): dash attack, tilts, smashes (charged) and the five aerials. */
-export const DIR_MOVES: DirMoves = {
-  dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72], ghosts: true },
-  ftilt: { anim: 'ftilt', ms: 380, points: FEET, damage: 6, launch: { knockback: 10, angle: 30 }, active: [0.32, 0.7] },
-  dtilt: { anim: 'dtilt', ms: 340, points: FEET, damage: 5, launch: { knockback: 9, angle: 80 }, active: [0.3, 0.72] },
-  utilt: { anim: 'utilt', ms: 340, points: FISTS, damage: 6, launch: { knockback: 10, angle: 88 }, active: [0.36, 0.72] },
-  usmash: { anim: 'usmash', ms: 520, points: [FEET[0]], damage: 13, launch: { knockback: 16, angle: 88 }, active: [0.4, 0.68], ghosts: true },
-  fsmash: { anim: 'fsmash', ms: 560, points: FIRE_FISTS, damage: 14, launch: { knockback: 17, angle: 32 }, active: [0.42, 0.66], maps: ['gauntlet_fireGauntlet'], ghosts: true },
-  dsmash: { anim: 'dsmash', ms: 480, points: FEET, damage: 11, launch: { knockback: 14, angle: 28 }, active: [0.36, 0.7], all: true, both: true },
-  nair: { anim: 'nair', ms: 420, points: LIMBS, damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], all: true, ghosts: true },
-  fair: { anim: 'fair', ms: 420, points: FEET, damage: 9, launch: { knockback: 11, angle: 30 }, active: [0.25, 0.72], ghosts: true },
-  bair: { anim: 'bair', ms: 440, points: FEET, damage: 10, launch: { knockback: 14, angle: 35 }, active: [0.25, 0.72], behind: true },
-  uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62], ghosts: true },
-  dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true },
+/**
+ * Fist moves (A) in every direction: the strikes keyed to the timing of Fox's
+ * move in the same slot (SSB Ultimate frames), done with the fists: a hook, a
+ * low punch, the classic palm thrust (kept), a flying punch, the fire gauntlet
+ * punch, a leaping double uppercut, a two-fisted ground pound, and in the air
+ * a spin, a flurry, a spinning back fist, a double uppercut and a double hammer.
+ */
+export const PUNCH_MOVES: DirMoves = {
+  dash: { anim: 'pdash', ms: 31 * FRAME, points: FISTS, damage: 7, launch: { knockback: 11, angle: 35 }, active: [4 / 31, 16 / 31], ghosts: true },
+  ftilt: { anim: 'pftilt', ms: 23 * FRAME, points: FISTS, damage: 6, launch: { knockback: 10, angle: 28 }, active: [6 / 23, 9 / 23] },
+  dtilt: { anim: 'pdtilt', ms: 27 * FRAME, points: FISTS, damage: 5, launch: { knockback: 8, angle: 70 }, active: [7 / 27, 9 / 27] },
+  utilt: { anim: 'utilt', ms: 340, points: FISTS, damage: 6, launch: { knockback: 10, angle: 88 }, active: [0.36, 0.72] }, // classic (kept)
+  fsmash: { anim: 'fsmash', ms: 45 * FRAME, points: FIRE_FISTS, damage: 14, launch: { knockback: 17, angle: 32 }, active: [13 / 45, 17 / 45], maps: ['gauntlet_fireGauntlet'], ghosts: true, hold: 4 / 45 },
+  usmash: { anim: 'pusmash', ms: 55 * FRAME, points: FISTS, damage: 14, launch: { knockback: 16, angle: 88 }, active: [8 / 55, 12 / 55], all: true, ghosts: true, hold: 2 / 55 },
+  dsmash: { anim: 'pdsmash', ms: 52 * FRAME, points: FISTS, damage: 12, launch: { knockback: 14, angle: 30 }, active: [6 / 52, 8 / 52], all: true, both: true, hold: 2 / 52 },
+  nair: { anim: 'pnair', ms: 38 * FRAME, points: FISTS, damage: 7, launch: { knockback: 9, angle: 40 }, active: [4 / 38, 23 / 38], all: true, both: true, ghosts: true },
+  fair: { anim: 'pfair', ms: 43 * FRAME, points: FISTS, damage: 9, launch: { knockback: 10, angle: 35 }, active: [7 / 43, 28 / 43] },
+  bair: { anim: 'pbair', ms: 48 * FRAME, points: FISTS, damage: 11, launch: { knockback: 14, angle: 35 }, active: [9 / 48, 12 / 48], behind: true, ghosts: true },
+  uair: { anim: 'puair', ms: 35 * FRAME, points: FISTS, damage: 9, launch: { knockback: 12, angle: 85 }, active: [9 / 35, 14 / 35], all: true },
+  dair: { anim: 'pdair', ms: 49 * FRAME, points: FISTS, damage: 9, launch: { knockback: 10, angle: -70 }, active: [12 / 49, 23 / 49], all: true, ghosts: true },
 };
+/** Leg moves (X) in every direction: Fox's kicks on his frames, with the classic aerials and dash attack kept. */
+export const KICK_MOVES: DirMoves = {
+  dash: { anim: 'dash', ms: 420, points: FEET, damage: 7, launch: { knockback: 11, angle: 40 }, active: [0.22, 0.72], ghosts: true }, // classic (kept)
+  ftilt: { anim: 'ftilt', ms: 23 * FRAME, points: FEET, damage: 7, launch: { knockback: 10, angle: 30 }, active: [6 / 23, 9 / 23] },
+  dtilt: { anim: 'dtilt', ms: 27 * FRAME, points: FEET, damage: 6, launch: { knockback: 9, angle: 80 }, active: [7 / 27, 9 / 27] },
+  utilt: { anim: 'kutilt', ms: 27 * FRAME, points: [FEET[1]], damage: 7, launch: { knockback: 10, angle: 88 }, active: [3 / 27, 8 / 27] },
+  usmash: { anim: 'usmash', ms: 55 * FRAME, points: [FEET[0]], damage: 14, launch: { knockback: 16, angle: 88 }, active: [8 / 55, 12 / 55], ghosts: true, hold: 2 / 55 },
+  fsmash: { anim: 'kfsmash', ms: 45 * FRAME, points: FEET, damage: 14, launch: { knockback: 17, angle: 35 }, active: [13 / 45, 17 / 45], ghosts: true, hold: 4 / 45 },
+  dsmash: { anim: 'dsmash', ms: 52 * FRAME, points: FEET, damage: 12, launch: { knockback: 14, angle: 28 }, active: [6 / 52, 8 / 52], all: true, both: true, hold: 2 / 52 },
+  nair: { anim: 'nair', ms: 420, points: LIMBS, damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], all: true, ghosts: true }, // classic (kept)
+  fair: { anim: 'fair', ms: 420, points: FEET, damage: 9, launch: { knockback: 11, angle: 30 }, active: [0.25, 0.72], ghosts: true }, // classic (kept)
+  bair: { anim: 'bair', ms: 440, points: FEET, damage: 10, launch: { knockback: 14, angle: 35 }, active: [0.25, 0.72], behind: true }, // classic (kept)
+  uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62], ghosts: true }, // classic (kept, for the up tilt combo)
+  dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true }, // classic (kept)
+};
+/** With the laser sword, A does Link's moves (SSB Ultimate frames); the back air is Link's double kick, so it stays a cut behind. */
 export const SWORD_DIR_MOVES: DirMoves = {
-  dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.35, 0.8], ghosts: true },
-  ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
-  dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
-  utilt: { anim: 'susmash', ms: 400, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 85 }, active: [0.38, 0.75] },
-  usmash: { anim: 'susmash', ms: 560, points: bladePoints(), damage: 15, launch: { knockback: 17, angle: 85 }, active: [0.4, 0.72], ghosts: true },
-  fsmash: { anim: 'sfsmash', ms: 600, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [0.42, 0.68], ghosts: true },
-  dsmash: { anim: 'sdsmash', ms: 520, points: bladePoints(), damage: 12, launch: { knockback: 14, angle: 25 }, active: [0.3, 0.75], both: true, ghosts: true },
-  nair: { anim: 'snair', ms: 420, points: bladePoints(), damage: 7, launch: { knockback: 9, angle: 40 }, active: [0.2, 0.75], both: true, ghosts: true },
-  fair: { anim: 'slash2', ms: 360, points: bladePoints(), damage: 7, launch: { knockback: 10, angle: 40 }, active: [0.28, 0.66] },
-  bair: { anim: 'sbair', ms: 440, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.25, 0.72], behind: true },
-  uair: { anim: 'suair', ms: 480, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 85 }, active: [0.2, 0.62], ghosts: true },
-  dair: { anim: 'sdair', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: -70 }, active: [0.3, 1], ghosts: true },
+  dash: { anim: 'sdash', ms: 56 * FRAME, points: bladePoints(), damage: 12, launch: { knockback: 13, angle: 40 }, active: [20 / 56, 24 / 56], ghosts: true },
+  ftilt: { anim: 'sftilt', ms: 39 * FRAME, points: bladePoints(), damage: 11, launch: { knockback: 12, angle: 35 }, active: [15 / 39, 20 / 39], ghosts: true },
+  dtilt: { anim: 'sdtilt', ms: 30 * FRAME, points: bladePoints(), damage: 8, launch: { knockback: 9, angle: 70 }, active: [10 / 30, 12 / 30] },
+  utilt: { anim: 'sutilt', ms: 35 * FRAME, points: bladePoints(), damage: 9, launch: { knockback: 10, angle: 85 }, active: [8 / 35, 13 / 35] },
+  usmash: { anim: 'susmash', ms: 77 * FRAME, points: bladePoints(), damage: 15, launch: { knockback: 17, angle: 85 }, active: [10 / 77, 46 / 77], ghosts: true, hold: 5 / 77 },
+  fsmash: { anim: 'sfsmash', ms: 50 * FRAME, points: bladePoints(), damage: 16, launch: { knockback: 18, angle: 40 }, active: [17 / 50, 19 / 50], ghosts: true, hold: 6 / 50 },
+  dsmash: { anim: 'sdsmash', ms: 56 * FRAME, points: bladePoints(), damage: 13, launch: { knockback: 14, angle: 25 }, active: [12 / 56, 26 / 56], both: true, ghosts: true, hold: 4 / 56 },
+  nair: { anim: 'snair', ms: 38 * FRAME, points: bladePoints(), damage: 8, launch: { knockback: 9, angle: 40 }, active: [7 / 38, 32 / 38], both: true, ghosts: true },
+  fair: { anim: 'sfair', ms: 51 * FRAME, points: bladePoints(), damage: 10, launch: { knockback: 11, angle: 40 }, active: [16 / 51, 26 / 51], ghosts: true },
+  bair: { anim: 'sbair', ms: 30 * FRAME, points: bladePoints(), damage: 8, launch: { knockback: 12, angle: 35 }, active: [6 / 30, 18 / 30], behind: true },
+  uair: { anim: 'suair', ms: 59 * FRAME, points: bladePoints(), damage: 12, launch: { knockback: 13, angle: 88 }, active: [11 / 59, 41 / 59] },
+  dair: { anim: 'sdair', ms: 79 * FRAME, points: bladePoints(), damage: 14, launch: { knockback: 11, angle: -80 }, active: [14 / 79, 1] },
 };
 /**
  * Special moves (B), unarmed whatever the weapon: Captain Falcon flavoured
@@ -171,14 +210,21 @@ export const SWORD_DIR_MOVES: DirMoves = {
  * catches a ledge; the side and up specials work once per trip in the air.
  */
 export const SPECIALS = {
-  ion: { anim: 'ionPunch', ms: 900, points: FIRE_FISTS, damage: 22, launch: { knockback: 19, angle: 35 }, active: [0.6, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true },
+  ion: { anim: 'ionPunch', ms: 103 * FRAME, points: FIRE_FISTS, damage: 22, launch: { knockback: 19, angle: 35 }, active: [53 / 103, 58 / 103], maps: ['gauntlet_fireGauntlet'], ghosts: true },
   raptor: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 9, launch: { knockback: 13, angle: 80 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [22, null], sustain: 0.5 },
   raptorAir: { anim: 'raptor', ms: 560, points: FIRE_FISTS, damage: 10, launch: { knockback: 12, angle: -55 }, active: [0.2, 0.78], maps: ['gauntlet_fireGauntlet'], ghosts: true, burst: [18, 1], sustain: 0.5 },
-  dive: { anim: 'shadowDive', ms: 640, points: FISTS, damage: 9, launch: { knockback: 12, angle: 78 }, active: [0.08, 0.55], ghosts: true, burst: [4, -20], sustain: 0.25 },
-  kick: { anim: 'dash', ms: 560, points: FEET, damage: 12, launch: { knockback: 14, angle: 38 }, active: [0.12, 0.72], ghosts: true, burst: [22, null], sustain: 0.55 },
+  dive: { anim: 'shadowDive', ms: 640, points: FISTS, damage: 9, launch: { knockback: 12, angle: 78 }, active: [0.14, 0.55], ghosts: true, burst: [4, -20], sustain: 0.25 },
+  kick: { anim: 'falconKick', ms: 68 * FRAME, points: FEET, damage: 12, launch: { knockback: 14, angle: 38 }, active: [13 / 68, 34 / 68], ghosts: true, burst: [22, null], burstFrom: 13 / 68, sustain: 0.5 },
   kickAir: { anim: 'airKick', ms: 520, points: FEET, damage: 13, launch: { knockback: 13, angle: 45 }, active: [0.05, 1], ghosts: true, burst: [16, 22], sustain: 1 },
 } satisfies Record<string, Move>;
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
+
+/** A (fists, or the sword), X (legs): the neutral X on the ground is the forward kick. */
+export const FIST_SET: MoveSet = { combo: COMBO, dir: PUNCH_MOVES };
+export const SWORD_SET: MoveSet = { combo: SWORD_COMBO, dir: SWORD_DIR_MOVES };
+export const KICK_SET: MoveSet = { combo: [KICK_MOVES.ftilt], dir: KICK_MOVES };
+/** A and X pressed within this of each other make a special. */
+const CHORD_MS = 4 * FRAME;
 
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
 export const SMASH_CHARGE_MS = 1000;
@@ -229,14 +275,12 @@ export type ThrowKind = 'forward' | 'back' | 'up' | 'down';
  * and launch (angle from the horizontal, towards `dir` relative to facing).
  */
 export const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
-  forward: { anim: 'throwF', ms: 440, release: 0.45, damage: 7, launch: { knockback: 13, angle: 40 }, dir: 1 },
+  forward: { anim: 'throwF', ms: 33 * FRAME, release: 10 / 33, damage: 7, launch: { knockback: 13, angle: 40 }, dir: 1 },
   back: { anim: 'throwB', ms: 520, release: 0.55, damage: 8, launch: { knockback: 14, angle: 40 }, dir: -1 },
   up: { anim: 'throwU', ms: 480, release: 0.45, damage: 7, launch: { knockback: 14, angle: 90 }, dir: 1 },
   down: { anim: 'throwD', ms: 480, release: 0.48, damage: 6, launch: { knockback: 10, angle: 75, growth: 0.8 }, dir: 1 },
 };
 
-/** Melee and Ultimate frame data, at 60 frames a second. */
-export const FRAME = 1000 / 60;
 /**
  * Grabs (Ultimate, SmashWiki): the hold lasts 90 frames + 1.7 per % (an
  * Ultimate % is 3 points of Kubot damage), each button press takes 14.4
@@ -454,9 +498,10 @@ export class Kubotz implements Damageable, Teamed {
   private nextGhostAt = 0;
   /** Input edges, for smash flicks and charging. */
   private attackHeld = false;
+  private kickHeld = false;
   /** Input buffer: when attack, special and jump were last pressed (see INPUT_BUFFER_MS), and whether they were held. */
-  private pressedAt = { attack: -1e9, special: -1e9, jump: -1e9 };
-  private rawHeld = { attack: false, special: false, jump: false };
+  private pressedAt = { attack: -1e9, kick: -1e9, special: -1e9, jump: -1e9 };
+  private rawHeld = { attack: false, kick: false, special: false, jump: false };
   /** The initial dash lasts until then. */
   private dashUntil = 0;
   /** For the roll window: when the guard was pressed and when the held direction was. */
@@ -469,6 +514,9 @@ export class Kubotz implements Damageable, Teamed {
   private sideSpecialUsed = false;
   private upSpecialUsed = false;
   private attackPressedAt = -1e9;
+  private kickPressedAt = -1e9;
+  /** The button whose moves are playing (its combo, and the one a charge waits on). */
+  private set: MoveSet = FIST_SET;
   private dirPressedAt = -1e9;
   private prevPad: PadState = emptyPad();
   /** A smash being charged (rooted), and since when. */
@@ -708,7 +756,7 @@ export class Kubotz implements Damageable, Teamed {
     if (this.pendingLaunch) this.launch(raw);
     // Buffered presses, for people (not while shielding: no attacks out of shield).
     const buffers = this.controller.label !== 'CPU';
-    for (const k of ['attack', 'special', 'jump'] as const) {
+    for (const k of ['attack', 'kick', 'special', 'jump'] as const) {
       const down = !!read[k];
       if (down && !this.rawHeld[k] && buffers && controls && !this.guarding) this.pressedAt[k] = now;
       this.rawHeld[k] = down;
@@ -860,18 +908,20 @@ export class Kubotz implements Damageable, Teamed {
     const t = now - this.downSince;
     if (t < DOWN_OPTIONS_MS) return;
     const dx = (raw.right ? 1 : 0) - (raw.left ? 1 : 0);
-    const attack = raw.attack || !!raw.special;
+    const attack = raw.attack || !!raw.kick || !!raw.special;
     const stand = raw.up || !!raw.jump || raw.guard || t >= DOWN_AUTO_MS;
     if (!dx && !attack && !stand) return;
     this.downSince = -1;
     this.anim.freeze(null);
     if (attack) {
       // The get-up attack: a sweep to both sides.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : KICK_MOVES;
       this.comboStep = 0;
+      this.set = this.weapon === 'laserSword' ? SWORD_SET : KICK_SET;
       this.safeUntil = now + GETUP_ATTACK_SAFE;
       this.strike({ ...moves.dsmash, ...GETUP_ATTACK, ms: GETUP_ATTACK_MS, both: true }, now);
       this.pressedAt.attack = -1e9;
+      this.pressedAt.kick = -1e9;
       this.pressedAt.special = -1e9;
     } else if (dx) {
       this.startRoll(dx > 0 ? 1 : -1, now);
@@ -1080,14 +1130,16 @@ export class Kubotz implements Damageable, Teamed {
    */
   private outOfShield(pad: PadState, now: number): void {
     const p = this.oosPrev;
-    const jump = (!!pad.jump && !p.jump) || (pad.up && !p.up && !pad.walk && !pad.attack && !pad.special);
+    const jump = (!!pad.jump && !p.jump) || (pad.up && !p.up && !pad.walk && !pad.attack && !pad.kick && !pad.special);
     const upSpecial = !!pad.special && !p.special && pad.up;
-    const upSmash = pad.attack && !p.attack && pad.up;
+    const upSmash = ((pad.attack && !p.attack) || (!!pad.kick && !p.kick)) && pad.up;
     if (!jump && !pad.grab && !upSpecial && !upSmash) return;
     this.guarding = false;
     if (upSmash) {
-      this.attackHeld = true;
-      this.startSmash((this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
+      const legs = !!pad.kick && !p.kick;
+      this.set = legs ? KICK_SET : this.weapon === 'laserSword' ? SWORD_SET : FIST_SET;
+      if (legs) this.kickHeld = true; else this.attackHeld = true;
+      this.startSmash(this.set.dir.usmash, 'up', now);
     } else if (upSpecial) {
       this.specialHeld = true;
       this.startSpecial('up', 0, now);
@@ -1175,7 +1227,7 @@ export class Kubotz implements Damageable, Teamed {
     // on the press (after a short jump squat on the ground: let go within it
     // for a short hop); the CPU holds up and jumps again after a cooldown.
     // (The CPU holds up to aim its up attacks and specials: no jump then.)
-    const jumpInput = !!pad.jump || (pad.up && !pad.walk && (human || (!pad.attack && !pad.special)));
+    const jumpInput = !!pad.jump || (pad.up && !pad.walk && (human || (!pad.attack && !pad.kick && !pad.special)));
     const jumpPress = human ? (jumpInput && !this.jumpHeld) || this.buffered('jump', now) : jumpInput;
     this.jumpHeld = jumpInput;
     if (this.jumpSquatUntil > 0 && now >= this.jumpSquatUntil) {
@@ -1252,7 +1304,7 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   /** A press of `k` still in the input buffer. */
-  private buffered(k: 'attack' | 'special' | 'jump', now: number): boolean {
+  private buffered(k: 'attack' | 'kick' | 'special' | 'jump', now: number): boolean {
     return now - this.pressedAt[k] <= INPUT_BUFFER_MS;
   }
 
@@ -1271,21 +1323,43 @@ export class Kubotz implements Damageable, Teamed {
       || (this.attack && this.attack !== before.attack) || this.lockUntil > before.lock;
     if (started) {
       this.pressedAt.attack = -1e9;
+      this.pressedAt.kick = -1e9;
       this.pressedAt.special = -1e9;
     }
   }
 
   private handleActions(pad: PadState, now: number): void {
-    const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
-    const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
-    // Edges: the attack press, and a direction newly pressed (for smash flicks).
-    // A press now, or one buffered while the robot could not act.
+    const gun = this.weapon === 'laserGunMkI' || this.weapon === 'laserGunMkII';
+    // Edges: the A (fists) and X (legs) presses, and a direction newly pressed (for smash flicks).
+    // A press now, or one buffered while the Kubot could not act.
+    const kick = !!pad.kick;
     const attackPressed = (pad.attack && !this.attackHeld) || this.buffered('attack', now);
     const attackReleased = !pad.attack && this.attackHeld;
+    const kickPressed = (kick && !this.kickHeld) || this.buffered('kick', now);
     this.attackHeld = pad.attack;
+    this.kickHeld = kick;
     if (attackPressed) this.attackPressedAt = Math.max(this.pressedAt.attack, now - INPUT_BUFFER_MS);
-    const specialPressed = (!!pad.special && !this.specialHeld) || this.buffered('special', now);
+    if (kickPressed) this.kickPressedAt = Math.max(this.pressedAt.kick, now - INPUT_BUFFER_MS);
+    // Specials: A and X together (the CPU presses special itself). The move the
+    // first of the two started has only just begun: it gives way.
+    const chord = (attackPressed && kick && now - this.kickPressedAt <= CHORD_MS)
+      || (kickPressed && pad.attack && now - this.attackPressedAt <= CHORD_MS);
+    const specialPressed = (!!pad.special && !this.specialHeld) || this.buffered('special', now) || chord;
     this.specialHeld = !!pad.special;
+    if (chord) {
+      if (this.charging) { this.charging = null; this.anim.freeze(null); }
+      if (this.attack && now - this.attackStart <= CHORD_MS + FRAME) { this.attack = null; this.attackReadyAt = now; }
+      this.currentMove = this.attack ? this.currentMove : null;
+      this.gunChargeStart = -1;
+    }
+    // This frame's button: X when it is newly pressed or held alone, else A.
+    const set = kickPressed || (kick && !pad.attack) ? KICK_SET : this.weapon === 'laserSword' ? SWORD_SET : FIST_SET;
+    const legs = set === KICK_SET;
+    const held = legs ? kick : pad.attack;
+    const pressed = legs ? kickPressed : attackPressed;
+    const pressedAt = legs ? this.kickPressedAt : this.attackPressedAt;
+    const moves = set.dir;
+    const combo = this.set.combo;
     const prev = this.prevPad;
     // On the keyboard a newly pressed direction counts as a flick; on a stick only a real flick does.
     const side = (dx: number): Dir => (dx === this.facingBefore ? 'forward' : 'back');
@@ -1295,6 +1369,14 @@ export class Kubotz implements Damageable, Teamed {
       : pad.right && !prev.right ? side(1) : pad.left && !prev.left ? side(-1) : null;
     if (flick) this.dirPressedAt = now;
     this.prevPad = { ...pad };
+
+    // A buffered press cancels a combo move into the next one from its cancel point.
+    const cancel = this.currentMove?.cancel;
+    if (this.attack && this.inCombo && this.comboQueued && this.grounded && cancel !== undefined
+      && now >= this.attackStart + cancel * (this.attackEndsAt - this.attackStart)) {
+      this.comboQueued = false;
+      this.strike(combo[this.comboStep], now);
+    }
 
     if (this.attack && now >= this.attackEndsAt) {
       this.attack = null;
@@ -1308,13 +1390,13 @@ export class Kubotz implements Damageable, Teamed {
 
     // A smash being charged: released (or fully charged) it strikes.
     if (this.charging) {
-      const held = now - this.chargeStart;
-      if (!pad.attack || held >= SMASH_CHARGE_MS) {
+      const charged = now - this.chargeStart;
+      if (!(this.set === KICK_SET ? kick : pad.attack) || charged >= SMASH_CHARGE_MS) {
         const move = this.charging;
         this.charging = null;
         this.anim.freeze(null);
         this.facing = this.chargeDir;
-        this.strike(move, now, 1 + SMASH_CHARGE_BONUS * Math.min(1, held / SMASH_CHARGE_MS), 0.3);
+        this.strike(move, now, 1 + SMASH_CHARGE_BONUS * Math.min(1, charged / SMASH_CHARGE_MS), move.hold ?? 0.3);
       }
       return;
     }
@@ -1336,13 +1418,15 @@ export class Kubotz implements Damageable, Teamed {
       if (this.startSpecial(kind, dx, now)) return;
     }
 
-    // The right stick (C-stick): an instant smash on the ground, an aerial in the air, in its direction.
+    // The right stick (C-stick): an instant leg smash on the ground, a leg aerial in the air, in its direction.
     if (pad.cstick && !this.attack && now >= this.attackReadyAt) {
       const c = pad.cstick;
+      const moves = KICK_MOVES;
+      this.set = KICK_SET;
       const dir: Dir = c === 'up' || c === 'down' ? c : (c === 'right' ? 1 : -1) === this.facingBefore ? 'forward' : 'back';
       this.comboStep = 0;
       if (this.grounded) {
-        // Strikes on the next frame, unless A is held too: then it charges (as in Smash).
+        // Strikes on the next frame, unless X is held too: then it charges (as in Smash).
         this.startSmash(dir === 'down' ? moves.dsmash : dir === 'up' ? moves.usmash : moves.fsmash, dir, now);
       } else {
         this.facing = this.facingBefore;
@@ -1352,7 +1436,7 @@ export class Kubotz implements Damageable, Teamed {
     }
 
     // Laser guns: a tap fires a light shot on release, holding charges a heavy one.
-    if (this.weapon === 'laserGunMkI' || this.weapon === 'laserGunMkII') {
+    if (gun && !legs) {
       const gun = this.weapon === 'laserGunMkI' ? Config.LASER_GUN_MK_I : Config.LASER_GUN_MK_II;
       if (attackPressed && now >= this.attackReadyAt) this.gunChargeStart = now;
       if (this.gunChargeStart >= 0 && (attackReleased || now - this.gunChargeStart >= GUN_TAP_MS + GUN_CHARGE_MS)) {
@@ -1368,21 +1452,24 @@ export class Kubotz implements Damageable, Teamed {
         if (c > 0.3 && !this.grounded) this.body.vy -= 4 * c * UNIT;
         this.anim.play(ANIM.SHOOT, { restart: true, fade: 30, ms: 260 + 200 * c });
       }
-    } else if (pad.attack) {
+    } else if (held && !chord) {
       const dir = this.attackDirection(pad);
-      const smashFlick = this.grounded && (pad.smash || (attackPressed && now - this.dirPressedAt <= SMASH_INPUT_MS));
+      const smashFlick = this.grounded && (pad.smash || (pressed && now - this.dirPressedAt <= SMASH_INPUT_MS));
       if (this.attack) {
         // A flick just after the press turns the starting jab into a smash.
-        const early = now - this.attackStart < SMASH_INPUT_MS && this.currentMove === combo[0] && flick
-          && now - this.attackPressedAt <= SMASH_INPUT_MS && this.grounded;
+        const early = now - this.attackStart < SMASH_INPUT_MS && this.currentMove === set.combo[0] && flick
+          && now - pressedAt <= SMASH_INPUT_MS && this.grounded;
         if (early) {
           this.attack = null;
+          this.set = set;
           this.startSmash(flick === 'down' ? moves.dsmash : flick === 'up' ? moves.usmash : moves.fsmash, flick, now);
-        } else if (this.inCombo && this.comboStep > 0 && attackPressed) {
+        } else if (this.inCombo && this.comboStep > 0 && pressed && set === this.set) {
           // A press during a strike is kept for the next move of the combo.
           this.comboQueued = true;
         }
-      } else if (now >= this.attackReadyAt && (attackPressed || this.inComboWindow(now))) {
+      } else if (now >= this.attackReadyAt && (pressed || (set === this.set && this.inComboWindow(now)))) {
+        if (set !== this.set) this.comboStep = 0;
+        this.set = set;
         if (!this.grounded) {
           this.comboStep = 0;
           this.facing = this.facingBefore;
@@ -1408,7 +1495,7 @@ export class Kubotz implements Damageable, Teamed {
           this.strike(moves.ftilt, now);
         } else {
           if (now > this.comboUntil) this.comboStep = 0;
-          this.strike(combo[this.comboStep], now);
+          this.strike(set.combo[this.comboStep], now);
         }
       }
     }
@@ -1480,7 +1567,7 @@ export class Kubotz implements Damageable, Teamed {
     const m = this.currentMove;
     if (!this.attack || !m) return;
     const t = (now - this.attackStart) / (this.attackEndsAt - this.attackStart);
-    if (m.burst && t < (m.sustain ?? 0)) {
+    if (m.burst && t >= (m.burstFrom ?? 0) && t < (m.sustain ?? 0)) {
       const [bx, by] = m.burst;
       this.body.setVelocity(bx === null ? this.body.vx : this.facing * bx * UNIT, by === null ? this.body.vy : by * UNIT);
     }
@@ -1506,7 +1593,7 @@ export class Kubotz implements Damageable, Teamed {
     this.chargeDir = dir === 'back' ? (this.facingBefore === 1 ? -1 : 1) : this.facing;
     this.facing = this.chargeDir;
     this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 50 });
-    this.anim.freeze(0.3);
+    this.anim.freeze(move.hold ?? 0.3);
     this.currentMove = move;
   }
 
@@ -1533,9 +1620,9 @@ export class Kubotz implements Damageable, Teamed {
     this.currentMove = move;
     if (from > 0) this.anim.freeze(null);
     else this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 45 });
-    this.inCombo = COMBO.includes(move) || SWORD_COMBO.includes(move);
+    this.inCombo = this.set.combo.length > 1 && this.set.combo.includes(move);
     if (this.inCombo) {
-      this.comboStep = (this.comboStep + 1) % COMBO.length;
+      this.comboStep = (this.comboStep + 1) % this.set.combo.length;
       this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
       return;
     }
@@ -1612,7 +1699,7 @@ export class Kubotz implements Damageable, Teamed {
     if (!by.isAlive() || by.holding !== this) { this.heldBy = null; return; }
     const p = this.mashPrev;
     const fresh = (k: keyof PadState) => !!raw[k] && !p[k];
-    const buttons = (['attack', 'special', 'jump', 'grab', 'guard', 'taunt'] as const).filter(fresh).length;
+    const buttons = (['attack', 'kick', 'special', 'jump', 'grab', 'guard', 'taunt'] as const).filter(fresh).length;
     const stick = (['up', 'down', 'left', 'right'] as const).filter(fresh).length;
     this.mashPrev = { ...raw };
     this.holdLeft -= (buttons * GRAB_MASH_BUTTON + stick * GRAB_MASH_STICK) * FRAME + dt * 1000;
@@ -1654,7 +1741,7 @@ export class Kubotz implements Damageable, Teamed {
       this.hooks.playSfx('dodge', 0.35);
       return;
     }
-    if (pad.attack && !p.attack) {
+    if ((pad.attack && !p.attack) || (pad.kick && !p.kick)) {
       // Pummel: a knee.
       this.pummelUntil = now + PUMMEL_MS;
       this.anim.play('pummel', { restart: true, ms: PUMMEL_MS, fade: 30 });
@@ -1810,8 +1897,9 @@ export class Kubotz implements Damageable, Teamed {
     this.wasGrounded = true;
     if (c.kind === 'attack') {
       // The get-up attack: a sweeping kick across the ledge.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : KICK_MOVES;
       this.comboStep = 0;
+      this.set = this.weapon === 'laserSword' ? SWORD_SET : KICK_SET;
       this.strike({ ...moves.ftilt, ...LEDGE_ATTACK, ms: c.ms * 0.45 }, now);
     }
   }
@@ -2027,6 +2115,7 @@ export class Kubotz implements Damageable, Teamed {
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
+    this.anim.blade = this.weapon === 'laserSword' ? BLADE : null;
     const pose = this.anim.pose();
     // Footsteps land when the other foot touches down in the run.
     if (this.anim.name === ANIM.RUN && this.grounded) {

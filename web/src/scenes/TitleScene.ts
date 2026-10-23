@@ -59,7 +59,7 @@ export class TitleScene extends Phaser.Scene {
     }
 
     footer(this, [
-      'P1  WASD move · Space jump · O attack · P special · I grab · Shift shield · U taunt      P2  Arrows · M jump · , attack · N special · . grab · / shield',
+      'P1  WASD move · Space jump · O fists · P legs · O+P special · I grab · Shift shield · U taunt      P2  Arrows · M jump · , fists · N legs · ,+N special · . grab · / shield',
       '↑↓ / D-pad / stick choose · Enter / A / Start select · F screen effects · Gamepads use the Smash Ultimate layout · Last team standing wins',
     ]);
 

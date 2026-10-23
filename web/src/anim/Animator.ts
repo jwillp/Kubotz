@@ -1,8 +1,14 @@
 import { CLIPS, mixPoses, sampleClip, type Clip } from './Clips';
-import type { Pose, Rig } from './Rig';
+import { pointOnPart, type Pose, type Rig } from './Rig';
+
+/** A blade held in the hand: its image and points along it (pixels from the image's bottom-left), kept above the floor. */
+export interface Blade { file: string; points: { x: number; y: number }[] }
+
+/** How far above the floor the blade is kept (Spriter pixels). */
+const BLADE_CLEARANCE = 6;
 
 /** Clips whose forward motion moves the robot itself (root motion) instead of only its drawing. */
-const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt', 'ftilt', 'sftilt', 'fsmash', 'sfsmash']);
+const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'jab1', 'jab2', 'jabEnd', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt', 'ftilt', 'sftilt', 'fsmash', 'sfsmash', 'pftilt', 'pdtilt', 'pdash', 'kfsmash', 'sdash']);
 
 /**
  * Plays the clips of one robot: time, the blend from the previous pose on each
@@ -10,7 +16,7 @@ const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'slash1', 'slash2', 'slash3
  * (handed to the game as root motion so the body really moves).
  */
 export class Animator {
-  private clip: Clip = CLIPS.idle;
+  private clip: Clip;
   private time = 0;
   private speed = 1;
   private from: Pose | null = null;
@@ -23,7 +29,13 @@ export class Animator {
   /** Set when a non-looping clip reached its end. */
   finished = false;
 
-  constructor(private readonly rig: Rig) {}
+  /** A sword in the hand: grounded moves lift the Kubot into a small hop rather than cut through the floor. */
+  blade: Blade | null = null;
+
+  /** @param clips the clips it plays (the move list's temporary classic comparison passes the old set) */
+  constructor(private readonly rig: Rig, private readonly clips: Record<string, Clip> = CLIPS) {
+    this.clip = clips.idle;
+  }
 
   get name(): string { return this.clip.name; }
   /** 0..1 through the clip. */
@@ -35,7 +47,7 @@ export class Animator {
    * @param fade blend from the current pose (ms)
    */
   play(name: string, opts: { restart?: boolean; ms?: number; fade?: number } = {}): void {
-    const clip = CLIPS[name];
+    const clip = this.clips[name];
     if (!clip || (clip === this.clip && !opts.restart)) return;
     // Blend from the pose drawn last; a full spin ends where it started, so
     // it is not unwound through the blend.
@@ -81,11 +93,21 @@ export class Animator {
     return d;
   }
 
+  /** How far up a pose must be lifted for the blade to clear the floor (y = 0). */
+  private bladeLift(p: Pose): number {
+    const b = this.blade;
+    if (!b) return 0;
+    const part = this.rig.solve({ ...p, y: 0 }, ['weapon_laserSword']).find((q) => q.file.name === b.file);
+    if (!part) return 0;
+    const low = Math.min(...b.points.map((pt) => pointOnPart(part, pt.x, pt.y).y));
+    return BLADE_CLEARANCE - low;
+  }
+
   /** The pose to draw now. */
   pose(): Pose {
     let p = sampleClip(this.clip, this.progress);
     if (ROOT_MOTION.has(this.clip.name)) p = { ...p, x: 0 }; // the body travels instead
-    if (this.clip.planted) p = { ...p, y: (p.y ?? 0) + this.rig.groundLift(p) };
+    if (this.clip.planted) p = { ...p, y: (p.y ?? 0) + Math.max(this.rig.groundLift(p), this.bladeLift(p)) };
     if (this.from && this.blend < this.blendMs) {
       const f = this.blend / this.blendMs;
       p = mixPoses(this.from, p, f * f * (3 - 2 * f));

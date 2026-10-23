@@ -4,8 +4,9 @@ import Phaser from 'phaser';
  * Virtual game pad, like GoatEngine's VirtualGamePad: directions are held
  * buttons (and so are attack, for charging smashes and laser bolts, and
  * guard); grab is "just pressed" for one frame.
- *   attack = BUTTON_A (punch / shoot / slash)
- *   grab   = BUTTON_B (pick up power-ups)
+ *   attack = A (fists / shoot / slash)
+ *   kick   = X (legs); A and X together = special
+ *   grab   = LB / RB (and picks up power-ups)
  *   guard  = shield bubble, held (like Super Smash Bros.)
  */
 export interface PadState {
@@ -15,7 +16,9 @@ export interface PadState {
   smash?: boolean;
   /** The jump button (X / Y), held. Pushing up jumps too (tap jump). */
   jump?: boolean;
-  /** The special button (B), held. */
+  /** The kick button (gamepad X, keyboard P), held: leg moves. */
+  kick?: boolean;
+  /** CPU only: a special move now (people press fists and legs together). */
   special?: boolean;
   /** Taunt (the D-pad), on the frame it is pressed. */
   taunt?: boolean;
@@ -45,25 +48,25 @@ export interface Controller {
 export interface KeyBinding {
   up: string[]; down: string[]; left: string[]; right: string[];
   attack: string[]; grab: string[]; guard: string[];
-  jump: string[]; special: string[]; taunt: string[];
+  jump: string[]; kick: string[]; taunt: string[];
 }
 
 export const PLAYER_1_KEYS: KeyBinding = {
   up: ['W'], down: ['S'], left: ['A'], right: ['D'],
   attack: ['O', 'J'], grab: ['I', 'K'], guard: ['SHIFT', 'L'],
-  jump: ['SPACE'], special: ['P'], taunt: ['U'],
+  jump: ['SPACE'], kick: ['P'], taunt: ['U'],
 };
 
 export const PLAYER_2_KEYS: KeyBinding = {
   up: ['UP'], down: ['DOWN'], left: ['LEFT'], right: ['RIGHT'],
   attack: ['NUMPAD_ONE', 'COMMA'], grab: ['NUMPAD_TWO', 'PERIOD'], guard: ['NUMPAD_THREE', 'NUMPAD_ZERO', 'FORWARD_SLASH'],
-  jump: ['NUMPAD_FIVE', 'M'], special: ['NUMPAD_FOUR', 'N'], taunt: ['NUMPAD_SIX'],
+  jump: ['NUMPAD_FIVE', 'M'], kick: ['NUMPAD_FOUR', 'N'], taunt: ['NUMPAD_SIX'],
 };
 
 /**
  * Gamepad buttons by position (the browser's standard mapping), named as on
- * an Xbox-style pad (the owner's GameSir T4n Lite): A (bottom) = attack
- * (fists), X (left) = special (legs), B (right) and Y (top) = jump, LB / RB =
+ * an Xbox-style pad (the owner's GameSir T4n Lite): A (bottom) = fists,
+ * X (left) = legs (A and X together: special), B (right) and Y (top) = jump, LB / RB =
  * grab, LT / RT = shield, D-pad = taunt; left stick moves, right stick
  * smashes. A Nintendo pad gets the same positions.
  */
@@ -72,7 +75,7 @@ export type PadButtonName = keyof typeof BTN;
 
 /** The pad's buttons per action (the layout above); the left stick moves, the right stick smashes. */
 export const PAD_BINDING = {
-  attack: ['A'], special: ['X'], jump: ['B', 'Y'], grab: ['LB', 'RB'], guard: ['LT', 'RT'], taunt: ['UP', 'DOWN', 'LEFT', 'RIGHT'],
+  attack: ['A'], kick: ['X'], jump: ['B', 'Y'], grab: ['LB', 'RB'], guard: ['LT', 'RT'], taunt: ['UP', 'DOWN', 'LEFT', 'RIGHT'],
 } as const satisfies Partial<Record<keyof KeyBinding, readonly PadButtonName[]>>;
 
 /** A pad control as drawn on the Controls screen: a button, a stick, or the whole D-pad. */
@@ -88,7 +91,7 @@ export const CONTROLS: { action: string; hint: string; keys: (keyof KeyBinding)[
   { action: 'Move', hint: 'Tilt the stick to walk, push it to run · down falls faster in the air', keys: ['up', 'left', 'down', 'right'], pad: ['LS'] },
   { action: 'Jump', hint: 'Again in the air for a double jump · pushing up jumps too', keys: ['jump'], pad: [...PAD_BINDING.jump] },
   { action: 'Fists', hint: 'Jab combo · with a direction: tilts, aerials · flick + press: smash', keys: ['attack'], pad: [...PAD_BINDING.attack] },
-  { action: 'Legs', hint: 'Special moves (kicks), with or without a direction', keys: ['special'], pad: [...PAD_BINDING.special] },
+  { action: 'Legs', hint: 'Kicks · with a direction: tilts, aerials · flick + press: smash · with Fists: special move', keys: ['kick'], pad: [...PAD_BINDING.kick] },
   { action: 'Smash', hint: 'A smash on the ground, an aerial in the air · keys: hold Fists to charge', keys: [], keyText: 'Flick + Fists', pad: ['RS'] },
   { action: 'Grab', hint: 'Throw an opponent · pick up bonuses', keys: ['grab'], pad: [...PAD_BINDING.grab] },
   { action: 'Shield', hint: 'Held: a bubble that wears down · with a direction: roll, or dodge in the air', keys: ['guard'], pad: [...PAD_BINDING.guard] },
@@ -123,7 +126,7 @@ export class HumanController implements Controller {
     this.keys = {
       up: make(binding.up), down: make(binding.down), left: make(binding.left), right: make(binding.right),
       attack: make(binding.attack), grab: make(binding.grab), guard: make(binding.guard),
-      jump: make(binding.jump), special: make(binding.special), taunt: make(binding.taunt),
+      jump: make(binding.jump), kick: make(binding.kick), taunt: make(binding.taunt),
     };
   }
 
@@ -134,7 +137,7 @@ export class HumanController implements Controller {
       up: held(this.keys.up), down: held(this.keys.down),
       left: held(this.keys.left), right: held(this.keys.right),
       attack: held(this.keys.attack), grab: just(this.keys.grab), guard: held(this.keys.guard),
-      jump: held(this.keys.jump), special: held(this.keys.special), taunt: just(this.keys.taunt),
+      jump: held(this.keys.jump), kick: held(this.keys.kick), taunt: just(this.keys.taunt),
     };
     const pad = this.scene.input.gamepad?.getPad(this.padIndex);
     if (pad) this.readPad(pad, s);
@@ -175,7 +178,7 @@ export class HumanController implements Controller {
     const trigger = (i: number) => (pad.buttons[i]?.value ?? 0) > TRIGGER;
     const pressed = (names: readonly PadButtonName[], on = btn) => names.some((n) => on(BTN[n]));
     s.attack ||= pressed(PAD_BINDING.attack);
-    s.special ||= pressed(PAD_BINDING.special);
+    s.kick ||= pressed(PAD_BINDING.kick);
     s.jump ||= pressed(PAD_BINDING.jump);
     s.guard ||= pressed(PAD_BINDING.guard, trigger);
     const grab = pressed(PAD_BINDING.grab);

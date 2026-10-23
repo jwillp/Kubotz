@@ -5,9 +5,15 @@ import { Rig } from '../anim/Rig';
 import { ART_SCALE, Robot2D } from '../anim/Robot2D';
 import type { SpriterData } from '../spriter/Spriter';
 import {
-  GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
+  BLADE, GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
 } from '../game/Kubotz';
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
+import { CLIPS, type Clip } from '../anim/Clips';
+import { CLASSIC_CLIPS } from '../anim/ClassicClips';
+import { CLASSIC_MOVE_LIST } from '../game/ClassicMoveList';
+import { CLASSIC_THROWS } from '../game/ClassicMoves';
+import { gamepads } from '../ui/Fullscreen';
+import { faceButtons } from './MenuInput';
 import { opaqueOutline } from './GameScene';
 import { BODY_FAMILY, heading } from '../ui/Type';
 import { drawPlate, drawStrip, kubeBackdrop, shutter } from '../ui/Plate';
@@ -30,6 +36,20 @@ const VICTIM_COLOR = SLOT_COLORS[1];
 const SPEEDS = [{ label: 'Normal', rate: 1 }, { label: 'Slow', rate: 0.35 }];
 /** The speed chosen, kept for the next visit. */
 let speedIndex = 0;
+/**
+ * TEMPORARY debug comparison: the classic moves (as on dev before the Smash
+ * moves) instead of the SSB ones, toggled with C / pad Y. Kept for the next visit.
+ */
+let classic = false;
+const moveList = (): MoveEntry[] => (classic ? CLASSIC_MOVE_LIST : MOVE_LIST);
+const clipSet = (): Record<string, Clip> => (classic ? CLASSIC_CLIPS : CLIPS);
+const throws = () => (classic ? CLASSIC_THROWS : THROWS);
+
+/** The animator keeps a held sword above the floor. */
+function withBlade(anim: Animator, entry: MoveEntry): Animator {
+  anim.blade = entry.weapon === 'laserSword' ? BLADE : null;
+  return anim;
+}
 const FALL_GRAVITY = Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS);
 
 const ease = (t: number) => t * t * (3 - 2 * t);
@@ -73,7 +93,7 @@ class PreviewRun {
     const s = this.step;
     if (!s) { this.done = true; this.anim.play(this.grounded ? 'idle' : 'fall', { fade: 140 }); return; }
     this.anim.play(s.anim, { restart: true, ms: s.ms, fade: 50 });
-    if (s.charge) this.anim.freeze(0.3);
+    if (s.charge) this.anim.freeze(s.move?.hold ?? 0.3);
     if (s.jump) this.vy = -Config.JUMP_VELOCITY * s.jump * UNIT;
     if (s.vel) {
       if (s.vel[0] !== null) this.vx = s.vel[0] * UNIT;
@@ -94,12 +114,13 @@ class PreviewRun {
     let length = 0;
     if (s) {
       const charge = s.charge ?? 0;
-      if (charge && this.stepMs < charge) t = 0.3;
+      const hold = s.move?.hold ?? 0.3;
+      if (charge && this.stepMs < charge) t = hold;
       else if (charge) {
         this.anim.freeze(null);
-        t = 0.3 + (this.stepMs - charge) / s.ms;
+        t = hold + (this.stepMs - charge) / s.ms;
       } else t = this.stepMs / s.ms;
-      length = charge + s.ms * (charge ? 0.7 : 1);
+      length = charge + s.ms * (charge ? 1 - hold : 1);
     }
     this.progress = Math.min(1, t);
 
@@ -193,12 +214,12 @@ class Victim {
     }
     if (this.state === 'held') {
       const kind = s ? THROW_OF[s.anim] ?? null : null;
-      const release = kind ? THROWS[kind].release : 1;
+      const release = kind ? throws()[kind].release : 1;
       const [dx, dy] = heldOffset(kind, Math.min(1, run.progress / release));
       this.x = run.x + dx * UNIT;
       this.y = run.y - dy * UNIT;
       this.flash = s?.anim === 'pummel' && run.progress > 0.35 && run.progress < 0.55;
-      if (kind && run.progress >= release) this.launch(THROWS[kind].launch, THROWS[kind].dir, run.index);
+      if (kind && run.progress >= release) this.launch(throws()[kind].launch, throws()[kind].dir, run.index);
       return;
     }
     // A strike that reaches it launches it.
@@ -238,8 +259,8 @@ class Victim {
 
 /** Plays an entry once without drawing, for where it goes: its reach left, right and up (stage pixels). */
 function extent(entry: MoveEntry, rig: Rig): { minX: number; maxX: number; top: number } {
-  const run = new PreviewRun(entry, new Animator(rig));
-  const victim = entry.victim ? new Victim(new Animator(rig)) : null;
+  const run = new PreviewRun(entry, withBlade(new Animator(rig, clipSet()), entry));
+  const victim = entry.victim ? new Victim(new Animator(rig, clipSet())) : null;
   let minX = run.x; let maxX = run.x; let top = run.y;
   for (let i = 0; i < 900 && !(run.done && (victim?.settled ?? true)); i++) {
     run.tick(1000 / 60);
@@ -288,10 +309,12 @@ export class MoveListScene extends Phaser.Scene {
   private pauseUntil = 0;
   private nextGhostAt = 0;
   private bolts: Bolt[] = [];
-  private padPrev = { up: false, down: false, back: false, speed: false };
+  private padPrev = { up: false, down: false, back: true, speed: true, moves: true };
+  private movesButtons: { box: Phaser.GameObjects.Rectangle; text: Phaser.GameObjects.Text }[] = [];
   /** Set by back(): the scene stops at the next step, so nothing may draw the destroyed robot meanwhile. */
   private leaving = false;
   private padRepeatAt = 0;
+  private toggleReadyAt = 0;
 
   constructor() { super('MoveList'); }
 
@@ -305,8 +328,9 @@ export class MoveListScene extends Phaser.Scene {
     // Centred on the header row, its glow clear of the panels below.
     heading(this, LIST.x - 8, 44, 'Move list', 48).setOrigin(0, 0.5);
     this.buildSpeedToggle();
-    this.add.text(width - 32, 44, '▲▼ / W S / wheel: choose      Esc / B: back', {
-      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '17px', color: '#9fe3ff',
+    this.buildMovesToggle();
+    this.add.text(width - 32, 74, 'Esc / B: back', {
+      fontFamily: BODY_FAMILY, fontStyle: '500', fontSize: '14px', color: '#9fe3ff',
     }).setOrigin(1, 0.5);
 
     this.buildList();
@@ -322,7 +346,7 @@ export class MoveListScene extends Phaser.Scene {
     this.speedButtons = [];
     const w = 92;
     const x0 = PANEL.x - 8;
-    const label = this.add.text(x0, 44, 'SPEED  TAB / Y', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' }).setOrigin(0, 0.5);
+    const label = this.add.text(x0, 44, 'SPEED  TAB / X', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#29abe2' }).setOrigin(0, 0.5);
     SPEEDS.forEach((sp, i) => {
       const x = x0 + label.width + 14 + i * w;
       const box = this.add.rectangle(x, 44, w, 32, 0x29abe2, 0).setOrigin(0, 0.5).setStrokeStyle(1, 0x29abe2, 0.7)
@@ -332,6 +356,49 @@ export class MoveListScene extends Phaser.Scene {
       this.speedButtons.push({ box, text });
     });
     this.setSpeed(speedIndex);
+  }
+
+  /** TEMPORARY: Classic / SSB buttons, after the speed ones. */
+  private buildMovesToggle(): void {
+    const w = 80;
+    const last = this.speedButtons[this.speedButtons.length - 1].box;
+    const label = this.add.text(last.x + last.width + 24, 44, 'MOVES  C / Y', { fontFamily: BODY_FAMILY, fontStyle: '800', fontSize: '14px', color: '#ffb347' }).setOrigin(0, 0.5);
+    this.movesButtons = ['Classic', 'SSB'].map((name, i) => {
+      const x = label.x + label.width + 14 + i * w;
+      const box = this.add.rectangle(x, 44, w, 32, 0xffb347, 0).setOrigin(0, 0.5).setStrokeStyle(1, 0xffb347, 0.7)
+        .setInteractive({ useHandCursor: true });
+      const text = this.add.text(x + w / 2, 44, name, { fontFamily: BODY_FAMILY, fontStyle: '700', fontSize: '17px', color: '#e8f4ff' }).setOrigin(0.5);
+      box.on('pointerdown', () => this.setClassic(i === 0));
+      return { box, text };
+    });
+    this.paintMoves();
+  }
+
+  private paintMoves(): void {
+    this.movesButtons.forEach((b, j) => {
+      const on = (j === 0) === classic;
+      b.box.setFillStyle(0xffb347, on ? 0.45 : 0.08);
+      b.text.setColor(on ? '#ffffff' : '#d6c2a6');
+    });
+  }
+
+  /** Switches the list between the classic and SSB moves, staying on the same move where both have it. */
+  private setClassic(on: boolean): void {
+    if (on === classic) return;
+    const { name, group } = this.entry;
+    classic = on;
+    uiSound(this, 'tick');
+    this.paintMoves();
+    this.tweens.killTweensOf(this.highlight);
+    this.list.destroy();
+    this.rows = [];
+    this.buildList();
+    // The same slot (group and name), else the same name.
+    const list = moveList();
+    let i = list.findIndex((e) => e.group === group && e.name === name);
+    if (i < 0) i = list.findIndex((e) => e.name === name);
+    this.selected = -1;
+    this.select(Math.max(0, i));
   }
 
   private setSpeed(i: number): void {
@@ -355,7 +422,7 @@ export class MoveListScene extends Phaser.Scene {
     this.tweens.add({ targets: this.highlight, fillAlpha: 0.46, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     let y = 0;
     let group = '';
-    MOVE_LIST.forEach((e, i) => {
+    moveList().forEach((e, i) => {
       if (e.group !== group) {
         group = e.group;
         if (i > 0) y += 8;
@@ -388,7 +455,7 @@ export class MoveListScene extends Phaser.Scene {
 
   private select(i: number): void {
     const was = this.selected;
-    this.selected = (i + MOVE_LIST.length) % MOVE_LIST.length;
+    this.selected = (i + moveList().length) % moveList().length;
     if (this.selected !== was) uiSound(this, 'move');
     const row = this.rows[this.selected];
     this.rows.forEach((r) => r.text.setColor(r === row ? '#ffffff' : '#c6d8ea').setFontStyle(r === row ? 'bold' : ''));
@@ -397,7 +464,7 @@ export class MoveListScene extends Phaser.Scene {
     // Keep the row (and its group header, near the top) in view.
     if (row.y - HEADER_H < this.scroll) this.setScroll(row.y - HEADER_H);
     else if (row.y + ROW_H + 8 > this.scroll + LIST.h) this.setScroll(row.y + ROW_H + 8 - LIST.h);
-    this.showEntry(MOVE_LIST[this.selected]);
+    this.showEntry(moveList()[this.selected]);
   }
 
   // ----------------------------------------------------------------- info
@@ -455,9 +522,9 @@ export class MoveListScene extends Phaser.Scene {
   private restart(): void {
     for (const b of this.bolts) b.img.destroy();
     this.bolts = [];
-    const anim = new Animator(this.rig);
+    const anim = withBlade(new Animator(this.rig, clipSet()), this.entry);
     this.run = new PreviewRun(this.entry, anim);
-    this.victim = this.entry.victim ? new Victim(new Animator(this.rig)) : null;
+    this.victim = this.entry.victim ? new Victim(new Animator(this.rig, clipSet())) : null;
     this.victimRobot.view.setVisible(!!this.victim);
     this.pauseUntil = 0;
     this.draw(0, true);
@@ -582,8 +649,9 @@ export class MoveListScene extends Phaser.Scene {
     kb.on('keydown-DOWN', down);
     kb.on('keydown-S', down);
     kb.on('keydown-PAGE_UP', () => this.select(Math.max(0, this.selected - 10)));
-    kb.on('keydown-PAGE_DOWN', () => this.select(Math.min(MOVE_LIST.length - 1, this.selected + 10)));
+    kb.on('keydown-PAGE_DOWN', () => this.select(Math.min(moveList().length - 1, this.selected + 10)));
     kb.on('keydown-TAB', (e: KeyboardEvent) => { e.preventDefault(); this.setSpeed(speedIndex + 1); });
+    kb.on('keydown-C', () => this.setClassic(!classic));
     kb.on('keydown-ESC', () => this.back());
     kb.on('keydown-BACKSPACE', () => this.back());
     this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
@@ -592,17 +660,20 @@ export class MoveListScene extends Phaser.Scene {
     });
   }
 
-  /** Gamepads: D-pad or left stick to choose (repeating while held), B (bottom face) back. */
+  /** Gamepads: D-pad or left stick to choose (repeating while held), X speed, Y Classic / SSB, B or Start back. */
   private pollPad(time: number): void {
-    const pads = this.input.gamepad?.gamepads.filter((p) => p && p.connected) ?? [];
-    let up = false; let down = false; let back = false; let speed = false;
+    // The browser's own pressed state (as the menus read it), so a button held
+    // lightly cannot flicker between pressed and not pressed.
+    const pads = gamepads();
+    let up = false; let down = false; let back = false; let speed = false; let moves = false;
     for (const pad of pads) {
-      const btn = (i: number) => (pad.buttons[i]?.value ?? 0) > 0.5;
-      const ay = pad.axes.length > 1 ? pad.axes[1].getValue() : 0;
+      const btn = (i: number) => !!pad.buttons[i]?.pressed;
+      const ay = pad.axes[1] ?? 0;
       up ||= btn(12) || ay < -0.6;
       down ||= btn(13) || ay > 0.6;
-      back ||= btn(0);
-      speed ||= btn(2);
+      back ||= btn(faceButtons(pad).B) || btn(9);
+      speed ||= btn(2); // the left face button: X on an Xbox-style pad
+      moves ||= btn(3); // the top one: Y
     }
     const prev = this.padPrev;
     if ((up && !prev.up) || (down && !prev.down)) {
@@ -612,9 +683,11 @@ export class MoveListScene extends Phaser.Scene {
       this.select(this.selected + (up ? -1 : 1));
       this.padRepeatAt = time + 110;
     }
-    if (speed && !prev.speed) this.setSpeed(speedIndex + 1);
+    // A toggle fires once per press, and not again within a moment (a bouncing button).
+    if (speed && !prev.speed && time >= this.toggleReadyAt) { this.setSpeed(speedIndex + 1); this.toggleReadyAt = time + 200; }
+    if (moves && !prev.moves && time >= this.toggleReadyAt) { this.setClassic(!classic); this.toggleReadyAt = time + 200; }
     if (back && !prev.back) this.back();
-    this.padPrev = { up, down, back, speed };
+    this.padPrev = { up, down, back, speed, moves };
   }
 
   private back(): void {

@@ -67,8 +67,8 @@ const deviceLabel = (s: Seat): string => {
 };
 const deviceBlurb = (s: Seat): string => {
   const d = s.device;
-  if (d === 'K1') return 'WASD move · Space jump\nO attack · P special';
-  if (d === 'K2') return 'Arrows move · M jump\n, attack · N special';
+  if (d === 'K1') return 'WASD move · Space jump\nO fists · P legs · O+P special';
+  if (d === 'K2') return 'Arrows move · M jump\n, fists · N legs · ,+N special';
   if (d === 'CPU') return s.level >= 7 ? 'Reads you, punishes\nevery opening.' : s.level <= 3 ? 'Takes its time.\nGood for practice.' : 'A fair fight.';
   if (typeof d === 'number') return 'Smash Ultimate layout';
   if (d === 'PAD') return 'Press A on a gamepad\nto take this slot.';
