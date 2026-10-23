@@ -373,7 +373,7 @@ function buildInspector(): void {
   // The move: what the hit does, when, and where its circles are.
   const m = s.move();
   if (m) {
-    const name = s.sel.move!.table === 'combo' || s.sel.move!.table === 'swordCombo' ? `${s.sel.move!.table === 'combo' ? 'jab' : 'sword jab'} ${Number(s.sel.move!.key) + 1}` : s.sel.move!.key;
+    const name = s.sel.move!.table === 'combo' || s.sel.move!.table === 'bladeCombo' ? `${s.sel.move!.table === 'combo' ? 'jab' : 'blade jab'} ${Number(s.sel.move!.key) + 1}` : s.sel.move!.key;
     out.push(h('div', { cls: 'inspector-title', textContent: `Move · ${name}` }));
     out.push(section('hit', 'Hit', [grid(2,
       num('Damage %', 'Damage dealt to the Kubot that is hit.', () => s.move()!.damage, (v) => editMove((mm) => { mm.damage = v ?? 0; })),
@@ -391,7 +391,7 @@ function buildInspector(): void {
     out.push(section('circles', 'Hit circles', [
       grid(2,
         pick('Points', `Which parts strike: a set of points on the part images (fists, feet, blade...). Shared by ${s.pointSetUsers(m.points)} moves, so dragging a red dot moves it for all of them.`, Object.keys(s.docs.moves.pointSets), () => s.move()!.points, (v) => editMove((mm) => { mm.points = v; }, false)),
-        num('Radius units', 'Size of each hit circle (1 unit = one map tile). Empty uses the default: 0.35, or 0.3 for the sword.', () => s.move()!.radius, (v) => editMove((mm) => setOpt(mm, 'radius', v)), { step: 0.05, placeholder: m.points === 'blade' ? '0.3' : '0.35' }),
+        num('Radius units', 'Size of each hit circle (1 unit = one map tile). Empty uses the default: 0.35, or 0.3 for the plasma blade.', () => s.move()!.radius, (v) => editMove((mm) => setOpt(mm, 'radius', v)), { step: 0.05, placeholder: m.points === 'blade' ? '0.3' : '0.35' }),
       ),
       h('div', { cls: 'checks' },
         flag('every point hits', 'Off: only the point furthest forward strikes (the leading fist or foot). On: every point has a circle (spins, splits).', () => !!s.move()!.all, (v) => editMove((mm) => setOpt(mm, 'all', v || undefined), false)),
@@ -1053,7 +1053,7 @@ function buildArenaInspector(): void {
 const isGameSound = (k: string) => GAME_SOUNDS.includes(k);
 /** Sounds that mix this one in (a layer of theirs plays it). */
 const soundUsers = (key: string) => Object.entries(store.docs.sounds).filter(([k, d]) => k !== key && d.layers.some((l) => l.type === 'sound' && l.sound === key)).map(([k]) => k);
-const SOUND_GROUPS: [RegExp, string][] = [[/^(boom|step-|holo-)/, 'Kubotz'], [/^portal-/, 'Arena'], [/^orb-/, 'Power-ups'], [/^ui-/, 'Menus']];
+const SOUND_GROUPS: [RegExp, string][] = [[/^(boom|step-|holo-)/, 'Kubotz'], [/^blade-/, 'Plasma Blades'], [/^portal-/, 'Arena'], [/^orb-/, 'Power-ups'], [/^ui-/, 'Menus']];
 const LAYER_NAMES: Record<Layer['type'], string> = { tone: 'Tone', noise: 'Noise', ping: 'Ping', sound: 'Sound' };
 const PLATE: [number, number, number][] = [[1, 0.13, 55], [2.698, 0.07, 70], [4.395, 0.045, 90], [7.023, 0.025, 120]];
 const NEW_LAYERS: Record<Layer['type'], () => Layer> = {
@@ -1141,7 +1141,7 @@ function buildSoundList(): void {
     groups.get(group)!.push(item);
   }
   const kids: HTMLElement[] = [];
-  for (const g of ['Kubotz', 'Arena', 'Power-ups', 'Menus', 'Game', 'New sounds']) if (groups.has(g)) kids.push(h('div', { cls: 'group', textContent: g }), ...groups.get(g)!);
+  for (const g of ['Kubotz', 'Plasma Blades', 'Arena', 'Power-ups', 'Menus', 'Game', 'New sounds']) if (groups.has(g)) kids.push(h('div', { cls: 'group', textContent: g }), ...groups.get(g)!);
   const add = button('+ New sound', 'Makes a new sound: one tone to start from.', () => {
     const key = uniqueSound('new-sound');
     store.edit('sounds', (d) => { d.sounds[key] = { note: 'A new sound.', length: 0.6, layers: [NEW_LAYERS.tone()] }; });

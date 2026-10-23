@@ -9,7 +9,8 @@ import { renderSound, type SoundDef } from './SoundDef';
 export type UiSoundKind = 'move' | 'confirm' | 'back' | 'tick';
 
 /** The sounds the game plays by key (Sounds.ts): renaming or deleting one silences it. */
-export const GAME_SOUNDS = ['boom', 'orb-bounce', 'orb-pickup', 'orb-heal', 'step-0', 'step-1', 'step-2', 'holo-spawn', 'portal-warp', 'ui-move', 'ui-tick', 'ui-confirm', 'ui-back', 'ui-scan'];
+export const GAME_SOUNDS = ['boom', 'orb-bounce', 'orb-pickup', 'orb-heal', 'step-0', 'step-1', 'step-2', 'holo-spawn', 'portal-warp', 'ui-move', 'ui-tick', 'ui-confirm', 'ui-back', 'ui-scan',
+  'blade-swing-0', 'blade-swing-1', 'blade-swing-2', 'blade-clash', 'blade-deflect', 'blade-break'];
 
 /** The sound files in src/data/sounds, by key. */
 export const SOUND_FILES: Record<string, SoundDef> = Object.fromEntries(

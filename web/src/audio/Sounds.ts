@@ -9,7 +9,8 @@ import { soundDefs, synthSamples, type UiSoundKind } from './Synth';
  * sounds), converted to mp3 in public/audio.
  * SYNTH: sounds made in code at boot, added for the web port: one file
  * each in src/data/sounds (boom, orb-bounce, orb-pickup, orb-heal, step-0..2,
- * holo-spawn, portal-warp, ui-move, ui-tick, ui-confirm, ui-back, ui-scan),
+ * holo-spawn, portal-warp, ui-move, ui-tick, ui-confirm, ui-back, ui-scan,
+ * blade-swing-0..2, blade-clash, blade-deflect, blade-break),
  * rendered by audio/SoundDef.ts (free of Phaser so a worker can run it,
  * audio/SynthWorker.ts). The editor's Sound tab edits them and exports WAVs.
  */

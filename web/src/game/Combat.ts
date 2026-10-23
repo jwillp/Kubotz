@@ -9,7 +9,7 @@ import type { Kubotz } from './Kubotz';
  */
 export class Bullet {
   readonly sprite: Phaser.GameObjects.Image;
-  readonly expiresAt: number;
+  expiresAt: number;
   dead = false;
   x: number;
   y: number;
@@ -20,10 +20,10 @@ export class Bullet {
 
   constructor(
     scene: Phaser.Scene,
-    readonly shooter: Kubotz,
+    public shooter: Kubotz,
     x: number, y: number,
     vx: number, vy: number,
-    readonly damage: number,
+    public damage: number,
     now: number,
     /** Bolt scale (a charged shot is bigger) and push. */
     readonly size = 1,
@@ -33,12 +33,26 @@ export class Bullet {
     this.vx = vx * UNIT; this.vy = vy * UNIT;
     // entities/bullet.png (BulletFactory) points left.
     // Recoloured per player in BootScene: the laser takes the shooter's colour.
-    const key = `bullet:${shooter.look.color.toString(16).padStart(6, '0')}`;
-    this.sprite = scene.add.image(x, y, scene.textures.exists(key) ? key : 'bullet').setDepth(12);
+    this.sprite = scene.add.image(x, y, Bullet.texture(scene, shooter)).setDepth(12);
     this.sprite.setDisplaySize(1.1 * UNIT * (0.6 + 0.4 * size), 0.6 * UNIT * size);
     this.sprite.setFlipX(vx > 0);
     this.sprite.setBlendMode(pureAdd(scene));
     this.expiresAt = now + Config.BULLET_LIFESPAN;
+  }
+
+  private static texture(scene: Phaser.Scene, shooter: Kubotz): string {
+    const key = `bullet:${shooter.look.color.toString(16).padStart(6, '0')}`;
+    return scene.textures.exists(key) ? key : 'bullet';
+  }
+
+  /** Batted back by a plasma blade: it now belongs to `by` (its colour too), flying along (vx, vy) px/s. */
+  deflect(by: Kubotz, vx: number, vy: number, damage: number, now: number): void {
+    this.shooter = by;
+    this.damage = damage;
+    this.vx = vx; this.vy = vy;
+    this.expiresAt = now + Config.BULLET_LIFESPAN;
+    // The bolt image points left: flipped, it points along +x, then turned to its flight.
+    this.sprite.setTexture(Bullet.texture(this.sprite.scene, by)).setFlipX(true).setRotation(Math.atan2(vy, vx));
   }
 
   get pushX(): number { return Math.sign(this.vx) * Config.PUNCH_KNOCKBACK * 0.5 * this.power; }

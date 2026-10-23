@@ -52,6 +52,7 @@ export function replayRate(d: number, kind: HighlightKind = 'ko'): number {
 
 /** The highlights' sections, in the order they play. */
 const SECTIONS: Record<HighlightKind, { title: string; one: string }> = {
+  goal: { title: 'BEST GOALS', one: 'GOAL' },
   ko: { title: 'TOP K.O.s', one: 'K.O.' },
   recovery: { title: 'BEST RECOVERIES', one: 'RECOVERY' },
   combo: { title: 'BEST COMBOS', one: 'COMBO' },
@@ -101,7 +102,7 @@ export class ResultsScene extends Phaser.Scene {
   private particles!: ParticleFx;
   private effects: Record<string, EffectDef> = {};
   private portals: PortalFx | null = null;
-  private sabers!: Phaser.GameObjects.Graphics;
+  private blades!: Phaser.GameObjects.Graphics;
   /** The recorded images (debris, bolts, balls, glows), pooled. */
   private props: Phaser.GameObjects.Image[] = [];
   /** The last frame whose sounds and effects went off. */
@@ -189,8 +190,8 @@ export class ResultsScene extends Phaser.Scene {
       this.tags.push(this.add.image(0, 0, this.textures.exists(key) ? key : '__DEFAULT').setOrigin(0.5, 1).setDepth(21).setVisible(false));
       this.owners.push({ x: 0, y: 0 });
     });
-    // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
-    this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(pureAdd(this));
+    // Plasma blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
+    this.blades = this.add.graphics().setDepth(10.5).setBlendMode(pureAdd(this));
     this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(pureAdd(this));
     this.holoG = this.add.graphics().setDepth(10.5);
     // Hit sparks, rings, dust and smoke replayed from the match's calls.
@@ -233,7 +234,14 @@ export class ResultsScene extends Phaser.Scene {
     c.add(this.add.rectangle(width / 2, height / 2, width, height, 0x050b18, 0.82));
     const winners = r.winnerTeam === null ? [] : r.fighters.map((f, i) => (f.team === r.winnerTeam ? i : -1)).filter((i) => i >= 0);
     const winColor = winners.length ? r.colors[winners[0]] : 0x29abe2;
-    const title = winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
+    const trial = r.mode === 'blasterTraining' || r.mode === 'bladeTraining';
+    const title = r.mode === 'horde'
+      ? (winners.length ? `Survived ${r.wave} waves!` : `Fell on wave ${r.wave}`)
+      : trial ? (winners.length ? `Training cleared: ${r.defeated} defeated!` : `Defeated ${r.defeated} of ${r.target}`)
+      : r.mode === 'ctf' ? `${winners.length ? 'Red team' : 'Blue team'} wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`
+      : r.mode === 'kubeball' || r.mode === 'skychase'
+        ? (r.winnerTeam === null ? `Draw ${r.score?.[0] ?? 0}-${r.score?.[1] ?? 0}` : `${r.winnerTeam === 0 ? 'Red' : 'Blue'} team wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`)
+      : winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
     c.add(heading(this, width / 2, 70, title.replace(/&/g, 'and'), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
     c.add(this.add.text(width / 2, 130, `Match time ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}  ·  ${r.stats.reduce((n, st) => n + st.falls, 0)} K.O.${r.stats.reduce((n, st) => n + st.falls, 0) === 1 ? '' : 's'}`, {
@@ -243,12 +251,13 @@ export class ResultsScene extends Phaser.Scene {
     // One row per Kubot, the numbers in its colour; the best of each column is lit.
     const x0 = 120; const nameW = 260; const colW = (width - 2 * x0 - nameW) / COLUMNS.length;
     const top = 200;
-    const rowH = Math.min(84, 380 / Math.max(1, r.names.length));
+    // The players' Kubotz only (Horde's black team is in the replays, not the table).
+    const rowH = Math.min(84, 380 / Math.max(1, r.fighters.length));
     COLUMNS.forEach((col, j) => c.add(this.add.text(x0 + nameW + colW * (j + 0.5), top, col.label, {
       fontFamily: FONT, fontStyle: '800', fontSize: '15px', color: '#8fb4d8',
     }).setOrigin(0.5)));
-    const best = COLUMNS.map((col) => Math.max(...r.stats.map((s) => col.get(s))));
-    r.names.forEach((name, i) => {
+    const best = COLUMNS.map((col) => Math.max(...r.stats.slice(0, r.fighters.length).map((s) => col.get(s))));
+    r.names.slice(0, r.fighters.length).forEach((name, i) => {
       const y = top + 50 + i * rowH;
       const color = r.colors[i];
       const row = this.add.container(0, y);
@@ -358,7 +367,9 @@ export class ResultsScene extends Phaser.Scene {
     const kind = all.filter((o) => o.kind === h.kind);
     const rank = kind.length - kind.indexOf(h);
     const who = (n: number | null) => (n === null ? '' : r.names[n]);
-    const line = h.kind === 'ko'
+    const line = h.kind === 'goal'
+      ? `${h.by !== null ? who(h.by) : 'Nobody'} scored  ·  from ${Math.round(h.margin ?? 0)} units${h.final ? '  ·  winner' : ''}`
+      : h.kind === 'ko'
       ? (h.by !== null ? `${who(h.by)} K.O.'d ${who(h.subject)}` : `${who(h.subject)} fell`) + (h.final ? '  ·  match point' : '')
       : h.kind === 'combo'
         ? `${who(h.by)} on ${who(h.subject)}  ·  ${h.hits} hits, ${Math.round(h.damage ?? 0)}%${h.ko ? '  ·  K.O.' : ''}`
@@ -380,7 +391,7 @@ export class ResultsScene extends Phaser.Scene {
     this.impact?.clear();
     this.particles?.clear();
     this.owners.forEach((o) => this.impact?.swing(o, null, 0));
-    this.sabers?.clear();
+    this.blades?.clear();
     this.holoG?.clear();
     this.holoAdd?.clear();
     for (const l of this.lightPool) l.setVisible(false);
@@ -426,7 +437,7 @@ export class ResultsScene extends Phaser.Scene {
     this.setLights(a);
     this.holoG.clear();
     this.holoAdd.clear();
-    this.sabers.clear();
+    this.blades.clear();
     a.kubotz.forEach((ra, i) => this.drawKubot(i, ra, b.kubotz[i], f, step, cam.zoom, this.tau - a.t));
     this.snap = false;
     this.drawProps(a, b, f);
@@ -493,13 +504,13 @@ export class ResultsScene extends Phaser.Scene {
     tag.setVisible(true).setPosition(x, bottom - Config.KUBOTZ_HEIGHT * UNIT - UNIT * 0.75 - 6).setScale(0.42 / zoom).setAlpha(faint);
     owner.x = x;
     owner.y = bottom - UNIT;
-    // The laser blade, its swing trail, the power-up motes round it.
+    // The plasma blade, its swing trail, the power-up motes round it.
     if (ra.blade) {
       const [x1, y1, x2, y2] = ra.blade;
-      drawBlade(this.sabers, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
+      drawBlade(this.blades, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
     }
     const s = ra.swing;
-    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color);
+    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color, s?.[4] === 1);
     for (const key of ra.auras ?? []) this.impact.aura(owner, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;

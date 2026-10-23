@@ -24,16 +24,22 @@ export interface Envelope {
   /**
    * hold: full to the end; linear: down to `end` (0 by default); exp: dies
    * away (`k` = how fast); pow: (1 - u)^k; arch: up and down, loudest at
-   * the middle; release: full for `hold` seconds, then dies away (`k`).
+   * the middle (`bend` leans it, `k` sharpens it); release: full for
+   * `hold` seconds, then dies away (`k`).
    */
   shape?: 'hold' | 'linear' | 'exp' | 'pow' | 'arch' | 'release';
   k?: number;
   end?: number;
   hold?: number;
+  bend?: number;
 }
 
-/** A tremolo: sine sways the level down by `depth`; square cuts it by `depth` while the cycle is below `duty` (-1..1). */
-export interface Lfo { shape: 'sine' | 'square'; rate: number; depth: number; duty?: number }
+/**
+ * A tremolo: sine sways the level down by `depth`; square cuts it by `depth`
+ * while the cycle is below `duty` (-1..1); random jumps about `rate` times a
+ * second, on with a chance of `duty` (0..1), else down by `depth` (crackle).
+ */
+export interface Lfo { shape: 'sine' | 'square' | 'random'; rate: number; depth: number; duty?: number }
 
 export interface Filter {
   /** lowpass and highpass: one pole; bandpass: resonant (`q`); tilt: a gentle brightening (`amount` 0..1). */
@@ -59,6 +65,8 @@ export interface ToneLayer extends LayerBase {
   /** soft: a sine pushed into a soft clip by `drive`, for digital blips. */
   wave?: 'sine' | 'soft' | 'square' | 'saw' | 'triangle';
   drive?: number;
+  /** Clips the summed voices at this level (an electric buzz); none by default. */
+  clip?: number;
   /** Extra voices at pitch ratios: [ratio, level]. Without them, one voice. */
   partials?: [number, number][];
   /** Vibrato: `depth` is a fraction of the pitch, or Hz when `hz`. */
@@ -150,7 +158,7 @@ export function envAt(e: Envelope | undefined, u: number, t: number, dur: number
     case 'linear': return a * (1 - u * (1 - (e.end ?? 0)));
     case 'exp': return a * Math.exp(-u * k);
     case 'pow': return a * Math.pow(Math.max(0, 1 - u), k);
-    case 'arch': return a * Math.sin(Math.PI * Math.min(1, u));
+    case 'arch': return a * Math.pow(Math.sin(Math.PI * Math.pow(Math.min(1, u), e.bend ?? 1)), e.k ?? 1);
     case 'release': {
       const h = (e.hold ?? 0) / dur;
       return a * (u < h ? 1 : Math.exp(-(u - h) * k));
@@ -159,10 +167,18 @@ export function envAt(e: Envelope | undefined, u: number, t: number, dur: number
   }
 }
 
-function lfoAt(l: Lfo | undefined, t: number): number {
-  if (!l) return 1;
-  const s = Math.sin(2 * Math.PI * l.rate * t);
-  return l.shape === 'square' ? (s > (l.duty ?? 0) ? 1 : 1 - l.depth) : 1 - l.depth * (1 - s) / 2;
+/** A layer's tremolo, sample by sample (the random one keeps its level between jumps). */
+function tremolo(l: Lfo | undefined, rate: number, rand: () => number): (t: number) => number {
+  if (!l) return () => 1;
+  if (l.shape === 'random') {
+    let level = 1;
+    const chance = l.rate / rate;
+    return () => { if (rand() < chance) level = rand() < (l.duty ?? 0.5) ? 1 : 1 - l.depth; return level; };
+  }
+  return (t) => {
+    const s = Math.sin(2 * Math.PI * l.rate * t);
+    return l.shape === 'square' ? (s > (l.duty ?? 0) ? 1 : 1 - l.depth) : 1 - l.depth * (1 - s) / 2;
+  };
 }
 
 function wave(kind: ToneLayer['wave'], ph: number, drive: number): number {
@@ -175,11 +191,12 @@ function wave(kind: ToneLayer['wave'], ph: number, drive: number): number {
   }
 }
 
-function tone(d: Float32Array, rate: number, l: ToneLayer): void {
+function tone(d: Float32Array, rate: number, l: ToneLayer, rand: () => number): void {
   const start = Math.floor(l.at * rate);
   const n = Math.floor(l.dur * rate);
   const end = Math.min(d.length, start + n);
   const parts = l.partials?.length ? l.partials : [[1, 1]];
+  const lfo = tremolo(l.lfo, rate, rand);
   let phase = 0;
   for (let i = Math.max(0, start); i < end; i++) {
     const u = (i - start) / n;
@@ -192,7 +209,8 @@ function tone(d: Float32Array, rate: number, l: ToneLayer): void {
     phase += (2 * Math.PI * f) / rate;
     let v = 0;
     for (const [m, a] of parts) v += a * wave(l.wave, phase * m, l.drive ?? 2.2);
-    d[i] += l.gain * v * envAt(l.env, u, t, l.dur) * lfoAt(l.lfo, t);
+    if (l.clip) v = Math.max(-l.clip, Math.min(l.clip, v));
+    d[i] += l.gain * v * envAt(l.env, u, t, l.dur) * lfo(t);
   }
 }
 
@@ -203,6 +221,7 @@ function noise(d: Float32Array, rate: number, l: NoiseLayer, rand: () => number)
   const filters = l.filters ?? [];
   // Per filter: one-pole state, or the band-pass's low and band, or the tilt's last input.
   const st = filters.map(() => ({ a: 0, b: 0 }));
+  const lfo = tremolo(l.lfo, rate, rand);
   for (let i = Math.max(0, start); i < end; i++) {
     const u = (i - start) / n;
     const t = (i - start) / rate;
@@ -225,7 +244,7 @@ function noise(d: Float32Array, rate: number, l: NoiseLayer, rand: () => number)
       }
     });
     if (l.ring) x *= 1 - l.ring.depth + l.ring.depth * Math.sin(2 * Math.PI * l.ring.freq * t);
-    d[i] += l.gain * x * envAt(l.env, u, t, l.dur) * lfoAt(l.lfo, t);
+    d[i] += l.gain * x * envAt(l.env, u, t, l.dur) * lfo(t);
   }
 }
 
@@ -332,7 +351,7 @@ export function renderSound(def: SoundDef, rate: number, lookup: (key: string) =
   const rand = seeded(def.seed ?? 1);
   for (const l of def.layers) {
     if (l.mute) continue;
-    if (l.type === 'tone') tone(d, rate, l);
+    if (l.type === 'tone') tone(d, rate, l, rand);
     else if (l.type === 'noise') noise(d, rate, l, rand);
     else if (l.type === 'ping') ping(d, rate, l, rand);
     else if (l.type === 'sound') {

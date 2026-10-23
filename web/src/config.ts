@@ -57,10 +57,10 @@ export const Config = {
   GRAB_COOLDOWN: 100,
   GRAB_RADIUS: 1, // phys.getWidth() * 2 with half-width 0.5
 
-  // Laser sword
-  LASER_SWORD_DAMAGE: 10,
-  LASER_SWORD_DURATION: 200,
-  LASER_SWORD_COOLDOWN: 100,
+  // Plasma blade
+  PLASMA_BLADE_DAMAGE: 10,
+  PLASMA_BLADE_DURATION: 200,
+  PLASMA_BLADE_COOLDOWN: 100,
 
   // Laser guns
   LASER_GUN_MK_I: { damage: 5, speed: 30, cooldown: 500, recoil: 7 },
