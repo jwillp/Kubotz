@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { isPhonePad } from '../net/PhonePads';
 
 /**
  * Fullscreen, from anywhere: F11 on the keyboard, Select (the "minus" or
@@ -91,10 +92,11 @@ export function installFullscreen(game: Phaser.Game): void {
 
   // Select on any pad, read straight from the browser (a scene's gamepad
   // plugin only runs while that scene does). In the pause Select quits to
-  // the title instead (GameScene).
+  // the title instead (GameScene). Not from a phone pad: the browser refuses
+  // fullscreen without a real press on this page.
   let wasDown = false;
   game.events.on(Phaser.Core.Events.POST_STEP, () => {
-    const down = gamepads().some((p) => p.buttons[SELECT]?.pressed);
+    const down = gamepads().some((p) => !isPhonePad(p) && p.buttons[SELECT]?.pressed);
     if (down && !wasDown) {
       const match = game.scene.getScene('Game') as Phaser.Scene & { paused?: boolean } | null;
       if (!(match && game.scene.isActive('Game') && match.paused)) toggleFullscreen(game);

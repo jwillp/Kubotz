@@ -31,6 +31,11 @@ type Msg =
 const pads = new Map<string, VirtualPad>();
 let socket: WebSocket | null = null;
 
+/** Whether a pad is a phone (its presses are no user gesture: the page can't go fullscreen on them). */
+export function isPhonePad(p: Gamepad): boolean {
+  return p.id.startsWith(PHONE_PAD_ID);
+}
+
 /** 'Phone 1', 'Phone 2'... for the pad at this index, if it is a phone. */
 export function phoneName(index: number): string | null {
   for (const p of pads.values()) if (p.index === index) return `Phone ${index - FIRST_INDEX + 1}`;
