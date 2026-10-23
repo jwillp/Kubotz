@@ -1,10 +1,10 @@
 {
-  "anim": "usmash",
-  "ms": 916.666667,
-  "points": "frontFoot",
+  "anim": "kusmash",
+  "ms": 900,
+  "points": "feet",
   "damage": 14,
-  "launch": {"knockback":16,"angle":88},
-  "active": [0.145455,0.218182],
+  "launch": {"knockback":16,"angle":90},
+  "active": [0.13,0.42],
   "ghosts": true,
-  "hold": 0.036364
+  "hold": 0.07
 }

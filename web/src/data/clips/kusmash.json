@@ -1,0 +1,16 @@
+{
+  "ms": 900,
+  "loop": false,
+  "planted": true,
+  "keys": [
+    {"t":0,"pose":{"body":-96,"torso":86,"head":92,"shoulderF":-74,"armF":46,"handF":57,"shoulderB":-60,"armB":-37,"handB":-12,"thighF":-50,"legF":-108,"footF":-86,"thighB":-98,"legB":-128,"footB":-84}},
+    {"t":0.07,"pose":{"body":-96,"torso":70,"head":80,"shoulderF":-30,"armF":20,"handF":30,"shoulderB":-150,"armB":-140,"handB":-150,"thighF":-10,"legF":-140,"footF":-100,"thighB":-60,"legB":-150,"footB":-100,"tilt":10,"y":-12},"ease":"out"},
+    {"t":0.15,"pose":{"body":-96,"torso":100,"head":92,"shoulderF":-150,"armF":-170,"handF":-160,"shoulderB":-20,"armB":10,"handB":20,"thighF":58,"legF":56,"footF":76,"thighB":-92,"legB":-118,"footB":-88,"tilt":-16,"y":6},"ease":"snap"},
+    {"t":0.22,"pose":{"body":-96,"torso":100,"head":92,"shoulderF":-150,"armF":-170,"handF":-160,"shoulderB":-22,"armB":8,"handB":20,"thighF":58,"legF":56,"footF":76,"thighB":-90,"legB":-116,"footB":-88,"tilt":-16,"y":8},"ease":"linear"},
+    {"t":0.27,"pose":{"body":-96,"torso":92,"head":96,"shoulderF":-40,"armF":10,"handF":20,"shoulderB":-150,"armB":-170,"handB":-160,"thighF":-20,"legF":-140,"footF":-100,"thighB":-30,"legB":-60,"footB":-40,"tilt":-1,"y":14},"ease":"out"},
+    {"t":0.33,"pose":{"body":-96,"torso":100,"head":92,"shoulderF":-20,"armF":10,"handF":20,"shoulderB":-150,"armB":-170,"handB":-160,"thighF":-30,"legF":-150,"footF":-110,"thighB":64,"legB":62,"footB":82,"tilt":-16,"y":26},"ease":"snap"},
+    {"t":0.4,"pose":{"body":-96,"torso":100,"head":92,"shoulderF":-22,"armF":8,"handF":20,"shoulderB":-150,"armB":-170,"handB":-160,"thighF":-32,"legF":-150,"footF":-110,"thighB":64,"legB":62,"footB":82,"tilt":-16,"y":28},"ease":"linear"},
+    {"t":0.55,"pose":{"body":-96,"torso":78,"head":86,"shoulderF":-40,"armF":40,"handF":40,"shoulderB":-60,"armB":-20,"handB":-10,"thighF":-15,"legF":-130,"footF":-95,"thighB":-60,"legB":-145,"footB":-100,"tilt":6,"y":-8},"ease":"inOut"},
+    {"t":1,"pose":{"body":-96,"torso":86,"head":92,"shoulderF":-74,"armF":46,"handF":57,"shoulderB":-60,"armB":-37,"handB":-12,"thighF":-50,"legF":-108,"footF":-86,"thighB":-98,"legB":-128,"footB":-84},"ease":"inOut"}
+  ]
+}

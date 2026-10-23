@@ -139,7 +139,7 @@ export const MOVE_LIST: MoveEntry[] = [
   { group: 'Legs (X)', name: 'Kick', keys: 'P', pad: 'X', desc: `The roundhouse. ${stats(K.ftilt)}.`, steps: ground(K.ftilt) },
   ...dirEntries('Legs (X)', K, 'P', 'X', {
     ftilt: 'A roundhouse at waist height.', dtilt: 'A low kick along the floor that pops up.', utilt: 'A scorpion kick over the head.', dash: 'A sliding kick out of a run (classic).',
-    fsmash: 'A spinning back kick, turning right round.', usmash: 'A back flip kick straight up.', dsmash: 'A split kick to both sides.',
+    fsmash: 'A spinning back kick, turning right round.', usmash: 'A rising double kick: one foot straight up, then the other, higher.', dsmash: 'A split kick to both sides.',
     nair: 'A spinning kick all round (classic).', fair: 'A flying front kick (classic).', bair: 'A kick behind (classic).', uair: 'A backflip kick (classic).', dair: 'A stomping dive kick that spikes (classic).',
   }),
 
