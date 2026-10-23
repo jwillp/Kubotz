@@ -19,7 +19,7 @@ const LINK_COLORS = { jump: 0x4da3ff, drop: 0xffd166, fall: 0xff8a1f } as const;
 /**
  * Debug mode (F3 or `), drawn over the arena: Box2D fixtures, hurtboxes and
  * attack circles, the CPUs' plans and the navigation graph, a readout per
- * robot, FPS with a frame time graph, and the time controls.
+ * Kubot, FPS with a frame time graph, and the time controls.
  */
 export class DebugScene extends Phaser.Scene {
   private g!: Phaser.GameObjects.Graphics;
@@ -102,7 +102,7 @@ export class DebugScene extends Phaser.Scene {
       }
     }
 
-    // Robots: hurtbox, attack circles, CPU plan.
+    // Kubotz: hurtbox, attack circles, CPU plan.
     const alive = game.fighters.filter((k) => k.isAlive());
     for (const k of alive) {
       const h = k.hurtbox();
@@ -135,7 +135,7 @@ export class DebugScene extends Phaser.Scene {
     g.lineStyle(1, 0xffd166, 1);
     this.frameMs.forEach((ms, i) => g.lineBetween(gx + i * 2, gy, gx + i * 2, gy - Math.min(48, ms * 1.5)));
 
-    // Text: robot readouts and the panel, ten times a second.
+    // Text: Kubot readouts and the panel, ten times a second.
     if (time < this.nextText) {
       game.fighters.forEach((k, i) => this.labels[i]?.setPosition(sx(k.x), sy(k.body.top) - 70 - (i % 2) * 56));
       return;
@@ -152,8 +152,10 @@ export class DebugScene extends Phaser.Scene {
       const now = game.clock;
       const ai = k.controller instanceof CpuController ? `\nAI ${k.controller.debug.mode}` : '';
       const stun = Math.max(k.stunnedUntil, k.hitstun) - now;
+      // The Kubot's job in the mode first (its play, role), to read the team behaviours.
+      const role = game.roleOf(k);
       t.setVisible(true).setPosition(sx(k.x), sy(k.body.top) - 70 - (i % 2) * 56).setText(
-        `${k.name}  hp ${k.health}  ${k.weapon !== 'none' ? k.weapon : ''}\n`
+        `${role ? `[${role.toUpperCase()}]  ` : ''}${k.name}  hp ${k.health}  ${k.weapon !== 'none' ? k.weapon : ''}\n`
         + `${k.anim.name} ${(k.anim.progress * 100).toFixed(0)}%  combo ${k.comboInfo}\n`
         + `v ${(k.body.vx / UNIT).toFixed(1)}, ${(k.body.vy / UNIT).toFixed(1)}  ${k.grounded ? (k.body.onPlatform ? 'platform' : 'ground') : 'air'}`
         + `${stun > 0 ? `  stun ${stun.toFixed(0)}` : ''}${ai}`,
@@ -163,7 +165,8 @@ export class DebugScene extends Phaser.Scene {
     const avg = ms.reduce((a, b) => a + b, 0) / Math.max(1, ms.length);
     this.panel.setText([
       `FPS ${this.game.loop.actualFps.toFixed(0)}   frame ${avg.toFixed(1)} ms (max ${Math.max(...ms).toFixed(1)})`,
-      `bodies ${game.physicsWorld.world.getBodyCount()}  robots ${alive.length}  bullets ${game.bulletCount}  power-ups ${game.orbCount}  debris ${game.debrisCircles().length}`,
+      `bodies ${game.physicsWorld.world.getBodyCount()}  Kubotz ${alive.length}  bullets ${game.bulletCount}  power-ups ${game.orbCount}  debris ${game.debrisCircles().length}`,
+      ...(game.strategyLine() ? [`strategy  ${game.strategyLine()}`] : []),
       `clock ${(game.clock / 1000).toFixed(1)} s   speed ${state.frozen ? 'frozen' : `x${state.timeScale}`}   gravity ${Config.GRAVITY} (falling ${(Config.GRAVITY * (1 + Config.FALL_GRAVITY_BONUS)).toFixed(0)})`,
       'F3 debug off · F4 slow motion · F6 freeze · F7 one frame · F8 navigation graph',
     ].join('\n'));

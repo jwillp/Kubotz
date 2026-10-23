@@ -3,12 +3,15 @@ import { Config, UNIT } from '../config';
 import { feel } from './Feel';
 import { Animator } from '../anim/Animator';
 import type { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { fx } from './Settings';
-import { canHurt, type Teamed } from './Match';
+import { BLACK_TAG, BLACK_TEAM, canHurt, type Teamed } from './Match';
+import type { CtfFlag } from './Flag';
+import type { GameBall } from './Ball';
+import { flagTexture } from '../fx/Flag';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
@@ -63,12 +66,12 @@ const ANIM = {
   GUARD: 'guard', DODGE: 'dodge', HIT: 'hit', HIT_2: 'hit2', GRAB: 'grab', SHOOT: 'shoot',
 } as const;
 
-/** Strikes carry the robot this many times further than their clip's own forward travel. */
+/** Strikes carry the Kubot this many times further than their clip's own forward travel. */
 const ANIM_TURN = 'turn';
 export const ROOT_MOTION_GAIN = 3;
 /** Walking (a tilted stick) tops out at this share of the run. */
 /**
- * Starting to run on the ground (SSB's initial dash): the robot is at its
+ * Starting to run on the ground (SSB's initial dash): the Kubot is at its
  * dash speed at once for the first frames (about 10 in Ultimate), then runs.
  * Run, dash, walk, air and jump speeds come from the feel preset (game/Feel.ts).
  */
@@ -77,7 +80,7 @@ const INITIAL_DASH_MS = 160;
 const GROUND_FRICTION = 60;
 /**
  * Input buffer (Ultimate: 9 frames): an attack, special or jump pressed while
- * the robot cannot act yet (an attack's end lag, landing, hitstun, a roll)
+ * the Kubot cannot act yet (an attack's end lag, landing, hitstun, a roll)
  * still comes out on the first frame it can.
  */
 const INPUT_BUFFER_MS = 150;
@@ -167,7 +170,7 @@ export const SWORD_DIR_MOVES: DirMoves = {
 };
 /**
  * Special moves (B), unarmed whatever the weapon: Captain Falcon flavoured
- * ninja moves. The up special leaves the robot helpless until it lands or
+ * ninja moves. The up special leaves the Kubot helpless until it lands or
  * catches a ledge; the side and up specials work once per trip in the air.
  */
 export const SPECIALS = {
@@ -198,19 +201,19 @@ const COMBO_RECOVERY = 220;
 
 export interface KubotzLook { head: string | null; color: number; }
 
-/** Helmet shapes, one per robot in order (character maps of kubotz.scml). */
+/** Helmet shapes, one per Kubot in order (character maps of kubotz.scml). */
 export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull',
   'head_diver', 'head_mantis', 'head_sentinel', 'head_tank', 'head_astro', 'head_brute'];
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
 export const HEAD_FILES = ['head/helmet2.png', 'head/helmet3.png', 'head/helmet4.png', 'head/helmet5-grey.png',
   'head/helmet-diver.png', 'head/helmet-mantis.png', 'head/helmet-sentinel.png', 'head/helmet-tank.png', 'head/helmet-astro.png', 'head/helmet-brute.png'];
 
-/** Robot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
+/** Kubot colours by slot (owner, phase 10d): red, blue, green, purple; humans and CPUs alike. */
 export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
-/** The texture of a robot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
+/** The texture of a Kubot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
 export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
   let key = `kubotz:${file}`;
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
@@ -219,13 +222,13 @@ export function partTexture(textures: Phaser.Textures.TextureManager, file: stri
   return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
 }
 
-/** The top corner of a solid block a robot can hang from; `dir` is the open side (-1 left, 1 right). */
+/** The top corner of a solid block a Kubot can hang from; `dir` is the open side (-1 left, 1 right). */
 export interface Ledge { x: number; y: number; dir: 1 | -1; }
 
 export type ThrowKind = 'forward' | 'back' | 'up' | 'down';
 
 /**
- * Melee-style throws: clip, length, when the robot is let go (0..1), damage
+ * Melee-style throws: clip, length, when the Kubot is let go (0..1), damage
  * and launch (angle from the horizontal, towards `dir` relative to facing).
  */
 export const THROWS: Record<ThrowKind, { anim: string; ms: number; release: number; damage: number; launch: Launch; dir: 1 | -1 }> = {
@@ -256,7 +259,7 @@ export const PUMMEL_DAMAGE = 3;
 const LEDGE_CATCH = 7 * FRAME; // options open after the catch
 export const LEDGE_INTANGIBLE = 37 * FRAME; // the catch plus 30 frames
 const LEDGE_REGRAB = 480; // after letting go
-/** Damage from which the ledge get-ups are slower (Melee: 100 %, but our robots die at 100). */
+/** Damage from which the ledge get-ups are slower (Melee: 100 %, but our Kubotz die at 100). */
 const LEDGE_SLOW_DAMAGE = 60;
 /** Where the body hangs below a ledge, so the raised hands are on its top. */
 export const HANG_DY = 1.32 * UNIT;
@@ -335,9 +338,9 @@ export interface ArenaHooks {
   playSfx(key: string, volume?: number): void;
   /** Picks up a power-up ball in the area; true if one was taken. */
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean;
-  /** An opponent in grab reach in front of this robot, or null. */
+  /** An opponent in grab reach in front of this Kubot, or null. */
   grabTarget(kubotz: Kubotz): Kubotz | null;
-  /** A free ledge the robot's hands can catch right now, or null. */
+  /** A free ledge the Kubot's hands can catch right now, or null. */
   ledgeNear(kubotz: Kubotz): Ledge | null;
   /** A grab, pummel or throw landing: sparks and a sound. */
   grabFx(x: number, y: number, color: number, power: number): void;
@@ -355,20 +358,20 @@ export interface ArenaHooks {
 }
 
 /**
- * The playable robot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
+ * The playable Kubot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
  * PowerUps/Respawn components and systems, folded into one class).
  */
 export class Kubotz implements Damageable, Teamed {
   readonly owner = this;
-  /** Faction (index into SLOT_COLORS): robots on the same team can't hurt each other (see canHurt). */
+  /** Faction (index into SLOT_COLORS): Kubotz on the same team can't hurt each other (see canHurt). */
   readonly team: number;
   readonly body: KubotzBody;
   readonly anim: Animator;
-  readonly model: Robot2D;
+  readonly model: Kubot2D;
   private squashUntil = 0;
   private readonly healthBar: Phaser.GameObjects.Graphics;
   private readonly tag: Phaser.GameObjects.Image;
-  /** Texture of the player tag (P1, P2... or CPU, in the robot's colour), for the HUD and results. */
+  /** Texture of the player tag (P1, P2... or CPU, in the Kubot's colour), for the HUD and results. */
   readonly tagKey: string;
   readonly look: KubotzLook;
 
@@ -379,6 +382,23 @@ export class Kubotz implements Damageable, Teamed {
   kills = 0;
   deaths = 0;
   weapon: Weapon = 'none';
+  /** The weapon it always holds (the Blasters and Blades modes): back after a weapon power-up and at each respawn. */
+  armed: Weapon = 'none';
+  /** The health it spawns with (Horde's weaker black-team Kubotz start lower). */
+  maxHealth: number = Config.KUBOTZ_HEALTH;
+  /** Capture the Flag: the flag it holds (swung with the sword's moves), and its job on a CPU team. */
+  carrying: CtfFlag | null = null;
+  role?: 'striker' | 'guardian' | 'interceptor';
+  /** Damage taken is multiplied by this (Capture the Flag: Kubotz go down much faster than in a duel). */
+  damageScale = 1;
+  /** Ball games: the ball in its hands. No card on the HUD (the CPUs filling the teams, guardians). */
+  ball: GameBall | null = null;
+  hudless = false;
+  /** Its player tag's size and opacity (CPU tags are quieter in team matches). */
+  tagStyle = { scale: 1, alpha: 1 };
+  /** Jumps it gets back at each respawn, and the share of gravity it falls under (Skychase: more jumps, a slow fall). */
+  baseJumps: number = Config.NB_JUMPS;
+  lowGravity = 1;
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -416,7 +436,7 @@ export class Kubotz implements Damageable, Teamed {
   /**
    * A dodge under way: the air dodge, or the roll on the ground (guard + left /
    * right). Intangible from `safeFrom` to `safeUntil`, no other actions until
-   * `ends`; a roll travels in `dir` and passes through robots.
+   * `ends`; a roll travels in `dir` and passes through Kubotz.
    */
   private dodge: { kind: 'air' | 'roll' | 'spot' | 'tech'; dir: -1 | 0 | 1; start: number; safeFrom: number; safeUntil: number; ends: number; turned?: boolean } | null = null;
   private rollReadyAt = 0;
@@ -488,7 +508,7 @@ export class Kubotz implements Damageable, Teamed {
   appearAt = 0;
   eliminated = false;
   pad: PadState = emptyPad();
-  /** Melee grabs: the robot this one holds, or the one holding it. */
+  /** Melee grabs: the Kubot this one holds, or the one holding it. */
   holding: Kubotz | null = null;
   heldBy: Kubotz | null = null;
   /** While held: time left before breaking out (ms). */
@@ -560,14 +580,18 @@ export class Kubotz implements Damageable, Teamed {
     this.anim = new Animator(rig);
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
     // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Robot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
-    // A soft outer glow in the player's colour, so robots stay apart in a close fight (WebGL only).
+    // A flag carrier holds the flag where the laser sword goes.
+    this.model = new Kubot2D(scene, rig, (file) => (file === SWORD_FILE && this.carrying
+      ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
+    // A soft outer glow in the player's colour, so Kubotz stay apart in a close fight (WebGL only).
     this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
-    // The P1 / P2 / P3 / P4 / CPU arrow label floats above the robot.
+    // The P1 / P2 / P3 / P4 / CPU arrow label floats above the Kubot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
-    this.tagKey = `label-${who}:${hex(color)}`;
-    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, color);
+    // The black team's tag is a light steel, so it reads over the dark arenas.
+    const tagColor = this.team === BLACK_TEAM ? BLACK_TAG : color;
+    this.tagKey = `label-${who}:${hex(tagColor)}`;
+    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, tagColor);
     this.tag = scene.add.image(x, y, this.tagKey).setOrigin(0.5, 1).setDepth(21);
   }
 
@@ -577,7 +601,7 @@ export class Kubotz implements Damageable, Teamed {
   /** The middle of the laser blade (world pixels), for its light. */
   /** The laser blade's emitter and tip (world pixels), while the sword is out. */
   blade(): { x1: number; y1: number; x2: number; y2: number } | null {
-    if (this.weapon !== 'laserSword' || !this.isAlive()) return null;
+    if (this.weapon !== 'laserSword' || !this.isAlive() || this.carrying) return null;
     const a = this.model.pointOn(SWORD_FILE, 96, 68);
     const b = this.model.pointOn(SWORD_FILE, 298, 216);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
@@ -629,7 +653,7 @@ export class Kubotz implements Damageable, Teamed {
     return new Phaser.Geom.Rectangle(this.body.left, this.body.top - extra, this.body.width, this.body.height + extra);
   }
 
-  /** The active melee / sword hitbox, if any, on the striking part of the robot. */
+  /** The active melee / sword hitbox, if any, on the striking part of the Kubot. */
   currentAttack(): AttackBox | null {
     const a = this.attack;
     if (!a) return null;
@@ -718,8 +742,8 @@ export class Kubotz implements Damageable, Teamed {
     this.facingBefore = this.facing;
     // Grabs and ledges take over the controls while they last.
     if (this.dodge && now >= this.dodge.ends) this.dodge = null;
-    // Passing through robots (held, thrown, rolling) lasts until clear of them.
-    if (!this.heldBy && this.ghosted && !this.rolling && !this.body.overlapsRobot()) { this.body.ghost = false; this.ghosted = false; }
+    // Passing through Kubotz (held, thrown, rolling) lasts until clear of them.
+    if (!this.heldBy && this.ghosted && !this.rolling && !this.body.overlapsKubot()) { this.body.ghost = false; this.ghosted = false; }
     if (this.heldBy) { this.updateHeld(now, dt, controls ? read : emptyPad()); this.updatePowerUps(now); return; }
     if (this.holding || this.throwing) { this.updateHolding(now, pad); this.updatePowerUps(now); return; }
     if (this.onLedge) { this.updateLedge(now, pad); this.updatePowerUps(now); return; }
@@ -742,7 +766,7 @@ export class Kubotz implements Damageable, Teamed {
     if (this.guarding && now >= this.shieldStunUntil) this.outOfShield(pad, now);
     this.oosPrev = { ...pad };
     if (this.guarding) {
-      // Guarding roots the robot: no running, jumping or attacking.
+      // Guarding roots the Kubot: no running, jumping or attacking.
       this.move(emptyPad(), now, dt);
     } else if (this.charging) {
       // Charging a smash: rooted, sliding to a stop.
@@ -760,10 +784,10 @@ export class Kubotz implements Damageable, Teamed {
     // specials' bursts keep their speed (spikes, dive kicks), easing back after.
     const f = feel();
     // The feel's gravity, over the world's (which every body falls under).
-    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity - Config.GRAVITY) * UNIT * dt;
+    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity * this.lowGravity - Config.GRAVITY) * UNIT * dt;
     if (!this.grounded && this.body.vy > 0 && !this.dodging) {
-      this.body.vy += (f.fallGravity - f.gravity) * UNIT * dt;
-      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT;
+      this.body.vy += (f.fallGravity - f.gravity) * this.lowGravity * UNIT * dt;
+      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT * (this.lowGravity < 1 ? 0.55 : 1);
       if (this.body.vy > cap && now >= this.hitstunUntil && !this.currentMove?.burst) {
         this.body.vy = Math.max(cap, this.body.vy - 90 * UNIT * dt);
       }
@@ -774,7 +798,7 @@ export class Kubotz implements Damageable, Teamed {
       const ledge = this.hooks.ledgeNear(this);
       if (ledge) { this.grabLedge(ledge, now); return; }
     }
-    // Strikes carry the robot forwards with their motion (root motion).
+    // Strikes carry the Kubot forwards with their motion (root motion).
     const travel = this.anim.takeRootMotion() * ART_SCALE * ROOT_MOTION_GAIN;
     if (this.attack && travel > 0 && dt > 0) {
       this.body.vx = this.facing * Math.min(travel / dt, 26 * UNIT);
@@ -785,7 +809,7 @@ export class Kubotz implements Damageable, Teamed {
     this.updatePowerUps(now);
   }
 
-  /** Tumbling robots rebound off walls and ceilings and bounce once on the floor (SSB). */
+  /** Tumbling Kubotz rebound off walls and ceilings and bounce once on the floor (SSB). */
   private updateTumble(now: number): void {
     if (!this.tumbling) return;
     const b = this.body;
@@ -1043,7 +1067,7 @@ export class Kubotz implements Damageable, Teamed {
     }
   }
 
-  /** The dodge roll: a quick tucked roll a fixed distance, intangible and through robots, then a short end lag. */
+  /** The dodge roll: a quick tucked roll a fixed distance, intangible and through Kubotz, then a short end lag. */
   private startRoll(dir: 1 | -1, now: number): void {
     this.guarding = false;
     this.attack = null;
@@ -1139,10 +1163,10 @@ export class Kubotz implements Damageable, Teamed {
 
     if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; this.ledgeSafeReady = true; }
 
-    // Aerials keep the robot facing the way it struck (a back air hits behind).
+    // Aerials keep the Kubot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
     // A light stick tilt walks, as fast as the tilt; pushed all the way (or a
-    // key) the robot runs. On the ground, starting off from (near) standing
+    // key) the Kubot runs. On the ground, starting off from (near) standing
     // dashes: at speed at once (Ultimate's initial dash), for people only (the
     // CPU, which turns often while following a path, eases in). Turning round
     // out of a run skids to a near stop first, then dashes the other way.
@@ -1264,6 +1288,8 @@ export class Kubotz implements Damageable, Teamed {
   /** handleActions, then: a buffered press that started something is used up.
    * (A jab combo's next hit is queued by the press itself, so it keeps the buffer until it starts.) */
   private act(pad: PadState, now: number): void {
+    // Ball in hand: no attacks (grab throws it).
+    if (this.ball) pad = { ...pad, attack: false, special: false, smash: false, cstick: undefined };
     const before = { move: this.currentMove, charging: this.charging, attack: this.attack, lock: this.lockUntil };
     this.handleActions(pad, now);
     // Started: a new move, attack or charge (not one ending), or a commitment such as a taunt.
@@ -1279,7 +1305,7 @@ export class Kubotz implements Damageable, Teamed {
     const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
     const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
     // Edges: the attack press, and a direction newly pressed (for smash flicks).
-    // A press now, or one buffered while the robot could not act.
+    // A press now, or one buffered while the Kubot could not act.
     const attackPressed = (pad.attack && !this.attackHeld) || this.buffered('attack', now);
     const attackReleased = !pad.attack && this.attackHeld;
     this.attackHeld = pad.attack;
@@ -1403,7 +1429,7 @@ export class Kubotz implements Damageable, Teamed {
           this.comboStep = 0;
           this.strike(moves.dash, now);
         } else if (dir === 'forward' || dir === 'back') {
-          // A tilt; held back, the robot has already turned round.
+          // A tilt; held back, the Kubot has already turned round.
           this.comboStep = 0;
           this.strike(moves.ftilt, now);
         } else {
@@ -1418,7 +1444,7 @@ export class Kubotz implements Damageable, Teamed {
       this.grabReadyAt = this.grabEndsAt + Config.GRAB_COOLDOWN;
       this.grabAnimUntil = now + 300;
       this.anim.play(ANIM.GRAB, { restart: true, fade: 40 });
-      // On the ground a grab can miss: end lag, unless a robot or a ball is caught.
+      // On the ground a grab can miss: end lag, unless a Kubot or a ball is caught.
       if (this.grounded) this.lockUntil = now + GRAB_WHIFF_LAG;
     }
     this.grabWindow(now);
@@ -1434,7 +1460,7 @@ export class Kubotz implements Damageable, Teamed {
 
   /**
    * Which move the stick asks for: up and down first, then towards or away
-   * from where the robot faced before this frame's input, or, with nothing
+   * from where the Kubot faced before this frame's input, or, with nothing
    * held in the air, up while rising and down while falling.
    */
   private attackDirection(pad: PadState): Dir {
@@ -1475,7 +1501,7 @@ export class Kubotz implements Damageable, Teamed {
     return true;
   }
 
-  /** Specials keep their burst of speed for a share of the move; the up special leaves the robot helpless. */
+  /** Specials keep their burst of speed for a share of the move; the up special leaves the Kubot helpless. */
   private updateSpecial(now: number): void {
     const m = this.currentMove;
     if (!this.attack || !m) return;
@@ -1640,7 +1666,7 @@ export class Kubotz implements Damageable, Teamed {
       return;
     }
     if (!v || !v.isAlive() || v.heldBy !== this) { this.holding = null; return; }
-    // The held robot can't fall: carried along when the grabber walks off an edge.
+    // The held Kubot can't fall: carried along when the grabber walks off an edge.
     this.placeHeld(v, 0, null);
     if (!this.grounded) { this.grabRelease(now); return; }
     if (now < this.pummelUntil) return;
@@ -1666,7 +1692,7 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   /**
-   * Where the held robot is: in front of the grabber's hands; during a throw
+   * Where the held Kubot is: in front of the grabber's hands; during a throw
    * it follows the swing (`u`, 0..1 up to the release).
    */
   private placeHeld(v: Kubotz, u: number, kind: ThrowKind | null): void {
@@ -1819,6 +1845,7 @@ export class Kubotz implements Damageable, Teamed {
   // --------------------------------------------------------------- power ups
   givePowerUp(type: PowerUpType, now: number): void {
     const def = POWER_UPS[type];
+    if (def.weapon && this.carrying) return; // the flag stays in hand
     // A new weapon replaces the current one instead of stacking.
     if (def.weapon) {
       const old = this.powerUps.find((p) => POWER_UPS[p.type].weapon);
@@ -1826,6 +1853,33 @@ export class Kubotz implements Damageable, Teamed {
     }
     def.onStart(this);
     if (def.timed) this.powerUps.push({ type, endsAt: now + Config.POWERUP_DURATION });
+  }
+
+  /**
+   * Struck by something that is not a Kubot (Skychase's Hunters): damage,
+   * flung at this velocity (pixels/s), stunned a moment.
+   */
+  struck(damage: number, vx: number, vy: number): void {
+    if (this.dead || this.invincible || this.intangible) return;
+    const now = this.hooks.now();
+    if (this.holding || this.heldBy) this.breakGrab();
+    this.releaseLedge(now);
+    this.health = Math.max(0, this.health - damage * this.damageScale);
+    this.body.setVelocity(vx, vy);
+    this.hitstunUntil = Math.max(this.hitstunUntil, now + 450);
+    this.tumbleUntil = this.hitstunUntil;
+    this.hitUntil = now + 450;
+    this.flashUntil = now + 70;
+    this.attack = null;
+    this.currentMove = null;
+    this.anim.play('tumble', { restart: true, fade: 40 });
+  }
+
+  /** Capture the Flag: takes the flag in hand (it fights with the sword's moves), or lets go of it. */
+  carryFlag(flag: CtfFlag | null): void {
+    if (flag) for (const p of [...this.powerUps]) if (POWER_UPS[p.type].weapon) this.removePowerUp(p);
+    this.carrying = flag;
+    this.weapon = flag ? 'laserSword' : this.dead ? 'none' : this.armed;
   }
 
   private removePowerUp(p: ActivePowerUp): void {
@@ -1841,6 +1895,7 @@ export class Kubotz implements Damageable, Teamed {
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): number {
     if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return 0;
+    amount *= this.damageScale;
     const now = this.hooks.now();
     // Parry (Ultimate): the shield let go just before the hit. No damage, no push, free to act at once.
     if (now - this.shieldDropAt <= PARRY_MS && this.grounded && !this.heldBy) {
@@ -1973,9 +2028,11 @@ export class Kubotz implements Damageable, Teamed {
   /** RespawnSystem SPAWNING state. */
   respawn(x: number, y: number): void {
     this.dead = false;
-    this.health = Config.KUBOTZ_HEALTH;
+    this.eliminated = false;
+    this.health = this.maxHealth;
+    this.weapon = this.armed;
     this.energy = Config.KUBOTZ_ENERGY;
-    this.maxJumps = Config.NB_JUMPS;
+    this.maxJumps = this.baseJumps;
     this.lastAttacker = null;
     this.guard = Config.GUARD_MAX;
     this.stunnedUntil = 0;
@@ -2037,7 +2094,7 @@ export class Kubotz implements Damageable, Teamed {
       }
       this.plantedFoot = foot;
     } else this.plantedFoot = '';
-    // A clip's own spin (yaw) turns the same way whichever side the robot faces.
+    // A clip's own spin (yaw) turns the same way whichever side the Kubot faces.
     const yaw = this.yaw + (pose.yaw ?? 0) * this.facing;
     // Charging shakes with the building power.
     const c = this.charge;
@@ -2106,8 +2163,8 @@ export class Kubotz implements Damageable, Teamed {
     // Constant on-screen size whatever the camera zoom.
     const zoom = this.scene.cameras.main.zoom;
     const y = this.body.top - UNIT * 0.75;
-    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom).setAlpha(now < this.appearAt ? 0 : 1);
-    // The HUD cards carry health; over the robot it shows only while low (red),
+    this.tag.setPosition(this.x, y - 6).setScale((0.42 / zoom) * this.tagStyle.scale).setAlpha(now < this.appearAt ? 0 : this.tagStyle.alpha);
+    // The HUD cards carry health; over the Kubot it shows only while low (red),
     // so close fights stay readable.
     const low = this.health <= 30;
     if (low) {

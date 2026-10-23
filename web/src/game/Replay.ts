@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
-import type { Highlight, HighlightKind, Prop, ReplayEvent, ReplayFrame, RobotFrame } from './Match';
+import type { Highlight, HighlightKind, Prop, ReplayEvent, ReplayFrame, KubotFrame } from './Match';
 
 /** How much of the match is kept (ms): enough for a long recovery, or a launch that flies a while before the K.O. */
 const KEEP_MS = 9000;
@@ -11,14 +11,14 @@ export const REPLAY_AFTER = 600;
 /** A combo replay starts this long before its first hit and ends this long after its last. */
 const COMBO_BEFORE = 1200;
 const COMBO_AFTER = 900;
-/** A recovery replay starts this long before the launch and ends this long after the robot is safe. */
+/** A recovery replay starts this long before the launch and ends this long after the Kubot is safe. */
 const RECOVERY_BEFORE = 1000;
 const RECOVERY_AFTER = 800;
 /** Longest replay (ms): a long recovery is cut to the seconds around its closest call. */
 const LONGEST = 8000;
 /** A combo is this many hits or more. */
 const COMBO_MIN = 3;
-/** A recovery counts once the robot came this close to the blast zone (units) and made it back. */
+/** A recovery counts once the Kubot came this close to the blast zone (units) and made it back. */
 const RECOVERY_MARGIN = 7;
 /** A launch this fast (units/s) or more starts watching for a recovery. */
 const RECOVERY_LAUNCH = 12;
@@ -29,24 +29,24 @@ const KEEP_CANDIDATES = 6;
 /** Highlights shown per kind. */
 export const HIGHLIGHTS_PER_KIND = 3;
 
-const HIDDEN: RobotFrame = {
+const HIDDEN: KubotFrame = {
   visible: false, pose: {}, maps: [], x: 0, bottom: 0, yaw: 0, lean: 0, squash: 1, alpha: 1, flash: false,
 };
 
-/** The last hit a robot took, for scoring the K.O. or recovery it leads to. */
+/** The last hit a Kubot took, for scoring the K.O. or recovery it leads to. */
 interface Blow { by: number; at: number; healthBefore: number; speed: number; angle: number; comboHits: number }
-/** Hits chained on one robot by one opponent. */
+/** Hits chained on one Kubot by one opponent. */
 interface Combo { by: number; first: number; last: number; hits: number; damage: number }
-/** A launched robot, watched until it is safe again (or K.O.'d). */
+/** A launched Kubot, watched until it is safe again (or K.O.'d). */
 interface Watch { blow: Blow; margin: number; closestAt: number; left: boolean; healthLow: number }
 /** A highlight waiting for the frames after it. */
 interface Pending { h: Highlight; from: number; to: number }
 
 /**
  * Post-match highlights: a rolling buffer of the last seconds of the match as
- * drawn (every robot's pose and place, the arena camera, the lights, the sounds
+ * drawn (every Kubot's pose and place, the arena camera, the lights, the sounds
  * and effects that went off), cheap enough to keep every frame: the poses are
- * the ones the robots were drawn with, kept by reference.
+ * the ones the Kubotz were drawn with, kept by reference.
  *
  * While the match runs it spots the moments worth showing again (K.O.s,
  * recoveries from near the blast zone, combos) and scores them; each is cut
@@ -56,15 +56,15 @@ interface Pending { h: Highlight; from: number; to: number }
 export class ReplayRecorder {
   private frames: ReplayFrame[] = [];
   private pending: Pending[] = [];
-  private candidates: Record<HighlightKind, Highlight[]> = { ko: [], recovery: [], combo: [] };
+  private candidates: Record<HighlightKind, Highlight[]> = { goal: [], ko: [], recovery: [], combo: [] };
   private events: ReplayEvent[] = [];
   private blows = new Map<number, Blow>();
   private combos = new Map<number, Combo>();
   private watches = new Map<number, Watch>();
-  /** Where a robot is K.O.'d (world pixels): beyond these. */
+  /** Where a Kubot is K.O.'d (world pixels): beyond these. */
   private blast = new Phaser.Geom.Rectangle(-6 * UNIT, -20 * UNIT, 0, 0);
 
-  /** The arena's size (world pixels): robots are K.O.'d 6 units past its sides and bottom, 20 above it. */
+  /** The arena's size (world pixels): Kubotz are K.O.'d 6 units past its sides and bottom, 20 above it. */
   setArena(width: number, height: number): void {
     this.blast.setTo(-6 * UNIT, -20 * UNIT, width + 12 * UNIT, height + 26 * UNIT);
   }
@@ -90,9 +90,9 @@ export class ReplayRecorder {
     this.events.push({ kind: 'pe', name, x, y, ...(tint !== undefined ? { tint } : {}) });
   }
 
-  /** Power-up motes spiralling round a robot after a pick-up. */
-  twirl(robot: number, color: number, ms: number): void {
-    this.events.push({ kind: 'twirl', robot, color, ms });
+  /** Power-up motes spiralling round a Kubot after a pick-up. */
+  twirl(kubot: number, color: number, ms: number): void {
+    this.events.push({ kind: 'twirl', kubot, color, ms });
   }
 
   /**
@@ -123,21 +123,21 @@ export class ReplayRecorder {
   }
 
   /**
-   * @param spawn a robot's spawn hologram, if it is in one (age, projector x, feet y; fx/Hologram.ts)
-   * @param extra per robot, what else is drawn with it (blade, swing trail, auras); the other images drawn; the ambient light
+   * @param spawn a Kubot's spawn hologram, if it is in one (age, projector x, feet y; fx/Hologram.ts)
+   * @param extra per Kubot, what else is drawn with it (blade, swing trail, auras); the other images drawn; the ambient light
    */
   record(now: number, fighters: readonly Kubotz[], cam: Phaser.Cameras.Scene2D.Camera, lights?: Phaser.GameObjects.LightsManager,
     spawn?: (k: Kubotz) => [number, number, number] | undefined,
-    extra?: { robot: (k: Kubotz) => Partial<RobotFrame>; props: Prop[]; ambient: number }): void {
-    const robots = fighters.map((k): RobotFrame => {
+    extra?: { kubot: (k: Kubotz) => Partial<KubotFrame>; props: Prop[]; ambient: number }): void {
+    const kubotz = fighters.map((k): KubotFrame => {
       const d = k.model.lastDraw;
       const holo = spawn?.(k);
-      return k.isAlive() && d ? { visible: true, ...d, ...(holo ? { holo } : {}), ...extra?.robot(k) } : HIDDEN;
+      return k.isAlive() && d ? { visible: true, ...d, ...(holo ? { holo } : {}), ...extra?.kubot(k) } : HIDDEN;
     });
     this.frames.push({
       t: now,
       camX: cam.scrollX + cam.width / 2, camY: cam.scrollY + cam.height / 2, zoom: cam.zoom, rotation: (cam as unknown as { rotation: number }).rotation, // untyped getter
-      robots,
+      kubotz,
       lights: lights?.active ? litLights(lights) : [],
       events: this.events,
       props: extra?.props ?? [],
@@ -148,7 +148,7 @@ export class ReplayRecorder {
     while (drop < this.frames.length && this.frames[drop].t < now - KEEP_MS) drop++;
     if (drop > 0) this.frames.splice(0, drop);
     this.followRecoveries(now, fighters);
-    // A combo is over once its robot is out of hitstun for a beat.
+    // A combo is over once its Kubot is out of hitstun for a beat.
     for (const [v, c] of this.combos) if (now - c.last > 1500) this.endCombo(v, c, false);
     this.pending = this.pending.filter((p) => {
       if (now < p.to) return true;
@@ -174,6 +174,17 @@ export class ReplayRecorder {
     this.blows.delete(victim);
   }
 
+  /**
+   * A goal (the ball games) by `scorer` (null: nobody touched it last), the
+   * ball thrown or struck from `distance` units away and in flight `airMs`:
+   * long shots and long flights are the best, then the one that wins it.
+   */
+  goal(scorer: number | null, now: number, distance: number, airMs: number, final: boolean): void {
+    const score = distance * 0.25 + Math.min(2, airMs / 800) + (final ? 1.5 : 0);
+    this.queue({ kind: 'goal', subject: scorer ?? 0, by: scorer, score, focus: now - Math.min(airMs, 900), frames: [], final, margin: distance },
+      now - REPLAY_BEFORE, now + REPLAY_AFTER);
+  }
+
   /** Cuts out the highlights still waiting for their last frames (the match is leaving) and ranks them. */
   flush(): Highlight[] {
     for (const [v, c] of this.combos) this.endCombo(v, c, false);
@@ -185,14 +196,14 @@ export class ReplayRecorder {
   private endCombo(victim: number, c: Combo, ko: boolean, koAt = 0): void {
     this.combos.delete(victim);
     if (c.hits < COMBO_MIN) return;
-    // Damage first (a long chain of light jabs is not much of a combo), then hits up to a point; one that finishes the robot off is the best kind.
+    // Damage first (a long chain of light jabs is not much of a combo), then hits up to a point; one that finishes the Kubot off is the best kind.
     const score = c.damage / 6 + 0.5 * Math.min(c.hits, 8) + (ko ? 3 : 0);
     const to = ko ? koAt + REPLAY_AFTER : c.last + COMBO_AFTER;
     this.queue({ kind: 'combo', subject: victim, by: c.by, score, focus: c.last, frames: [], hits: c.hits, damage: c.damage, ko },
       Math.max(c.first - COMBO_BEFORE, to - LONGEST), to);
   }
 
-  /** Launched robots: how close they come to the blast zone, and whether they make it back. */
+  /** Launched Kubotz: how close they come to the blast zone, and whether they make it back. */
   private followRecoveries(now: number, fighters: readonly Kubotz[]): void {
     for (const [v, w] of this.watches) {
       const k = fighters[v];
@@ -234,9 +245,9 @@ export class ReplayRecorder {
 }
 
 /**
- * The best few of each kind, in the order they are shown: K.O.s, recoveries,
+ * The best few of each kind, in the order they are shown: goals (the ball games), K.O.s, recoveries,
  * combos, each counting down to the best. A moment already shown (the same
- * robot, overlapping in time) is not shown again in a later kind.
+ * Kubot, overlapping in time) is not shown again in a later kind.
  */
 export function pickHighlights(candidates: Record<HighlightKind, Highlight[]>): Highlight[] {
   const picked: Highlight[] = [];
@@ -246,7 +257,7 @@ export function pickHighlights(candidates: Record<HighlightKind, Highlight[]>): 
     const [a0, a1] = span(p); const [b0, b1] = span(h);
     return Math.min(a1, b1) - Math.max(a0, b0) > 0.5 * Math.min(a1 - a0, b1 - b0);
   });
-  for (const kind of ['ko', 'recovery', 'combo'] as HighlightKind[]) {
+  for (const kind of ['goal', 'ko', 'recovery', 'combo'] as HighlightKind[]) {
     const best = [...candidates[kind]].sort((a, b) => b.score - a.score).filter((h) => !shown(h)).slice(0, HIGHLIGHTS_PER_KIND);
     picked.push(...best.reverse());
   }

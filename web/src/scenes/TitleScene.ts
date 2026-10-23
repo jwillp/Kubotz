@@ -9,7 +9,7 @@ import { MenuInput } from './MenuInput';
 
 /** The title menu: each entry opens a scene. */
 const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
-  { label: 'Play', scene: 'Setup' },
+  { label: 'Play', scene: 'Modes' },
   { label: 'Moves', scene: 'MoveList' },
   // Over the title, which waits paused until Back.
   { label: 'Controls', scene: 'Controls', overlay: true },
