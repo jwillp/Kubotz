@@ -400,7 +400,7 @@ export class SetupScene extends Phaser.Scene {
       this.tweens.add({ targets: this.center, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });
     }
     this.arenaName.setText(ARENA_INFO[s.arena].name);
-    this.arenaBlurb.setText(ARENA_INFO[s.arena].blurb);
+    this.arenaBlurb.setText(ARENA_INFO[s.arena].description);
     if (d) this.focus = { kind: 'arena' };
     this.refresh();
   }

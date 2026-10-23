@@ -866,7 +866,7 @@ function buildArenaList(): void {
       store.select({ arena: id, piece: null });
       arenaScene()?.recentre();
     } }, a.name, h('small', { textContent: id }));
-    item.dataset.help = a.blurb;
+    item.dataset.help = a.description;
     kids.push(item);
   }
   const add = h('button', { cls: 'btn', textContent: '+ New arena', onclick: () => newArena() });
@@ -884,7 +884,7 @@ const nextOrder = () => Math.max(0, ...Object.values(store.docs.arenas).map((a) 
 function newArena(): void {
   const id = uniqueArenaId('new-arena');
   const arena: ArenaData = {
-    order: nextOrder(), name: 'New arena', blurb: 'A new arena', room: 'kube',
+    order: nextOrder(), name: 'New arena', description: 'A new arena', room: 'kube',
     walls: [[6, 1, 40, 2], [4, 3, 2, 13], [1, 16, 5, 2], [1, 23, 5, 2], [4, 25, 2, 11], [46, 3, 2, 13], [46, 16, 5, 2], [46, 23, 5, 2], [46, 25, 2, 11], [6, 34, 40, 3]],
     platforms: [[20, 26, 12, 1]], warps: [[1, 18, 1, 5], [50, 18, 1, 5]],
     spawns: [[10, 34], [42, 34], [18, 34], [34, 34]], bonus: [[26, 23], [14, 30], [38, 30]],
@@ -965,7 +965,7 @@ function buildArenaInspector(): void {
       text('Name', 'Shown on the arena select.', () => A().name, (v) => editArena((x) => { x.name = v; }, false)),
       pick('Room', 'The room behind the arena, and the colours of its light and tiles.', ROOM_CHOICES, () => A().room ?? 'kube', (v) => editArena((x) => { x.room = v; }, false)),
     ),
-    grid(1, text('Blurb', 'The line under the name on the arena select.', () => A().blurb, (v) => editArena((x) => { x.blurb = v; }, false))),
+    grid(1, text('Description', 'The line under the name on the arena select.', () => A().description, (v) => editArena((x) => { x.description = v; }, false))),
     grid(2,
       num('Width units', 'Map width (1 unit = 64 px; the Kube is 52).', () => (A().size ?? DEFAULT_SIZE)[0], (v) => editArena((x) => { x.size = [Math.max(10, Math.round(v ?? 52)), (x.size ?? DEFAULT_SIZE)[1]]; })),
       num('Height units', 'Map height (the Kube is 38).', () => (A().size ?? DEFAULT_SIZE)[1], (v) => editArena((x) => { x.size = [(x.size ?? DEFAULT_SIZE)[0], Math.max(10, Math.round(v ?? 38))]; })),

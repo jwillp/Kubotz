@@ -31,7 +31,8 @@ export type Block = [x: number, y: number, w: number, h: number, look?: BlockLoo
 
 export interface ArenaDef {
   name: string;
-  blurb: string;
+  /** A line about it, under its name on the setup screen. */
+  description: string;
   /** Map size in units (default 52 x 38). */
   size?: [w: number, h: number];
   /** The room behind it (fx/Backdrops.ts ROOMS); default by the arena's place in the list. */
@@ -104,17 +105,18 @@ export const ARENA_IDS: (string | null)[] = [null];
 
 export const ARENAS: (ArenaDef | null)[] = [null]; // 0: the original map (debug-map.tmx)
 
-/** Names and blurbs for the arena select (index 0 is the original Kube). */
-export const ARENA_INFO: { name: string; blurb: string }[] = [];
+/** Names and descriptions for the arena select (index 0 is the original Kube). */
+export const ARENA_INFO: { name: string; description: string }[] = [];
 
 /** Loads (or reloads) the arenas, in their order. */
 export function loadArenas(byId: Record<string, ArenaData>): void {
   const list = Object.entries(byId).sort(([, x], [, y]) => x.order - y.order);
   ARENAS.length = 1;
   ARENA_IDS.length = 1;
-  for (const [id, { order: _order, ...def }] of list) { ARENAS.push(def); ARENA_IDS.push(id); }
+  // (Edits kept in a browser before the field was renamed still say `blurb`.)
+  for (const [id, { order: _order, ...def }] of list) { ARENAS.push({ ...def, description: def.description ?? (def as { blurb?: string }).blurb ?? '' }); ARENA_IDS.push(id); }
   ARENA_INFO.length = 0;
-  ARENA_INFO.push({ name: 'The Kube', blurb: 'The original arena' }, ...ARENAS.slice(1).map((a) => ({ name: a!.name, blurb: a!.blurb })));
+  ARENA_INFO.push({ name: 'The Kube', description: 'The original arena' }, ...ARENAS.slice(1).map((a) => ({ name: a!.name, description: a!.description })));
 }
 loadArenas(fromFiles(DATA_FILES).arenas);
 
@@ -217,7 +219,7 @@ export function arenaFromTmx(m: TmxMap, name: string): ArenaDef {
   const rect = (o: MapObject): [number, number, number, number] => [half(o.x), half(o.y), Math.max(0.5, half(o.width)), Math.max(0.5, half(o.height))];
   const of = (type: string) => m.objects.filter((o) => o.type === type);
   return {
-    name, blurb: 'Imported from a Tiled map', size: [m.width, m.height],
+    name, description: 'Imported from a Tiled map', size: [m.width, m.height],
     walls: of('WALL').map(rect),
     platforms: of('STATIC_PLATFORM').map(rect),
     warps: of('WARP_ZONE').map(rect),

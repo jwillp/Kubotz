@@ -1,7 +1,7 @@
 {
   "order": 1,
   "name": "The Foundry",
-  "blurb": "Two pillars and a block in the middle",
+  "description": "Two pillars and a block in the middle",
   "room": "foundry",
   "walls": [[6,1,40,2],[4,3,2,13],[1,16,5,2],[1,23,5,2],[4,25,2,11],[46,3,2,13],[46,16,5,2],[46,23,5,2],[46,25,2,11],[6,34,40,3],[14,26,4,8],[34,26,4,8],[23,17,6,2]],
   "platforms": [[20,29,12,1],[7,20,7,1],[38,20,7,1],[18,12,6,1],[28,12,6,1]],

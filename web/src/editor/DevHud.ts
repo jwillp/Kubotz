@@ -253,7 +253,7 @@ export function installDevHud(game: Phaser.Game): void {
     const order = Math.max(0, ...Object.values(store.docs.arenas).map((a) => a.order)) + 1;
     // From scratch: a floor to stand on and four spawns on it; the rest is yours.
     store.edit('arenas', (d) => {
-      d.arenas[id] = { order, name: `New arena ${n}`, blurb: 'Made in the dev HUD', room: 'kube', walls: [[6, 34, 40, 3]], platforms: [], warps: [], spawns: [[12, 34], [40, 34], [20, 34], [32, 34]], bonus: [[26, 30]] };
+      d.arenas[id] = { order, name: `New arena ${n}`, description: 'Made in the dev HUD', room: 'kube', walls: [[6, 34, 40, 3]], platforms: [], warps: [], spawns: [[12, 34], [40, 34], [20, 34], [32, 34]], bonus: [[26, 30]] };
     });
     store.select({ arena: id, piece: null });
     const i = ARENA_IDS.indexOf(id);
@@ -273,7 +273,7 @@ export function installDevHud(game: Phaser.Game): void {
       else {
         const j = JSON.parse(await file.text()) as Partial<ArenaData>;
         if (!Array.isArray(j.walls) || !Array.isArray(j.spawns)) throw new Error('no walls or spawns in it');
-        def = { ...j, name: j.name ?? base, blurb: j.blurb ?? 'Imported', walls: j.walls, platforms: j.platforms ?? [], warps: j.warps ?? [], spawns: j.spawns, bonus: j.bonus ?? [] };
+        def = { ...j, name: j.name ?? base, description: j.description ?? (j as { blurb?: string }).blurb ?? 'Imported', walls: j.walls, platforms: j.platforms ?? [], warps: j.warps ?? [], spawns: j.spawns, bonus: j.bonus ?? [] };
       }
     } catch (e) {
       say(`Could not import ${file.name}: ${(e as Error).message}`);
@@ -293,6 +293,16 @@ export function installDevHud(game: Phaser.Game): void {
   const importInput = h('input', { type: 'file', accept: '.json,.tmx' });
   importInput.hidden = true;
   importInput.onchange = () => { const f = importInput.files?.[0]; importInput.value = ''; if (f) void importArena(f); };
+
+  /** A new id for an arena (its file name): lower case, digits and dashes, not taken. */
+  const renameArena = (from: string, raw: string) => {
+    const to = raw.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!to || to === from) { shape = ''; build(); return; }
+    if (store.docs.arenas[to]) { say(`There is already an arena "${to}".`); shape = ''; build(); return; }
+    store.edit('arenas', (d) => { d.arenas[to] = d.arenas[from]; delete d.arenas[from]; });
+    store.select({ arena: to, piece: null });
+    say(`Renamed to ${to}: Export writes ${to}.json and removes ${from}.json.`);
+  };
 
   // ---------------------------------------------------------------- the panel
   let shape = '';
@@ -340,7 +350,7 @@ export function installDevHud(game: Phaser.Game): void {
     // What the match was built from, before any edit from this panel.
     if (id && !applied.has(id)) applied.set(id, JSON.stringify(a ?? null));
     const piecesNow = a && p ? piecesOf(a, p.kind)[p.index] : null;
-    const next = `${open}|${editing}|${g?.arena}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${a?.music}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
+    const next = `${open}|${editing}|${g?.arena}|${id}|${a?.description}|${p?.kind}:${p?.index}|${JSON.stringify(piecesNow ?? null)}|${a?.name}|${a?.room}|${a?.music}|${ARENA_INFO.length}|${arena()?.tool}|${arena()?.brush.source}`;
     if (next === shape || !open || !g) { refresh(); return; }
     shape = next;
     const editArena = (fn: (x: ArenaData) => void) => store.edit('arenas', (d) => fn(d.arenas[id!]));
@@ -440,9 +450,11 @@ export function installDevHud(game: Phaser.Game): void {
       section('Arena',
         h('div', { cls: 'dev-row dev-arena' }, arenaPick, newBtn, importBtn, importInput),
         a ? h('div', { cls: 'dev-grid' },
+          (() => { const input = h('input', { value: id! }); input.onchange = () => renameArena(id!, input.value); return h('label', { cls: 'dev-field', help: 'Its id: the name of its file (src/data/arenas/<id>.json). Lower case letters, digits and dashes; Export writes it under the new name and removes the old file.' }, h('span', { textContent: 'Id' }), input); })(),
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
           choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
         ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, make a new one, or Import maps/debug-map.tmx for a copy to edit.' }),
+        a ? (() => { const input = h('textarea', { value: a.description, rows: 2 }); input.onchange = () => editArena((x) => { x.description = input.value.trim(); }); return h('label', { cls: 'dev-field', help: 'A line about it, under its name on the setup screen.' }, h('span', { textContent: 'Description' }), input); })() : null,
         a ? musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })) : null,
         // The map's size: it grows or shrinks on the right and at the bottom.
         a ? h('div', { cls: 'dev-grid', help: 'The map\'s size in units (tiles). It grows or shrinks on the right and at the bottom; the blast zone moves with it.' },
@@ -512,7 +524,7 @@ export function installDevHud(game: Phaser.Game): void {
     const id = `arena-${n}`;
     const order = Math.max(0, ...Object.values(store.docs.arenas).map((x) => x.order)) + 1;
     store.edit('arenas', (d) => {
-      d.arenas[id] = { order, name: `New arena ${n}`, blurb: 'Made in the dev HUD', room: 'kube', walls: [[6, 34, 40, 3]], platforms: [], warps: [], spawns: [[12, 34], [40, 34], [20, 34], [32, 34]], bonus: [[26, 30]] };
+      d.arenas[id] = { order, name: `New arena ${n}`, description: 'Made in the dev HUD', room: 'kube', walls: [[6, 34, 40, 3]], platforms: [], warps: [], spawns: [[12, 34], [40, 34], [20, 34], [32, 34]], bonus: [[26, 30]] };
     });
     store.select({ arena: id, piece: null });
     const index = ARENA_IDS.indexOf(id);

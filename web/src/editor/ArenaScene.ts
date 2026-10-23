@@ -132,7 +132,7 @@ export class ArenaScene extends Phaser.Scene {
     const a = this.arena;
     if (!a) { this.tiles.removeAll(true); this.over.clear(); this.grid.clear(); return; }
     // The tiles and the room are rebuilt only when the arena's shape changes.
-    const { name: _n, blurb: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, emitters: _e, npcs: _np, lights: _li, music: _mu, ...shape } = a;
+    const { name: _n, description: _b, spawns: _s, bonus: _bo, order: _o, blast: _bl, emitters: _e, npcs: _np, lights: _li, music: _mu, ...shape } = a;
     // Inside the game the match draws the real arena; this scene only adds the pieces.
     if (!this.overlay) {
       const key = JSON.stringify(shape);
