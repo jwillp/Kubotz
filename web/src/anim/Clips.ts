@@ -661,6 +661,23 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, yaw: 360, x: 66 }, ease: 'inOut' },
   ]),
 
+  /**
+   * Blade lock: a deep lunge into the other blade, leaning in, both hands on
+   * the hilt, quivering with the strain (the arena pushes it to and fro).
+   */
+  bladeLock: clip('bladeLock', 240, [
+    { t: 0, pose: {
+    ...S, torso: 70, head: 74, tilt: 4, x: 18, y: -6,
+    thighF: -24, legF: -96, footF: -80, thighB: -150, legB: -158, footB: -118,
+    shoulderF: -38, armF: 40, handF: 52, shoulderB: -26, armB: 34, handB: 46,
+  }, ease: 'inOut' },
+    { t: 0.5, pose: {
+    ...S, torso: 73, head: 76, tilt: 3, x: 13, y: -4,
+    thighF: -27, legF: -99, footF: -82, thighB: -146, legB: -154, footB: -116,
+    shoulderF: -44, armF: 35, handF: 47, shoulderB: -31, armB: 29, handB: 41,
+  }, ease: 'inOut' },
+  ], { loop: true }),
+
   /** Sword forward smash: blade raised overhead (held while charging), then a leaping cleave. */
   sfsmash: clip('sfsmash', 600, [
     { t: 0, pose: FIGHT },

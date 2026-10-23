@@ -6,7 +6,7 @@ import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../ga
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, hitlagMs } from '../game/Kubotz';
-import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
+import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
@@ -1260,7 +1260,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const reachL = Math.max(0.3 * UNIT, bl.x2 - bl.x1);
     const reachR = Math.max(0.3 * UNIT, br.x1 - br.x2);
     const gap = LOCK_CROSS * (reachL + reachR);
-    const mid = (l.x + r.x) / 2;
+    // The pair gives ground to whoever is winning (the bar's lead, from the left).
+    lock.mid0 ??= (l.x + r.x) / 2;
+    const mid = lock.mid0 + lock.shown * LOCK_SHOVE;
     l.holdAt(mid - gap / 2 - (bl.x1 - l.x));
     r.holdAt(mid + gap / 2 - (br.x1 - r.x));
     const c = bladeContact(bl, br);
@@ -1284,7 +1286,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       a.freeze(LOCK_HOLD_MS);
       b.freeze(LOCK_HOLD_MS);
       this.squareUp(l);
-      const outcome = l.push(a.takeMashes(), b.takeMashes(), now);
+      const pa = a.takeMashes();
+      const pb = b.takeMashes();
+      const outcome = l.push(pa, pb, now);
+      a.lockPush = l.meter;
+      b.lockPush = -l.meter;
+      // Each shove throws a few sparks off the blades.
+      if (pa + pb > 0) this.impact.bladeSparks(l.x, l.y, (pa >= pb ? a : b).look.color, 0xffffff);
       if (now - l.lastSpark > 110) {
         l.lastSpark = now;
         this.impact.hit(l.x, l.y, Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? a.look.color : b.look.color, 0.45);

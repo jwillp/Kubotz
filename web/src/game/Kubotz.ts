@@ -533,6 +533,8 @@ export class Kubotz implements Damageable, Teamed {
   private sdiPrev: PadState = emptyPad();
   /** In a blade lock (Saber.ts): held frozen by the arena, counting fresh presses. */
   bladeLocked = false;
+  /** How the blade lock goes for this Kubot, -1 (giving way) to 1 (pushing through): it leans in or back. */
+  lockPush = 0;
   private mashes = 0;
   private lockPrev: PadState = emptyPad();
   /** A saber clash springs the Kubot back this fast (px/s) once its freeze ends. */
@@ -661,7 +663,8 @@ export class Kubotz implements Damageable, Teamed {
     this.mashes = 0;
     this.lockPrev = { ...this.raw };
     this.cancelActions();
-    if (on) this.anim.play(ANIM.IDLE, { restart: true, fade: 80 });
+    this.lockPush = 0;
+    if (on) this.anim.play('bladeLock', { restart: true, fade: 90 });
   }
 
   /** A blade lock won: the forward smash carries through from its raised blade, over the beaten `foe` (already struck). */
@@ -2160,6 +2163,8 @@ export class Kubotz implements Damageable, Teamed {
     const vx = this.body.vx / (feel().run * UNIT);
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
+    // Locked blades: leaning into the push, or bent back by it.
+    if (this.bladeLocked) lean += this.facing * (0.07 + 0.12 * this.lockPush);
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const pose = this.anim.pose();
     // Footsteps land when the other foot touches down in the run.
@@ -2206,6 +2211,7 @@ export class Kubotz implements Damageable, Teamed {
     const a = this.anim;
     if (now < this.materializeUntil) { a.play(ANIM.IDLE, { fade: 0 }); return; } // standing in the spawn beam
     if (this.heldBy) { a.play('held', { fade: 60 }); return; }
+    if (this.bladeLocked) { a.play('bladeLock', { fade: 90 }); return; }
     if (this.down) return; // lying on the floor (the knockdown, held)
     if (this.throwing || this.climb) return; // the throw or the get-up plays out
     if (this.holding) { if (now >= this.pummelUntil) a.play('grabHold', { fade: 80 }); return; }

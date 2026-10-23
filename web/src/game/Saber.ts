@@ -20,6 +20,8 @@ export const LOCK_HOLD_MS = 80;
 export const BLADE_CROSS = 8;
 /** Locked blades cross this far along (0..1 of their reach towards each other). */
 export const LOCK_CROSS = 0.6;
+/** How far (px) the pair slides towards the losing side at the end of the bar. */
+export const LOCK_SHOVE = 0.7 * UNIT;
 /** A lock needs this much damage between the two swings (a smash against a tilt, two smashes)... */
 export const LOCK_FORCE = 20;
 /** ...and blades crossing at least this square (degrees), not sliding along each other. */
@@ -117,6 +119,8 @@ export class SaberLock {
   lastSpark = 0;
   /** The meter as drawn, easing after the real one. */
   shown = 0;
+  /** Where the pair stood when the lock began (the push moves them from there). */
+  mid0: number | null = null;
 
   /** The Kubot on the left (facing right) and the one on the right, kept for the whole lock. */
   readonly left: Kubotz;
