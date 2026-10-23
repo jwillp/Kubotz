@@ -47,6 +47,8 @@ export interface AttackBox {
   launch: Launch;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
+  /** Laser sabers this swing already clashed with (Saber.ts): one clash per pair of swings. */
+  clashed: Set<Kubotz>;
 }
 
 /** Spriter files of the weapons, and points measured on their images (see BootScene). */
@@ -183,6 +185,8 @@ export const SPECIALS = {
 } satisfies Record<string, Move>;
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
 
+/** A blade lock holds this point of the forward smash (its wind-up, blade raised forwards). */
+const LOCK_POSE = 0.3;
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
 export const SMASH_CHARGE_MS = 1000;
 export const SMASH_CHARGE_BONUS = 0.6;
@@ -335,7 +339,7 @@ export interface ArenaHooks {
   /** @param size bolt scale (1 = normal), @param power its push. */
   fireBullet(shooter: Kubotz, damage: number, speed: number, size?: number, power?: number): void;
   now(): number; // the match clock: stops while paused
-  playSfx(key: string, volume?: number): void;
+  playSfx(key: string, volume?: number, detune?: number): void;
   /** Picks up a power-up ball in the area; true if one was taken. */
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean;
   /** An opponent in grab reach in front of this Kubot, or null. */
@@ -527,6 +531,12 @@ export class Kubotz implements Damageable, Teamed {
   private freezeAt: { x: number; y: number; vx: number; vy: number } | null = null;
   private pendingLaunch: { vx: number; vy: number; di: boolean } | null = null;
   private sdiPrev: PadState = emptyPad();
+  /** In a blade lock (Saber.ts): held frozen by the arena, counting fresh presses. */
+  bladeLocked = false;
+  private mashes = 0;
+  private lockPrev: PadState = emptyPad();
+  /** A saber clash springs the Kubot back this fast (px/s) once its freeze ends. */
+  private recoilVx = 0;
   private sdiCount = 0;
   /** When the current hitstun began (for the hitstun cancel). */
   private hitstunFrom = 0;
@@ -605,6 +615,62 @@ export class Kubotz implements Damageable, Teamed {
     const a = this.model.pointOn(SWORD_FILE, 96, 68);
     const b = this.model.pointOn(SWORD_FILE, 298, 216);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
+  }
+
+  /**
+   * The laser saber in a swing (from just before the active frames to their
+   * end): its blade, the swing, and whether the swing is in its active frames.
+   */
+  saberSwing(): { blade: { x1: number; y1: number; x2: number; y2: number }; box: AttackBox; active: boolean } | null {
+    const a = this.attack;
+    if (!a || a.points[0]?.file !== SWORD_FILE) return null;
+    const blade = this.blade();
+    if (!blade) return null;
+    const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
+    if (t < this.attackActive[0] - 0.12 || t > this.attackActive[1]) return null;
+    return { blade, box: a, active: t >= this.attackActive[0] };
+  }
+
+  /** Sabers clashed with `foe`: this swing can't hurt it any more, and the Kubot springs back (dirX) after its freeze. */
+  clashWith(foe: Kubotz, dirX: number, speed: number): void {
+    this.attack?.clashed.add(foe);
+    this.attack?.hit.add(foe);
+    this.recoilVx = dirX * speed;
+  }
+
+  /** Moves a frozen Kubot sideways (a blade lock squares the pair up): it stays there until the freeze ends. */
+  holdAt(x: number): void {
+    this.body.setPosition(x, this.y);
+    this.freezeAt = { x, y: this.y, vx: 0, vy: 0 };
+  }
+
+  /** Fresh presses since the last call, in a blade lock. */
+  takeMashes(): number {
+    const n = this.mashes;
+    this.mashes = 0;
+    return n;
+  }
+
+  /**
+   * Starts or ends a blade lock (frozen by the arena meanwhile). Locked, both
+   * hold the forward smash's raised blade, so the blades cross; let go, the
+   * swing that met the other blade is dropped.
+   */
+  setBladeLock(on: boolean): void {
+    this.bladeLocked = on;
+    this.mashes = 0;
+    this.lockPrev = { ...this.raw };
+    if (on) {
+      this.anim.play(SWORD_DIR_MOVES.fsmash.anim, { restart: true, ms: SWORD_DIR_MOVES.fsmash.ms, fade: 60 });
+      this.anim.freeze(LOCK_POSE);
+    } else this.cancelActions();
+  }
+
+  /** A blade lock won: the forward smash carries through from its raised blade, over the beaten `foe` (already struck). */
+  followThrough(foe: Kubotz): void {
+    this.strike(SWORD_DIR_MOVES.fsmash, this.hooks.now(), 1, LOCK_POSE);
+    this.attack!.hit.add(foe);
+    this.attack!.clashed.add(foe);
   }
 
   bladeMiddle(): { x: number; y: number } {
@@ -722,12 +788,19 @@ export class Kubotz implements Damageable, Teamed {
     this.rawGuard = raw.guard;
     // A shield press that can tech (one every 40 frames).
     if (guardPressed && now >= this.techLockUntil) { this.techPressAt = now; this.techLockUntil = now + TECH_LOCKOUT; }
+    // A blade lock: any fresh button press counts (one a frame), whichever is mashed.
+    if (this.bladeLocked) {
+      const p = this.lockPrev;
+      if ((['attack', 'special', 'jump', 'grab'] as const).some((k) => raw[k] && !p[k])) this.mashes++;
+      this.lockPrev = { ...raw };
+    }
     // Hitlag: frozen where the hit landed, the move and the stun waiting; the struck Kubot can SDI.
     if (now < this.hitlagUntil) { this.updateHitlag(dt, raw); return; }
     if (this.freezeAt) {
       const f = this.freezeAt;
       this.freezeAt = null;
-      if (!this.pendingLaunch) this.body.setVelocity(f.vx, f.vy);
+      if (!this.pendingLaunch) this.body.setVelocity(f.vx + this.recoilVx, f.vy);
+      this.recoilVx = 0;
     }
     if (this.pendingLaunch) this.launch(raw);
     // Buffered presses, for people (not while shielding: no attacks out of shield).
@@ -1551,7 +1624,13 @@ export class Kubotz implements Damageable, Teamed {
       damage: Math.round(move.damage * power),
       launch: { ...move.launch, knockback: move.launch.knockback * power },
       hit: new Set(),
+      clashed: new Set(),
     };
+    // The laser saber hums through the swing, lower and louder for the strong ones.
+    if (sword && !this.carrying) {
+      const strong = move.damage >= 12;
+      this.hooks.playSfx(`saber-swing-${Math.floor(Math.random() * 3)}`, strong ? 0.5 : 0.36, (strong ? -250 : 0) + (Math.random() * 160 - 80));
+    }
     // A charged smash resumes from its held wind-up (`from`).
     this.attackStart = now - from * move.ms;
     this.attackEndsAt = this.attackStart + move.ms;
@@ -2055,9 +2134,9 @@ export class Kubotz implements Damageable, Teamed {
   render(now: number, dtMs: number): void {
     if (this.dead) return;
     this.updateAnimationState(now);
-    // Hitlag holds the pose.
+    // Hitlag holds the pose (a blade lock blends into its own, held by the animator).
     const frozen = now < this.hitlagUntil;
-    this.anim.tick(frozen ? 0 : dtMs);
+    this.anim.tick(frozen && !this.bladeLocked ? 0 : dtMs);
 
     const maps: string[] = [];
     if (this.look.head) maps.push(this.look.head);
@@ -2100,7 +2179,9 @@ export class Kubotz implements Damageable, Teamed {
     const c = this.charge;
     // The struck Kubot shudders through its hitlag.
     const shake = c > 0 && this.charging ? Math.sin(now / 18) * 2.5 * c
-      : frozen && this.pendingLaunch ? Math.sin(now / 9) * 3.5 : 0;
+      : frozen && this.pendingLaunch ? Math.sin(now / 9) * 3.5
+      // Straining in a blade lock.
+      : this.bladeLocked ? Math.sin(now / 13) * 1.6 : 0;
     this.model.update(pose, maps, this.body.x + shake, this.body.bottom, yaw, {
       dtMs,
       lean, squash,

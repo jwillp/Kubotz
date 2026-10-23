@@ -5,7 +5,8 @@ import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController, type Objective } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, hitlagMs } from '../game/Kubotz';
+import { BLADE_TOUCH, CLASH_RECOIL, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, SaberLock, crossAngle, sweep, sweptContact, type Blade } from '../game/Saber';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { CtfFlag } from '../game/Flag';
 import { GameBall } from '../game/Ball';
@@ -93,6 +94,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private holo!: HoloSpawns;
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
+  /** Blade locks under way, what draws them, and each human's "mash" prompt (Saber.ts). */
+  private saberLocks: SaberLock[] = [];
+  private lockG?: Phaser.GameObjects.Graphics;
+  private lockPrompts = new Map<Kubotz, Phaser.GameObjects.Text>();
+  /** Each swinging laser blade last frame and now, so blades and bolts sweeping past each other between frames still meet. */
+  private bladeWas = new Map<Kubotz, Blade>();
+  private bladeNow = new Map<Kubotz, Blade>();
   private nextBonusAt = 0;
   /** The title screen's power-up setting. */
   private bonusRate = BONUS_RATES.normal;
@@ -178,6 +186,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.fighters = [];
     this.orbs = [];
     this.bullets = [];
+    this.saberLocks = [];
+    this.lockG = undefined;
+    this.lockPrompts = new Map();
+    this.bladeWas = new Map();
+    this.bladeNow = new Map();
     this.playerSpawns = [];
     this.bonusSpawns = [];
     this.warpZones = [];
@@ -875,6 +888,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       k.update(now, dt, fighting);
     }
     this.physicsWorld.step(dt);
+    this.resolveSabers(now);
     this.resolveMelee(now);
     this.kickOrbs(now);
     this.debris.update(now, this.fighters, (victim, x, y) => {
@@ -1152,6 +1166,204 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
+  /**
+   * Laser sabers meeting in their swings (Saber.ts): blades that cross clash,
+   * so neither Kubot is hurt; both freeze (hitlag) and spring apart. A strong,
+   * square clash face to face locks the blades instead: a tug of war won by
+   * mashing, the loser's guard broken.
+   */
+  private resolveSabers(now: number): void {
+    this.bladeWas = this.bladeNow;
+    this.bladeNow = new Map();
+    // Only swings: a blade raised from rest into a swing doesn't sweep through the frame before.
+    for (const k of this.fighters) {
+      const swing = k.isAlive() ? k.saberSwing() : null;
+      if (swing) this.bladeNow.set(k, swing.blade);
+    }
+    this.updateLocks(now);
+    const swings = this.fighters
+      .filter((k) => k.isAlive() && !k.intangible && !k.bladeLocked)
+      .map((k) => ({ k, s: k.saberSwing() }))
+      .filter((e): e is { k: Kubotz; s: NonNullable<ReturnType<Kubotz['saberSwing']>> } => e.s !== null);
+    for (let i = 0; i < swings.length; i++) {
+      for (let j = i + 1; j < swings.length; j++) {
+        const { k: a, s: sa } = swings[i];
+        const { k: b, s: sb } = swings[j];
+        if (a.bladeLocked || b.bladeLocked || !canHurt(a, b)) continue;
+        if (sa.box.clashed.has(b) || sb.box.clashed.has(a)) continue;
+        const c = sweptContact(this.sweptFrom(a, sa.blade), sa.blade, this.sweptFrom(b, sb.blade), sb.blade);
+        if (!c) continue;
+        const faceToFace = a.facing !== b.facing && (b.x - a.x) * a.facing > 0;
+        const lock = faceToFace
+          && sa.box.damage + sb.box.damage >= LOCK_FORCE && crossAngle(c.a, c.b) >= LOCK_ANGLE;
+        const away = (k: Kubotz, o: Kubotz) => (k.x < o.x ? -1 : 1);
+        a.clashWith(b, away(a, b), lock ? 0 : CLASH_RECOIL);
+        b.clashWith(a, away(b, a), lock ? 0 : CLASH_RECOIL);
+        this.impact.clash(c.x, c.y);
+        if (lock) {
+          for (const k of [a, b]) { k.setBladeLock(true); k.freeze(LOCK_HOLD_MS); }
+          this.saberLocks.push(new SaberLock(a, b, c.x, c.y, now));
+          this.playSfx('saber-clash', 0.7, -300);
+          this.shake(0.3);
+        } else {
+          const lag = hitlagMs(Math.max(sa.box.damage, sb.box.damage));
+          a.freeze(lag);
+          b.freeze(lag);
+          this.playSfx('saber-clash', 0.55, Phaser.Math.Between(-150, 150));
+          this.shake(0.12);
+        }
+      }
+    }
+  }
+
+  /**
+   * A blade lock squares the pair up, frame after frame: the two Kubotz are
+   * set apart so their raised blades cross half-way along.
+   */
+  private squareUp(lock: SaberLock): void {
+    const { a, b } = lock;
+    const ba = a.blade();
+    const bb = b.blade();
+    if (!ba || !bb) return;
+    const [l, bl, r, br] = a.x <= b.x ? [a, ba, b, bb] : [b, bb, a, ba];
+    // Each emitter's offset from its Kubot, and how far forward its blade reaches (towards the other).
+    const reachL = Math.max(0.3 * UNIT, bl.x2 - bl.x1);
+    const reachR = Math.max(0.3 * UNIT, br.x1 - br.x2);
+    const gap = (reachL + reachR) / 2;
+    const mid = (l.x + r.x) / 2;
+    const lx = mid - gap / 2 - (bl.x1 - l.x);
+    const rx = mid + gap / 2 - (br.x1 - r.x);
+    l.holdAt(lx);
+    r.holdAt(rx);
+    lock.x = mid;
+    lock.y = ((bl.y1 + bl.y2) / 2 + (br.y1 + br.y2) / 2) / 2;
+  }
+
+  /** Where the blade was last frame, unless it jumped (a respawn, a portal): then only where it is. */
+  private sweptFrom(k: Kubotz, now: Blade): Blade | undefined {
+    const was = this.bladeWas.get(k);
+    return was && Math.hypot(was.x1 - now.x1, was.y1 - now.y1) < 2.5 * UNIT ? was : undefined;
+  }
+
+  /** Blade locks: held frozen, the presses counted, sparks and the sizzle; then the outcome. */
+  private updateLocks(now: number): void {
+    for (const l of this.saberLocks) {
+      const { a, b } = l;
+      // Broken up by a K.O., a hit from someone else or a grab: both just let go.
+      const broken = (k: Kubotz) => !k.isAlive() || now < k.hitstun || !!k.heldBy;
+      if (broken(a) || broken(b)) { this.endLock(l, null); continue; }
+      a.freeze(LOCK_HOLD_MS);
+      b.freeze(LOCK_HOLD_MS);
+      this.squareUp(l);
+      const outcome = l.push(a.takeMashes(), b.takeMashes(), now);
+      if (now - l.lastSpark > 110) {
+        l.lastSpark = now;
+        this.impact.hit(l.x, l.y, Math.random() < 0.5 ? -1 : 1, Math.random() < 0.5 ? a.look.color : b.look.color, 0.45);
+        if (Math.random() < 0.6) this.playSfx('saber-clash', 0.16, Phaser.Math.Between(-500, 300));
+      }
+      if (outcome) this.endLock(l, outcome);
+    }
+    this.saberLocks = this.saberLocks.filter((l) => l.a.bladeLocked);
+    this.drawLocks();
+  }
+
+  private endLock(l: SaberLock, outcome: Kubotz | 'draw' | null): void {
+    const { a, b } = l;
+    a.setBladeLock(false);
+    b.setBladeLock(false);
+    if (outcome === null) return;
+    if (outcome === 'draw') {
+      // Neither gave way: both thrown back.
+      for (const [k, o] of [[a, b], [b, a]] as const) { k.clashWith(o, k.x < o.x ? -1 : 1, CLASH_RECOIL * 1.6); k.freeze(hitlagMs(12)); }
+      this.impact.clash(l.x, l.y);
+      this.playSfx('saber-clash', 0.7);
+      this.shake(0.25);
+      return;
+    }
+    // The winner's blade breaks through the loser's guard.
+    const winner = outcome;
+    const loser = winner === a ? b : a;
+    winner.followThrough(loser);
+    const lag = this.hit(loser, winner, LOCK_DAMAGE, LOCK_LAUNCH, loser.x < winner.x ? -1 : 1, l.x, l.y);
+    winner.freeze(lag);
+    this.impact.clash(l.x, l.y);
+    this.playSfx('saber-break', 0.8);
+    this.shake(0.6);
+    this.floatText(l.x, l.y - UNIT, 'BREAK!', winner.look.color);
+  }
+
+  /** Each lock's tug-of-war bar over the pair, in their colours, and "Mash A" over the people in it. */
+  private drawLocks(): void {
+    const g = this.lockG ??= this.add.graphics().setDepth(22);
+    g.clear();
+    const locked = new Set<Kubotz>();
+    for (const l of this.saberLocks) {
+      const left = l.a.x <= l.b.x ? l.a : l.b;
+      const right = left === l.a ? l.b : l.a;
+      // The meter pushed towards the right-hand Kubot is the left one winning.
+      const lead = left === l.a ? l.meter : -l.meter;
+      l.shown += (lead - l.shown) * 0.35;
+      const w = 2.6 * UNIT;
+      const h = 0.16 * UNIT;
+      const cx = (l.a.x + l.b.x) / 2;
+      // Above the player tags.
+      const y = Math.min(l.a.body.top, l.b.body.top) - 1.6 * UNIT;
+      const mid = cx + (l.shown * w) / 2;
+      g.fillStyle(0x02060c, 0.75).fillRoundedRect(cx - w / 2 - 3, y - h / 2 - 3, w + 6, h + 6, 5);
+      g.fillStyle(left.look.color, 1).fillRect(cx - w / 2, y - h / 2, mid - (cx - w / 2), h);
+      g.fillStyle(right.look.color, 1).fillRect(mid, y - h / 2, cx + w / 2 - mid, h);
+      // The front where the two pushes meet, flickering.
+      g.fillStyle(0xffffff, 0.7 + 0.3 * Math.random()).fillRect(mid - 2, y - h / 2 - 4, 4, h + 8);
+      // Time left: a thin line under the bar running out.
+      const left_ = Math.max(0, (l.endsAt - this.clock) / (l.endsAt - l.startedAt));
+      g.fillStyle(0xffffff, 0.5).fillRect(cx - (w / 2) * left_, y + h / 2 + 5, w * left_, 2);
+      for (const k of [l.a, l.b]) {
+        if (!(k.controller instanceof HumanController)) continue;
+        locked.add(k);
+        let t = this.lockPrompts.get(k);
+        if (!t) {
+          t = this.add.text(0, 0, '', body(22, { fontStyle: '800', color: '#ffffff', stroke: '#000000', strokeThickness: 5 })).setDepth(22);
+          this.lockPrompts.set(k, t);
+        }
+        // Pulsing, so it reads as "now, fast".
+        const pulse = 1 + 0.12 * Math.abs(Math.sin(this.clock / 70));
+        // Over its own end of the bar.
+        const own = k === left ? 0 : 1;
+        t.setText(`MASH ${k.controller.mashButton}`).setOrigin(own, 1).setPosition(cx + (own ? w / 2 : -w / 2), y - h / 2 - 6).setScale(pulse).setVisible(true);
+      }
+    }
+    for (const [k, t] of this.lockPrompts) if (!locked.has(k)) t.setVisible(false);
+  }
+
+  /** A laser bolt caught by an enemy's saber swing flies back off the blade, now that Kubot's (Saber.ts). */
+  private deflect(b: Bullet, box: Phaser.Geom.Rectangle, now: number, dt: number): boolean {
+    for (const k of this.fighters) {
+      if (!k.isAlive() || k.intangible || !canHurt(b.shooter, k)) continue;
+      const s = k.saberSwing();
+      if (!s) continue;
+      // The bolt's path this frame, against the blade's sweep.
+      const back = Math.abs(b.vx) * dt;
+      const backY = Math.abs(b.vy) * dt;
+      const reach = new Phaser.Geom.Rectangle(box.x - BLADE_TOUCH - back, box.y - BLADE_TOUCH - backY,
+        box.width + 2 * (BLADE_TOUCH + back), box.height + 2 * (BLADE_TOUCH + backY));
+      const touches = (bl: Blade) => Phaser.Geom.Intersects.LineToRectangle(new Phaser.Geom.Line(bl.x1, bl.y1, bl.x2, bl.y2), reach);
+      // Sent where the swing goes: forwards (backwards for a back swing, away for a spin), its launch angle flattened.
+      const dir = s.box.both ? (b.x < k.x ? -1 : 1) : s.box.behind ? -k.facing : k.facing;
+      // Through its active frames the swing covers the blade's reach on its side, like a reflector, not only the blade's edge.
+      const { x1, y1, x2, y2 } = s.blade;
+      const inReach = s.active && (b.x - x1) * dir > -0.2 * UNIT && Math.hypot(b.x - x1, b.y - y1) <= Math.hypot(x2 - x1, y2 - y1) + BLADE_TOUCH;
+      if (!inReach && !sweep(this.sweptFrom(k, s.blade), s.blade).some(touches)) continue;
+      const ang = Phaser.Math.DegToRad(s.box.launch.angle * DEFLECT_AIM);
+      const speed = Math.hypot(b.vx, b.vy) * DEFLECT_SPEED;
+      b.deflect(k, dir * Math.cos(ang) * speed, -Math.sin(ang) * speed, Math.min(30, b.damage * DEFLECT_DAMAGE), now);
+      this.impact.hit(b.x, b.y, dir, k.look.color, 0.8);
+      this.playSfx('saber-deflect', 0.55, Phaser.Math.Between(-120, 120));
+      k.freeze(hitlagMs(b.damage) / 2);
+      return true;
+    }
+    return false;
+  }
+
   /** Kubotz running into a power-up ball kick it along. */
   /** What runs and strikes knock about: the power-up balls, and a ball game's loose balls (not the Spark). */
   private knockables(): (PowerUpOrb | GameBall)[] {
@@ -1199,7 +1411,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const b of this.bullets) {
       if (b.dead) continue;
       b.update(dt);
-      this.impact.laserTrail(b.x, b.y, Math.sign(b.pushX) || 1, b.shooter.look.color, b.size);
+      const sp = Math.hypot(b.vx, b.vy) || 1;
+      this.impact.laserTrail(b.x, b.y, b.vx / sp, b.shooter.look.color, b.size, b.vy / sp);
       if (now >= b.expiresAt) { b.destroy(); continue; }
       const box = b.hitbox();
       if (this.solids.some((r) => Phaser.Geom.Intersects.RectangleToRectangle(box, r))) { this.popBullet(b); continue; }
@@ -1210,6 +1423,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         this.popBullet(b);
         continue;
       }
+      if (this.deflect(b, box, now, dt)) continue;
       for (const target of this.damageablesFor(b.shooter)) {
         if (!Phaser.Geom.Intersects.RectangleToRectangle(box, target.hurtbox())) continue;
         this.hit(target, b.shooter, b.damage, { knockback: Math.abs(b.pushX), angle: 20 }, b.pushX < 0 ? -1 : 1, b.x, b.y);

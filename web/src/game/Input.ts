@@ -117,6 +117,7 @@ export class HumanController implements Controller {
   /** When each stick axis was last centred, and whether the stick is dashing (flicked sideways, until centred). */
   private centredAt = { x: 0, y: 0 };
   private dashing = false;
+  private attackKey: string | null;
 
   /**
    * @param binding keyboard keys, or null for a gamepad-only player
@@ -127,11 +128,17 @@ export class HumanController implements Controller {
     const keyboard = binding !== null;
     const make = (names: string[]) => (keyboard ? names.map((n) => kb.addKey(n, true)) : []);
     binding ??= PLAYER_1_KEYS; // only the key names: no keys are made
+    this.attackKey = keyboard ? binding.attack[0] : null;
     this.keys = {
       up: make(binding.up), down: make(binding.down), left: make(binding.left), right: make(binding.right),
       attack: make(binding.attack), grab: make(binding.grab), guard: make(binding.guard),
       jump: make(binding.jump), special: make(binding.special), taunt: make(binding.taunt),
     };
+  }
+
+  /** The attack button to show in prompts: A on a gamepad, else the first attack key. */
+  get mashButton(): string {
+    return this.attackKey === null || this.scene.input.gamepad?.getPad(this.padIndex) ? 'A' : this.attackKey;
   }
 
   read(): PadState {

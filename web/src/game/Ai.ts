@@ -90,6 +90,12 @@ export class CpuController implements Controller {
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
     this.debug.dest = null;
+    if (me.bladeLocked) {
+      // A blade lock: a fresh press every think (quicker CPUs mash faster).
+      this.debug.mode = 'blade lock';
+      pad.attack = true;
+      return pad;
+    }
     if (me.heldBy) {
       // Mash out: a fresh button press every think (two now and then), and a stick wiggle.
       this.debug.mode = 'mash';

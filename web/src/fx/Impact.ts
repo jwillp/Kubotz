@@ -32,6 +32,7 @@ interface Particle {
   drag: number; // fraction of speed kept per second
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
   len?: number; // beams: length behind the point (signed: the bolt's direction)
+  lenY?: number; // beams: its vertical part (a bolt batted back at an angle)
   body?: number; // smoke: the bright colour inside its deep rim (`color`)
   collide?: boolean; // stopped by the arena's walls and platforms
 }
@@ -285,13 +286,15 @@ export class ImpactFx {
   }
 
   /** Laser bolt wake: a fading beam line and flickering square data bits, no smoke. */
-  laserTrail(x: number, y: number, dir: number, color: number, size: number): void {
+  /** @param dir the bolt's direction: -1 / 1 sideways, or with `dirY` a unit vector (a deflected bolt). */
+  laserTrail(x: number, y: number, dir: number, color: number, size: number, dirY = 0): void {
     const hot = mix(color, 0xffffff, 0.55);
-    this.add({ kind: 'beam', x, y, color: hot, size: 0.05 * UNIT * size, life: 110, len: dir * 0.9 * UNIT });
+    this.add({ kind: 'beam', x, y, color: hot, size: 0.05 * UNIT * size, life: 110, len: dir * 0.9 * UNIT, lenY: dirY * 0.9 * UNIT });
     if (Math.random() < 0.7) {
+      const back = rand(0, 0.5) * UNIT;
       this.add({
-        kind: 'bit', x: x - dir * rand(0, 0.5) * UNIT, y: y + rand(-0.12, 0.12) * UNIT * size,
-        vx: -dir * rand(0.5, 2) * UNIT, vy: rand(-1.5, 1.5) * UNIT,
+        kind: 'bit', x: x - dir * back, y: y - dirY * back + rand(-0.12, 0.12) * UNIT * size,
+        vx: -dir * rand(0.5, 2) * UNIT, vy: -dirY * rand(0.5, 2) * UNIT + rand(-1.5, 1.5) * UNIT,
         color: Math.random() < 0.4 ? 0xffffff : hot, size: rand(1.5, 3) * Math.min(1.6, size), life: rand(140, 280), drag: 0.2,
       });
     }
@@ -453,8 +456,9 @@ export class ImpactFx {
           break;
         case 'beam': {
           const len = (p.len ?? 0) * (0.4 + 0.6 * fade);
-          g.lineStyle(p.size * 3 * fade, p.color, 0.18 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
-          g.lineStyle(p.size * fade, p.color, 0.8 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
+          const lenY = (p.lenY ?? 0) * (0.4 + 0.6 * fade);
+          g.lineStyle(p.size * 3 * fade, p.color, 0.18 * fade).lineBetween(p.x - len, p.y - lenY, p.x, p.y);
+          g.lineStyle(p.size * fade, p.color, 0.8 * fade).lineBetween(p.x - len, p.y - lenY, p.x, p.y);
           break;
         }
         case 'bit': {

@@ -321,6 +321,124 @@ export function scanBuffer(ctx: BaseAudioContext): AudioBuffer {
   return buf;
 }
 
+// ------------------------------------------------------------------ laser sabers
+/** Keeps a buffer below clipping. */
+function limit(d: Float32Array, max = 0.95): void {
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak > max) for (let i = 0; i < d.length; i++) d[i] *= max / peak;
+}
+
+/**
+ * The saber's hum: a buzzy low tone (odd and even harmonics, a slow beat
+ * between two detuned voices) whose pitch follows `f(u)`, at `amp(u)`.
+ */
+function hum(d: Float32Array, rate: number, at: number, dur: number, f: (u: number) => number, amp: (u: number) => number): void {
+  let p1 = 0; let p2 = 0;
+  const start = Math.floor(at * rate);
+  const end = Math.min(d.length, start + Math.floor(dur * rate));
+  for (let i = start; i < end; i++) {
+    const u = (i - start) / (end - start);
+    const fr = f(u);
+    p1 += (2 * Math.PI * fr) / rate;
+    p2 += (2 * Math.PI * fr * 1.012) / rate;
+    const v = Math.sin(p1) + 0.55 * Math.sin(2 * p1) + 0.4 * Math.sin(3 * p1) + 0.22 * Math.sin(5 * p1)
+      + 0.7 * Math.sin(p2) + 0.3 * Math.sin(2 * p2);
+    // A little hard clipping for the electric buzz.
+    d[i] += amp(u) * Math.max(-1.2, Math.min(1.2, v)) * 0.5;
+  }
+}
+
+/** Noise through a band-pass whose centre follows `fc(u)` (a whoosh, a sizzle). */
+function bandNoise(d: Float32Array, rate: number, at: number, dur: number, fc: (u: number) => number, amp: (u: number) => number, q = 0.35): void {
+  let low = 0; let band = 0;
+  const start = Math.floor(at * rate);
+  const end = Math.min(d.length, start + Math.floor(dur * rate));
+  for (let i = start; i < end; i++) {
+    const u = (i - start) / (end - start);
+    const f = 2 * Math.sin((Math.PI * Math.min(fc(u), rate / 6)) / rate);
+    low += f * band;
+    band += f * (Math.random() * 2 - 1 - low - band * q);
+    d[i] += band * amp(u);
+  }
+}
+
+/**
+ * A laser saber swung: the hum swells and bends up then down as the blade
+ * sweeps past (a Doppler sweep), over an airy whoosh. `variant` 0..2 shifts
+ * the pitch and the length so repeated swings differ.
+ */
+export function saberSwingBuffer(ctx: BaseAudioContext, variant: number): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const len = 0.36 + variant * 0.04;
+  const buf = ctx.createBuffer(1, Math.floor(rate * (len + 0.25)), rate);
+  const d = buf.getChannelData(0);
+  const f0 = 92 + variant * 11;
+  const swell = (u: number) => Math.pow(Math.sin(Math.PI * Math.pow(u, 0.75)), 1.6);
+  hum(d, rate, 0, len, (u) => f0 * (1 + 0.55 * Math.sin(Math.PI * Math.pow(u, 0.8))), (u) => 0.32 * swell(u));
+  bandNoise(d, rate, 0, len, (u) => 500 + 1900 * Math.sin(Math.PI * Math.pow(u, 0.8)), (u) => 0.11 * swell(u));
+  // The blade's high sizzle, riding the sweep.
+  glide(d, rate, 0, len, (u) => (1500 + variant * 120) * (1 + 0.4 * Math.sin(Math.PI * u)) * (1 + 0.03 * Math.sin(u * 2 * Math.PI * 30)), (u) => 0.025 * swell(u));
+  reverb(d, rate, 0.2);
+  limit(d);
+  return buf;
+}
+
+/** Two sabers clashing: a crack of contact, electric crackle and buzz, and the metallic ring of the blades. */
+export function saberClashBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 0.8), rate);
+  const d = buf.getChannelData(0);
+  // Crackle: noise chopped into random bursts, dying fast.
+  let gate = 1; let low = 0;
+  for (let i = 0; i < Math.floor(rate * 0.45); i++) {
+    const t = i / rate;
+    if (Math.random() < 0.004) gate = Math.random() < 0.6 ? 1 : 0.15;
+    const noise = Math.random() * 2 - 1;
+    low += (noise - low) * 0.5;
+    d[i] += (noise - low) * 0.5 * gate * Math.exp(-t * 7) * Math.min(1, t * 3000);
+  }
+  // The buzz: two hums thrown off pitch by the hit.
+  hum(d, rate, 0, 0.42, (u) => 150 - 40 * u, (u) => 0.4 * Math.exp(-u * 5) * Math.min(1, u * 400));
+  hum(d, rate, 0, 0.3, (u) => 223 + 30 * u, (u) => 0.22 * Math.exp(-u * 6));
+  // The blades ringing.
+  [1870, 2790, 4150, 5600].forEach((f, n) => ping(d, rate, 0.002 * n, f, 0.06 - n * 0.01));
+  reverb(d, rate, 0.3);
+  limit(d);
+  return buf;
+}
+
+/** A laser bolt batted back by a saber: a zap bent off the blade, with a thump of the hum. */
+export function saberDeflectBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 0.6), rate);
+  const d = buf.getChannelData(0);
+  // The bolt's zap, kicked up then flying off.
+  glide(d, rate, 0, 0.32, (u) => (u < 0.12 ? 1400 + 9000 * u : 2500 * Math.pow(0.3, (u - 0.12) / 0.88)) * (1 + 0.12 * Math.sin(u * 2 * Math.PI * 26)),
+    (u) => 0.22 * Math.min(1, u * 120) * Math.pow(1 - u, 1.4));
+  hum(d, rate, 0, 0.22, (u) => 130 + 60 * Math.exp(-u * 6), (u) => 0.3 * Math.exp(-u * 7) * Math.min(1, u * 300));
+  bandNoise(d, rate, 0, 0.12, () => 3200, (u) => 0.12 * (1 - u), 0.5);
+  ping(d, rate, 0, 3520, 0.05);
+  reverb(d, rate, 0.25);
+  limit(d);
+  return buf;
+}
+
+/** A blade lock broken: the clash, louder and longer, a heavy thump and the loser's blade fizzing out. */
+export function saberBreakBuffer(ctx: BaseAudioContext): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const buf = ctx.createBuffer(1, Math.floor(rate * 1.3), rate);
+  const d = buf.getChannelData(0);
+  const clash = saberClashBuffer(ctx).getChannelData(0);
+  for (let i = 0; i < clash.length && i < d.length; i++) d[i] += clash[i] * 0.8;
+  glide(d, rate, 0, 0.5, (u) => 40 + 80 * Math.exp(-u * 7), (u) => 0.55 * Math.exp(-u * 5) * Math.min(1, u * 300));
+  hum(d, rate, 0.05, 0.8, (u) => 120 * Math.pow(0.4, u), (u) => 0.18 * (1 - u) * (0.6 + 0.4 * Math.sin(u * 2 * Math.PI * 9)));
+  bandNoise(d, rate, 0.05, 0.7, (u) => 2600 - 1800 * u, (u) => 0.08 * (1 - u), 0.6);
+  reverb(d, rate, 0.4);
+  limit(d);
+  return buf;
+}
+
 // ------------------------------------------------------------------ the table
 /** Every synth sound by key (audio/Sounds.ts loads them; the recorded ones are listed there). */
 export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer> = {
@@ -339,4 +457,11 @@ export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer
   'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),
   'ui-back': (ctx) => uiSoundBuffer(ctx, 'back'),
   'ui-scan': scanBuffer, // the menu screen like a TV changing stations
+  // Laser sabers: a swing (three variants), two blades clashing, a laser bolt batted back, a blade lock broken.
+  'saber-swing-0': (ctx) => saberSwingBuffer(ctx, 0),
+  'saber-swing-1': (ctx) => saberSwingBuffer(ctx, 1),
+  'saber-swing-2': (ctx) => saberSwingBuffer(ctx, 2),
+  'saber-clash': saberClashBuffer,
+  'saber-deflect': saberDeflectBuffer,
+  'saber-break': saberBreakBuffer,
 };
