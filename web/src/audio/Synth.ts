@@ -321,7 +321,7 @@ export function scanBuffer(ctx: BaseAudioContext): AudioBuffer {
   return buf;
 }
 
-// ------------------------------------------------------------------ laser sabers
+// ------------------------------------------------------------------ plasma blades
 /** Keeps a buffer below clipping. */
 function limit(d: Float32Array, max = 0.95): void {
   let peak = 0;
@@ -330,7 +330,7 @@ function limit(d: Float32Array, max = 0.95): void {
 }
 
 /**
- * The saber's hum: a buzzy low tone (odd and even harmonics, a slow beat
+ * The blade's hum: a buzzy low tone (odd and even harmonics, a slow beat
  * between two detuned voices) whose pitch follows `f(u)`, at `amp(u)`.
  */
 function hum(d: Float32Array, rate: number, at: number, dur: number, f: (u: number) => number, amp: (u: number) => number): void {
@@ -364,11 +364,11 @@ function bandNoise(d: Float32Array, rate: number, at: number, dur: number, fc: (
 }
 
 /**
- * A laser saber swung: the hum swells and bends up then down as the blade
+ * A plasma blade swung: the hum swells and bends up then down as the blade
  * sweeps past (a Doppler sweep), over an airy whoosh. `variant` 0..2 shifts
  * the pitch and the length so repeated swings differ.
  */
-export function saberSwingBuffer(ctx: BaseAudioContext, variant: number): AudioBuffer {
+export function bladeSwingBuffer(ctx: BaseAudioContext, variant: number): AudioBuffer {
   const rate = ctx.sampleRate;
   const len = 0.36 + variant * 0.04;
   const buf = ctx.createBuffer(1, Math.floor(rate * (len + 0.25)), rate);
@@ -384,8 +384,8 @@ export function saberSwingBuffer(ctx: BaseAudioContext, variant: number): AudioB
   return buf;
 }
 
-/** Two sabers clashing: a crack of contact, electric crackle and buzz, and the metallic ring of the blades. */
-export function saberClashBuffer(ctx: BaseAudioContext): AudioBuffer {
+/** Two blades clashing: a crack of contact, electric crackle and buzz, and the metallic ring of the blades. */
+export function bladeClashBuffer(ctx: BaseAudioContext): AudioBuffer {
   const rate = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.floor(rate * 0.8), rate);
   const d = buf.getChannelData(0);
@@ -408,8 +408,8 @@ export function saberClashBuffer(ctx: BaseAudioContext): AudioBuffer {
   return buf;
 }
 
-/** A laser bolt batted back by a saber: a zap bent off the blade, with a thump of the hum. */
-export function saberDeflectBuffer(ctx: BaseAudioContext): AudioBuffer {
+/** A laser bolt batted back by a blade: a zap bent off the blade, with a thump of the hum. */
+export function bladeDeflectBuffer(ctx: BaseAudioContext): AudioBuffer {
   const rate = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.floor(rate * 0.6), rate);
   const d = buf.getChannelData(0);
@@ -425,11 +425,11 @@ export function saberDeflectBuffer(ctx: BaseAudioContext): AudioBuffer {
 }
 
 /** A blade lock broken: the clash, louder and longer, a heavy thump and the loser's blade fizzing out. */
-export function saberBreakBuffer(ctx: BaseAudioContext): AudioBuffer {
+export function bladeBreakBuffer(ctx: BaseAudioContext): AudioBuffer {
   const rate = ctx.sampleRate;
   const buf = ctx.createBuffer(1, Math.floor(rate * 1.3), rate);
   const d = buf.getChannelData(0);
-  const clash = saberClashBuffer(ctx).getChannelData(0);
+  const clash = bladeClashBuffer(ctx).getChannelData(0);
   for (let i = 0; i < clash.length && i < d.length; i++) d[i] += clash[i] * 0.8;
   glide(d, rate, 0, 0.5, (u) => 40 + 80 * Math.exp(-u * 7), (u) => 0.55 * Math.exp(-u * 5) * Math.min(1, u * 300));
   hum(d, rate, 0.05, 0.8, (u) => 120 * Math.pow(0.4, u), (u) => 0.18 * (1 - u) * (0.6 + 0.4 * Math.sin(u * 2 * Math.PI * 9)));
@@ -457,11 +457,11 @@ export const SYNTH_SOUNDS: Record<string, (ctx: BaseAudioContext) => AudioBuffer
   'ui-confirm': (ctx) => uiSoundBuffer(ctx, 'confirm'),
   'ui-back': (ctx) => uiSoundBuffer(ctx, 'back'),
   'ui-scan': scanBuffer, // the menu screen like a TV changing stations
-  // Laser sabers: a swing (three variants), two blades clashing, a laser bolt batted back, a blade lock broken.
-  'saber-swing-0': (ctx) => saberSwingBuffer(ctx, 0),
-  'saber-swing-1': (ctx) => saberSwingBuffer(ctx, 1),
-  'saber-swing-2': (ctx) => saberSwingBuffer(ctx, 2),
-  'saber-clash': saberClashBuffer,
-  'saber-deflect': saberDeflectBuffer,
-  'saber-break': saberBreakBuffer,
+  // Plasma blades: a swing (three variants), two blades clashing, a laser bolt batted back, a blade lock broken.
+  'blade-swing-0': (ctx) => bladeSwingBuffer(ctx, 0),
+  'blade-swing-1': (ctx) => bladeSwingBuffer(ctx, 1),
+  'blade-swing-2': (ctx) => bladeSwingBuffer(ctx, 2),
+  'blade-clash': bladeClashBuffer,
+  'blade-deflect': bladeDeflectBuffer,
+  'blade-break': bladeBreakBuffer,
 };

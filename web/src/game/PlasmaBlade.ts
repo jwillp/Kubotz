@@ -2,7 +2,7 @@ import { UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 
 /**
- * Laser sabers meeting: blades that cross in a swing clash (neither Kubot is
+ * Plasma blades meeting: blades that cross in a swing clash (neither Kubot is
  * hurt, both freeze and spring apart), and a strong, square clash locks them
  * in a blade lock, a tug of war won by mashing; the loser's guard breaks.
  */
@@ -126,7 +126,7 @@ export function crossAngle(a: Blade, b: Blade): number {
  * A blade lock between two Kubotz: each fresh press pushes the meter towards
  * the other (`a` pushes it up to 1, `b` down to -1).
  */
-export class SaberLock {
+export class BladeLock {
   meter = 0;
   readonly endsAt: number;
   /** When sparks and the sizzle last went off. */

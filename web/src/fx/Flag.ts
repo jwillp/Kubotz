@@ -7,13 +7,13 @@ import { hex } from '../game/Kubotz';
  * outlines; edges from flat fills and soft horizontal gradients): a dark
  * metal pole with a small cube on top and a swallowtail cloth in the team
  * colour, a faint Kube diamond on it. Two textures per colour: the carried
- * one, the size and pose of the laser sword's image (the carrier swings it
- * with the sword's moves), and a standing one for the stand and a dropped
+ * one, the size and pose of the plasma blade's image (the carrier swings it
+ * with the plasma blade's moves), and a standing one for the stand and a dropped
  * flag.
  */
 
-/** The laser sword image (arms/lazer-sword.png): its size, and the hilt and the tip in image pixels. */
-const SWORD = { w: 329, h: 241, hilt: { x: 96, y: 173 }, tip: { x: 298, y: 25 } };
+/** The plasma blade image (arms/plasma-blade.png): its size, and the hilt and the tip in image pixels. */
+const BLADE = { w: 329, h: 241, hilt: { x: 96, y: 173 }, tip: { x: 298, y: 25 } };
 /** The standing flag texture, and where its pole starts and ends. */
 export const STAND = { w: 150, h: 300, foot: { x: 30, y: 296 }, top: { x: 30, y: 8 } };
 
@@ -69,9 +69,9 @@ function make(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx
   return key;
 }
 
-/** The carried flag: drawn where the laser sword's image is, so the sword's poses and moves carry it. */
+/** The carried flag: drawn where the plasma blade's image is, so the plasma blade's poses and moves carry it. */
 export function flagTexture(scene: Phaser.Scene, color: number): string {
-  return make(scene, `flag:${hex(color)}`, SWORD.w, SWORD.h, (ctx) => drawFlag(ctx, SWORD.hilt, SWORD.tip, color, -1));
+  return make(scene, `flag:${hex(color)}`, BLADE.w, BLADE.h, (ctx) => drawFlag(ctx, BLADE.hilt, BLADE.tip, color, -1));
 }
 
 /** The flag standing upright (origin: the pole's foot, see STAND). */

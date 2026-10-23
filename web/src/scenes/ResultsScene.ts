@@ -102,7 +102,7 @@ export class ResultsScene extends Phaser.Scene {
   private particles!: ParticleFx;
   private effects: Record<string, EffectDef> = {};
   private portals: PortalFx | null = null;
-  private sabers!: Phaser.GameObjects.Graphics;
+  private blades!: Phaser.GameObjects.Graphics;
   /** The recorded images (debris, bolts, balls, glows), pooled. */
   private props: Phaser.GameObjects.Image[] = [];
   /** The last frame whose sounds and effects went off. */
@@ -190,8 +190,8 @@ export class ResultsScene extends Phaser.Scene {
       this.tags.push(this.add.image(0, 0, this.textures.exists(key) ? key : '__DEFAULT').setOrigin(0.5, 1).setDepth(21).setVisible(false));
       this.owners.push({ x: 0, y: 0 });
     });
-    // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
-    this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    // Plasma blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
+    this.blades = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
     this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
     this.holoG = this.add.graphics().setDepth(10.5);
     // Hit sparks, rings, dust and smoke replayed from the match's calls.
@@ -391,7 +391,7 @@ export class ResultsScene extends Phaser.Scene {
     this.impact?.clear();
     this.particles?.clear();
     this.owners.forEach((o) => this.impact?.swing(o, null, 0));
-    this.sabers?.clear();
+    this.blades?.clear();
     this.holoG?.clear();
     this.holoAdd?.clear();
     for (const l of this.lightPool) l.setVisible(false);
@@ -437,7 +437,7 @@ export class ResultsScene extends Phaser.Scene {
     this.setLights(a);
     this.holoG.clear();
     this.holoAdd.clear();
-    this.sabers.clear();
+    this.blades.clear();
     a.kubotz.forEach((ra, i) => this.drawKubot(i, ra, b.kubotz[i], f, step, cam.zoom, this.tau - a.t));
     this.snap = false;
     this.drawProps(a, b, f);
@@ -504,10 +504,10 @@ export class ResultsScene extends Phaser.Scene {
     tag.setVisible(true).setPosition(x, bottom - Config.KUBOTZ_HEIGHT * UNIT - UNIT * 0.75 - 6).setScale(0.42 / zoom).setAlpha(faint);
     owner.x = x;
     owner.y = bottom - UNIT;
-    // The laser blade, its swing trail, the power-up motes round it.
+    // The plasma blade, its swing trail, the power-up motes round it.
     if (ra.blade) {
       const [x1, y1, x2, y2] = ra.blade;
-      drawBlade(this.sabers, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
+      drawBlade(this.blades, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
     }
     const s = ra.swing;
     this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color, s?.[4] === 1);

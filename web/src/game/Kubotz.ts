@@ -16,7 +16,7 @@ import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
 
-export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
+export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'plasmaBlade';
 
 /** Something an attack can hit. */
 export interface Damageable {
@@ -47,25 +47,25 @@ export interface AttackBox {
   launch: Launch;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
-  /** Laser sabers this swing already clashed with (Saber.ts): one clash per pair of swings. */
+  /** Plasma blades this swing already clashed with (PlasmaBlade.ts): one clash per pair of swings. */
   clashed: Set<Kubotz>;
 }
 
 /** Spriter files of the weapons, and points measured on their images (see BootScene). */
-export const SWORD_FILE = 'arms/lazer-sword.png';
+export const BLADE_FILE = 'arms/plasma-blade.png';
 export const GUN_FILE = 'arms/gun-mk1.png';
-export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
+export const PART_TIPS = { bladeTip: { x: 300, y: 230 }, bladeBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
 
-/** Laser sword hits launch this much harder than their table values (the blade should send Kubotz flying). */
-export const SWORD_KNOCKBACK = 1.3;
-/** The laser blade's emitter and tip on its image (pixels from the bottom-left), as drawn and lit. */
+/** Plasma blade hits launch this much harder than their table values (the blade should send Kubotz flying). */
+export const BLADE_KNOCKBACK = 1.3;
+/** The plasma blade's emitter and tip on its image (pixels from the bottom-left), as drawn and lit. */
 export const BLADE_EMITTER = { x: 96, y: 68 };
 export const BLADE_TIP = { x: 298, y: 216 };
 
-/** Points from the sword's hilt to its tip, for the blade hitbox. */
+/** Points from the plasma blade's hilt to its tip, for the blade hitbox. */
 function bladePoints(): PartPoint[] {
-  const { sword: t, swordBase: b } = PART_TIPS;
-  return [0.25, 0.5, 0.75, 1].map((f) => ({ file: SWORD_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
+  const { bladeTip: t, bladeBase: b } = PART_TIPS;
+  return [0.25, 0.5, 0.75, 1].map((f) => ({ file: BLADE_FILE, x: b.x + (t.x - b.x) * f, y: b.y + (t.y - b.y) * f }));
 }
 
 /** Clips of anim/Clips.ts. */
@@ -142,9 +142,9 @@ export const COMBO: Move[] = [
   { anim: 'cross', ms: 360, points: FISTS, damage: 4, launch: { knockback: 4, angle: 20, stun: 340 }, active: [0.4, 0.8], all: true },
   { anim: 'kick', ms: 460, points: FEET, damage: 6, launch: { knockback: 13, angle: 55 }, active: [0.34, 0.76], all: true, ghosts: true },
 ];
-// Sword active windows follow the blade's sweep (measured on the clips): the cleaves hit from the
+// Plasma blade active windows follow the blade's sweep (measured on the clips): the cleaves hit from the
 // blade passing overhead, not once it has come to rest pointing at the floor.
-export const SWORD_COMBO: Move[] = [
+export const BLADE_COMBO: Move[] = [
   { anim: 'slash1', ms: 320, points: bladePoints(), damage: 6, launch: { knockback: 4, angle: 25, stun: 300 }, active: [0.24, 0.55] },
   { anim: 'slash2', ms: 340, points: bladePoints(), damage: 7, launch: { knockback: 5, angle: 35, stun: 320 }, active: [0.24, 0.62] },
   { anim: 'slash3', ms: 420, points: bladePoints(), damage: 10, launch: { knockback: 15, angle: 35 }, active: [0.31, 0.62], ghosts: true },
@@ -164,7 +164,7 @@ export const DIR_MOVES: DirMoves = {
   uair: { anim: 'uair', ms: 480, points: FEET, damage: 8, launch: { knockback: 12, angle: 85 }, active: [0.2, 0.62], ghosts: true },
   dair: { anim: 'airKick', ms: 420, points: FEET, damage: 8, launch: { knockback: 10, angle: -70 }, active: [0.35, 1], ghosts: true },
 };
-export const SWORD_DIR_MOVES: DirMoves = {
+export const BLADE_DIR_MOVES: DirMoves = {
   dash: { anim: 'slash3', ms: 420, points: bladePoints(), damage: 9, launch: { knockback: 13, angle: 35 }, active: [0.31, 0.62], ghosts: true },
   ftilt: { anim: 'sftilt', ms: 420, points: bladePoints(), damage: 8, launch: { knockback: 11, angle: 30 }, active: [0.3, 0.72], ghosts: true },
   dtilt: { anim: 'sdtilt', ms: 380, points: bladePoints(), damage: 6, launch: { knockback: 9, angle: 75 }, active: [0.3, 0.72] },
@@ -225,11 +225,11 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
-/** The texture of a Kubot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
+/** The texture of a Kubot part in a colour: helmets and the plasma blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
 export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
   let key = `kubotz:${file}`;
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
-  else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+  else if (file === BLADE_FILE) key = `blade:${hex(color)}`;
   if (!textures.exists(key)) key = `kubotz:${file}`;
   return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
 }
@@ -370,7 +370,7 @@ export interface ArenaHooks {
 }
 
 /**
- * The playable Kubot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
+ * The playable Kubot (KubotzFactory + Running/Jump/Melee/Grab/Gun/PlasmaBlade/
  * PowerUps/Respawn components and systems, folded into one class).
  */
 export class Kubotz implements Damageable, Teamed {
@@ -398,7 +398,7 @@ export class Kubotz implements Damageable, Teamed {
   armed: Weapon = 'none';
   /** The health it spawns with (Horde's weaker black-team Kubotz start lower). */
   maxHealth: number = Config.KUBOTZ_HEALTH;
-  /** Capture the Flag: the flag it holds (swung with the sword's moves), and its job on a CPU team. */
+  /** Capture the Flag: the flag it holds (swung with the plasma blade's moves), and its job on a CPU team. */
   carrying: CtfFlag | null = null;
   role?: 'striker' | 'guardian' | 'interceptor';
   /** Damage taken is multiplied by this (Capture the Flag: Kubotz go down much faster than in a duel). */
@@ -539,13 +539,13 @@ export class Kubotz implements Damageable, Teamed {
   private freezeAt: { x: number; y: number; vx: number; vy: number } | null = null;
   private pendingLaunch: { vx: number; vy: number; di: boolean } | null = null;
   private sdiPrev: PadState = emptyPad();
-  /** In a blade lock (Saber.ts): held frozen by the arena, counting fresh presses. */
+  /** In a blade lock (PlasmaBlade.ts): held frozen by the arena, counting fresh presses. */
   bladeLocked = false;
   /** How the blade lock goes for this Kubot, -1 (giving way) to 1 (pushing through): it leans in or back. */
   lockPush = 0;
   private mashes = 0;
   private lockPrev: PadState = emptyPad();
-  /** A saber clash springs the Kubot back this fast (px/s) once its freeze ends. */
+  /** A blade clash springs the Kubot back this fast (px/s) once its freeze ends. */
   private recoilVx = 0;
   private sdiCount = 0;
   /** When the current hitstun began (for the hitstun cancel). */
@@ -599,9 +599,9 @@ export class Kubotz implements Damageable, Teamed {
 
     this.anim = new Animator(rig);
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
-    // Helmets and the laser blade are painted in the player's colour.
-    // A flag carrier holds the flag where the laser sword goes.
-    this.model = new Kubot2D(scene, rig, (file) => (file === SWORD_FILE && this.carrying
+    // Helmets and the plasma blade are painted in the player's colour.
+    // A flag carrier holds the flag where the plasma blade goes.
+    this.model = new Kubot2D(scene, rig, (file) => (file === BLADE_FILE && this.carrying
       ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     // A soft outer glow in the player's colour, so Kubotz stay apart in a close fight (WebGL only).
     this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
@@ -618,22 +618,22 @@ export class Kubotz implements Damageable, Teamed {
   /** Winding up, striking or recovering (a CPU can see it coming). */
   get attacking(): boolean { return this.attack !== null; }
 
-  /** The middle of the laser blade (world pixels), for its light. */
-  /** The laser blade's emitter and tip (world pixels), while the sword is out. */
+  /** The middle of the plasma blade (world pixels), for its light. */
+  /** The plasma blade's emitter and tip (world pixels), while the plasma blade is out. */
   blade(): { x1: number; y1: number; x2: number; y2: number } | null {
-    if (this.weapon !== 'laserSword' || !this.isAlive() || this.carrying) return null;
-    const a = this.model.pointOn(SWORD_FILE, BLADE_EMITTER.x, BLADE_EMITTER.y);
-    const b = this.model.pointOn(SWORD_FILE, BLADE_TIP.x, BLADE_TIP.y);
+    if (this.weapon !== 'plasmaBlade' || !this.isAlive() || this.carrying) return null;
+    const a = this.model.pointOn(BLADE_FILE, BLADE_EMITTER.x, BLADE_EMITTER.y);
+    const b = this.model.pointOn(BLADE_FILE, BLADE_TIP.x, BLADE_TIP.y);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
   }
 
   /**
-   * The laser saber in a swing (from just before the active frames to their
+   * The plasma blade in a swing (from just before the active frames to their
    * end): its blade, the swing, and whether the swing is in its active frames.
    */
-  saberSwing(): { blade: { x1: number; y1: number; x2: number; y2: number }; box: AttackBox; active: boolean } | null {
+  bladeSwing(): { blade: { x1: number; y1: number; x2: number; y2: number }; box: AttackBox; active: boolean } | null {
     const a = this.attack;
-    if (!a || a.points[0]?.file !== SWORD_FILE) return null;
+    if (!a || a.points[0]?.file !== BLADE_FILE) return null;
     const blade = this.blade();
     if (!blade) return null;
     const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
@@ -641,7 +641,7 @@ export class Kubotz implements Damageable, Teamed {
     return { blade, box: a, active: t >= this.attackActive[0] };
   }
 
-  /** Sabers clashed with `foe`: this swing can't hurt it any more, and the Kubot springs back (dirX) after its freeze. */
+  /** Blades clashed with `foe`: this swing can't hurt it any more, and the Kubot springs back (dirX) after its freeze. */
   clashWith(foe: Kubotz, dirX: number, speed: number): void {
     this.attack?.clashed.add(foe);
     this.attack?.hit.add(foe);
@@ -677,14 +677,14 @@ export class Kubotz implements Damageable, Teamed {
 
   /** A blade lock won: the forward smash carries through from its raised blade, over the beaten `foe` (already struck). */
   followThrough(foe: Kubotz): void {
-    this.strike(SWORD_DIR_MOVES.fsmash, this.hooks.now(), 1, LOCK_POSE);
+    this.strike(BLADE_DIR_MOVES.fsmash, this.hooks.now(), 1, LOCK_POSE);
     this.attack!.hit.add(foe);
     this.attack!.clashed.add(foe);
   }
 
   bladeMiddle(): { x: number; y: number } {
-    const { sword: t, swordBase: b } = PART_TIPS;
-    return this.model.pointOn(SWORD_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
+    const { bladeTip: t, bladeBase: b } = PART_TIPS;
+    return this.model.pointOn(BLADE_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
   }
 
   /** For the debug view. */
@@ -728,7 +728,7 @@ export class Kubotz implements Damageable, Teamed {
     return new Phaser.Geom.Rectangle(this.body.left, this.body.top - extra, this.body.width, this.body.height + extra);
   }
 
-  /** The active melee / sword hitbox, if any, on the striking part of the Kubot. */
+  /** The active melee / plasma blade hitbox, if any, on the striking part of the Kubot. */
   currentAttack(): AttackBox | null {
     const a = this.attack;
     if (!a) return null;
@@ -756,11 +756,11 @@ export class Kubotz implements Damageable, Teamed {
     if (!a) return null;
     const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
     if (t < this.attackActive[0] - 0.12 || t > this.attackActive[1]) return null;
-    const sword = a.points[0]?.file === SWORD_FILE;
-    if (sword) {
-      const { sword: tip, swordBase: base } = PART_TIPS;
-      const o = this.model.pointOn(SWORD_FILE, tip.x, tip.y);
-      const i = this.model.pointOn(SWORD_FILE, base.x, base.y);
+    const bladed = a.points[0]?.file === BLADE_FILE;
+    if (bladed) {
+      const { bladeTip: tip, bladeBase: base } = PART_TIPS;
+      const o = this.model.pointOn(BLADE_FILE, tip.x, tip.y);
+      const i = this.model.pointOn(BLADE_FILE, base.x, base.y);
       return o && i ? { ox: o.x, oy: o.y, ix: i.x, iy: i.y, blade: true } : null;
     }
     const pts = a.points.flatMap((p) => this.model.pointsOn(p.file, p.x, p.y));
@@ -973,7 +973,7 @@ export class Kubotz implements Damageable, Teamed {
     this.anim.freeze(null);
     if (attack) {
       // The get-up attack: a sweep to both sides.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
       this.comboStep = 0;
       this.safeUntil = now + GETUP_ATTACK_SAFE;
       this.strike({ ...moves.dsmash, ...GETUP_ATTACK, ms: GETUP_ATTACK_MS, both: true }, now);
@@ -1193,7 +1193,7 @@ export class Kubotz implements Damageable, Teamed {
     this.guarding = false;
     if (upSmash) {
       this.attackHeld = true;
-      this.startSmash((this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
+      this.startSmash((this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
     } else if (upSpecial) {
       this.specialHeld = true;
       this.startSpecial('up', 0, now);
@@ -1384,8 +1384,8 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   private handleActions(pad: PadState, now: number): void {
-    const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
-    const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+    const combo = this.weapon === 'plasmaBlade' ? BLADE_COMBO : COMBO;
+    const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
     // Edges: the attack press, and a direction newly pressed (for smash flicks).
     // A press now, or one buffered while the Kubot could not act.
     const attackPressed = (pad.attack && !this.attackHeld) || this.buffered('attack', now);
@@ -1620,25 +1620,25 @@ export class Kubotz implements Damageable, Teamed {
 
   /** Starts a strike; on the ground it advances the combo. */
   private strike(move: Move, now: number, power = 1, from = 0): void {
-    const sword = move.points[0]?.file === SWORD_FILE;
+    const bladed = move.points[0]?.file === BLADE_FILE;
     this.attack = {
       circles: [],
       // The blade is covered by circles from hilt to tip; fists and feet by one on the striking one.
-      radius: (sword ? 0.3 : 0.35) * UNIT,
+      radius: (bladed ? 0.3 : 0.35) * UNIT,
       points: move.points,
-      striker: !sword && !move.all,
+      striker: !bladed && !move.all,
       behind: !!move.behind,
       all: !!move.all,
       both: !!move.both,
       damage: Math.round(move.damage * power),
-      launch: { ...move.launch, knockback: move.launch.knockback * power * (sword ? SWORD_KNOCKBACK : 1) },
+      launch: { ...move.launch, knockback: move.launch.knockback * power * (bladed ? BLADE_KNOCKBACK : 1) },
       hit: new Set(),
       clashed: new Set(),
     };
-    // The laser saber hums through the swing, lower and louder for the strong ones.
-    if (sword && !this.carrying) {
+    // The plasma blade hums through the swing, lower and louder for the strong ones.
+    if (bladed && !this.carrying) {
       const strong = move.damage >= 12;
-      this.hooks.playSfx(`saber-swing-${Math.floor(Math.random() * 3)}`, strong ? 0.5 : 0.36, (strong ? -250 : 0) + (Math.random() * 160 - 80));
+      this.hooks.playSfx(`blade-swing-${Math.floor(Math.random() * 3)}`, strong ? 0.5 : 0.36, (strong ? -250 : 0) + (Math.random() * 160 - 80));
     }
     // A charged smash resumes from its held wind-up (`from`).
     this.attackStart = now - from * move.ms;
@@ -1647,7 +1647,7 @@ export class Kubotz implements Damageable, Teamed {
     this.currentMove = move;
     if (from > 0) this.anim.freeze(null);
     else this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 45 });
-    this.inCombo = COMBO.includes(move) || SWORD_COMBO.includes(move);
+    this.inCombo = COMBO.includes(move) || BLADE_COMBO.includes(move);
     if (this.inCombo) {
       this.comboStep = (this.comboStep + 1) % COMBO.length;
       this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
@@ -1924,7 +1924,7 @@ export class Kubotz implements Damageable, Teamed {
     this.wasGrounded = true;
     if (c.kind === 'attack') {
       // The get-up attack: a sweeping kick across the ledge.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
       this.comboStep = 0;
       this.strike({ ...moves.ftilt, ...LEDGE_ATTACK, ms: c.ms * 0.45 }, now);
     }
@@ -1963,11 +1963,11 @@ export class Kubotz implements Damageable, Teamed {
     this.anim.play('tumble', { restart: true, fade: 40 });
   }
 
-  /** Capture the Flag: takes the flag in hand (it fights with the sword's moves), or lets go of it. */
+  /** Capture the Flag: takes the flag in hand (it fights with the plasma blade's moves), or lets go of it. */
   carryFlag(flag: CtfFlag | null): void {
     if (flag) for (const p of [...this.powerUps]) if (POWER_UPS[p.type].weapon) this.removePowerUp(p);
     this.carrying = flag;
-    this.weapon = flag ? 'laserSword' : this.dead ? 'none' : this.armed;
+    this.weapon = flag ? 'plasmaBlade' : this.dead ? 'none' : this.armed;
   }
 
   private removePowerUp(p: ActivePowerUp): void {
@@ -2149,7 +2149,7 @@ export class Kubotz implements Damageable, Teamed {
 
     const maps: string[] = [];
     if (this.look.head) maps.push(this.look.head);
-    if (this.weapon === 'laserSword') maps.push('weapon_laserSword');
+    if (this.weapon === 'plasmaBlade') maps.push('weapon_plasmaBlade');
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
     if (this.weapon === 'none' && this.currentMove?.maps && (this.attack || this.charging)) maps.push(...this.currentMove.maps);
 

@@ -44,7 +44,7 @@ export class Bullet {
     return scene.textures.exists(key) ? key : 'bullet';
   }
 
-  /** Batted back by a laser saber: it now belongs to `by` (its colour too), flying along (vx, vy) px/s. */
+  /** Batted back by a plasma blade: it now belongs to `by` (its colour too), flying along (vx, vy) px/s. */
   deflect(by: Kubotz, vx: number, vy: number, damage: number, now: number): void {
     this.shooter = by;
     this.damage = damage;

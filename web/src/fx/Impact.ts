@@ -37,7 +37,7 @@ interface Particle {
   collide?: boolean; // stopped by the arena's walls and platforms
 }
 
-/** A swing's smear: per sample, the striking point (o) and one nearer the body (i); a laser blade's from hilt (i) to tip (o). */
+/** A swing's smear: per sample, the striking point (o) and one nearer the body (i); a plasma blade's from hilt (i) to tip (o). */
 interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; blade: boolean; }
 
 /** A streak of the K.O. smoke whipping out from the core, tapering to a point. */
@@ -152,7 +152,7 @@ export class ImpactFx {
     this.flashes.push({ x, y, color: 0xffe27a, intensity: 7, at: this.now });
   }
 
-  /** Two resting laser blades crossed: a few small sparks crackling where they touch, in both colours. */
+  /** Two resting plasma blades crossed: a few small sparks crackling where they touch, in both colours. */
   bladeSparks(x: number, y: number, a: number, b: number): void {
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.12 * UNIT, grow: -0.08 * UNIT, life: 60 });
     for (let i = 0; i < 4; i++) {
@@ -165,7 +165,7 @@ export class ImpactFx {
     }
   }
 
-  /** A laser blade burning into a wall or floor: a white-hot spot, molten sparks spraying off it, a glow on the wall. */
+  /** A plasma blade burning into a wall or floor: a white-hot spot, molten sparks spraying off it, a glow on the wall. */
   bladeBurn(x: number, y: number, color: number): void {
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.14 * UNIT, grow: -0.08 * UNIT, life: 60 });
     this.add({ kind: 'flash', x, y, color: mix(color, 0xffd27a, 0.5), size: 0.24 * UNIT, grow: -0.12 * UNIT, life: 80 });
@@ -371,7 +371,7 @@ export class ImpactFx {
   clearTwirls(owner: object): void { this.twirls = this.twirls.filter((w) => w.owner !== owner); }
 
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
-  /** @param blade a laser blade: the smear covers the whole blade, and follows its arc between frames. */
+  /** @param blade a plasma blade: the smear covers the whole blade, and follows its arc between frames. */
   swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number, blade = false): void {
     let trail = this.trails.get(owner);
     if (!trail) this.trails.set(owner, trail = { points: [], color, blade });
@@ -545,7 +545,7 @@ export class ImpactFx {
         const k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
         const tail = i / pts.length;
         // The inner edge sits part-way out, so the smear thins towards the body.
-        // (A laser blade smears along its whole length, in its own light.)
+        // (A plasma blade smears along its whole length, in its own light.)
         const inner = trail.blade ? 0.08 : 0.35;
         const inA = { x: a.ix + (a.ox - a.ix) * inner, y: a.iy + (a.oy - a.iy) * inner };
         const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
@@ -688,7 +688,7 @@ export class ImpactFx {
   }
 }
 
-/** A laser blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core; `alpha` dims it all. */
+/** A plasma blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core; `alpha` dims it all. */
 export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number, alpha = 1): void {
   const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
   const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];

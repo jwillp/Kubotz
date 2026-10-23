@@ -209,7 +209,7 @@ export class CpuController implements Controller {
     if (wantsAttack && enemy) {
       const facingEnemy = Math.sign(dx) === me.facing || Math.abs(dx) < 4;
       const ranged = me.weapon === 'laserGunMkI' || me.weapon === 'laserGunMkII';
-      const reach = me.weapon === 'laserSword' ? 1.8 : 1.3;
+      const reach = me.weapon === 'plasmaBlade' ? 1.8 : 1.3;
       if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) {
         pad.attack = true;
         // Mostly quick shots; now and then a charged bolt, more often from afar.

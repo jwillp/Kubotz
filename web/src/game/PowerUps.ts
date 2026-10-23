@@ -10,7 +10,7 @@ import { ItemBody, PhysicsWorld } from '../physics/Physics';
 /** PowerUpEffect.java subclasses. */
 export type PowerUpType =
   | 'health' | 'energy' | 'jump' | 'speed'
-  | 'laserGunMkI' | 'laserGunMkII' | 'laserSword'
+  | 'laserGunMkI' | 'laserGunMkII' | 'plasmaBlade'
   | 'invincibility' | 'shield';
 
 export interface ActivePowerUp { type: PowerUpType; endsAt: number; }
@@ -62,9 +62,9 @@ export const POWER_UPS: Record<PowerUpType, PowerUpDef> = {
     onStart: (k) => { k.weapon = 'laserGunMkII'; },
     onFinish: (k) => { k.weapon = k.armed; },
   },
-  laserSword: {
-    label: 'Laser sword', image: 'bonus-laser-sword', color: 0x7cf7ff, timed: true, weapon: true,
-    onStart: (k) => { k.weapon = 'laserSword'; },
+  plasmaBlade: {
+    label: 'Plasma blade', image: 'bonus-plasma-blade', color: 0x7cf7ff, timed: true, weapon: true,
+    onStart: (k) => { k.weapon = 'plasmaBlade'; },
     onFinish: (k) => { k.weapon = k.armed; },
   },
   invincibility: {
@@ -84,10 +84,10 @@ export const POWER_UPS: Record<PowerUpType, PowerUpDef> = {
  * bonus-jump); shield and invincibility use bonus-shield here.
  */
 const RANDOM_TABLE: PowerUpType[] = [
-  'laserGunMkI', 'health', 'energy', 'energy', 'jump', 'laserGunMkI', 'laserSword', 'invincibility', 'shield',
+  'laserGunMkI', 'health', 'energy', 'energy', 'jump', 'laserGunMkI', 'plasmaBlade', 'invincibility', 'shield',
 ];
 
-/** A random power-up; `weapons` false leaves out the guns and the sword (modes where everyone is armed). */
+/** A random power-up; `weapons` false leaves out the guns and the plasma blade (modes where everyone is armed). */
 export function randomPowerUp(weapons = true): PowerUpType {
   if (!weapons) return Phaser.Utils.Array.GetRandom(RANDOM_TABLE.filter((t) => !POWER_UPS[t].weapon));
   // Mk II existed but was never in the random table; give it a small chance.
