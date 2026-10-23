@@ -7,7 +7,7 @@ import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
-import { vfx } from './Settings';
+import { fx } from './Settings';
 import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
@@ -23,8 +23,8 @@ export interface Damageable {
   readonly owner: Kubotz; // who it belongs to (itself for a Kubotz); no friendly fire
   hurtbox(): Phaser.Geom.Rectangle;
   isAlive(): boolean;
-  /** @param stun ms without control (hitstun), so light combo hits connect. */
-  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void;
+  /** Returns the hitlag (ms) the striker freezes for, 0 when the hit didn't land. */
+  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): number;
 }
 
 /** A point of a body part (Spriter image pixels, origin bottom-left, y up). */
@@ -223,11 +223,20 @@ export type ThrowKind = 'forward' | 'back' | 'up' | 'down';
 loadMoves(fromFiles(DATA_FILES).moves);
 
 
-/** Melee frame data, at 60 frames a second. */
-const FRAME = 1000 / 60;
-const GRAB_HOLD_FRAMES = 76; // a grab at 0 %...
-const GRAB_HOLD_PER_DAMAGE = 1.6; // ...plus 1.6 frames per % (read in 5 % steps)
-const GRAB_MASH_FRAMES = 6; // each mash takes 6 frames off
+/** Melee and Ultimate frame data, at 60 frames a second. */
+export const FRAME = 1000 / 60;
+/**
+ * Grabs (Ultimate, SmashWiki): the hold lasts 90 frames + 1.7 per % (an
+ * Ultimate % is 3 points of Kubot damage), each button press takes 14.4
+ * frames off and each newly pushed stick direction 8, never under 19 frames.
+ * A Kubot let go can't be grabbed again for 60 frames.
+ */
+const GRAB_HOLD_FRAMES = 90;
+const GRAB_HOLD_PER_PERCENT = 1.7;
+const GRAB_MASH_BUTTON = 14.4;
+const GRAB_MASH_STICK = 8;
+const GRAB_HOLD_MIN = 19 * FRAME;
+const GRAB_IMMUNE_MS = 60 * FRAME;
 const GRAB_RELEASE_LAG = 29 * FRAME; // both stuck after a grab release
 const GRAB_WHIFF_LAG = 480; // a missed grab
 export const PUMMEL_MS = 380;
@@ -246,6 +255,66 @@ export const LEDGE_INWARD = { climb: 0.7, roll: 2.6, attack: 0.7 } as const;
 /** The get-up attack: the forward tilt's kick with its own damage and launch. */
 export const LEDGE_ATTACK = { damage: 6, launch: { knockback: 10, angle: 25 } as Launch };
 
+/**
+ * After dropping out of the spawn beam: invincible (hits pass without effect,
+ * attacking keeps it), as Ultimate's 120 frames off the revival platform.
+ */
+export const RESPAWN_INVINCIBLE_MS = 120 * FRAME;
+
+/**
+ * Hitlag (Ultimate): striker and struck freeze for (d x 0.65 + 6) frames, at
+ * most 30, 0.67 x on a shield. d is the move's own damage, which matches an
+ * Ultimate move's % (the ~3 x scale only applies to the health it takes).
+ */
+export function hitlagMs(damage: number, shielded = false): number {
+  if (damage <= 0) return 0;
+  return Math.min(30, Math.floor(Math.floor(damage * 0.65 + 6) * (shielded ? 0.67 : 1))) * FRAME;
+}
+
+/** DI: the held stick bends a launch up to this (Smash 4 / Ultimate: 0.17 rad); LSI: x1.095 up, x0.92 down on vertical launches. */
+const DI_MAX = 0.17;
+/** SDI: each newly pushed direction during hitlag nudges the struck Kubot this far (units), a few times per hit. */
+const SDI_STEP = 0.22;
+const SDI_MAX = 3;
+/** Hitstun cancel (Ultimate): a launched Kubot can air dodge from 40 frames of hitstun, attack from 45. */
+const CANCEL_DODGE_MS = 40 * FRAME;
+const CANCEL_AERIAL_MS = 45 * FRAME;
+/**
+ * Teching (Ultimate): shield pressed within 11 frames before a tumbling Kubot
+ * hits the floor, a wall or the ceiling; a press locks out the next for 40
+ * frames, so mashing doesn't work. In place: 26 frames, intangible 20; with
+ * a direction it rolls (intangible 20).
+ */
+const TECH_WINDOW = 11 * FRAME;
+const TECH_LOCKOUT = 40 * FRAME;
+const TECH_MS = 26 * FRAME;
+const TECH_SAFE = 20 * FRAME;
+/**
+ * A missed tech: down on the floor, the options open after the bounce, and
+ * it gets up by itself if nothing is pressed. Up (or jump, or shield) stands
+ * up, left / right rolls, attack or legs is the get-up attack; all start
+ * intangible.
+ */
+const DOWN_OPTIONS_MS = 26 * FRAME;
+const DOWN_AUTO_MS = 60 * FRAME;
+const GETUP_MS = 30 * FRAME;
+const GETUP_SAFE = 22 * FRAME;
+const GETUP_ATTACK_MS = 38 * FRAME;
+const GETUP_ATTACK_SAFE = 20 * FRAME;
+export const GETUP_ATTACK = { damage: 6, launch: { knockback: 9, angle: 30 } as Launch };
+/** The spot dodge (shield + down, Ultimate): intangible frames 3 to 17 of 27. */
+const SPOT_DODGE = { safeFrom: 3 * FRAME, safeUntil: 17 * FRAME, ms: 27 * FRAME };
+/**
+ * Shields (Ultimate): letting go takes 11 frames to drop it; a hit holds it
+ * up for d x 0.8 + 2 frames of shieldstun (a third of that from an aerial);
+ * letting go within 5 frames before a hit parries it.
+ */
+const SHIELD_DROP_MS = 11 * FRAME;
+const PARRY_MS = 5 * FRAME;
+function shieldstunMs(damage: number, aerial: boolean): number {
+  return Math.floor(damage * 0.8 * (aerial ? 0.33 : 1) + 2) * FRAME;
+}
+
 /** Callbacks into the arena, so the actor stays free of scene plumbing. */
 export interface ArenaHooks {
   /** @param size bolt scale (1 = normal), @param power its push. */
@@ -260,6 +329,8 @@ export interface ArenaHooks {
   ledgeNear(kubotz: Kubotz): Ledge | null;
   /** A grab, pummel or throw landing: sparks and a sound. */
   grabFx(x: number, y: number, color: number, power: number): void;
+  /** A hit parried (the shield let go just before it): a flash and a sound. */
+  parried?(k: Kubotz): void;
   /** Camera shake (0..1). */
   shake(amount: number): void;
   dust(x: number, y: number): void;
@@ -339,7 +410,7 @@ export class Kubotz implements Damageable, Teamed {
    * right). Intangible from `safeFrom` to `safeUntil`, no other actions until
    * `ends`; a roll travels in `dir` and passes through Kubotz.
    */
-  private dodge: { kind: 'air' | 'roll'; dir: -1 | 0 | 1; start: number; safeFrom: number; safeUntil: number; ends: number; turned?: boolean } | null = null;
+  private dodge: { kind: 'air' | 'roll' | 'spot' | 'tech'; dir: -1 | 0 | 1; start: number; safeFrom: number; safeUntil: number; ends: number; turned?: boolean } | null = null;
   private rollReadyAt = 0;
   /** The left / right held last frame (a newly pressed one, with the guard, rolls). */
   private guardDir = 0;
@@ -419,7 +490,39 @@ export class Kubotz implements Damageable, Teamed {
   private ghosted = false;
   private mashPrev: PadState = emptyPad();
   private pummelUntil = 0;
-  private pummelStunUntil = 0;
+  /** When the hold began (it lasts at least GRAB_HOLD_MIN), and grabs miss this Kubot until then. */
+  private heldSince = 0;
+  private grabImmuneUntil = 0;
+  /** Invincible after a respawn until then. */
+  respawnSafeUntil = 0;
+  /** Hitlag: frozen until then; the struck Kubot's launch (px/s) waits for its end, for DI. */
+  private hitlagUntil = 0;
+  /** Where the freeze holds the body, and its speed before it (given back after, unless launched). */
+  private freezeAt: { x: number; y: number; vx: number; vy: number } | null = null;
+  private pendingLaunch: { vx: number; vy: number; di: boolean } | null = null;
+  private sdiPrev: PadState = emptyPad();
+  private sdiCount = 0;
+  /** When the current hitstun began (for the hitstun cancel). */
+  private hitstunFrom = 0;
+  /** Teching: the last shield press that counts, and until when presses are locked out. */
+  private techPressAt = -1e9;
+  private techLockUntil = 0;
+  private rawGuard = false;
+  /** The controls as read this frame, even while they don't steer (hitstun, down): DI, techs, get-ups. */
+  private raw: PadState = emptyPad();
+  /** Down held last frame with the shield up (a new press spot dodges). */
+  private guardDown = false;
+  /** Down on the floor after a missed tech, since then. */
+  private downSince = -1;
+  /** Intangible until then: techs and get-ups. */
+  private safeUntil = 0;
+  /** Shields: held up by a hit until then; letting go when, and the drop lasts until then. */
+  private shieldStunUntil = 0;
+  private shieldDropAt = -1e9;
+  private shieldDropUntil = 0;
+  private oosPrev: PadState = emptyPad();
+  /** Ledge intangibility comes once, then again after landing or being hit (Ultimate). */
+  private ledgeSafeReady = true;
   private throwing: { kind: ThrowKind; start: number; releaseAt: number } | null = null;
   /** After a grab release, a whiffed grab or a throw: no actions until then. */
   private lockUntil = 0;
@@ -488,13 +591,21 @@ export class Kubotz implements Damageable, Teamed {
   get x(): number { return this.body.x; }
   get y(): number { return this.body.y; }
   get grounded(): boolean { return this.body.grounded; }
-  get invincible(): boolean { return this.powerUps.some((p) => p.type === 'invincibility'); }
-  /** Dodging (air dodge, roll) or catching a ledge: attacks and bullets pass through. */
+  get invincible(): boolean { return this.spawnProtected || this.powerUps.some((p) => p.type === 'invincibility'); }
+  /** Just respawned: invincible, drawn with the spawn motes swirling round it. */
+  get spawnProtected(): boolean { const now = this.hooks.now(); return now >= this.materializeUntil && now < this.respawnSafeUntil; }
+  /** Let go of a grab a moment ago: grabs miss it. */
+  get grabImmune(): boolean { return this.hooks.now() < this.grabImmuneUntil; }
+  /** Dodging (air dodge, roll, spot dodge), teching, getting up or catching a ledge: attacks and bullets pass through. */
   get intangible(): boolean {
     const now = this.hooks.now();
     const d = this.dodge;
-    return (!!d && now >= d.safeFrom && now < d.safeUntil) || now < this.ledgeSafeUntil || now < this.materializeUntil;
+    return (!!d && now >= d.safeFrom && now < d.safeUntil) || now < this.ledgeSafeUntil || now < this.materializeUntil || now < this.safeUntil;
   }
+  /** Down on the floor after a missed tech (CPUs read it). */
+  get down(): boolean { return this.downSince >= 0; }
+  /** Hanging from a ledge (not climbing): another Kubot catching it takes it (ledge trump). */
+  get hanging(): boolean { return this.ledge !== null; }
   /** In an air dodge or a roll (including its end lag). */
   get dodging(): boolean { return !!this.dodge && this.hooks.now() < this.dodge.ends; }
   /** Rolling on the ground (CPUs read it). */
@@ -578,6 +689,19 @@ export class Kubotz implements Damageable, Teamed {
     if (now < this.materializeUntil) { this.pad = emptyPad(); this.body.enable = false; return; }
     if (!this.body.enable) this.body.enable = true; // let go by the spawn hologram: it drops
     const read = this.controller.read();
+    const raw = this.raw = controls && !this.celebrating ? read : emptyPad();
+    const guardPressed = raw.guard && !this.rawGuard;
+    this.rawGuard = raw.guard;
+    // A shield press that can tech (one every 40 frames).
+    if (guardPressed && now >= this.techLockUntil) { this.techPressAt = now; this.techLockUntil = now + TECH_LOCKOUT; }
+    // Hitlag: frozen where the hit landed, the move and the stun waiting; the struck Kubot can SDI.
+    if (now < this.hitlagUntil) { this.updateHitlag(dt, raw); return; }
+    if (this.freezeAt) {
+      const f = this.freezeAt;
+      this.freezeAt = null;
+      if (!this.pendingLaunch) this.body.setVelocity(f.vx, f.vy);
+    }
+    if (this.pendingLaunch) this.launch(raw);
     // Buffered presses, for people (not while shielding: no attacks out of shield).
     const buffers = this.controller.label !== 'CPU';
     for (const k of ['attack', 'special', 'jump'] as const) {
@@ -585,6 +709,7 @@ export class Kubotz implements Damageable, Teamed {
       if (down && !this.rawHeld[k] && buffers && controls && !this.guarding) this.pressedAt[k] = now;
       this.rawHeld[k] = down;
     }
+    this.hitstunCancel(guardPressed, now);
     const pad = this.pad = controls && !this.celebrating && now >= this.stunnedUntil && now >= this.hitstunUntil ? read : emptyPad();
     this.facingBefore = this.facing;
     // Grabs and ledges take over the controls while they last.
@@ -594,6 +719,14 @@ export class Kubotz implements Damageable, Teamed {
     if (this.heldBy) { this.updateHeld(now, dt, controls ? read : emptyPad()); this.updatePowerUps(now); return; }
     if (this.holding || this.throwing) { this.updateHolding(now, pad); this.updatePowerUps(now); return; }
     if (this.onLedge) { this.updateLedge(now, pad); this.updatePowerUps(now); return; }
+    if (this.down) { this.updateDown(now, dt, raw); this.updatePowerUps(now); return; }
+    if (now < this.shieldDropUntil) {
+      // Dropping the shield: no actions for a moment (presses are buffered).
+      this.updateGuard(emptyPad(), now, dt);
+      this.move(emptyPad(), now, dt);
+      this.updatePowerUps(now);
+      return;
+    }
     if (now < this.lockUntil) {
       // Grab release or a missed grab: sliding to a stop, no actions (the grab still reaches out).
       this.move(emptyPad(), now, dt);
@@ -602,6 +735,8 @@ export class Kubotz implements Damageable, Teamed {
       return;
     }
     this.updateGuard(pad, now, dt);
+    if (this.guarding && now >= this.shieldStunUntil) this.outOfShield(pad, now);
+    this.oosPrev = { ...pad };
     if (this.guarding) {
       // Guarding roots the Kubot: no running, jumping or attacking.
       this.move(emptyPad(), now, dt);
@@ -651,23 +786,179 @@ export class Kubotz implements Damageable, Teamed {
     if (!this.tumbling) return;
     const b = this.body;
     const wall = b.wall;
+    // Shield pressed just before the contact: a tech instead of the bounce.
+    const tech = now - this.techPressAt <= TECH_WINDOW;
     if (wall !== 0 && Math.sign(this.prevVx) === wall && Math.abs(this.prevVx) > 5 * UNIT) {
+      if (tech) { this.wallTech(now, b.x + wall * b.width / 2, b.y, -wall, 0); return; }
       b.setVelocity(-this.prevVx * Config.WALL_BOUNCE, b.vy);
       this.bounce(now, b.x + wall * b.width / 2, b.y);
     } else if (b.ceiling && this.prevVy < -5 * UNIT) {
+      if (tech) { this.wallTech(now, b.x, b.top, 0, 1); return; }
       b.setVelocity(b.vx, -this.prevVy * Config.WALL_BOUNCE);
       this.bounce(now, b.x, b.top);
+    } else if (b.grounded && b.vy >= 0 && tech && !this.floorBounced) {
+      // (A bounce off the floor is the missed tech: the next landing can't tech.)
+      this.groundTech(now);
     } else if (b.grounded && this.prevVy > 7 * UNIT && !this.floorBounced) {
       this.floorBounced = true;
       b.setVelocity(b.vx * 0.8, -this.prevVy * 0.45);
       this.bounce(now, b.x, b.bottom);
     } else if (b.grounded && Math.abs(b.vy) < 2 * UNIT && now >= this.knockdownUntil) {
-      // Down on the floor: a moment to get up.
-      this.knockdownUntil = now + 450;
-      this.hitstunUntil = Math.max(this.hitstunUntil, this.knockdownUntil);
+      // Missed the tech: down on the floor until it gets up (updateDown).
+      this.downSince = now;
+      this.hitstunUntil = 0;
       this.tumbleUntil = 0;
-      this.anim.play('knockdown', { restart: true, ms: 450, fade: 60 });
+      this.anim.play('knockdown', { restart: true, ms: 600, fade: 60 });
+      this.anim.freeze(0.45);
     }
+  }
+
+  /** A tech on landing: in place, or rolling the way the stick is held; intangible for a moment. */
+  private groundTech(now: number): void {
+    this.endTumble(now);
+    this.hooks.dust(this.x, this.body.bottom);
+    const dx = (this.raw.right ? 1 : 0) - (this.raw.left ? 1 : 0);
+    if (dx !== 0) {
+      this.startRoll(dx > 0 ? 1 : -1, now);
+      this.dodge!.safeFrom = now;
+      this.dodge!.safeUntil = now + TECH_SAFE;
+      return;
+    }
+    this.body.setVelocity(0, 0);
+    this.dodge = { kind: 'tech', dir: 0, start: now, safeFrom: now, safeUntil: now + TECH_SAFE, ends: now + TECH_MS };
+    this.anim.play(ANIM.LAND, { restart: true, ms: TECH_MS, fade: 30 });
+    this.hooks.playSfx('dodge', 0.3);
+  }
+
+  /** A tech against a wall or the ceiling: stops there, intangible for a moment, then falls. */
+  private wallTech(now: number, x: number, y: number, pushX: number, pushY: number): void {
+    this.endTumble(now);
+    this.body.setVelocity(pushX * 2 * UNIT, pushY * 2 * UNIT);
+    this.dodge = { kind: 'tech', dir: 0, start: now, safeFrom: now, safeUntil: now + TECH_SAFE, ends: now + TECH_MS };
+    this.hooks.dust(x, y);
+    this.anim.play(ANIM.DODGE, { restart: true, ms: TECH_MS, fade: 30 });
+    this.hooks.playSfx('dodge', 0.3);
+  }
+
+  private endTumble(now: number): void {
+    this.tumbleUntil = 0;
+    this.hitstunUntil = Math.min(this.hitstunUntil, now);
+    this.hitUntil = Math.min(this.hitUntil, now);
+    this.knockdownUntil = 0;
+    this.techPressAt = -1e9;
+    this.flashUntil = now + 60;
+  }
+
+  /** Down after a missed tech: get up, roll or the get-up attack once the bounce is over (or by itself after a while). */
+  private updateDown(now: number, dt: number, raw: PadState): void {
+    this.move(emptyPad(), now, dt);
+    if (!this.grounded) { this.downSince = -1; this.anim.freeze(null); return; } // slid off the floor
+    const t = now - this.downSince;
+    if (t < DOWN_OPTIONS_MS) return;
+    const dx = (raw.right ? 1 : 0) - (raw.left ? 1 : 0);
+    const attack = raw.attack || !!raw.special;
+    const stand = raw.up || !!raw.jump || raw.guard || t >= DOWN_AUTO_MS;
+    if (!dx && !attack && !stand) return;
+    this.downSince = -1;
+    this.anim.freeze(null);
+    if (attack) {
+      // The get-up attack: a sweep to both sides.
+      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      this.comboStep = 0;
+      this.safeUntil = now + GETUP_ATTACK_SAFE;
+      this.strike({ ...moves.dsmash, ...GETUP_ATTACK, ms: GETUP_ATTACK_MS, both: true }, now);
+      this.pressedAt.attack = -1e9;
+      this.pressedAt.special = -1e9;
+    } else if (dx) {
+      this.startRoll(dx > 0 ? 1 : -1, now);
+      this.dodge!.safeFrom = now;
+    } else {
+      this.safeUntil = now + GETUP_SAFE;
+      this.lockUntil = now + GETUP_MS;
+      this.anim.play('knockdown', { restart: true, ms: GETUP_MS, fade: 30 });
+    }
+  }
+
+  /** Late in a launch's hitstun, an air dodge (from 40 frames) or an aerial or special (from 45) cuts it short. */
+  private hitstunCancel(guardPressed: boolean, now: number): void {
+    if (!this.tumbling || this.grounded || now >= this.hitstunUntil) return;
+    const t = now - this.hitstunFrom;
+    const dodge = guardPressed && t >= CANCEL_DODGE_MS;
+    const aerial = t >= CANCEL_AERIAL_MS && (this.buffered('attack', now) || this.buffered('special', now));
+    if (!dodge && !aerial) return;
+    this.tumbleUntil = now;
+    this.hitstunUntil = now;
+    this.hitUntil = now;
+    this.guardHeld = false; // the press raises the air dodge this frame
+  }
+
+  /**
+   * Frozen in hitlag: the body held where the hit landed and everything timed
+   * on this Kubot pushed back by the freeze; the struck one nudges itself with
+   * each newly pushed direction (SDI).
+   */
+  private updateHitlag(dt: number, raw: PadState): void {
+    const ms = dt * 1000;
+    this.attackStart += ms;
+    this.attackEndsAt += ms;
+    this.attackReadyAt += ms;
+    this.comboUntil += ms;
+    this.chargeStart += ms;
+    if (this.gunChargeStart >= 0) this.gunChargeStart += ms;
+    this.hitUntil += ms;
+    this.hitstunUntil += ms;
+    this.hitstunFrom += ms;
+    this.tumbleUntil += ms;
+    this.stunnedUntil += ms;
+    this.lockUntil += ms;
+    this.grabEndsAt += ms;
+    this.shieldStunUntil += ms;
+    this.safeUntil += ms;
+    if (this.dodge) { this.dodge.start += ms; this.dodge.safeFrom += ms; this.dodge.safeUntil += ms; this.dodge.ends += ms; }
+    const f = this.freezeAt ?? (this.freezeAt = { x: this.x, y: this.y, vx: this.body.vx, vy: this.body.vy });
+    if (this.pendingLaunch && this.sdiCount < SDI_MAX) {
+      const p = this.sdiPrev;
+      const dx = (raw.right && !p.right ? 1 : 0) - (raw.left && !p.left ? 1 : 0);
+      // (Not down into the floor.)
+      const dy = (raw.down && !p.down && !this.grounded ? 1 : 0) - (raw.up && !p.up ? 1 : 0);
+      if (dx || dy) {
+        const len = Math.hypot(dx, dy);
+        f.x += (dx / len) * SDI_STEP * UNIT;
+        f.y += (dy / len) * SDI_STEP * UNIT;
+        this.sdiCount++;
+      }
+    }
+    this.sdiPrev = { ...raw };
+    this.body.setPosition(f.x, f.y);
+    this.body.setVelocity(0, 0);
+  }
+
+  /** Starts (or lengthens) a hitlag freeze. */
+  freeze(ms: number): void {
+    if (ms <= 0) return;
+    const now = this.hooks.now();
+    this.hitlagUntil = Math.max(this.hitlagUntil, now + ms);
+  }
+
+  /** Hitlag over: the launch, bent by the held stick (DI) and sped up or slowed on vertical launches (LSI). */
+  private launch(raw: PadState): void {
+    const { vx, vy, di } = this.pendingLaunch!;
+    this.pendingLaunch = null;
+    this.sdiCount = 0;
+    const sx = (raw.right ? 1 : 0) - (raw.left ? 1 : 0);
+    const sy = (raw.up ? 1 : 0) - (raw.down ? 1 : 0); // y up
+    const speed = Math.hypot(vx, vy);
+    if (!di || speed === 0 || (sx === 0 && sy === 0)) { this.body.setVelocity(vx, vy); return; }
+    const len = Math.hypot(sx, sy);
+    const ux = sx / len;
+    const uy = sy / len;
+    // Only the part of the stick across the launch bends it.
+    let a = Math.atan2(-vy, vx);
+    a += DI_MAX * (Math.cos(a) * uy - Math.sin(a) * ux);
+    const deg = (((a * 180) / Math.PI) % 360 + 360) % 360;
+    const vertical = (deg >= 65 && deg <= 115) || (deg >= 245 && deg <= 295);
+    const s = vertical ? speed * (uy > 0 ? 1 + 0.095 * uy : 1 + 0.08 * uy) : speed;
+    this.body.setVelocity(Math.cos(a) * s, -Math.sin(a) * s);
   }
 
   private bounce(now: number, x: number, y: number): void {
@@ -708,8 +999,16 @@ export class Kubotz implements Damageable, Teamed {
     // Either order counts within ROLL_WINDOW_MS: a direction then the guard, or the guard then a direction.
     const rollInput = (newDir && (this.guarding || now - this.guardPressedAt <= ROLL_WINDOW_MS))
       || (pressed && dx !== 0 && now - this.dirPressedAtGround <= ROLL_WINDOW_MS);
-    if (pad.guard && rollInput && this.grounded && now >= this.rollReadyAt && !this.helpless) {
+    const downPressed = pad.down && !this.guardDown;
+    this.guardDown = pad.down;
+    const free = now >= this.rollReadyAt && now >= this.shieldStunUntil && !this.helpless;
+    if (pad.guard && rollInput && this.grounded && free) {
       this.startRoll(dx > 0 ? 1 : -1, now);
+      return;
+    }
+    // Shield + down on the ground (pushed with the shield up, or both at once): the spot dodge.
+    if (pad.guard && downPressed && dx === 0 && this.grounded && free) {
+      this.startSpotDodge(now);
       return;
     }
     // Guard in the air: air dodge in the held direction, intangible for a moment.
@@ -723,12 +1022,18 @@ export class Kubotz implements Damageable, Teamed {
       this.hooks.playSfx('dodge', 0.3);
       this.anim.play(ANIM.DODGE, { restart: true, ms: Config.AIR_DODGE_DURATION, fade: 40 });
     }
-    if (pad.guard && this.grounded && (this.guarding || this.guard >= Config.GUARD_MIN_RAISE)) {
+    // A hit holds the shield up (shieldstun); let go, it takes a moment to drop.
+    const held = pad.guard || (this.guarding && now < this.shieldStunUntil);
+    if (held && this.grounded && (this.guarding || this.guard >= Config.GUARD_MIN_RAISE)) {
       if (!this.guarding) this.attack = null;
       this.guarding = true;
       this.guard = Math.max(0, this.guard - Config.GUARD_DRAIN * dt);
       if (this.guard <= 0) this.breakGuard();
     } else {
+      if (this.guarding && this.grounded) {
+        this.shieldDropAt = now;
+        this.shieldDropUntil = now + SHIELD_DROP_MS;
+      }
       this.guarding = false;
       this.guard = Math.min(Config.GUARD_MAX, this.guard + Config.GUARD_REGEN * dt);
     }
@@ -752,10 +1057,44 @@ export class Kubotz implements Damageable, Teamed {
     this.hooks.runDust(this.x, this.body.bottom, -dir);
   }
 
-  /** Air dodge: keep the burst, hover against gravity. Roll: travel, then the end lag. */
+  /** The spot dodge: in place, intangible for most of it. */
+  private startSpotDodge(now: number): void {
+    this.guarding = false;
+    this.attack = null;
+    this.currentMove = null;
+    this.comboStep = 0;
+    this.dodge = { kind: 'spot', dir: 0, start: now, safeFrom: now + SPOT_DODGE.safeFrom, safeUntil: now + SPOT_DODGE.safeUntil, ends: now + SPOT_DODGE.ms };
+    this.rollReadyAt = this.dodge.ends + Config.ROLL_COOLDOWN;
+    this.anim.play(ANIM.DODGE, { restart: true, ms: SPOT_DODGE.ms, fade: 30 });
+    this.hooks.playSfx('dodge', 0.3);
+  }
+
+  /**
+   * Out of shield (Ultimate): jump, grab, the up special or the up smash drop
+   * the shield at once, without the drop lag (the jump and the grab come out
+   * through the usual controls this frame).
+   */
+  private outOfShield(pad: PadState, now: number): void {
+    const p = this.oosPrev;
+    const jump = (!!pad.jump && !p.jump) || (pad.up && !p.up && !pad.walk && !pad.attack && !pad.special);
+    const upSpecial = !!pad.special && !p.special && pad.up;
+    const upSmash = pad.attack && !p.attack && pad.up;
+    if (!jump && !pad.grab && !upSpecial && !upSmash) return;
+    this.guarding = false;
+    if (upSmash) {
+      this.attackHeld = true;
+      this.startSmash((this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
+    } else if (upSpecial) {
+      this.specialHeld = true;
+      this.startSpecial('up', 0, now);
+    }
+  }
+
+  /** Air dodge: keep the burst, hover against gravity. Roll: travel, then the end lag. Spot dodge, tech: in place. */
   private updateDodge(now: number, dt: number): void {
     const d = this.dodge!;
     if (d.kind === 'air') { this.body.vy -= Config.GRAVITY * UNIT * dt * 0.8; return; }
+    if (d.kind === 'spot' || d.kind === 'tech') { if (this.grounded) this.body.vx = 0; return; }
     const t = (now - d.start) / Config.ROLL_DURATION;
     if (t < 1) {
       // Fast off the mark, slowing to a stop: x = D (1 - (1 - t)²).
@@ -778,6 +1117,7 @@ export class Kubotz implements Damageable, Teamed {
 
   private breakGuard(): void {
     this.guarding = false;
+    this.shieldStunUntil = 0;
     this.guard = Config.GUARD_BREAK_REFILL;
     this.stunnedUntil = this.hooks.now() + Config.GUARD_BREAK_STUN;
     this.body.vy = -12 * UNIT; // pops up, like a shield break
@@ -793,7 +1133,7 @@ export class Kubotz implements Damageable, Teamed {
     const f = feel();
     const accel = (grounded ? Config.RUN_ACCELERATION : f.airAccel) * this.speedFactor() * dt;
 
-    if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; }
+    if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; this.ledgeSafeReady = true; }
 
     // Aerials keep the Kubot facing the way it struck (a back air hits behind).
     const canTurn = !this.attack && !this.charging;
@@ -1234,8 +1574,9 @@ export class Kubotz implements Damageable, Teamed {
     this.ghosted = true;
     this.facing = by.facing === 1 ? -1 : 1;
     this.mashPrev = { ...this.controller.read() };
-    const damage = Config.KUBOTZ_HEALTH - this.health;
-    this.holdLeft = (GRAB_HOLD_FRAMES + GRAB_HOLD_PER_DAMAGE * Math.floor(damage / 5) * 5) * FRAME;
+    const percent = 3 * (Config.KUBOTZ_HEALTH - this.health);
+    this.holdLeft = (GRAB_HOLD_FRAMES + GRAB_HOLD_PER_PERCENT * percent) * FRAME;
+    this.heldSince = now;
     this.anim.play('held', { restart: true, fade: 40 });
   }
 
@@ -1252,18 +1593,26 @@ export class Kubotz implements Damageable, Teamed {
     this.tumbleUntil = 0;
     this.knockdownUntil = 0;
     this.hitUntil = 0;
+    this.downSince = -1;
+    this.anim.freeze(null);
+    this.shieldStunUntil = 0;
+    this.shieldDropUntil = 0;
+    this.hitlagUntil = 0;
+    this.freezeAt = null;
+    this.pendingLaunch = null;
   }
 
-  /** Held: the timer runs down, faster for every mash (a new button or direction). */
+  /** Held: the timer runs down, faster for every mash (any button pressed, or a stick direction newly pushed). */
   private updateHeld(now: number, dt: number, raw: PadState): void {
     const by = this.heldBy!;
     if (!by.isAlive() || by.holding !== this) { this.heldBy = null; return; }
     const p = this.mashPrev;
-    const mashes = (['attack', 'grab', 'guard', 'up', 'down', 'left', 'right'] as const).filter((k) => raw[k] && !p[k]).length;
+    const fresh = (k: keyof PadState) => !!raw[k] && !p[k];
+    const buttons = (['attack', 'special', 'jump', 'grab', 'guard', 'taunt'] as const).filter(fresh).length;
+    const stick = (['up', 'down', 'left', 'right'] as const).filter(fresh).length;
     this.mashPrev = { ...raw };
-    if (now >= this.pummelStunUntil) this.holdLeft -= mashes * GRAB_MASH_FRAMES * FRAME;
-    this.holdLeft -= dt * 1000;
-    if (this.holdLeft <= 0) by.grabRelease(now);
+    this.holdLeft -= (buttons * GRAB_MASH_BUTTON + stick * GRAB_MASH_STICK) * FRAME + dt * 1000;
+    if (this.holdLeft <= 0 && now - this.heldSince >= GRAB_HOLD_MIN) by.grabRelease(now);
   }
 
   /** Holding: pummel with attack, throw with a direction; the throw lets go part-way. */
@@ -1302,12 +1651,11 @@ export class Kubotz implements Damageable, Teamed {
       return;
     }
     if (pad.attack && !p.attack) {
-      // Pummel: a knee. The held Kubot can't mash out through its hitstun.
+      // Pummel: a knee.
       this.pummelUntil = now + PUMMEL_MS;
       this.anim.play('pummel', { restart: true, ms: PUMMEL_MS, fade: 30 });
       v.health = Math.max(1, v.health - PUMMEL_DAMAGE);
       v.flashUntil = now + 70;
-      v.pummelStunUntil = now + PUMMEL_MS * 0.6;
       v.lastAttacker = { by: this, at: now };
       this.hooks.grabFx(v.x, v.y, this.look.color, 0.6);
     }
@@ -1336,6 +1684,7 @@ export class Kubotz implements Damageable, Teamed {
     this.holding = null;
     if (!v) return;
     v.heldBy = null;
+    v.grabImmuneUntil = now + GRAB_IMMUNE_MS;
     const air = !this.grounded;
     v.body.setVelocity(this.facing * 7 * UNIT, air ? -9 * UNIT : -2 * UNIT);
     this.body.setVelocity(-this.facing * 3 * UNIT, this.body.vy);
@@ -1362,7 +1711,9 @@ export class Kubotz implements Damageable, Teamed {
     this.cancelActions();
     this.ledge = l;
     this.ledgeAt = now;
-    this.ledgeSafeUntil = now + LEDGE_INTANGIBLE;
+    // Intangible on the catch only once until landing or being hit (Ultimate).
+    this.ledgeSafeUntil = this.ledgeSafeReady ? now + LEDGE_INTANGIBLE : 0;
+    this.ledgeSafeReady = false;
     this.ledgePrev = { ...this.pad };
     // The air jumps, the air dodge and the specials come back.
     this.jumps = 1;
@@ -1376,6 +1727,17 @@ export class Kubotz implements Damageable, Teamed {
     this.anim.play('ledge', { restart: true, fade: 60 });
     this.hooks.playSfx('step', 0.35);
     this.hooks.dust(l.x, l.y);
+  }
+
+  /** Another Kubot caught the ledge this one hung from (ledge trump): popped off backwards, helpless for a moment. */
+  trumped(now: number): void {
+    const l = this.ledge;
+    if (!l) return;
+    this.releaseLedge(now);
+    this.ledgeSafeUntil = 0;
+    this.body.setVelocity(l.dir * 5 * UNIT, -6 * UNIT);
+    this.lockUntil = now + 30 * FRAME;
+    this.anim.play(ANIM.HIT, { restart: true, ms: 30 * FRAME, fade: 40 });
   }
 
   private releaseLedge(now: number): void {
@@ -1473,26 +1835,40 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   // ------------------------------------------------------------------ damage
-  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): void {
-    if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return;
+  takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): number {
+    if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return 0;
     const now = this.hooks.now();
-    // A hit breaks a grab (on either Kubot) and knocks a Kubot off its ledge.
+    // Parry (Ultimate): the shield let go just before the hit. No damage, no push, free to act at once.
+    if (now - this.shieldDropAt <= PARRY_MS && this.grounded && !this.heldBy) {
+      this.shieldDropAt = -1e9;
+      this.shieldDropUntil = 0;
+      this.flashUntil = now + 140;
+      this.hooks.parried?.(this);
+      return hitlagMs(amount);
+    }
+    // A hit breaks a grab (on either Kubot) and knocks a Kubot off its ledge or the floor.
     if (this.holding || this.heldBy) this.breakGrab();
     this.releaseLedge(now);
     this.lockUntil = 0;
+    if (this.downSince >= 0) { this.downSince = -1; this.anim.freeze(null); }
+    this.ledgeSafeReady = true;
     const prev = this.lastAttacker;
     this.lastAttacker = { by: attacker, at: now };
     const pushX = dirX * launch.knockback;
     if (this.guarding) {
+      // Held up for the shieldstun (it starts once the hitlag is over).
       this.guard -= amount;
       this.body.vx += (pushX / 3) * UNIT;
+      const lag = hitlagMs(amount, true);
+      this.shieldStunUntil = now + shieldstunMs(amount, !attacker.grounded);
+      this.freeze(lag);
       if (this.guard <= 0) this.breakGuard();
-      return;
+      return lag;
     }
     if (this.shield > 0) {
       this.shield -= amount;
       this.body.vx += (pushX / 2) * UNIT;
-      return;
+      return hitlagMs(amount, true);
     }
     const chained = prev?.by === attacker && now < Math.max(this.hitstunUntil, this.hitUntil);
     const healthBefore = this.health;
@@ -1503,7 +1879,7 @@ export class Kubotz implements Damageable, Teamed {
     let speed = 0;
     if (launch.stun) {
       // Light combo hits keep the target on the ground and in reach of the next one.
-      this.body.vx = pushX * UNIT;
+      this.pendingLaunch = { vx: pushX * UNIT, vy: this.body.vy, di: false };
       hitstun = launch.stun;
     } else {
       // Knockback grows with the damage taken (SSB), along the move's launch angle;
@@ -1511,7 +1887,8 @@ export class Kubotz implements Damageable, Teamed {
       const taken = 1 - this.health / Config.KUBOTZ_HEALTH;
       speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1));
       const a = (launch.angle * Math.PI) / 180;
-      this.body.setVelocity(dirX * Math.cos(a) * speed * UNIT, -Math.sin(a) * speed * UNIT);
+      // Sent off once the hitlag is over, bent by the stick then (DI).
+      this.pendingLaunch = { vx: dirX * Math.cos(a) * speed * UNIT, vy: -Math.sin(a) * speed * UNIT, di: true };
       hitstun = Math.min(Config.HITSTUN_MAX, Config.HITSTUN_BASE + speed * Config.HITSTUN_PER_UNIT);
       tumble = hitstun >= Config.TUMBLE_HITSTUN;
       // Strong launches shake the camera, harder the faster they fly.
@@ -1520,6 +1897,7 @@ export class Kubotz implements Damageable, Teamed {
     this.hitUntil = now + Math.max(250, hitstun);
     this.flashUntil = now + 70;
     this.hitstunUntil = Math.max(this.hitstunUntil, now + hitstun);
+    this.hitstunFrom = now;
     this.tumbleUntil = tumble ? this.hitstunUntil : 0;
     this.knockdownUntil = 0;
     this.floorBounced = false;
@@ -1537,6 +1915,10 @@ export class Kubotz implements Damageable, Teamed {
       this.anim.play(this.hitAnim, { restart: true, fade: 30 });
     }
     this.hooks.landed?.(this, attacker, Math.min(healthBefore, amount), chained, healthBefore, speed, launch.angle);
+    const lag = hitlagMs(amount);
+    this.freeze(lag);
+    this.sdiCount = 0;
+    return lag;
   }
 
   /** Stats: a hit that got through (not guarded or shielded); `chained` = landed while the last one still stunned. */
@@ -1553,6 +1935,17 @@ export class Kubotz implements Damageable, Teamed {
     this.breakGrab();
     this.releaseLedge(now);
     this.lockUntil = 0;
+    this.hitlagUntil = 0;
+    this.freezeAt = null;
+    this.pendingLaunch = null;
+    this.downSince = -1;
+    this.anim.freeze(null);
+    this.respawnSafeUntil = 0;
+    this.grabImmuneUntil = 0;
+    this.shieldStunUntil = 0;
+    this.shieldDropUntil = 0;
+    this.safeUntil = 0;
+    this.ledgeSafeReady = true;
     this.dead = true;
     this.deaths++;
     this.lives--;
@@ -1601,7 +1994,9 @@ export class Kubotz implements Damageable, Teamed {
   render(now: number, dtMs: number): void {
     if (this.dead) return;
     this.updateAnimationState(now);
-    this.anim.tick(dtMs);
+    // Hitlag holds the pose.
+    const frozen = now < this.hitlagUntil;
+    this.anim.tick(frozen ? 0 : dtMs);
 
     const maps: string[] = [];
     if (this.look.head) maps.push(this.look.head);
@@ -1642,13 +2037,17 @@ export class Kubotz implements Damageable, Teamed {
     const yaw = this.yaw + (pose.yaw ?? 0) * this.facing;
     // Charging shakes with the building power.
     const c = this.charge;
-    const shake = c > 0 && this.charging ? Math.sin(now / 18) * 2.5 * c : 0;
+    // The struck Kubot shudders through its hitlag.
+    const shake = c > 0 && this.charging ? Math.sin(now / 18) * 2.5 * c
+      : frozen && this.pendingLaunch ? Math.sin(now / 9) * 3.5 : 0;
     this.model.update(pose, maps, this.body.x + shake, this.body.bottom, yaw, {
       dtMs,
       lean, squash,
       alpha: this.intangible && now >= this.materializeUntil ? 0.55 : 1,
-      flash: (now < this.flashUntil && vfx() > 0) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0),
-      glitch: now < this.flashUntil && vfx() > 0,
+      // (A Kubot just let go of a grab blinks while grabs miss it.)
+      flash: (now < this.flashUntil && fx().flashes) || (c > 0.98 && this.charging !== null && Math.floor(now / 60) % 2 === 0)
+        || (now < this.grabImmuneUntil && fx().flashes && Math.floor(now / 70) % 4 === 0),
+      glitch: now < this.flashUntil && fx().distortion,
       // The guard's shield shrinks as it drains.
       shield: this.guarding ? { r: UNIT * 1.2 * (0.6 + 0.75 * (this.guard / Config.GUARD_MAX)), above: (this.body.bottom - this.body.top) * 0.62, color: this.look.color } : undefined,
     });
@@ -1668,6 +2067,7 @@ export class Kubotz implements Damageable, Teamed {
     const a = this.anim;
     if (now < this.materializeUntil) { a.play(ANIM.IDLE, { fade: 0 }); return; } // standing in the spawn beam
     if (this.heldBy) { a.play('held', { fade: 60 }); return; }
+    if (this.down) return; // lying on the floor (the knockdown, held)
     if (this.throwing || this.climb) return; // the throw or the get-up plays out
     if (this.holding) { if (now >= this.pummelUntil) a.play('grabHold', { fade: 80 }); return; }
     if (this.ledge) { a.play('ledge', { fade: 60 }); return; }

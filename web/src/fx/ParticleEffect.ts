@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { pureAdd } from './Grade';
 import { UNIT } from '../config';
-import { vfx, vfxCount } from '../game/Settings';
+import { fx, particleCount } from '../game/Settings';
 
 /**
  * A small runtime for LibGDX ParticleEditor files (`public/particles/*.pe`),
@@ -230,10 +230,10 @@ class RunningEmitter {
   private lifeDiff: number;
   private readonly duration: number;
   private readonly delay: number;
-  /** The file's particle counts and emission, scaled by the VFX setting. */
+  /** The file's particle counts and emission, scaled by the particle quality. */
   private readonly countMin: number;
   private readonly countMax: number;
-  private readonly amount = vfx();
+  private readonly amount = fx().particles;
   readonly particles: Particle[] = [];
 
   private stopped = false;
@@ -251,7 +251,7 @@ class RunningEmitter {
     this.lifeLow *= opts.life ?? 1; this.lifeDiff *= opts.life ?? 1;
     this.duration = def.duration.newLow();
     this.delay = def.delay.active ? def.delay.newLow() : 0;
-    this.countMin = vfxCount(def.countMin);
+    this.countMin = particleCount(def.countMin);
     this.countMax = Math.ceil(def.countMax * this.amount);
     if (this.delay === 0) this.add(this.countMin);
   }

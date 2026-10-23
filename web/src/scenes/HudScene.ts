@@ -123,7 +123,7 @@ export class HudScene extends Phaser.Scene {
     g.fillStyle(0x000000, 0.25).fillRect(SLAB - 3, 0, 3, CARD_H);
     drawStrip(g, 0, CARD_H - 1, CARD_W - 14, CARD_H - 1, color, 2);
     const who = k.tagKey.slice('label-'.length).split(':')[0];
-    const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color });
+    const tag = heading(this, SLAB / 2, CARD_H / 2 + 2, who, who.length > 2 ? 26 : 34, { glow: Phaser.Display.Color.IntegerToColor(color).darken(50).color, glitch: false }); // a player tag, not a title
     const name = this.add.text(SLAB + 10, 8, k.name, body(15, { fontStyle: '800' }));
     const team = this.add.text(CARD_W - 8, 10, `${TEAM_NAMES[k.team] ?? ''} team`.toUpperCase(),
       body(11, { fontStyle: '800', color: '#' + hex(color) })).setOrigin(1, 0);
@@ -212,7 +212,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private onCountdown(word: string): void {
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140).setDepth(20).setScale(1.6).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 40, word, 140, { glitch: { first: 0 } }).setDepth(20).setScale(1.6).setAlpha(0);
     this.tweens.add({ targets: t, scale: 1, alpha: 1, duration: 220, ease: 'Back.out' });
     this.tweens.add({ targets: t, alpha: 0, delay: 650, duration: 300, onComplete: () => t.destroy() });
   }

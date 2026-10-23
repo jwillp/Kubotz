@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { addMusic, vfx } from '../game/Settings';
-import { hitGlitch } from '../fx/HitGlitch';
+import { addMusic } from '../game/Settings';
+import { GlitchBursts } from '../fx/GlitchBursts';
 import { footer, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
 import { heading } from '../ui/Type';
@@ -18,12 +18,6 @@ const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
   ...(__EDITOR__ ? [{ label: 'Editor', scene: 'EditorMenu' }] : []),
 ];
 
-/** The logo's glitch bursts: how long one lasts and the quiet between two (ms). */
-const BURST_MS = [160, 420] as const;
-const QUIET_MS = [2600, 7000] as const;
-/** One step of a burst's flicker (ms): the picture jumps between strengths this often. */
-const FLICKER_MS = 45;
-
 export class TitleScene extends Phaser.Scene {
   private selected = 0;
   private items: PlateButton[] = [];
@@ -32,9 +26,8 @@ export class TitleScene extends Phaser.Scene {
   private menu!: MenuInput;
   /** The logo and its ARENA line, which glitch together. */
   private brand!: Phaser.GameObjects.Container;
-  /** The current glitch burst: start, length, the strength of each flicker step; and when the next one comes. */
-  private burst = { at: 0, ms: 0, steps: [] as number[] };
-  private nextBurst = 0;
+  /** The logo's random glitches, the same as every title's; the whole sign jolts sideways on the hardest steps. */
+  private bursts!: GlitchBursts;
 
   constructor() { super('Title'); }
 
@@ -48,11 +41,10 @@ export class TitleScene extends Phaser.Scene {
     // The original Kubotz logo (logo_SD.png from the 2015 gh-pages site), as vectors (public/logo.svg),
     // and KUBOTZ ARENA's subtitle in the logo's font and neon, spaced out under it.
     const logo = this.add.image(0, 0, 'logo').setScale(1.3 / LOGO_RES);
-    const arena = heading(this, 0, 108, 'A R E N A', 34);
+    const arena = heading(this, 0, 108, 'A R E N A', 34, { glitch: false }); // glitches with the logo
     this.brand = this.add.container(width / 2, 118, [logo, arena]);
     this.tweens.add({ targets: this.brand, y: 128, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    this.burst = { at: 0, ms: 0, steps: [] };
-    this.nextBurst = this.time.now + 1200;
+    this.bursts = new GlitchBursts(this.brand, { first: 1200, jolt: 4 });
 
     ENTRIES.forEach((m, i) => {
       const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 34 });
@@ -88,31 +80,10 @@ export class TitleScene extends Phaser.Scene {
 
   update(time: number): void {
     if (!this.leaving) this.menu.update(time);
-    this.updateGlitch(time);
   }
 
   /** Starts a glitch burst on the logo now (also handy from the console). */
-  glitch(): void {
-    const ms = Phaser.Math.Between(...BURST_MS);
-    // Each flicker step at its own strength, the first ones hardest: it breaks, stutters, settles.
-    const n = Math.ceil(ms / FLICKER_MS);
-    const steps = Array.from({ length: n }, (_, i) => (Math.random() < 0.25 ? 0 : Phaser.Math.FloatBetween(0.35, 1)) * (1 - 0.6 * (i / n)));
-    steps[0] = Phaser.Math.FloatBetween(0.7, 1);
-    this.burst = { at: this.time.now, ms, steps };
-    this.nextBurst = this.time.now + ms + Phaser.Math.Between(...QUIET_MS);
-    hitGlitch(this.brand, 0); // a new pass: a new seed, so no two bursts tear alike
-  }
-
-  /** The logo's random glitches (the hit glitch's tearing, RGB split and scan lines), off at VFX 0. */
-  private updateGlitch(time: number): void {
-    if (vfx() <= 0) { hitGlitch(this.brand, 0); return; }
-    if (time >= this.nextBurst) this.glitch();
-    const t = time - this.burst.at;
-    const amount = t >= 0 && t < this.burst.ms ? (this.burst.steps[Math.floor(t / FLICKER_MS)] ?? 0) : 0;
-    hitGlitch(this.brand, amount * vfx());
-    // The whole sign jolts sideways on the hardest steps.
-    this.brand.x = this.scale.width / 2 + (amount > 0.6 ? Phaser.Math.Between(-4, 4) * amount : 0);
-  }
+  glitch(): void { this.bursts.glitch(); }
 
   private select(i: number): void {
     this.selected = i;

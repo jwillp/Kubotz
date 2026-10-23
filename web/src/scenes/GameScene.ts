@@ -5,7 +5,7 @@ import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController } from '../game/Ai';
 import { FEEL_ORDER, setFeel } from '../game/Feel';
-import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, SLOT_COLORS } from '../game/Kubotz';
+import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
 import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
@@ -29,7 +29,7 @@ import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import { ALL_LAYERS, type DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
-import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
+import { addMusic, duckMusic, fx, onSettingsChange, particleCount, sfxVolume } from '../game/Settings';
 import { ReplayRecorder, propOf } from '../game/Replay';
 import { body } from '../ui/Type';
 import { shutter } from '../ui/Plate';
@@ -326,7 +326,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
     this.setupScreenFx();
     this.setupLights();
-    // The settings screen (opened from the pause) applies its VFX level live.
+    // The settings screen (opened from the pause) applies its effects live.
     const offSettings = onSettingsChange(() => this.setScreenFx(wantScreenFx()));
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.perspective?.destroy();
@@ -361,7 +361,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (rect.inset) {
       // The arena behind the whole menu, filling it and soft, and whole again in the inset.
       cam.setZoom(Math.max(rect.width / mapW, rect.height / mapH) * 1.08).centerOn(mapW / 2, mapH / 2);
-      if (vfx() > 0) cam.postFX?.addBlur(0, 1, 1, 0.8);
+      if (fx().postFx) cam.postFX?.addBlur(0, 1, 1, 0.8);
       const r = rect.inset;
       this.cameras.add(r.x, r.y, r.width, r.height).setZoom(fit(r)).centerOn(mapW / 2, mapH / 2);
     } else {
@@ -776,25 +776,38 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     let best: Kubotz | null = null;
     let bestD = Infinity;
     for (const o of this.fighters) {
-      if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge || o.guarding) continue; // a raised shield can't be grabbed
+      // A raised shield can't be grabbed, nor a Kubot down on the floor or just let go of a grab.
+      if (!canHurt(k, o) || !o.isAlive() || o.intangible || o.invincible || o.heldBy || o.grabbing || o.onLedge || o.guarding || o.down || o.grabImmune) continue;
+      // Reach: from just in front (or overlapping) to 2.1 units ahead, 1.5 up or down (owner: a bit more generous).
       const ahead = (o.x - k.x) * k.facing;
-      if (ahead < 0.3 * UNIT || ahead > 1.7 * UNIT || Math.abs(o.y - k.y) > 1.2 * UNIT) continue;
+      if (ahead < 0.1 * UNIT || ahead > 2.1 * UNIT || Math.abs(o.y - k.y) > 1.5 * UNIT) continue;
       if (ahead < bestD) { bestD = ahead; best = o; }
     }
     if (best) this.playSfx('punch', 0.25, -600);
     return best;
   }
 
-  /** A free ledge whose top is level with the Kubot's hands, on the side the Kubot is (edge hogging: one Kubot per ledge). */
+  /**
+   * A ledge whose top is level with the Kubot's hands, on the side it is. A
+   * Kubot hanging there is pushed off by the catch (Ultimate's ledge trump);
+   * one climbing up from it keeps it.
+   */
   ledgeNear(k: Kubotz): Ledge | null {
     for (const l of this.ledges) {
       const out = (k.x - l.x) * l.dir;
       const below = l.y - k.body.top;
       if (out < LEDGE_REACH.outMin * UNIT || out > LEDGE_REACH.outMax * UNIT || below < -LEDGE_REACH.below * UNIT || below > LEDGE_REACH.above * UNIT) continue;
-      if (this.fighters.some((o) => o !== k && o.ledgeHeld === l)) continue;
+      const holder = this.fighters.find((o) => o !== k && o.ledgeHeld === l);
+      if (holder && !holder.hanging) continue;
+      holder?.trumped(this.clock);
       return l;
     }
     return null;
+  }
+
+  parried(k: Kubotz): void {
+    this.impact.clash(k.x + k.facing * 0.5 * UNIT, k.y - 0.2 * UNIT);
+    this.playSfx('guard-break', 0.35, 600);
   }
 
   grabFx(x: number, y: number, color: number, power: number): void {
@@ -855,7 +868,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const auras: string[] = [];
       if (k.isAlive() && k.invincible) auras.push('invincibility');
       if (k.isAlive() && k.shield > 0) auras.push('shield');
-      for (const key of auras) this.impact.aura(k, key, POWER_UPS[key as 'shield'].color);
+      // Just respawned: the spawn's cyan motes keep swirling while it is invincible.
+      if (k.isAlive() && k.spawnProtected) auras.push('hologram');
+      for (const key of auras) this.impact.aura(k, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as 'shield'].color);
       // What the replays draw with the Kubot.
       const b = k.isAlive() ? k.blade() : null;
       drawn.set(k, {
@@ -949,9 +964,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         return { x: p.x, y: p.y, color: k.look.color, intensity: 2.5 };
       }),
       ...this.orbs.map((o) => ({ x: o.x, y: o.y, color: o.color, intensity: 1.5 })),
-      // Explosion and hit flashes dim with the VFX setting.
+      // Explosion and hit flashes: off with dynamic lights.
       ...this.holo.lights(this.clock),
-      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: l.intensity * vfx() })),
+      ...[...this.debris.lights(this.clock), ...this.impact.lights()].map((l) => ({ ...l, intensity: fx().lights ? l.intensity : 0 })),
     ].filter((l) => l.intensity > 0);
     // The brightest first, so the pool keeps the hits and lasers when there are many.
     lights.sort((a, b) => b.intensity - a.intensity);
@@ -978,7 +993,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /**
    * The grade pass (vignette, split tone, grain, scanlines) on the arena and
    * the same grain and scanlines on the backdrop behind it, so they cover the
-   * whole view (WebGL only); off with ?lowfx or a VFX setting under half,
+   * whole view (WebGL only); off with ?lowfx or both post-processing and film grain off,
    * toggled with F (here or in the menus). No bloom: the owner preferred the
    * crisper look without it.
    */
@@ -1153,7 +1168,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.impact.clash((at.x + meet.x) / 2, at.y);
           continue;
         }
-        this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
+        const lag = this.hit(target, attacker, box.damage, box.launch, box.both ? (target.hurtbox().centerX < attacker.x ? -1 : 1) : box.behind ? (attacker.facing === 1 ? -1 : 1) : attacker.facing, at.x, at.y);
+        // The striker freezes with the one it hit (hitlag).
+        attacker.freeze(lag);
       }
       // Strikes knock the power-up balls away along the move's launch angle.
       for (const orb of this.orbs) {
@@ -1189,12 +1206,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
-  private hit(target: Damageable, attacker: Kubotz, damage: number, launch: Launch, dirX: 1 | -1, x: number, y: number): void {
-    target.takeDamage(damage, attacker, launch, dirX);
+  /** Returns the striker's hitlag (ms), 0 when the hit didn't land. */
+  private hit(target: Damageable, attacker: Kubotz, damage: number, launch: Launch, dirX: 1 | -1, x: number, y: number): number {
+    const lag = target.takeDamage(damage, attacker, launch, dirX);
     const pushX = dirX * launch.knockback;
     const blocked = target instanceof Kubotz && (target.guarding || target.shield > 0);
     this.playSfx('punch', blocked ? 0.2 : 0.45);
     this.impact.hit(x, y, Math.sign(pushX) || 1, blocked ? 0x9fdcff : attacker.look.color, (damage / 4) * (blocked ? 0.5 : 1));
+    return lag;
   }
 
   private popBullet(b: Bullet): void {
@@ -1235,7 +1254,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (dv > 3.5 && now - o.lastTinkAt > 70) {
         o.lastTinkAt = now;
         this.playSfx('orb-bounce', Math.min(0.55, 0.1 + dv * 0.025), Phaser.Math.Between(-250, 350));
-        if (vfx() > 0) o.glitch(now, dv / 14);
+        if (fx().distortion) o.glitch(now, dv / 14);
       }
       o.lastVx = o.body.vx; o.lastVy = o.body.vy;
       this.impact.motes(o.x, o.y, o.color, o.radius, 16);
@@ -1255,7 +1274,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (free.length === 0) return;
     const p = Phaser.Utils.Array.GetRandom(free);
     const orb = new PowerUpOrb(this, this.physicsWorld, p.x + Phaser.Math.Between(-6, 6), p.y, randomPowerUp(), now);
-    this.pickupFx.explode(vfxCount(12), orb.x, orb.y);
+    this.pickupFx.explode(particleCount(12), orb.x, orb.y);
     this.orbs.push(orb);
   }
 
@@ -1409,6 +1428,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     k.respawn(spawn.x + Phaser.Math.Between(-6, 6), spawn.y);
     // It materializes in a hologram over the spawn point, then drops.
     this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), spawn.y);
+    k.respawnSafeUntil = k.materializeUntil + RESPAWN_INVINCIBLE_MS;
     this.playSfx('holo-spawn', 0.45);
   }
 
@@ -1476,7 +1496,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    this.trauma = Math.min(1, this.trauma + amount * vfx());
+    if (fx().shake) this.trauma = Math.min(1, this.trauma + amount);
   }
 
   private applyZoom(): void {

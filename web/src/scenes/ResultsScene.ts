@@ -9,7 +9,7 @@ import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx, drawBlade } from '../fx/Impact';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PortalFx } from '../fx/Portals';
-import { GradePipeline, pureAdd, setPass } from '../fx/Grade';
+import { GradePipeline, pureAdd, setPass, wantScreenFx } from '../fx/Grade';
 import { HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoKubot } from '../fx/Hologram';
 import { backdropOf } from '../fx/Backdrops';
 import { POWER_UPS, type PowerUpType } from '../game/PowerUps';
@@ -160,7 +160,7 @@ export class ResultsScene extends Phaser.Scene {
       this.lights.enable().setAmbientColor(mood.ambient);
       for (let i = 0; i < LIGHT_POOL; i++) this.lightPool.push(this.lights.addLight(0, 0, UNIT, 0xffffff, 0).setVisible(false));
       // The match's grade on the arena (the backdrop has its own grain).
-      if (this.registry.get('screenFx') !== false && !new URLSearchParams(location.search).has('lowfx')) setPass(this, this.worldCam, GradePipeline, true);
+      if (this.registry.get('screenFx') !== false && wantScreenFx()) setPass(this, this.worldCam, GradePipeline, true);
     }
     const lit = <T extends Phaser.GameObjects.Image>(o: T) => (this.sys.renderer.type === Phaser.WEBGL ? o.setPipeline('Light2D') : o);
     if (r.hull && this.textures.exists('arena-hull')) lit(this.add.image(-12 * UNIT, -12 * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9));
@@ -500,7 +500,7 @@ export class ResultsScene extends Phaser.Scene {
     }
     const s = ra.swing;
     this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color);
-    for (const key of ra.auras ?? []) this.impact.aura(owner, key, POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
+    for (const key of ra.auras ?? []) this.impact.aura(owner, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;
       holoKubot(kubot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);
