@@ -6,6 +6,7 @@ import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
+import { pureAdd } from '../fx/Grade';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 const PAUSE_ITEMS = ['Resume', 'Settings', 'Controls', 'Quit to title'];
@@ -36,6 +37,8 @@ interface Card {
 /** How faint a HUD card gets while a Kubot is behind it, and how fast it fades (per second). */
 const BEHIND_ALPHA = 0.25;
 const FADE_SPEED = 8;
+/** particles/hexa.png: its hexagon's height, corner to corner (px). */
+const HEXA_ART = 629;
 
 /**
  * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
@@ -44,8 +47,9 @@ const FADE_SPEED = 8;
  */
 export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
-  /** Rings around the off-screen bubbles. */
+  /** The pointers of the off-screen bubbles, and the shield art over each. */
   private rings!: Phaser.GameObjects.Graphics;
+  private shields: { fill: Phaser.GameObjects.Image; sheen: Phaser.GameObjects.Image }[] = [];
   private cards = new Map<Kubotz, Card>();
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
@@ -67,6 +71,7 @@ export class HudScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.rings = this.add.graphics();
+    this.shields = [];
     const tg = this.add.graphics();
     drawPlate(tg, width / 2 - 64, -14, 128, 50, { cut: 12 });
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
@@ -164,33 +169,35 @@ export class HudScene extends Phaser.Scene {
   }
 
   /**
-   * The frames around the off-screen bubbles (fx/OffscreenBubbles.ts), in the
-   * shield's look: a hexagon in the Kubot's colour with the art's light strips
-   * under its lower edges, a pointer towards the Kubot, and a little flicker.
+   * Over each off-screen bubble (fx/OffscreenBubbles.ts), the guard's shield
+   * as the Kubot raises it (Kubot2D.drawShield): the hexagon art filled with
+   * its colour and an added sheen, flickering a little, and a pointer
+   * towards the Kubot.
    */
   private drawBubbleRings(): void {
     const g = this.rings.clear();
-    for (const m of this.game_.bubbles?.marks ?? []) {
-      const { x, y, r, angle: a } = m;
-      const flicker = Math.random() < 0.08 ? 0.6 : 1;
-      const corner = (i: number, d = r) => new Phaser.Math.Vector2(x + Math.cos(-Math.PI / 2 + i * Math.PI / 3) * d, y + Math.sin(-Math.PI / 2 + i * Math.PI / 3) * d);
-      const hexagon = (d: number) => [0, 1, 2, 3, 4, 5].map((i) => corner(i, d));
-      // The pointer, out of the edge towards the Kubot.
-      const tip = r + 18;
-      g.fillStyle(m.color, flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
-        x + Math.cos(a + 0.36) * (r - 4), y + Math.sin(a + 0.36) * (r - 4), x + Math.cos(a - 0.36) * (r - 4), y + Math.sin(a - 0.36) * (r - 4));
-      g.lineStyle(6, 0x0d1520, 0.85).strokePoints(hexagon(r + 2), true, true);
-      g.lineStyle(3, m.color, flicker).strokePoints(hexagon(r), true, true);
-      g.lineStyle(1.5, 0xffffff, 0.5 * flicker).strokePoints(hexagon(r - 3), true, true);
-      // The art's light strips, just under the two lower edges.
-      const light = Phaser.Display.Color.IntegerToColor(m.color).lighten(35).color;
-      g.lineStyle(2.5, light, 0.9 * flicker);
-      for (const [from, to] of [[3, 4], [3, 2]] as const) {
-        const p = corner(from, r + 8);
-        const q = corner(to, r + 8);
-        g.lineBetween(Phaser.Math.Linear(p.x, q.x, 0.12), Phaser.Math.Linear(p.y, q.y, 0.12), Phaser.Math.Linear(p.x, q.x, 0.62), Phaser.Math.Linear(p.y, q.y, 0.62));
-      }
+    const marks = this.game_.bubbles?.marks ?? [];
+    while (this.shields.length < marks.length) {
+      this.shields.push({
+        fill: this.add.image(0, 0, 'p-hexa'),
+        sheen: this.add.image(0, 0, 'p-hexa').setBlendMode(pureAdd(this)).setTint(0xffffff),
+      });
     }
+    this.shields.forEach(({ fill, sheen }, i) => {
+      const m = marks[i];
+      fill.setVisible(!!m);
+      sheen.setVisible(!!m);
+      if (!m) return;
+      const { x, y, r, angle: a } = m;
+      const flicker = Math.random() < 0.12 ? 0.55 : 1;
+      // The art's hexagon is HEXA_ART px from corner to corner.
+      const scale = (2 * r) / HEXA_ART;
+      fill.setPosition(x, y).setScale(scale).setTintFill(m.color).setAlpha(0.3 * flicker);
+      sheen.setPosition(x, y).setScale(scale).setAlpha(0.3 * flicker);
+      const tip = r + 16;
+      g.fillStyle(m.color, 0.7 * flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
+        x + Math.cos(a + 0.3) * (r - 6), y + Math.sin(a + 0.3) * (r - 6), x + Math.cos(a - 0.3) * (r - 6), y + Math.sin(a - 0.3) * (r - 6));
+    });
   }
 
 

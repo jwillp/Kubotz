@@ -19,16 +19,15 @@ export const HEX_W = Math.sqrt(3) / 2;
 
 /**
  * The shield's hexagon (particles/hexa.png: a corner on top) for a bubble
- * camera: cuts its square to the hexagon, washes it in the Kubot's colour
- * (light to deep, like the art), lights the rim inside and lets a few rows
- * slip now and then, like the shield's glitch. (A stencil mask would hide
- * the Kubotz' own post passes.)
+ * camera: cuts its square to the hexagon and lets a few rows slip now and
+ * then, with the odd bright tear, like what shows through a raised shield.
+ * The HUD lays the shield art over it. (A stencil mask would hide the
+ * Kubotz' own post passes.)
  */
 const HEX = /* glsl */ `
 precision mediump float;
 uniform sampler2D uMainSampler;
 uniform vec3 uHex;
-uniform vec3 uColor;
 uniform vec2 uRes;
 uniform float uTime;
 varying vec2 outTexCoord;
@@ -39,30 +38,21 @@ void main () {
   // Distance inside the edge (px): flat sides, then the four slanted ones.
   float edge = min(uHex.z * 0.866 - q.x, uHex.z * 0.866 - (q.x * 0.5 + q.y * 0.866));
   float inside = smoothstep(0.0, 1.5, edge);
-  // Now and then a band of rows slips sideways.
-  float row = floor((p.y + uHex.z) / 5.0);
+  float row = floor((p.y + uHex.z) / 4.0);
   float t = floor(uTime * 12.0);
-  float slip = step(0.93, hash(row * 7.1 + t)) * (hash(row + t * 3.3) - 0.5) * 10.0 / uRes.x;
+  float slip = step(0.92, hash(row * 7.1 + t)) * (hash(row + t * 3.3) - 0.5) * 12.0 / uRes.x;
   vec4 c = texture2D(uMainSampler, outTexCoord + vec2(slip, 0.0));
-  // The colour wash, lighter at the bottom like the art, and the lit rim.
-  float down = clamp(p.y / uHex.z * 0.5 + 0.5, 0.0, 1.0);
-  vec3 wash = uColor * mix(0.35, 0.9, down);
-  float rim = smoothstep(9.0, 0.0, edge);
-  vec3 rgb = mix(c.rgb, wash, 0.22) + uColor * rim * 0.55;
-  // Fine scanlines, like the shield's tear.
-  rgb *= 0.92 + 0.08 * step(0.5, fract(p.y / 3.0));
-  gl_FragColor = vec4(rgb, 1.0) * inside;
+  float tear = step(0.975, hash(floor((p.y + uHex.z) / 2.0) * 3.7 + t * 1.3));
+  gl_FragColor = vec4(c.rgb + tear * 0.45, 1.0) * inside;
 }`;
 
 class BubbleHexPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
   static readonly key = 'BubbleHex';
-  /** Centre and radius on screen (px), and the Kubot's colour. */
-  hex = { x: 0, y: 0, r: 0, color: 0xffffff };
+  /** Centre and radius on screen (px). */
+  hex = { x: 0, y: 0, r: 0 };
   constructor(game: Phaser.Game) { super({ game, name: BubbleHexPipeline.key, fragShader: HEX }); }
   onDraw(target: Phaser.Renderer.WebGL.RenderTarget): void {
-    const c = Phaser.Display.Color.IntegerToColor(this.hex.color);
     this.set3f('uHex', this.hex.x, this.hex.y, this.hex.r);
-    this.set3f('uColor', c.redGL, c.greenGL, c.blueGL);
     this.set2f('uRes', this.renderer.width, this.renderer.height);
     this.set1f('uTime', (this.game.loop.time / 1000) % 1000);
     this.bindAndDraw(target);
@@ -73,8 +63,8 @@ class BubbleHexPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
  * Super Smash Bros.' magnifiers, in the shield's hexagon: a Kubot off the
  * screen shows in a window on the screen's edge, in its direction, live and
  * smaller the farther it is. Each bubble is a little camera of the Game
- * scene, cut to the hexagon; the HUD draws the frame and the pointer around
- * it (`marks`).
+ * scene, cut to the hexagon; the HUD lays the shield art and the pointer
+ * over it (`marks`).
  */
 export class OffscreenBubbles {
   readonly marks: BubbleMark[] = [];
@@ -108,7 +98,7 @@ export class OffscreenBubbles {
       used++;
       b.cam.setVisible(true).setViewport(x - r, y - r, r * 2, r * 2)
         .setZoom((r * 2) / (SHOWN * UNIT)).centerOn(s.x, s.y - 0.3 * UNIT);
-      if (b.cut) b.cut.hex = { x, y, r: r - 1, color: s.color };
+      if (b.cut) b.cut.hex = { x, y, r: r - 1 };
       this.marks.push({ x, y, r, color: s.color, angle: Math.atan2(sy - y, sx - x) });
     }
     for (let i = used; i < this.cams.length; i++) this.cams[i].cam.setVisible(false);
