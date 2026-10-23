@@ -3,6 +3,7 @@ import { pureAdd } from '../fx/Grade';
 import { Config, UNIT } from '../config';
 import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { lit } from '../fx/NormalMaps';
+import { CEL } from '../fx/Cel';
 import { type PosedPart, type Pose, type Rig } from './Rig';
 
 /** Spriter pixels to world pixels. */
@@ -75,6 +76,13 @@ export class Kubot2D {
     this.view = scene.add.container(0, 0).setDepth(10);
   }
 
+  /** Parts take the arena lights, except cel-shaded ones (fx/Cel.ts): flat toon tones the lights would shade back into gradients. */
+  private light(img: Phaser.GameObjects.Image): Phaser.GameObjects.Image {
+    if (img.texture.key.startsWith(CEL)) img.resetPipeline();
+    else lit(img);
+    return img;
+  }
+
   /**
    * @param yaw degrees round the vertical axis: 0 faces right, 180 left (the
    *   turn, plus the clip's own yaw for spins)
@@ -92,11 +100,11 @@ export class Kubot2D {
       const key = this.textureFor(p.file.name);
       let img = this.images.get(p.name);
       if (!img) {
-        img = lit(this.scene.add.image(0, 0, key));
+        img = this.light(this.scene.add.image(0, 0, key));
         this.images.set(p.name, img);
         this.view.add(img);
       } else if (img.texture.key !== key) {
-        img.setTexture(key);
+        this.light(img.setTexture(key));
       }
       // Each part follows the yaw at its own pace.
       const d = depthOf(p.file.name);
