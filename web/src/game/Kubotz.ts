@@ -19,6 +19,7 @@ import { CEL, cel } from '../fx/Cel';
 import type { ParticleHandle } from '../fx/ParticleEffect';
 import { EventPlayer } from '../anim/ClipEvents';
 import { DATA_FILES, fromFiles } from './DataFiles';
+import { NEON, neon, neonColor } from '../fx/Neon';
 
 export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'plasmaBlade';
 
@@ -227,8 +228,9 @@ export function partTexture(textures: Phaser.Textures.TextureManager, file: stri
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
   else if (file === BLADE_FILE) key = `blade:${hex(color)}`;
   if (!textures.exists(key)) key = `kubotz:${file}`;
-  if (cel.on && textures.exists(CEL + key)) return CEL + key;
-  return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
+  if (cel.on && textures.exists(CEL + key)) key = CEL + key;
+  else if (surface.worn && textures.exists(WORN + key)) key = WORN + key;
+  return neon.on && textures.exists(NEON + key) ? NEON + key : key;
 }
 
 /** The top corner of a solid block a Kubot can hang from; `dir` is the open side (-1 left, 1 right). */
@@ -598,8 +600,7 @@ export class Kubotz implements Damageable, Teamed {
     this.model = new Kubot2D(scene, rig, (file) => (file === BLADE_FILE && this.carrying
       ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     this.events = new EventPlayer((name, x, y, flip) => this.hooks.effect(name, x, y, flip));
-    // A soft outer glow in the player's colour, so Kubotz stay apart in a close fight (WebGL only).
-    this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
+    this.restyle();
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the Kubot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
@@ -2283,6 +2284,21 @@ export class Kubotz implements Damageable, Teamed {
       }
       g.fillStyle(this.look.color, 1).fillRect(x - 2 * px, by + h + 2 * px, w + 2 * px, 2 * px);
     }
+  }
+
+  private halo?: Phaser.FX.Glow;
+
+  /**
+   * A soft outer glow in the player's colour, so Kubotz stay apart in a close
+   * fight (WebGL only); neon: a brighter, wider halo in the neon version of
+   * that colour. Called again when the look changes (the parts follow on their own).
+   */
+  restyle(): void {
+    const fx = this.model.view.postFX;
+    if (!fx) return;
+    if (this.halo) fx.remove(this.halo);
+    const color = this.look.color;
+    this.halo = neon.on ? fx.addGlow(neonColor(color), 1.5, 0, false, 0.1, 10) : fx.addGlow(color, 0.7, 0, false, 0.1, 6);
   }
 
   destroy(): void {

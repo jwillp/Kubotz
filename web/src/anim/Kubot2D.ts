@@ -78,7 +78,7 @@ export class Kubot2D {
 
   /** Parts take the arena lights; cel-shaded ones (fx/Cel.ts) in toon steps, so the lights don't shade them back into gradients. */
   private light(img: Phaser.GameObjects.Image): Phaser.GameObjects.Image {
-    if (img.texture.key.startsWith(CEL)) toonLit(img);
+    if (img.texture.key.includes(CEL)) toonLit(img);
     else lit(img);
     return img;
   }

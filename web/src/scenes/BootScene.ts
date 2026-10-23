@@ -8,6 +8,7 @@ import { editedParticles, testArena } from '../game/EditedData';
 import { addNormalMap } from '../fx/NormalMaps';
 import { WORN, weather } from '../fx/Surface';
 import { CEL, CelShift, celPart } from '../fx/Cel';
+import { NEON, neonPart } from '../fx/Neon';
 import { TvIdent } from '../fx/TvIdent';
 import { shutter } from '../ui/Plate';
 import { buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
@@ -177,6 +178,14 @@ export class BootScene extends Phaser.Scene {
       this.textures.addCanvas(CEL + key, shift.apply(this.textures.get(key).getSourceImage() as HTMLImageElement));
       addNormalMap(this.textures, CEL + key, { bevel: 3, detail: 0.3, strength: 1 }, key);
       await pace();
+    }
+    // Neon copies of the clean, worn and cel parts (fx/Neon.ts).
+    for (const [i, [key]] of parts.entries()) {
+      for (const k of [key, WORN + key, CEL + key]) {
+        this.textures.addCanvas(NEON + k, neonPart(this.textures.get(k).getSourceImage() as HTMLCanvasElement));
+        addNormalMap(this.textures, NEON + k, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, k);
+      }
+      await pace((i + 1) / parts.length);
     }
     step = 4;
     this.measureWeapons();

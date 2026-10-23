@@ -10,24 +10,24 @@ import { boxBlur } from './NormalMaps';
  * than just darker; big glossy parts (helmets, visors) catch a small hard
  * white shine. No texture, no gradients, no outlines. The arena lights reach
  * them in toon steps (ToonLightPipeline below).
- * Picked with ?style=cel / ?style=classic, else the last choice (Y in a
- * match), cel by default.
+ * Y in a match; neon (T, fx/Neon.ts) goes over either.
  */
 export const CEL = 'cel:';
 
-const STYLE_KEY = 'kubotz.style';
+const STYLE_KEY = 'kubotz.toon';
 
+/** ?toon=1 / ?toon=0, else the last choice, on by default. */
 function startStyle(): boolean {
-  const q = new URLSearchParams(location.search).get('style');
-  if (q) return q !== 'classic';
-  try { return localStorage.getItem(STYLE_KEY) !== 'classic'; } catch { return true; }
+  const q = new URLSearchParams(location.search).get('toon');
+  if (q) return q !== '0';
+  try { const v = localStorage.getItem(STYLE_KEY); return v === null ? true : v === '1'; } catch { return true; }
 }
 
 export const cel = { on: startStyle() };
 
 export function setCel(on: boolean): void {
   cel.on = on;
-  try { localStorage.setItem(STYLE_KEY, on ? 'cel' : 'classic'); } catch { /* private window */ }
+  try { localStorage.setItem(STYLE_KEY, on ? '1' : '0'); } catch { /* private window */ }
 }
 
 type Rgb = [number, number, number];

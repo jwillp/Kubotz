@@ -24,6 +24,7 @@ import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
 import { lightPolygon } from '../fx/Shadows';
 import { LEDGE_REACH, findLedges } from '../game/Ledges';
+import { neon, setNeon } from '../fx/Neon';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
@@ -209,6 +210,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Every match starts running, at full speed, its camera its own: a pause or slow motion from the
     // debug keys or the dev HUD ends with the match (the HUD sets them again when it rebuilds one).
     Object.assign(this.debugState, { on: false, timeScale: 1, frozen: false, steps: 0, holdCamera: false, show: { ...ALL_LAYERS } });
+    this.retints = [];
     this.fighters = [];
     this.mapLights = [];
     this.orbs = [];
@@ -431,8 +433,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-Y', () => {
       setCel(!cel.on);
       for (const [img, key] of this.celSwaps) this.applyCel(img, key);
-      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, cel.on ? 'Cel-shaded Kubotz' : 'Classic Kubotz', 0xffffff);
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, cel.on ? 'Toon' : 'Classic', 0xffffff);
     });
+    // T: the neon look over either (fx/Neon.ts), switched in place.
+    kb.on('keydown-T', () => this.toggleNeon());
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn Kubotz' : 'Clean Kubotz', 0xffffff);
@@ -559,18 +563,25 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.arenaLayers.push(arenaImage);
     // The tiles' blue light strips glow on their own, whatever the lights do.
     this.buildArenaGlow(actx.canvas, bw, bh);
-    // Then the tiles take the arena's palette (fx/Backdrops.ts).
-    const tiles = backdropOf(this.arena).tiles;
-    if (tiles) { tintArt(actx, bw, bh, tiles); art.refresh(); }
+    // Then the tiles take the arena's palette (fx/Backdrops.ts), again whenever the look changes.
+    const raw = copyCanvas(actx.canvas);
     // The cel arena (fx/Cel.ts): the same bake from the cel tiles, on the same normals; Y swaps them.
     const celArt = this.textures.addCanvas(CEL + 'arena', cpuCanvas(bw, bh))!;
     const cctx = celArt.getContext();
     cctx.setTransform(s, 0, 0, s, 0, 0);
     eachTile(this.textures, m, (_, key, x, y) => cctx.drawImage(this.textures.get(CEL + key).getSourceImage() as HTMLImageElement, x, y));
     cctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (tiles) tintArt(cctx, bw, bh, tiles);
-    celArt.refresh();
+    const celRaw = copyCanvas(cctx.canvas);
     if (this.sys.renderer.type === Phaser.WEBGL) celArt.setDataSource(normals);
+    this.retint(() => {
+      const tiles = backdropOf(this.arena).tiles;
+      for (const [ctx, from, tex] of [[actx, raw, art], [cctx, celRaw, celArt]] as const) {
+        ctx.clearRect(0, 0, bw, bh);
+        ctx.drawImage(from, 0, 0);
+        if (tiles) tintArt(ctx, bw, bh, tiles);
+        tex.refresh();
+      }
+    });
     this.celSwap(arenaImage, 'arena');
 
     for (const o of m.objects) {
@@ -614,12 +625,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       return exit ? new Phaser.Math.Vector2(exit[0] * UNIT, exit[1] * UNIT) : null;
     });
     // A lit edge along the top of every block, like the 3D version's glowing rims.
-    const mood = backdropOf(this.arena);
     const rims = this.add.graphics().setDepth(2.6).setBlendMode(pureAdd(this));
-    for (const b of this.blocks) {
-      rims.lineStyle(7, mood.glow, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
-      rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
-    }
+    this.retint(() => {
+      const mood = backdropOf(this.arena);
+      rims.clear();
+      for (const b of this.blocks) {
+        rims.lineStyle(7, mood.glow, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+        rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
+      }
+    });
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks, this.navPortals());
     this.blockedLedges = [];
@@ -733,7 +747,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const sctx = soft.getContext('2d', { willReadFrequently: true })!;
     sctx.filter = `blur(${S * 1.2}px)`;
     sctx.drawImage(mask, 0, 0, soft.width, soft.height);
-    const tiles = backdropOf(this.arena).tiles;
     // Baked twice: from the classic tiles and from the cel ones (fx/Cel.ts).
     for (const prefix of ['', CEL]) {
       const art = document.createElement('canvas');
@@ -754,11 +767,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         const r = rnd();
         ctx.drawImage(r < 0.12 ? lines[Math.floor(r / 0.12 * 3)] : plain, x * S, y * S, 2 * S, 2 * S);
       }
-      if (tiles) tintArt(ctx, art.width, art.height, tiles);
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.drawImage(soft, 0, 0);
       if (this.textures.exists(prefix + 'arena-hull')) this.textures.remove(prefix + 'arena-hull');
-      this.textures.addCanvas(prefix + 'arena-hull', art);
+      const hull = this.textures.addCanvas(prefix + 'arena-hull', art)!;
+      const raw = copyCanvas(art);
+      // Tinted to the arena's palette, again whenever the look changes.
+      this.retint(() => {
+        const tiles = backdropOf(this.arena).tiles;
+        ctx.globalCompositeOperation = 'copy';
+        ctx.drawImage(raw, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        if (tiles) tintArt(ctx, art.width, art.height, tiles);
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.drawImage(soft, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        hull.refresh();
+      });
     }
     this.arenaLayers.push(this.celSwap(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(UNIT / S).setDepth(1.9), 'arena-hull'));
   }
@@ -782,21 +805,29 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       d[i] = Math.min(255, r * 0.6 + 40 * k); d[i + 1] = Math.min(255, g + 40 * k); d[i + 2] = 255; d[i + 3] = 255 * k;
     }
     mctx.putImageData(src, 0, 0);
-    const tiles = backdropOf(this.arena).tiles;
-    if (tiles) tintArt(mctx, w, h, tiles);
+    const raw = copyCanvas(mask);
     if (this.textures.exists('arena-glow')) this.textures.remove('arena-glow');
     const glow = this.textures.addCanvas('arena-glow', cpuCanvas(w, h))!;
     const g = glow.getContext();
     const s = this.bakeScale;
-    g.filter = `blur(${18 * s}px)`;
-    g.drawImage(mask, 0, 0);
-    g.drawImage(mask, 0, 0);
-    g.filter = `blur(${5 * s}px)`;
-    g.drawImage(mask, 0, 0);
-    g.filter = 'none';
-    g.globalAlpha = 0.8;
-    g.drawImage(mask, 0, 0);
-    glow.refresh();
+    this.retint(() => {
+      const tiles = backdropOf(this.arena).tiles;
+      mctx.clearRect(0, 0, w, h);
+      mctx.drawImage(raw, 0, 0);
+      if (tiles) tintArt(mctx, w, h, tiles);
+      g.clearRect(0, 0, w, h);
+      g.globalAlpha = 1;
+      g.filter = `blur(${18 * s}px)`;
+      g.drawImage(mask, 0, 0);
+      g.drawImage(mask, 0, 0);
+      g.filter = `blur(${5 * s}px)`;
+      g.drawImage(mask, 0, 0);
+      g.filter = 'none';
+      g.globalAlpha = 0.8;
+      g.drawImage(mask, 0, 0);
+      g.globalAlpha = 1;
+      glow.refresh();
+    });
     const layer = this.add.image(0, 0, 'arena-glow').setOrigin(0, 0).setScale(1 / s).setDepth(2.5).setBlendMode(pureAdd(this)).setAlpha(0.85);
     this.arenaLayers.push(layer);
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
@@ -1266,6 +1297,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.lights.enable().setAmbientColor(mood.ambient);
     this.keyLight = this.lights.addLight(0, 0, 100, mood.key, 3.2);
     this.rimLight = this.lights.addLight(0, 0, 100, mood.rim, 2.0);
+    const platformLights: Phaser.GameObjects.Light[] = [];
     for (let i = 0; i < 12; i++) this.pointLights.push(this.lights.addLight(0, 0, UNIT * 4, 0xffffff, 0).setVisible(false));
     // Light in the arena's glow colour rising off the top of every block (wide ones get several).
     let fixed = 0;
@@ -1273,7 +1305,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const n = Math.max(1, Math.round(b.width / (UNIT * 9)));
       for (let i = 0; i < n && fixed < PLATFORM_LIGHTS; i++, fixed++) {
         const x = b.x + (b.width * (i + 0.5)) / n;
-        this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), mood.glow, 2.4);
+        platformLights.push(this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), mood.glow, 2.4));
       }
     }
     // The lights placed in the map, for ambience: each lights the tiles and Kubotz near it, and
@@ -1309,6 +1341,39 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
     this.updateMapLights(0);
     this.placeFixedLights();
+    this.retint(() => {
+      const m = backdropOf(this.arena);
+      this.lights.setAmbientColor(m.ambient);
+      this.keyLight?.setColor(m.key);
+      this.rimLight?.setColor(m.rim);
+      for (const l of platformLights) l.setColor(m.glow);
+    }, false);
+  }
+
+  // ------------------------------------------------------------- neon or classic
+  /** Repaints of the arena layers and lights for the current look (fx/Neon.ts). */
+  private retints: (() => void)[] = [];
+
+  /** Keeps a repaint for when the look changes, and runs it now (unless the caller already painted it). */
+  private retint(paint: () => void, now = true): void {
+    this.retints.push(paint);
+    if (now) paint();
+  }
+
+  /**
+   * T: switches the neon look on or off in place (over classic or toon), the
+   * match going on: Kubotz parts (their textures follow neon.on) and halos,
+   * the tiles, rims and lights, the grade and the backdrop behind.
+   */
+  private toggleNeon(): void {
+    setNeon(!neon.on);
+    for (const paint of this.retints) paint();
+    for (const k of this.fighters) k.restyle();
+    if (this.gradeOn) this.setScreenFx(true);
+    this.scene.stop('Backdrop');
+    this.scene.launch('Backdrop', { arena: this.arena });
+    this.scene.sendToBack('Backdrop');
+    this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, neon.on ? 'Neon on' : 'Neon off', 0xffffff);
   }
 
   /** A light's Shadows: its glow masked by what it can see of the arena (walls and platforms cut it off). */
@@ -2936,6 +3001,14 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
  * A canvas kept in memory rather than on the GPU: the arena bakes read their
  * pixels back several times, and each read of a GPU canvas stalls the frame.
  */
+/** A plain copy of a canvas (the untinted arena art, kept for repaints). */
+function copyCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  c.getContext('2d')!.drawImage(src, 0, 0);
+  return c;
+}
+
 function cpuCanvas(w: number, h: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
