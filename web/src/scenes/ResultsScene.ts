@@ -52,6 +52,7 @@ export function replayRate(d: number, kind: HighlightKind = 'ko'): number {
 
 /** The highlights' sections, in the order they play. */
 const SECTIONS: Record<HighlightKind, { title: string; one: string }> = {
+  goal: { title: 'BEST GOALS', one: 'GOAL' },
   ko: { title: 'TOP K.O.s', one: 'K.O.' },
   recovery: { title: 'BEST RECOVERIES', one: 'RECOVERY' },
   combo: { title: 'BEST COMBOS', one: 'COMBO' },
@@ -235,7 +236,7 @@ export class ResultsScene extends Phaser.Scene {
       : trial ? (winners.length ? `Training cleared: ${r.defeated} defeated!` : `Defeated ${r.defeated} of ${r.target}`)
       : r.mode === 'ctf' ? `${winners.length ? 'Red team' : 'Black team'} wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`
       : r.mode === 'kubeball' || r.mode === 'skychase'
-        ? (r.winnerTeam === null ? `Draw ${r.score?.[0] ?? 0}-${r.score?.[1] ?? 0}` : `${r.winnerTeam === 0 ? 'Red' : 'Black'} team wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`)
+        ? (r.winnerTeam === null ? `Draw ${r.score?.[0] ?? 0}-${r.score?.[1] ?? 0}` : `${r.winnerTeam === 0 ? 'Red' : 'Blue'} team wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`)
       : winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';
     c.add(heading(this, width / 2, 70, title.replace(/&/g, 'and'), 72, { glow: winColor }));
     const secs = Math.round(r.duration / 1000);
@@ -362,7 +363,9 @@ export class ResultsScene extends Phaser.Scene {
     const kind = all.filter((o) => o.kind === h.kind);
     const rank = kind.length - kind.indexOf(h);
     const who = (n: number | null) => (n === null ? '' : r.names[n]);
-    const line = h.kind === 'ko'
+    const line = h.kind === 'goal'
+      ? `${h.by !== null ? who(h.by) : 'Nobody'} scored  ·  from ${Math.round(h.margin ?? 0)} units${h.final ? '  ·  winner' : ''}`
+      : h.kind === 'ko'
       ? (h.by !== null ? `${who(h.by)} K.O.'d ${who(h.subject)}` : `${who(h.subject)} fell`) + (h.final ? '  ·  match point' : '')
       : h.kind === 'combo'
         ? `${who(h.by)} on ${who(h.subject)}  ·  ${h.hits} hits, ${Math.round(h.damage ?? 0)}%${h.ko ? '  ·  K.O.' : ''}`

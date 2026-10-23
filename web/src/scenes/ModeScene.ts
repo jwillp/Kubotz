@@ -44,13 +44,13 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
   kubeball: [
     { color: SLOT_COLORS[0], helmet: 0, face: 1 },
     { color: SLOT_COLORS[0], helmet: 8, face: 1 },
-    { color: BLACK_COLOR, helmet: 3, face: -1 },
-    { color: BLACK_COLOR, helmet: 3, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 2, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 6, face: -1 },
   ],
   skychase: [
     { color: SLOT_COLORS[0], helmet: 8, face: 1 },
-    { color: BLACK_COLOR, helmet: 3, face: -1 },
-    { color: BLACK_COLOR, helmet: 3, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 4, face: -1 },
+    { color: SLOT_COLORS[1], helmet: 9, face: -1 },
   ],
   sandbox: [
     { color: SLOT_COLORS[0], helmet: 0, face: 1 },
@@ -69,12 +69,13 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
 };
 
 const BTN_X = 300;
-/** The two lists: battles, then solo training, each under its heading. */
-const GROUPS: { group: 'battle' | 'training'; label: string; top: number }[] = [
-  { group: 'battle', label: 'B A T T L E', top: 172 },
+/** The lists: battles, sports, then solo training, each under its heading. */
+const GROUPS: { group: 'battle' | 'sports' | 'training'; label: string; top: number }[] = [
+  { group: 'battle', label: 'B A T T L E', top: 168 },
+  { group: 'sports', label: 'S P O R T S', top: 424 },
   { group: 'training', label: 'T R A I N I N G', top: 556 },
 ];
-const BTN_STEP = 50;
+const BTN_STEP = 46;
 /** The panel describing the selected mode, on the right. */
 const PANEL = { x: 560, y: 168, w: 672, h: 480 };
 const STAGE_Y = 470;
@@ -128,7 +129,7 @@ export class ModeScene extends Phaser.Scene {
     MODE_ORDER.forEach((m, i) => {
       const g = GROUPS.find((x) => x.group === MODES[m].group)!;
       const row = MODE_ORDER.filter((o) => MODES[o].group === g.group).indexOf(m);
-      const b = new PlateButton(this, BTN_X, g.top + row * BTN_STEP, 400, 42, MODES[m].name, { size: 23 });
+      const b = new PlateButton(this, BTN_X, g.top + row * BTN_STEP, 400, 40, MODES[m].name, { size: 22 });
       b.on('pointerover', () => this.select(i));
       b.on('pointerdown', () => this.pick(i));
       this.items.push(b);

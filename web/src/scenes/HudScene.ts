@@ -207,7 +207,7 @@ export class HudScene extends Phaser.Scene {
       this.waveText.setText(mode.sandbox ? `DUMMY: ${(g.dummyMode() ?? '').toUpperCase()}   ·   SELECT / TAB: CHANGE`
         : mode.trial ? `DEFEATED ${g.defeated} / ${g.target}`
           : mode.ctf ? `CAPTURES   RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   FIRST TO ${CTF_CAPTURES}`
-            : mode.ball ? `RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   ${g.scoreLimit ? `FIRST TO ${g.scoreLimit}` : 'NO LIMIT'}${mode.ball === 'skychase' ? '   ·   SPARK +30' : ''}`
+            : mode.ball ? `RED ${g.captures[0]}  –  ${g.captures[1]} BLUE   ·   ${g.scoreLimit ? `FIRST TO ${g.scoreLimit}` : 'NO LIMIT'}${mode.ball === 'skychase' ? '   ·   SPARK +30' : ''}`
             : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
     this.drawFlagBubbles();
@@ -391,8 +391,8 @@ export class HudScene extends Phaser.Scene {
   /** Ball games: a goal (or the Spark caught), glitching in the scoring team's colour. */
   private onGoal(team: number, title: string): void {
     // team -1: news for everyone (the Spark is out).
-    const text = team < 0 ? title : `${team === 0 ? 'RED' : 'BLACK'}  ${title}`;
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, text, team < 0 ? 64 : 84, { glow: team < 0 ? 0xffd84d : team === 0 ? SLOT_COLORS[0] : 0x8d96a6 }).setDepth(20).setAlpha(0);
+    const text = team < 0 ? title : `${team === 0 ? 'RED' : 'BLUE'}  ${title}`;
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, text, team < 0 ? 64 : 84, { glow: team < 0 ? 0xffd84d : SLOT_COLORS[team] }).setDepth(20).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, duration: 200 });
     this.tweens.add({ targets: t, alpha: 0, delay: 1300, duration: 400, onComplete: () => t.destroy() });
     this.glitchTitle(t, 1300);

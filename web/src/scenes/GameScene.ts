@@ -236,7 +236,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
     // Goals are rifts in their team's colour.
-    const goalColors = new Map(this.goals.map((g) => [g.zone, isBlackTeam(g) ? BLACK_GOAL : SLOT_COLORS[g.team]] as const));
+    const goalColors = new Map(this.goals.map((g) => [g.zone, SLOT_COLORS[g.team]] as const));
     this.portals = new PortalFx(this, [...this.warpZones, ...this.innerPortals, ...this.goals.map((g) => g.zone)], true, goalColors);
     this.recorder.watch(this.portals, ['burst'], 'portals');
     this.holo = new HoloSpawns(this);
@@ -479,8 +479,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           this.bonusSpawns.push(new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height / 2));
           break;
         case 'GOAL_0': case 'GOAL_1':
-          // The arena's second team is the black team.
-          this.goals.push({ team: o.type === 'GOAL_0' ? 0 : BLACK_TEAM, zone: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height) });
+          this.goals.push({ team: o.type === 'GOAL_0' ? 0 : BALL_RIVAL, zone: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height) });
           break;
         case 'BALL_SPOT':
           this.ballSpot.set(o.x + o.width / 2, o.y + o.height / 2);
@@ -1091,6 +1090,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         if (now < orb.kickedUntil) continue;
         const ball = new Phaser.Geom.Circle(orb.x, orb.y, orb.radius);
         if (!box.circles.some((c) => Phaser.Geom.Intersects.CircleToCircle(c, ball))) continue;
+        if (orb instanceof GameBall) orb.lastTouch = { by: attacker, x: orb.x, y: orb.y, at: now };
         const dir = box.both ? (orb.x < attacker.x ? -1 : 1) : box.behind ? -attacker.facing : attacker.facing;
         const ang = Phaser.Math.DegToRad(Math.max(20, box.launch.angle));
         const speed = (6 + box.launch.knockback * 0.9) * UNIT;
@@ -1122,6 +1122,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         if (orb.body.vx * away < kick) orb.body.vx = away * kick;
         orb.body.vy = Math.min(orb.body.vy, -(1.5 + (Math.abs(vx) / UNIT) * 0.12) * UNIT);
         orb.kickedUntil = now + 180;
+        if (orb instanceof GameBall) orb.lastTouch = { by: k, x: orb.x, y: orb.y, at: now };
         break;
       }
     }
@@ -1496,18 +1497,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private setupBallGame(): void {
     const sky = MODES[this.mode].ball === 'skychase';
     const helmets = [8, 2, 4, 6, 9, 5];
-    for (const team of [0, BLACK_TEAM]) {
+    for (const team of [0, BALL_RIVAL]) {
       const have = this.specs.filter((sp) => sp.team === team).length;
       for (let i = have; i < BALL_TEAM_SIZE; i++) {
-        const black = isBlackTeam({ team });
-        const k = this.spawnFoe(team, black ? BLACK_COLOR : SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, black ? BLACK_HELMET : helmets[i % helmets.length], Infinity, this.countdownAt);
+        const k = this.spawnFoe(team, SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, helmets[(i + team * 3) % helmets.length], Infinity, this.countdownAt);
         k.hudless = true;
         k.role = i === have ? (sky ? 'interceptor' : 'guardian') : 'striker';
         k.armed = k.weapon = MODES[this.mode].armed ?? 'none'; // Kubeball: swords for all
       }
     }
     // Kubeball: each team plays a strategy, picked at random for the match.
-    if (!sky) for (const team of [0, BLACK_TEAM]) this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER));
+    if (!sky) for (const team of [0, BALL_RIVAL]) this.tactics.set(team, Phaser.Utils.Array.GetRandom(TACTIC_ORDER));
     const spot = { x: this.ballSpot.x, y: this.ballSpot.y };
     this.balls = [new GameBall(this, this.physicsWorld, sky ? 'core' : 'kubeball', spot)];
     if (sky) {
@@ -1529,7 +1529,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const now = this.clock;
     if (k.ball) {
       // Up throws high and a little forwards (the goals are high), down drops it, else a long throw. A CPU throws up at a goal above it.
-      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).sort((a, b) => Math.abs(a.centerX - k.x) - Math.abs(b.centerX - k.x))[0];
+      const goal = this.goalsOf(k.team === 0 ? BALL_RIVAL : 0).sort((a, b) => Math.abs(a.centerX - k.x) - Math.abs(b.centerX - k.x))[0];
       // A CPU in reach of the goal aims at its middle: an arc that gets there in flight (the ball falls under the world's gravity).
       if (k.controller.label === 'CPU' && goal && Math.abs(goal.centerX - k.x) < 12 * UNIT) {
         // Not perfect: off by up to two units high or low, more from further away.
@@ -1562,7 +1562,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.45, 500);
     const [a, b] = this.captures;
     if (ends || (this.scoreLimit && Math.max(a, b) >= this.scoreLimit)) {
-      this.endMatch(a === b ? null : a > b ? 0 : BLACK_TEAM, now);
+      this.endMatch(a === b ? null : a > b ? 0 : BALL_RIVAL, now);
       return;
     }
     // Only the ball goes back to the middle: everyone runs back for it.
@@ -1592,8 +1592,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (ball.kind === 'kubeball' || ball.kind === 'core') {
         const hit = this.goals.find((g) => Phaser.Geom.Rectangle.Contains(Phaser.Geom.Rectangle.Inflate(Phaser.Geom.Rectangle.Clone(g.zone), ball.radius, 0), ball.x, ball.y));
         if (hit) {
-          const by = hit.team === 0 ? BLACK_TEAM : 0;
+          const by = hit.team === 0 ? BALL_RIVAL : 0;
           this.portals.burst(hit.zone.centerX, ball.y, this.clock);
+          // The goal's highlight: who put it in, from how far, how long it flew.
+          const t = ball.lastTouch;
+          const scorer = t && t.by.team === by ? t.by : null;
+          const [a, b] = this.captures;
+          const pts = ball.kind === 'core' ? CORE_POINTS : 1;
+          const wins = !!this.scoreLimit && (by === 0 ? a : b) + pts >= this.scoreLimit;
+          this.recorder.goal(scorer ? scorer.index : null, now, t ? Math.hypot(ball.x - t.x, ball.y - t.y) / UNIT : 0, t && Number.isFinite(t.at) ? now - t.at : 0, wins);
           this.score(by, ball.kind === 'core' ? CORE_POINTS : 1, now, ball.kind === 'core' ? `+${CORE_POINTS}` : 'GOAL');
           return;
         }
@@ -1679,7 +1686,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private updatePlays(now: number): void {
     if (!this.tacticsShown && now >= this.startedAt + 1300) {
       this.tacticsShown = true;
-      this.events.emit('goal', -1, `RED: ${TACTICS[this.tactics.get(0)!]}   ·   BLACK: ${TACTICS[this.tactics.get(BLACK_TEAM)!]}`.toUpperCase());
+      this.events.emit('goal', -1, `RED: ${TACTICS[this.tactics.get(0)!]}   ·   BLUE: ${TACTICS[this.tactics.get(BALL_RIVAL)!]}`.toUpperCase());
     }
     if (now < this.nextPlaysAt) return;
     this.nextPlaysAt = now + 1000;
@@ -1699,7 +1706,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return {
       ball,
       ownGoal: (team) => goal(team),
-      enemyGoal: (team) => goal(team === 0 ? BLACK_TEAM : 0),
+      enemyGoal: (team) => goal(team === 0 ? BALL_RIVAL : 0),
       width: this.map.width * UNIT,
       ground: (x, y) => this.solids.filter((r) => x >= r.x && x <= r.right && r.y >= y - 4).reduce((top, r) => Math.min(top, r.y), this.map.height * UNIT),
     };
@@ -1716,7 +1723,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const dist = (p: { x: number; y: number }) => Math.hypot(p.x - k.x, p.y - k.y);
     const at = (r: Phaser.Geom.Rectangle) => ({ x: r.centerX, y: r.centerY });
     if (k.ball) {
-      const goal = this.goalsOf(k.team === 0 ? BLACK_TEAM : 0).map(at).sort((p, q) => dist(p) - dist(q))[0];
+      const goal = this.goalsOf(k.team === 0 ? BALL_RIVAL : 0).map(at).sort((p, q) => dist(p) - dist(q))[0];
       if (!goal) return null;
       return { goal, fightWithin: 1.2, grab: dist(goal) < 9 * UNIT && Math.sign(goal.x - k.x) === k.facing };
     }
@@ -2039,8 +2046,8 @@ const PREVIEW_BAKE = 0.3;
 /** Horde: the breather between two waves, and between two Kubotz of a wave coming in (ms). */
 const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
-/** Ball games: the black team's goal rifts, a pale steel (a black rift would not show). */
-const BLACK_GOAL = 0xc8d0dc;
+/** Ball games: red (team 0) against blue. */
+const BALL_RIVAL = 1;
 /** Skychase: the drones' laser bolts' speed (pixels/s). */
 const DRONE_SHOT_SPEED = 26 * UNIT;
 /** Skychase: the Spark comes out this long after "Fight" (ms). */

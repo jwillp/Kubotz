@@ -111,7 +111,7 @@ export type ReplayEvent =
   | { kind: 'pe'; name: string; x: number; y: number; tint?: number }
   | { kind: 'twirl'; kubot: number; color: number; ms: number };
 
-export type HighlightKind = 'ko' | 'recovery' | 'combo';
+export type HighlightKind = 'goal' | 'ko' | 'recovery' | 'combo';
 
 /**
  * One of the match's best moments and the frames around it. `subject` is the

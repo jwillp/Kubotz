@@ -5,7 +5,7 @@ import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Config } from '../config';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import {
-  BLACK_COLOR, BLACK_TEAM, BONUS_RATES, CPU_LEVEL, isBlackTeam, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
+  BONUS_RATES, CPU_LEVEL, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
   type BonusRate, type FighterSpec, type MatchSetup,
 } from '../game/Match';
 import { CTF_CAPTURES, KUBEBALL_GOALS, SKYCHASE_POINTS, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
@@ -347,8 +347,8 @@ export class SetupScene extends Phaser.Scene {
   /** Training: one player, slot 1 only. */
   private get solo(): boolean { return !!MODES[this.mode].solo; }
   /** A seat's team in this mode. */
-  /** A seat's team in this mode (ball games: red, or the black team). */
-  private teamOf(seat: Seat): number { return this.oneTeam ? HORDE_TEAM : MODES[this.mode].ball ? (seat.team % 2 === 0 ? 0 : BLACK_TEAM) : seat.team; }
+  /** A seat's team in this mode (ball games: red or blue). */
+  private teamOf(seat: Seat): number { return this.oneTeam ? HORDE_TEAM : MODES[this.mode].ball ? seat.team % 2 : seat.team; }
 
   private makeSlot(i: number, rig: Rig): Slot {
     const x = this.slotX(i);
@@ -668,7 +668,7 @@ export class SetupScene extends Phaser.Scene {
   private drawSlot(p: Slot, i: number, seat: Seat, tag: string): void {
     const x = this.slotX(i);
     const off = seat.device === 'OFF';
-    const color = off ? 0x3a4a66 : isBlackTeam({ team: this.teamOf(seat) }) ? BLACK_COLOR : SLOT_COLORS[this.teamOf(seat)];
+    const color = off ? 0x3a4a66 : SLOT_COLORS[this.teamOf(seat)];
     const f = this.focus;
     const focused = f.kind === 'slot' && f.slot === i ? f.field : null;
     p.color = color;
@@ -695,7 +695,7 @@ export class SetupScene extends Phaser.Scene {
     p.blurb.setText(deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
     p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
-    p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)] ?? 'Black'} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(isBlackTeam({ team: this.teamOf(seat) }) ? 0x8d96a6 : color).lighten(18).color));
+    p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
     for (const field of ['helmet', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
       for (const a of p.rows[field].arrows) a.setVisible(!off && (field !== 'team' || !this.oneTeam));

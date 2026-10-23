@@ -6,7 +6,7 @@ export type MatchMode = 'gladiator' | 'horde' | 'blasters' | 'blades' | 'ctf' | 
 
 export interface ModeInfo {
   /** Where it is listed on the mode screen: the battles, or the solo training. */
-  group: 'battle' | 'training';
+  group: 'battle' | 'sports' | 'training';
   name: string;
   /** One line under the name. */
   tagline: string;
@@ -64,14 +64,14 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     ctf: true,
   },
   kubeball: {
-    group: 'battle',
+    group: 'sports',
     name: 'Kubeball',
-    tagline: 'Red against black, one ball, two goals.',
+    tagline: 'Red against blue, one ball, two goals.',
     rules: ['Grab the ball, run it up, throw it in the goal', 'No attacks with it in hand; any hit knocks it loose', 'After a goal only the ball goes back to the middle', 'Goals or time: you choose'],
     ball: 'kubeball',
   },
   skychase: {
-    group: 'battle',
+    group: 'sports',
     name: 'Skychase',
     tagline: 'Fly, throw, chase the Spark.',
     rules: ['Five air jumps each; the Core through a ring: 10', 'Two Hunter drones chase and shoot anyone', 'After a minute the Spark: 30, and it ends', 'Points or time: you choose'],
