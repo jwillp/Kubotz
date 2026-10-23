@@ -23,6 +23,12 @@ export interface Link {
   fromMax: number;
   toX: number; // where to aim on the arrival surface (px)
   cost: number;
+  /**
+   * Straight up or down through a soft platform: it can set off anywhere in
+   * [fromMin, fromMax] and lands right above or below. fromX / toX are the
+   * middle of that stretch until a path picks the spot (Nav.path).
+   */
+  through?: boolean;
 }
 
 const MAX_JUMP_UP = 12 * UNIT; // three jumps of 5 units, with some margin
@@ -76,7 +82,7 @@ export class Nav {
       // Up. A soft platform above can be jumped through from below.
       if (b.soft && overlap >= UNIT) {
         const x = clamp((b.x1 + b.x2) / 2, ov1 + UNIT / 2, ov2 - UNIT / 2);
-        out.push({ ...make('jump', x, x), fromMin: ov1 + UNIT / 4, fromMax: ov2 - UNIT / 4 });
+        out.push({ ...make('jump', x, x), fromMin: ov1 + UNIT / 2, fromMax: ov2 - UNIT / 2, through: true });
       } else if (overlap > 0) {
         // A solid block above: take off beside it, then land on its edge.
         for (const side of [-1, 1]) {
@@ -94,7 +100,7 @@ export class Nav {
       // Down: drop through a soft platform, or run off an edge.
       if (a.soft && overlap >= UNIT) {
         const x = clamp((a.x1 + a.x2) / 2, ov1 + UNIT / 2, ov2 - UNIT / 2);
-        out.push({ ...make('drop', x, x), fromMin: ov1 + UNIT / 4, fromMax: ov2 - UNIT / 4 });
+        out.push({ ...make('drop', x, x), fromMin: ov1 + UNIT / 2, fromMax: ov2 - UNIT / 2, through: true });
       } else {
         for (const side of [-1, 1]) {
           const fromX = side < 0 ? a.x1 - UNIT * 0.7 : a.x2 + UNIT * 0.7;
@@ -138,7 +144,18 @@ export class Nav {
     return best;
   }
 
-  /** A* from one surface to another; returns the moves to make, in order. */
+  /**
+   * The move as made from x: a link through a soft platform sets off where the
+   * Kubot already is (or the nearest spot of its stretch) and goes straight up
+   * or down; the others set off from their one take-off point.
+   */
+  from(l: Link, x: number): Link {
+    if (!l.through) return l;
+    const fromX = Math.min(l.fromMax, Math.max(l.fromMin, x));
+    return { ...l, fromX, toX: fromX };
+  }
+
+  /** A* from one surface to another; returns the moves to make, in order (set off from where they start). */
   path(from: Surface, to: Surface, startX: number): Link[] | null {
     if (from.id === to.id) return [];
     const centre = (s: Surface) => ({ x: (s.x1 + s.x2) / 2, y: s.y });
@@ -156,7 +173,8 @@ export class Nav {
       }
       if (cur === to.id) break;
       open.delete(cur);
-      for (const l of this.links.get(cur) ?? []) {
+      for (const link of this.links.get(cur) ?? []) {
+        const l = this.from(link, xAt.get(cur)!);
         // Walking to the take-off point counts too.
         const cost = g.get(cur)! + Math.abs(l.fromX - xAt.get(cur)!) / UNIT + l.cost;
         if (cost < (g.get(l.to) ?? Infinity)) {

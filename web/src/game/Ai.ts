@@ -291,6 +291,11 @@ export class CpuController implements Controller {
         this.linkSince = now;
       }
     }
+    // Through a soft platform: set off from wherever it stands on the way.
+    if (this.link?.through && mine?.id === this.link.from) {
+      this.link = nav.from(this.link, me.x);
+      this.debug.path[0] = this.link;
+    }
     const l = this.link;
     if (!l) return 'here';
     if (now - this.linkSince > 5000) { // something went wrong: plan again
@@ -313,12 +318,15 @@ export class CpuController implements Controller {
     let fromMin = l.fromMin;
     let fromMax = l.fromMax;
     let toX = l.toX;
+    // The last move, onto the destination's surface: land near it.
+    const last = l.through && nav.surfaceAt(dest.x, dest.bottom)?.id === target.id;
+    if (last && l.kind === 'drop') toX = clampTo(dest.x, target.x1 + UNIT / 2, target.x2 - UNIT / 2);
     if (l.kind === 'jump' && target.soft && fromMax - fromMin > UNIT) {
       // Jumping up through a platform: not right under the Kubot standing on
       // it, Kubotz bump into each other.
       const sides = [dest.x - 2 * UNIT, dest.x + 2 * UNIT].map((x) => clampTo(x, fromMin, fromMax));
       const aim = Math.abs(sides[0] - dest.x) >= Math.abs(sides[1] - dest.x) ? sides[0] : sides[1];
-      if (Math.abs(aim - dest.x) > UNIT) {
+      if (last && Math.abs(aim - dest.x) > UNIT) {
         fromMin = Math.max(fromMin, aim - 0.6 * UNIT);
         fromMax = Math.min(fromMax, aim + 0.6 * UNIT);
         toX = aim;

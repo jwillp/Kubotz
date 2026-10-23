@@ -1191,8 +1191,10 @@ export class Kubotz implements Damageable, Teamed {
       // Drops through the platform stood on, and only that one: after landing
       // on the next, it takes a fresh press to drop again (the CPU, which holds
       // down while following a path, drops again after a moment).
-      // On a stick it takes a flick down (tilted down is a crouch).
-      const fresh = (!this.prevDown && (!pad.walk || !!pad.flick)) || (this.controller.label === 'CPU' && now - this.landedAt > 300);
+      // On a stick it takes a flick down (tilted down is a crouch): the stick
+      // goes past the tilt a frame or two before the flick registers, so the
+      // flick counts with down already held.
+      const fresh = (!this.prevDown && !pad.walk) || !!pad.flickDown || (this.controller.label === 'CPU' && now - this.landedAt > 300);
       if (grounded && fresh && now >= this.dropUntil && this.body.onPlatform) {
         this.dropUntil = now + 400;
         b.dropTop = b.platformTop;

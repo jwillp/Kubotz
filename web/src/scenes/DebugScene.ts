@@ -135,7 +135,10 @@ export class DebugScene extends Phaser.Scene {
       for (const l of nav.allLinks()) {
         const a = nav.surfaces[l.from];
         const b = nav.surfaces[l.to];
-        g.lineStyle(1, LINK_COLORS[l.kind], 0.45).lineBetween(sx(l.fromX), sy(a.y), sx(l.toX), sy(b.y));
+        g.lineStyle(1, LINK_COLORS[l.kind], 0.45);
+        // Through a soft platform: anywhere along the stretch, so its two ends.
+        if (l.through) for (const x of [l.fromMin, l.fromMax]) g.lineBetween(sx(x), sy(a.y), sx(x), sy(b.y));
+        else g.lineBetween(sx(l.fromX), sy(a.y), sx(l.toX), sy(b.y));
       }
     }
 
