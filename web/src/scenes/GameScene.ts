@@ -67,7 +67,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
   private glows: Phaser.GameObjects.Image[] = [];
   /** Lightsaber blades: a white-hot core in a coloured glow, drawn over the blade art. */
-  private sabers!: Phaser.GameObjects.Graphics;
+  /** The laser blades' glow (made on the first frame of each match). */
+  private sabers?: Phaser.GameObjects.Graphics;
   /** Light2D: a key light and a rim light that follow the camera, and a pool for lasers, hits and pick-ups. */
   private keyLight: Phaser.GameObjects.Light | null = null;
   private rimLight: Phaser.GameObjects.Light | null = null;
@@ -188,6 +189,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.bullets = [];
     this.saberLocks = [];
     this.lockG = undefined;
+    // (A new match makes its own: the last match's were destroyed with the scene.)
+    this.sabers = undefined;
     this.lockPrompts = new Map();
     this.bladeWas = new Map();
     this.bladeNow = new Map();
@@ -999,8 +1002,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private drawSabers(now: number): void {
-    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
-    const g = this.sabers.clear();
+    const g = (this.sabers ??= this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD)).clear();
     for (const k of this.fighters) {
       const b = k.blade();
       if (b) drawBlade(g, b.x1, b.y1, b.x2, b.y2, k.look.color, 0.9 + 0.1 * Math.sin(now * 0.09 + k.x));
