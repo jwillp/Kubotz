@@ -65,32 +65,22 @@ function towardBlue(h: number, k: number): number {
  * their value in a few flat steps, lit a clean cool white, shadow a cool
  * blue-grey; black parts a deep navy whose shadow is darker still.
  */
-function tones(r: number, g: number, b: number, lift = 0.16): [Rgb, Rgb] {
+function tones(r: number, g: number, b: number): [Rgb, Rgb] {
   const [h, s, v] = hsv(r, g, b);
   if (s >= 0.3 && v > 0.2) {
     const lit = rgb(h, Math.min(1, s * 1.1 + 0.08), Math.min(1, v * 1.08 + 0.08));
     return [lit, rgb(towardBlue(h, 0.12), Math.min(1, s * 1.05 + 0.12), Math.min(1, v * 1.08 + 0.08) * 0.66)];
   }
   const l = 0.299 * r + 0.587 * g + 0.114 * b;
-  if (!lift) {
-    // Arena tiles: dark panels painted in fine steps (0.1 to 0.2), kept in those steps.
-    const v = Math.max(0.03, Math.round(l * 20) / 20);
-    return [[v * 0.96, v, v * 1.12 + 0.01], [v * 0.55, v * 0.58, v * 0.8 + 0.01]];
-  }
   if (l <= 0.2) return [[0.15, 0.17, 0.28], [0.06, 0.06, 0.13]];
-  const step = Math.min(1, Math.round(l * 5) / 5 + lift);
+  const step = Math.min(1, Math.round(l * 5) / 5 + 0.16);
   const lit: Rgb = [step * 0.98, step, Math.min(1, step * 1.03 + 0.02)];
   const shadow: Rgb = [step * 0.52 + 0.02, step * 0.56 + 0.03, step * 0.74 + 0.08];
   return [lit, shadow];
 }
 
-/**
- * A cel copy of a part image (from its clean art: wear would only break up the
- * flat fills). Arena tiles (`shape: false`) skip the rounded volume, which
- * would shade every tile's edges into a grid: only the art's own shading splits them,
- * and their values are kept as painted (no lift), so the arena stays dark behind the Kubotz.
- */
-export function celPart(source: HTMLImageElement | HTMLCanvasElement, { shape = true } = {}): HTMLCanvasElement {
+/** A cel copy of a part image (from its clean art: wear would only break up the flat fills). */
+export function celPart(source: HTMLImageElement | HTMLCanvasElement): HTMLCanvasElement {
   const w = source.width, h = source.height;
   const out = document.createElement('canvas');
   out.width = w; out.height = h;
@@ -115,7 +105,7 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement, { shape = 
   const height = boxBlur(boxBlur(alpha, w, h, r), w, h, r);
   // The art's own shading, smoothed so its shadow shapes come out as clean blobs.
   const shading = boxBlur(luma, w, h, 3);
-  const big = shape && Math.min(w, h) > 90;
+  const big = Math.min(w, h) > 90;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -123,12 +113,12 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement, { shape = 
       if (p[o + 3] === 0) continue;
       // (getImageData colours are not premultiplied: no division by alpha.)
       const cr = soft[o] / 255, cg = soft[o + 1] / 255, cb = soft[o + 2] / 255;
-      const [lit, shadow] = tones(Math.min(1, cr), Math.min(1, cg), Math.min(1, cb), shape ? 0.16 : 0);
+      const [lit, shadow] = tones(Math.min(1, cr), Math.min(1, cg), Math.min(1, cb));
       // Facing the sun (straight above, a touch towards the front): the height's slope upwards,
       // plus a little of its dome so the middle of a part stays lit.
       const gy = height[i + (y < h - 1 ? w : 0)] - height[i - (y > 0 ? w : 0)];
       const gx = height[i + (x < w - 1 ? 1 : 0)] - height[i - (x > 0 ? 1 : 0)];
-      const facing = shape ? gy * r * 1.6 + (height[i] - 0.5) * 0.5 : 0.1;
+      const facing = gy * r * 1.6 + (height[i] - 0.5) * 0.5;
       // Against the flattened colour, how much darker the art paints this spot.
       const own = shading[i] - (0.299 * cr + 0.587 * cg + 0.114 * cb);
       const n = facing + own * 1.6;
@@ -140,6 +130,83 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement, { shape = 
   }
   ctx.putImageData(img, 0, 0);
   return out;
+}
+
+const BINS = 16;
+const pixels = (src: HTMLImageElement | HTMLCanvasElement) => {
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(src, 0, 0);
+  return { c, ctx, img: ctx.getImageData(0, 0, c.width, c.height) };
+};
+const lumaOf = (d: Uint8ClampedArray, o: number) => (0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2]) / 255;
+const satOf = (d: Uint8ClampedArray, o: number) => { const max = Math.max(d[o], d[o + 1], d[o + 2]); return max ? (max - Math.min(d[o], d[o + 1], d[o + 2])) / max : 0; };
+
+/**
+ * How the cel look changed the Kubotz' colours, to recolour the arena tiles
+ * the same way (the tiles keep their art, only their colours follow): the
+ * mean colour of the classic parts and of their cel copies, per brightness,
+ * for the metal (unsaturated) pixels; a tile pixel of that brightness takes
+ * the same per-channel change. Coloured pixels (the light strips) take the
+ * cel colours' saturation and brightness boost.
+ */
+export class CelShift {
+  private readonly from = new Float64Array(BINS * 4);
+  private readonly to = new Float64Array(BINS * 4);
+  private gains?: Float32Array;
+
+  /** Adds a classic part and its cel copy to the measure. */
+  add(classic: HTMLImageElement | HTMLCanvasElement, celCopy: HTMLImageElement | HTMLCanvasElement): void {
+    const a = pixels(classic).img.data, b = pixels(celCopy).img.data;
+    for (let o = 0; o < a.length; o += 4) {
+      if (a[o + 3] < 200 || satOf(a, o) >= 0.3) continue;
+      const k = Math.min(BINS - 1, Math.floor(lumaOf(a, o) * BINS)) * 4;
+      for (let c = 0; c < 3; c++) { this.from[k + c] += a[o + c]; this.to[k + c] += b[o + c]; }
+      this.from[k + 3]++;
+    }
+  }
+
+  /** Per-channel gains for each brightness bin; empty bins take the nearest measured one. */
+  private gainsOf(): Float32Array {
+    if (this.gains) return this.gains;
+    const g = new Float32Array(BINS * 3).fill(NaN);
+    for (let k = 0; k < BINS; k++) {
+      if (this.from[k * 4 + 3] < 50) continue;
+      for (let c = 0; c < 3; c++) g[k * 3 + c] = Math.min(2.5, Math.max(0.4, (this.to[k * 4 + c] + 1) / (this.from[k * 4 + c] + 1)));
+    }
+    for (let k = 0; k < BINS; k++) {
+      if (!Number.isNaN(g[k * 3])) continue;
+      for (let d = 1; d < BINS; d++) {
+        const n = [k - d, k + d].find((j) => j >= 0 && j < BINS && !Number.isNaN(g[j * 3]) && this.from[j * 4 + 3] >= 50);
+        if (n !== undefined) { for (let c = 0; c < 3; c++) g[k * 3 + c] = g[n * 3 + c]; break; }
+      }
+    }
+    return (this.gains = g.map((v) => (Number.isNaN(v) ? 1 : v)));
+  }
+
+  /** A copy of a tile in the cel colours. */
+  apply(tile: HTMLImageElement | HTMLCanvasElement): HTMLCanvasElement {
+    const g = this.gainsOf();
+    const { c, ctx, img } = pixels(tile);
+    const d = img.data;
+    for (let o = 0; o < d.length; o += 4) {
+      if (d[o + 3] === 0) continue;
+      const r = d[o] / 255, gr = d[o + 1] / 255, b = d[o + 2] / 255;
+      const [h, s, v] = hsv(r, gr, b);
+      if (s >= 0.3 && v > 0.2) {
+        const out = rgb(h, Math.min(1, s * 1.1 + 0.08), Math.min(1, v * 1.08 + 0.08));
+        d[o] = out[0] * 255; d[o + 1] = out[1] * 255; d[o + 2] = out[2] * 255;
+        continue;
+      }
+      // Between the two nearest bins, so the change runs smoothly with brightness.
+      const f = Math.max(0, Math.min(BINS - 1, lumaOf(d, o) * BINS - 0.5));
+      const k0 = Math.floor(f), k1 = Math.min(BINS - 1, k0 + 1), t = f - k0;
+      for (let ch = 0; ch < 3; ch++) d[o + ch] = Math.min(255, d[o + ch] * (g[k0 * 3 + ch] * (1 - t) + g[k1 * 3 + ch] * t));
+    }
+    ctx.putImageData(img, 0, 0);
+    return c;
+  }
 }
 
 /**

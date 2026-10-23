@@ -7,7 +7,7 @@ import { DATA_FILES, fromFiles } from '../game/DataFiles';
 import { editedParticles, testArena } from '../game/EditedData';
 import { addNormalMap } from '../fx/NormalMaps';
 import { WORN, weather } from '../fx/Surface';
-import { CEL, celPart } from '../fx/Cel';
+import { CEL, CelShift, celPart } from '../fx/Cel';
 import { TvIdent } from '../fx/TvIdent';
 import { shutter } from '../ui/Plate';
 import { buildHeadingFont, loadBodyFont, loadHeadingFont, makeTagTexture } from '../ui/Type';
@@ -161,15 +161,20 @@ export class BootScene extends Phaser.Scene {
     }
     step = 3;
     // Cel copies of the clean parts (fx/Cel.ts), with the clean parts' normal maps for the toon lights.
+    const shift = new CelShift();
     for (const [i, [key]] of parts.entries()) {
-      this.textures.addCanvas(CEL + key, celPart(this.textures.get(key).getSourceImage() as HTMLImageElement));
+      const source = this.textures.get(key).getSourceImage() as HTMLImageElement;
+      const copy = celPart(source);
+      this.textures.addCanvas(CEL + key, copy);
+      if (key.startsWith('kubotz:')) shift.add(source, copy);
       addNormalMap(this.textures, CEL + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, key);
       await pace((i + 1) / parts.length);
     }
-    // And of the arena tiles, for the cel arena GameScene bakes beside the classic one.
+    // The arena tiles recoloured the way the cel look recoloured the Kubotz (art unchanged),
+    // for the cel arena GameScene bakes beside the classic one.
     for (const tile of map.tileImages.values()) {
       const key = `tile:${tile.source}`;
-      this.textures.addCanvas(CEL + key, celPart(this.textures.get(key).getSourceImage() as HTMLImageElement, { shape: false }));
+      this.textures.addCanvas(CEL + key, shift.apply(this.textures.get(key).getSourceImage() as HTMLImageElement));
       addNormalMap(this.textures, CEL + key, { bevel: 3, detail: 0.3, strength: 1 }, key);
       await pace();
     }
