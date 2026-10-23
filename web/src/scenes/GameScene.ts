@@ -32,6 +32,9 @@ import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock, NavPortal } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
+import { frame, widestFor, type FrameView } from '../game/CameraFrame';
+import { OffscreenBubbles } from '../fx/OffscreenBubbles';
+import { HUD_BOTTOM, HUD_TOP } from './HudScene';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import { ALL_LAYERS, type DebugState } from './DebugScene';
@@ -110,6 +113,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private portalCooldown = new WeakMap<object, number>();
   /** The spawn holograms (match start, respawns). */
   private holo!: HoloSpawns;
+  /** Kubotz out of the camera's view, shown in bubbles on the screen's edge (the HUD rings them). */
+  bubbles?: OffscreenBubbles;
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
   /** Blade locks under way, what draws them, and each human's "mash" prompt (PlasmaBlade.ts). */
@@ -308,6 +313,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.holo = new HoloSpawns(this);
 
     if (setup.preview) { this.createPreview(setup.preview); return; }
+    this.bubbles = new OffscreenBubbles(this);
     // A real match: the title picks a new room behind it when it comes back.
     this.registry.remove('menuArena');
 
@@ -371,8 +377,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const first = this.introFocus() ?? this.centerOfFighters();
     this.camTarget.set(first.x, first.y);
     this.camVisibleWidth = INTRO_VIEW_WIDTH;
-    cam.centerOn(first.x, first.y - UNIT);
-    this.camMid.set(first.x, first.y - UNIT);
+    cam.centerOn(first.x, first.y);
+    this.camMid.set(first.x, first.y);
     this.trauma = 0;
     this.applyZoom();
     this.bonusRate = BONUS_RATES[setup.bonuses] ?? BONUS_RATES.normal;
@@ -2908,7 +2914,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const k = this.fighters[i];
     // A little low, so the projector under the Kubot shows above the HUD cards.
     // (No intro in the editor's rebuilds: the camera stays on the match.)
-    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y - 0.1 * UNIT } : null;
   }
 
   /** CameraSystem: lerp to the centre of all Kubotz (and new power-ups), zoom to fit them. */
@@ -2921,22 +2927,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, INTRO_VIEW_WIDTH, Math.min(1, Config.CAMERA_ZOOM_SPEED * intro * dt));
       this.camTarget.set(focus.x, focus.y);
     } else if (pts.length > 0) {
-      const xs = pts.map((f) => f.x);
-      const ys = pts.map((f) => f.y);
-      const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
-      const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
-      const aspect = this.scale.width / this.scale.height;
       // After the match the camera closes in on the dancing winner.
-      // Ball games: zoomed out as far as it takes to keep the players and the ball in view (up to the whole pitch).
-      const widest = MODES[this.mode].ball ? Math.max(58, this.map.width + 6) : 58;
-      const wanted = this.winnerTeam !== undefined ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, widest);
-      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
-      this.camTarget.copy(this.centerOfFighters());
+      const view = this.frameView(this.winnerTeam !== undefined ? 15 : 24, this.winnerTeam !== undefined ? 15 : this.widestView());
+      const f = frame(pts.map((p) => ({ x: p.x / UNIT, y: p.y / UNIT, human: p instanceof Kubotz ? p.controller.label !== 'CPU' : this.balls.includes(p as never) })), view);
+      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, f.width, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
+      this.camTarget.set(f.x * UNIT, f.y * UNIT);
     }
     const cam = this.cameras.main;
     const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * intro * dt);
     const mid = this.camMid;
-    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y - UNIT, t));
+    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y, t));
     this.applyZoom();
     // Shake: trauma squared drives a smooth wobble of position and roll, and wears off.
     const s = this.trauma * this.trauma;
@@ -2947,6 +2947,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
     this.perspective?.update(mid);
     this.placeFixedLights();
+    // Not in the intro (it shows one Kubot at a time) nor once the match is won.
+    const shown = this.fighters.filter((k) => k.isAlive() && !k.home && !k.eliminated).map((k) => ({ x: k.x, y: k.y, color: k.look.color }));
+    // (Under the HUD is still in view: the cards fade over a Kubot behind them.)
+    this.bubbles?.update(shown, 0, 0, !focus && this.winnerTeam === undefined);
   }
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
@@ -2954,6 +2958,18 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Kubeball: eight Kubotz hitting each other would keep the camera shaking; a third as much.
     const tame = MODES[this.mode].ball === 'kubeball' ? 0.35 : 1;
     if (fx().shake) this.trauma = Math.min(1, this.trauma + amount * tame);
+  }
+
+  /** The screen, the HUD over it, and how near and far the match camera may zoom (units across). */
+  private frameView(narrowest: number, widest: number): FrameView {
+    return { screenW: this.scale.width, screenH: this.scale.height, hudTop: HUD_TOP, hudBottom: HUD_BOTTOM, narrowest, widest };
+  }
+
+  /** How far out the match camera may zoom: the arenas' usual view, wider on a bigger map (CameraFrame.widestFor) or a ball game's pitch. */
+  private widestView(): number {
+    const widest = widestFor(this.map.width, this.map.height, this.frameView(0, 0));
+    // Ball games: as far out as it takes to keep the players and the ball in view (up to the whole pitch).
+    return MODES[this.mode].ball ? Math.max(widest, this.map.width + 6) : widest;
   }
 
   private applyZoom(): void {
