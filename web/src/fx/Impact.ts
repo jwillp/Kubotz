@@ -35,6 +35,7 @@ interface Particle {
   len?: number; // beams: length behind the point (signed: the bolt's direction)
   body?: number; // smoke and dust: the bright colour inside its deep rim (`color`)
   collide?: boolean; // stopped by the arena's walls and platforms
+  spin?: number; // dust: where its lumps sit round it (radians)
 }
 
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
@@ -54,8 +55,8 @@ const TWIRL_FADE = 300;
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
-/** Dust, cel-shaded like Wind Waker's: a pale warm body over a soft, low-contrast cool shade. */
-const DUST = { color: 0x9aa3ad, body: 0xc9cdcf };
+/** Dust, cel-shaded like Wind Waker's in the Kube's steel blues: a pale body over a soft, low-contrast shade. */
+const DUST = { color: 0x56739a, body: 0x98b4d8 };
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -276,28 +277,28 @@ export class ImpactFx {
     }
   }
 
-  /** Dust kicked up behind a running Kubot (`dir`: away from the run). */
+  /** Dust kicked up behind a running Kubot (`dir`: away from the run): low puffs that skid out, stop and drift up. */
   runDust(x: number, y: number, dir: number): void {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       this.add({
-        kind: 'dust', x: x + dir * rand(0, 0.2) * UNIT, y: y - rand(0, 0.1) * UNIT,
-        vx: dir * rand(1.5, 3.5) * UNIT, vy: -rand(0.6, 1.8) * UNIT,
-        ...DUST, size: rand(0.07, 0.11) * UNIT, grow: rand(0.13, 0.21) * UNIT,
-        life: rand(320, 480), gravity: 0, drag: 0.15,
+        kind: 'dust', x: x + dir * rand(0, 0.15) * UNIT, y: y - rand(0, 0.06) * UNIT,
+        vx: dir * rand(2.5, 5) * UNIT * (1 - i * 0.25), vy: -rand(0.2, 0.7) * UNIT,
+        ...DUST, size: rand(0.06, 0.09) * UNIT, grow: rand(0.12, 0.2) * (1 - i * 0.2) * UNIT,
+        life: rand(360, 520), gravity: -3 * UNIT, drag: 0.004, spin: rand(0, Math.PI * 2),
       });
     }
   }
 
-  /** A landing: a ring of dust puffs rolling out along the ground to both sides. */
+  /** A landing: puffs rolling out along the ground to both sides, biggest near the feet, then rising as they stop. */
   landDust(x: number, y: number): void {
     for (let i = 0; i < 10; i++) {
       const side = i % 2 ? 1 : -1;
-      const v = rand(1.5, 5) * UNIT;
+      const out = Math.floor(i / 2) / 4; // 0 near the feet .. 1 at the ends of the row
       this.add({
-        kind: 'dust', x: x + side * rand(0, 0.25) * UNIT, y: y - rand(0, 0.08) * UNIT,
-        vx: side * v, vy: -rand(0.2, 1.2) * UNIT,
-        ...DUST, size: rand(0.08, 0.14) * UNIT, grow: rand(0.16, 0.28) * UNIT,
-        life: rand(380, 620), gravity: 0, drag: 0.04,
+        kind: 'dust', x: x + side * rand(0.05, 0.2) * UNIT, y: y - rand(0, 0.05) * UNIT,
+        vx: side * (2 + 6 * out) * rand(0.85, 1.15) * UNIT, vy: -rand(0.1, 0.5) * UNIT,
+        ...DUST, size: rand(0.07, 0.1) * UNIT, grow: (0.3 - 0.16 * out) * rand(0.85, 1.15) * UNIT,
+        life: rand(420, 620) * (1 - 0.3 * out), gravity: -3.2 * UNIT, drag: 0.003, spin: rand(0, Math.PI * 2),
       });
     }
   }
@@ -523,19 +524,32 @@ export class ImpactFx {
   }
 
   /**
-   * Dust, flat and soft like Wind Waker's: a pale body with one low-contrast
-   * shade crescent under it to the lower right, no outline and no highlight.
-   * Shades go down first so the bodies run together into one cloud; each puff
-   * swells fast, its shade creeps over the body, and it collapses, no fading.
+   * Dust, flat and soft like Wind Waker's: each puff a lumpy little cloud (a
+   * flat-bottomed body with two smaller lumps on top) in a pale tone over one
+   * low-contrast shade to the lower right, no outline and no highlight. Shades
+   * go down first so the bodies run together; each puff swells fast, its
+   * shade creeps over it, and it collapses, no fading.
    */
   private drawDust(g: Phaser.GameObjects.Graphics): void {
     const dust = this.particles.filter((p) => p.kind === 'dust');
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.5, 1, f)); };
-    for (const p of dust) { const r = radius(p); g.fillStyle(p.color, 1).fillCircle(p.x + r * 0.1, p.y + r * 0.12, r); }
+    // The body and its lumps (offset, size), turning slowly as the puff rolls.
+    const lumps = (p: Particle, r: number, fn: (x: number, y: number, rr: number) => void) => {
+      const a = (p.spin ?? 0) + (p.vx > 0 ? 1 : -1) * (p.age / 1000) * 2.5;
+      fn(p.x, p.y, r);
+      fn(p.x + Math.cos(a) * r * 0.55, p.y - r * 0.35 - Math.abs(Math.sin(a)) * r * 0.15, r * 0.7);
+      fn(p.x - Math.cos(a) * r * 0.5, p.y - r * 0.3, r * 0.6);
+    };
+    for (const p of dust) {
+      const r = radius(p);
+      g.fillStyle(p.color, 1);
+      lumps(p, r, (x, y, rr) => g.fillEllipse(x + rr * 0.12, y + rr * 0.1, rr * 2.2, rr * 1.9));
+    }
     for (const p of dust) {
       const r = radius(p);
       const k = 1 - 0.6 * smooth(0.4, 0.9, p.age / p.life);
-      g.fillStyle(p.body ?? p.color, 1).fillCircle(p.x - r * 0.1 * k, p.y - r * 0.12 * k, r * 0.9 * k);
+      g.fillStyle(p.body ?? p.color, 1);
+      lumps(p, r, (x, y, rr) => g.fillEllipse(x - rr * 0.12 * k, y - rr * 0.14 * k, rr * 1.9 * k, rr * 1.6 * k));
     }
   }
 
