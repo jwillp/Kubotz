@@ -3,7 +3,7 @@ import { pureAdd } from '../fx/Grade';
 import { Config, UNIT } from '../config';
 import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { lit } from '../fx/NormalMaps';
-import { CEL } from '../fx/Cel';
+import { CEL, toonLit } from '../fx/Cel';
 import { type PosedPart, type Pose, type Rig } from './Rig';
 
 /** Spriter pixels to world pixels. */
@@ -76,9 +76,9 @@ export class Kubot2D {
     this.view = scene.add.container(0, 0).setDepth(10);
   }
 
-  /** Parts take the arena lights, except cel-shaded ones (fx/Cel.ts): flat toon tones the lights would shade back into gradients. */
+  /** Parts take the arena lights; cel-shaded ones (fx/Cel.ts) in toon steps, so the lights don't shade them back into gradients. */
   private light(img: Phaser.GameObjects.Image): Phaser.GameObjects.Image {
-    if (img.texture.key.startsWith(CEL)) img.resetPipeline();
+    if (img.texture.key.startsWith(CEL)) toonLit(img);
     else lit(img);
     return img;
   }

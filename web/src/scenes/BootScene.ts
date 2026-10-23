@@ -160,10 +160,10 @@ export class BootScene extends Phaser.Scene {
       await pace((i + 1) / parts.length);
     }
     step = 3;
-    // Cel copies of the clean parts (fx/Cel.ts), nearly flat to the lights so the bands stay flat.
+    // Cel copies of the clean parts (fx/Cel.ts), with the clean parts' normal maps for the toon lights.
     for (const [i, [key]] of parts.entries()) {
       this.textures.addCanvas(CEL + key, celPart(this.textures.get(key).getSourceImage() as HTMLImageElement));
-      addNormalMap(this.textures, CEL + key, { bevel: 2, detail: 0, strength: 0.3 });
+      addNormalMap(this.textures, CEL + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, key);
       await pace((i + 1) / parts.length);
     }
     step = 4;

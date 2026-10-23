@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { boxBlur } from './NormalMaps';
 
 /**
@@ -7,8 +8,8 @@ import { boxBlur } from './NormalMaps';
  * art's own shading, so its plates and folds keep their shadows). Lit tones
  * are clean and saturated, shadows cooler and bluer rather
  * than just darker; big glossy parts (helmets, visors) catch a small hard
- * white shine. No texture, no gradients, no outlines. The parts skip the
- * arena lights (Kubot2D), so nothing shades them back into gradients.
+ * white shine. No texture, no gradients, no outlines. The arena lights reach
+ * them in toon steps (ToonLightPipeline below).
  * Picked with ?style=cel / ?style=classic, else the last choice (Y in a
  * match), cel by default.
  */
@@ -129,4 +130,37 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement): HTMLCanva
   }
   ctx.putImageData(img, 0, 0);
   return out;
+}
+
+/**
+ * Phaser's Light2D shader with toon steps: each light's reach on a part is
+ * cut into flat bands (none, half, full) with hard edges, so the arena lights
+ * still play over the cel Kubotz, through their normal maps, without shading
+ * them back into gradients. A floor under the arena's ambient light keeps the
+ * flat tones readable in the dark arenas.
+ */
+function toonFrag(lightFrag: string): string {
+  return lightFrag
+    .replace('#define SHADER_NAME PHASER_LIGHT_FS', '#define SHADER_NAME KUBOTZ_TOON_LIGHT_FS')
+    .replace('vec3 diffuse = light.color * diffuseFactor;', 'float lit = attenuation * diffuseFactor; float band = step(0.12, lit) * 0.5 + step(0.45, lit) * 0.5;')
+    .replace('finalColor += (attenuation * diffuse) * light.intensity;', 'finalColor += light.color * band * light.intensity * 0.3;')
+    .replace('vec4 colorOutput = vec4(uAmbientLightColor + finalColor, 1.0);', 'vec4 colorOutput = vec4(max(uAmbientLightColor, vec3(0.5)) + finalColor, 1.0);');
+}
+
+class ToonLightPipeline extends Phaser.Renderer.WebGL.Pipelines.LightPipeline {
+  constructor(game: Phaser.Game, lightFrag: string) {
+    super({ game, fragShader: toonFrag(lightFrag) } as Phaser.Types.Renderer.WebGL.WebGLPipelineConfig);
+  }
+}
+
+/** Draws a cel part through the toon lights (WebGL only). */
+export function toonLit<T extends Phaser.GameObjects.Components.Pipeline & Phaser.GameObjects.GameObject>(obj: T): T {
+  const renderer = obj.scene.sys.renderer;
+  if (!(renderer instanceof Phaser.Renderer.WebGL.WebGLRenderer)) return obj;
+  if (!renderer.pipelines.has('ToonLight')) {
+    // Phaser's own light shader (as built, light count filled in), with the toon steps.
+    const light = renderer.pipelines.get('Light2D') as Phaser.Renderer.WebGL.WebGLPipeline;
+    renderer.pipelines.add('ToonLight', new ToonLightPipeline(obj.scene.game, light.shaders[0].fragSrc));
+  }
+  return obj.setPipeline('ToonLight');
 }
