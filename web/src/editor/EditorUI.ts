@@ -961,14 +961,16 @@ function buildArenaInspector(): void {
   const up = h('button', { cls: 'btn', textContent: 'Move up', onclick: move(-1) }); up.dataset.help = 'Earlier in the arena select.';
   const down = h('button', { cls: 'btn', textContent: 'Move down', onclick: move(1) }); down.dataset.help = 'Later in the arena select.';
   out.push(section('arena', 'Arena', [
-    grid(2,
+    grid(1,
       text('Name', 'Shown on the arena select.', () => A().name, (v) => editArena((x) => { x.name = v; }, false)),
-      pick('Room', 'The room behind the arena, and the colours of its light and tiles.', ROOM_CHOICES, () => A().room ?? 'kube', (v) => editArena((x) => { x.room = v; }, false)),
     ),
     grid(1, text('Description', 'The line under the name on the arena select.', () => A().description, (v) => editArena((x) => { x.description = v; }, false))),
     grid(2,
       num('Width units', 'Map width (1 unit = 64 px; the Kube is 52).', () => (A().size ?? DEFAULT_SIZE)[0], (v) => editArena((x) => { x.size = [Math.max(10, Math.round(v ?? 52)), (x.size ?? DEFAULT_SIZE)[1]]; })),
       num('Height units', 'Map height (the Kube is 38).', () => (A().size ?? DEFAULT_SIZE)[1], (v) => editArena((x) => { x.size = [(x.size ?? DEFAULT_SIZE)[0], Math.max(10, Math.round(v ?? 38))]; })),
+    ),
+    grid(1,
+      pick('Background', 'The room behind the arena, and the colours of its light and tiles.', ROOM_CHOICES, () => A().room ?? 'kube', (v) => editArena((x) => { x.room = v; }, false)),
     ),
     h('div', { cls: 'keyline' }, up, down, dup, del),
   ]));

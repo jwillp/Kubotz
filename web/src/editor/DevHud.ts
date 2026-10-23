@@ -452,14 +452,15 @@ export function installDevHud(game: Phaser.Game): void {
         a ? h('div', { cls: 'dev-grid' },
           (() => { const input = h('input', { value: id! }); input.onchange = () => renameArena(id!, input.value); return h('label', { cls: 'dev-field', help: 'Its id: the name of its file (src/data/arenas/<id>.json). Lower case letters, digits and dashes; Export writes it under the new name and removes the old file.' }, h('span', { textContent: 'Id' }), input); })(),
           (() => { const input = h('input', { value: a.name }); input.onchange = () => editArena((x) => { x.name = input.value.trim() || x.name; }); return h('label', { cls: 'dev-field', help: 'Its name on the setup screen.' }, h('span', { textContent: 'Name' }), input); })(),
-          choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })),
         ) : h('p', { cls: 'dev-note', textContent: 'The Kube is the original Tiled map: it is not edited here. Pick another arena, make a new one, or Import maps/debug-map.tmx for a copy to edit.' }),
         a ? (() => { const input = h('textarea', { value: a.description, rows: 2 }); input.onchange = () => editArena((x) => { x.description = input.value.trim(); }); return h('label', { cls: 'dev-field', help: 'A line about it, under its name on the setup screen.' }, h('span', { textContent: 'Description' }), input); })() : null,
-        a ? musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })) : null,
         // The map's size: it grows or shrinks on the right and at the bottom.
         a ? h('div', { cls: 'dev-grid', help: 'The map\'s size in units (tiles). It grows or shrinks on the right and at the bottom; the blast zone moves with it.' },
           num('Width', w, (n) => editArena((x) => { x.size = [clampSize(n, 16, 200), (x.size ?? DEFAULT_SIZE)[1]]; })),
           num('Height', hh, (n) => editArena((x) => { x.size = [(x.size ?? DEFAULT_SIZE)[0], clampSize(n, 12, 160)]; }))) : null,
+        // Then the art: the room behind it and its music.
+        a ? choose('Background', 'The room behind the arena, and the colour of its light and tiles.', ROOM_CHOICES, a.room ?? 'kube', (val) => editArena((x) => { x.room = val; })) : null,
+        a ? musicField(a.music ?? 'music-game', (val) => editArena((x) => { if (val === 'music-game') delete x.music; else x.music = val; })) : null,
         a ? h('div', { cls: 'dev-mode', help: 'Edit mode pauses the match and shows its pieces to pick, move and resize, with the elements to drag onto the map; the camera is yours (drag empty space with one finger or the mouse, wheel or pinch to zoom). Play mode runs it. Closing the HUD goes back to play mode.' },
           h('button', { cls: `btn${editing ? '' : ' on'}`, textContent: 'Play mode', onclick: () => { setEditing(false); const d = debug(); if (d) d.frozen = false; shape = ''; build(); } }),
           h('button', { cls: `btn${editing ? ' on' : ''}`, textContent: 'Edit mode', onclick: () => { setEditing(true); shape = ''; build(); } })) : null,
