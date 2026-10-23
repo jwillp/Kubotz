@@ -8,7 +8,10 @@ import { Controller, PadState, emptyPad } from './Input';
 import { ActivePowerUp, PowerUpType, POWER_UPS } from './PowerUps';
 import { KubotzBody, PhysicsWorld } from '../physics/Physics';
 import { fx } from './Settings';
-import { canHurt, type Teamed } from './Match';
+import { BLACK_TAG, BLACK_TEAM, canHurt, type Teamed } from './Match';
+import type { CtfFlag } from './Flag';
+import type { GameBall } from './Ball';
+import { flagTexture } from '../fx/Flag';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
@@ -16,7 +19,7 @@ import type { ParticleHandle } from '../fx/ParticleEffect';
 import { EventPlayer } from '../anim/ClipEvents';
 import { DATA_FILES, fromFiles } from './DataFiles';
 
-export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'laserSword';
+export type Weapon = 'none' | 'laserGunMkI' | 'laserGunMkII' | 'plasmaBlade';
 
 /** Something an attack can hit. */
 export interface Damageable {
@@ -47,12 +50,20 @@ export interface AttackBox {
   launch: Launch;
   /** Targets already hit by this swing: one hit per target per swing. */
   hit: Set<Damageable>;
+  /** Plasma blades this swing already clashed with (PlasmaBlade.ts): one clash per pair of swings. */
+  clashed: Set<Kubotz>;
 }
 
 /** Spriter files of the weapons, and points measured on their images (see BootScene). */
-export const SWORD_FILE = 'arms/lazer-sword.png';
+export const BLADE_FILE = 'arms/plasma-blade.png';
 export const GUN_FILE = 'arms/gun-mk1.png';
-export const PART_TIPS = { sword: { x: 300, y: 230 }, swordBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
+export const PART_TIPS = { bladeTip: { x: 300, y: 230 }, bladeBase: { x: 90, y: 60 }, gun: { x: 150, y: 80 } };
+
+/** Plasma blade hits launch this much harder than their table values (the blade should send Kubotz flying). */
+export const BLADE_KNOCKBACK = 1.3;
+/** The plasma blade's emitter and tip on its image (pixels from the bottom-left), as drawn and lit. */
+export const BLADE_EMITTER = { x: 96, y: 68 };
+export const BLADE_TIP = { x: 298, y: 216 };
 
 /** Clips of anim/Clips.ts. */
 const ANIM = {
@@ -102,7 +113,7 @@ export interface Launch { knockback: number; angle: number; growth?: number; stu
  */
 export interface Move {
   anim: string; ms: number; points: PartPoint[]; damage: number; launch: Launch; active: [number, number];
-  /** Hit circle radius (units); unarmed 0.35, sword 0.3 when left out. */
+  /** Hit circle radius (units); unarmed 0.35, plasma blade 0.3 when left out. */
   radius?: number;
   behind?: boolean; all?: boolean; both?: boolean; maps?: string[]; ghosts?: boolean;
   /** Specials: a velocity (units/s, x forwards; null keeps that axis) held for the first `sustain` share of the move. */
@@ -119,8 +130,8 @@ type ThrowMove = { anim: string; ms: number; release: number; damage: number; la
 export interface MovesData {
   /** Points of the striking parts: fists, feet, the blade... */
   pointSets: Record<string, PartPoint[]>;
-  combo: MoveData[]; swordCombo: MoveData[];
-  dir: Record<keyof DirMoves, MoveData>; swordDir: Record<keyof DirMoves, MoveData>;
+  combo: MoveData[]; bladeCombo: MoveData[];
+  dir: Record<keyof DirMoves, MoveData>; bladeDir: Record<keyof DirMoves, MoveData>;
   specials: Record<SpecialName, MoveData>;
   throws: Record<ThrowKind, ThrowMove>;
   /** Where a Kubot can be hit: a box on its feet (units), centred on it. */
@@ -131,13 +142,13 @@ type SpecialName = 'ion' | 'raptor' | 'raptorAir' | 'dive' | 'kick' | 'kickAir';
 /**
  * The unarmed ground combo: three presses chain a palm strike, a spinning
  * back fist and a jumping spin kick. The first two push lightly and stun
- * briefly so the next hit connects; the kick launches. The sword has its own.
+ * briefly so the next hit connects; the kick launches. The plasma blade has its own.
  */
 export const COMBO: Move[] = [];
-export const SWORD_COMBO: Move[] = [];
+export const BLADE_COMBO: Move[] = [];
 /** Directional moves (SSB): dash attack, tilts, smashes (charged) and the five aerials. */
 export const DIR_MOVES = {} as DirMoves;
-export const SWORD_DIR_MOVES = {} as DirMoves;
+export const BLADE_DIR_MOVES = {} as DirMoves;
 /**
  * Special moves (B), unarmed whatever the weapon: Captain Falcon flavoured
  * ninja moves. The up special leaves the Kubot helpless until it lands or
@@ -168,15 +179,17 @@ export function loadMoves(data: MovesData): void {
     for (const k of Object.keys(src) as K[]) out[k] = into(out[k], src[k]);
   };
   list(COMBO, data.combo);
-  list(SWORD_COMBO, data.swordCombo);
+  list(BLADE_COMBO, data.bladeCombo);
   table(DIR_MOVES, data.dir);
-  table(SWORD_DIR_MOVES, data.swordDir);
+  table(BLADE_DIR_MOVES, data.bladeDir);
   table(SPECIALS, data.specials);
   for (const k of Object.keys(data.throws) as ThrowKind[]) THROWS[k] = Object.assign(THROWS[k] ?? {}, data.throws[k]);
   Object.assign(HURTBOX, data.hurtbox);
 }
 type SpecialKind = 'neutral' | 'side' | 'up' | 'down';
 
+/** A blade lock won: the forward smash carries through from this point (its wind-up, blade raised). */
+const LOCK_POSE = 0.3;
 /** Smash attacks: how long the charge can be held, and what a full charge adds to damage and launch. */
 export const SMASH_CHARGE_MS = 1000;
 export const SMASH_CHARGE_BONUS = 0.6;
@@ -207,11 +220,11 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
-/** The texture of a Kubot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
+/** The texture of a Kubot part in a colour: helmets and the plasma blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
 export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
   let key = `kubotz:${file}`;
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
-  else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
+  else if (file === BLADE_FILE) key = `blade:${hex(color)}`;
   if (!textures.exists(key)) key = `kubotz:${file}`;
   return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
 }
@@ -320,7 +333,7 @@ export interface ArenaHooks {
   /** @param size bolt scale (1 = normal), @param power its push. */
   fireBullet(shooter: Kubotz, damage: number, speed: number, size?: number, power?: number): void;
   now(): number; // the match clock: stops while paused
-  playSfx(key: string, volume?: number): void;
+  playSfx(key: string, volume?: number, detune?: number): void;
   /** Picks up a power-up ball in the area; true if one was taken. */
   tryGrab(kubotz: Kubotz, area: Phaser.Geom.Circle): boolean;
   /** An opponent in grab reach in front of this Kubot, or null. */
@@ -345,7 +358,7 @@ export interface ArenaHooks {
 }
 
 /**
- * The playable Kubot (KubotzFactory + Running/Jump/Melee/Grab/Gun/LaserSword/
+ * The playable Kubot (KubotzFactory + Running/Jump/Melee/Grab/Gun/PlasmaBlade/
  * PowerUps/Respawn components and systems, folded into one class).
  */
 export class Kubotz implements Damageable, Teamed {
@@ -371,6 +384,23 @@ export class Kubotz implements Damageable, Teamed {
   kills = 0;
   deaths = 0;
   weapon: Weapon = 'none';
+  /** The weapon it always holds (the Blasters and Blades modes): back after a weapon power-up and at each respawn. */
+  armed: Weapon = 'none';
+  /** The health it spawns with (Horde's weaker black-team Kubotz start lower). */
+  maxHealth: number = Config.KUBOTZ_HEALTH;
+  /** Capture the Flag: the flag it holds (swung with the plasma blade's moves), and its job on a CPU team. */
+  carrying: CtfFlag | null = null;
+  role?: 'striker' | 'guardian' | 'interceptor';
+  /** Damage taken is multiplied by this (Capture the Flag: Kubotz go down much faster than in a duel). */
+  damageScale = 1;
+  /** Ball games: the ball in its hands. No card on the HUD (the CPUs filling the teams, guardians). */
+  ball: GameBall | null = null;
+  hudless = false;
+  /** Its player tag's size and opacity (CPU tags are quieter in team matches). */
+  tagStyle = { scale: 1, alpha: 1 };
+  /** Jumps it gets back at each respawn, and the share of gravity it falls under (Skychase: more jumps, a slow fall). */
+  baseJumps: number = Config.NB_JUMPS;
+  lowGravity = 1;
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -501,6 +531,14 @@ export class Kubotz implements Damageable, Teamed {
   private freezeAt: { x: number; y: number; vx: number; vy: number } | null = null;
   private pendingLaunch: { vx: number; vy: number; di: boolean } | null = null;
   private sdiPrev: PadState = emptyPad();
+  /** In a blade lock (PlasmaBlade.ts): held frozen by the arena, counting fresh presses. */
+  bladeLocked = false;
+  /** How the blade lock goes for this Kubot, -1 (giving way) to 1 (pushing through): it leans in or back. */
+  lockPush = 0;
+  private mashes = 0;
+  private lockPrev: PadState = emptyPad();
+  /** A blade clash springs the Kubot back this fast (px/s) once its freeze ends. */
+  private recoilVx = 0;
   private sdiCount = 0;
   /** When the current hitstun began (for the hitstun cancel). */
   private hitstunFrom = 0;
@@ -553,34 +591,100 @@ export class Kubotz implements Damageable, Teamed {
 
     this.anim = new Animator(rig);
     this.look = { head: HEADS[(opts.helmet ?? index) % HEADS.length], color };
-    // Helmets and the laser blade are painted in the player's colour.
-    this.model = new Kubot2D(scene, rig, (file) => partTexture(scene.textures, file, color));
+    // Helmets and the plasma blade are painted in the player's colour.
+    // A flag carrier holds the flag where the plasma blade goes.
+    this.model = new Kubot2D(scene, rig, (file) => (file === BLADE_FILE && this.carrying
+      ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     this.events = new EventPlayer((name, x, y, flip) => this.hooks.effect(name, x, y, flip));
     // A soft outer glow in the player's colour, so Kubotz stay apart in a close fight (WebGL only).
     this.model.view.postFX?.addGlow(color, 0.7, 0, false, 0.1, 6);
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the Kubot.
     const who = controller.label === 'CPU' ? 'CPU' : controller.name ?? controller.label;
-    this.tagKey = `label-${who}:${hex(color)}`;
-    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, color);
+    // The black team's tag is a light steel, so it reads over the dark arenas.
+    const tagColor = this.team === BLACK_TEAM ? BLACK_TAG : color;
+    this.tagKey = `label-${who}:${hex(tagColor)}`;
+    if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, tagColor);
     this.tag = scene.add.image(x, y, this.tagKey).setOrigin(0.5, 1).setDepth(21);
   }
 
   /** Winding up, striking or recovering (a CPU can see it coming). */
   get attacking(): boolean { return this.attack !== null; }
 
-  /** The middle of the laser blade (world pixels), for its light. */
-  /** The laser blade's emitter and tip (world pixels), while the sword is out. */
+  /** The middle of the plasma blade (world pixels), for its light. */
+  /** The plasma blade's emitter and tip (world pixels), while the plasma blade is out. */
   blade(): { x1: number; y1: number; x2: number; y2: number } | null {
-    if (this.weapon !== 'laserSword' || !this.isAlive()) return null;
-    const a = this.model.pointOn(SWORD_FILE, 96, 68);
-    const b = this.model.pointOn(SWORD_FILE, 298, 216);
+    if (this.weapon !== 'plasmaBlade' || !this.isAlive() || this.carrying) return null;
+    const a = this.model.pointOn(BLADE_FILE, BLADE_EMITTER.x, BLADE_EMITTER.y);
+    const b = this.model.pointOn(BLADE_FILE, BLADE_TIP.x, BLADE_TIP.y);
     return a && b ? { x1: a.x, y1: a.y, x2: b.x, y2: b.y } : null;
   }
 
+  /**
+   * The plasma blade in a swing (from just before the active frames to their
+   * end): its blade, the swing, and whether the swing is in its active frames.
+   */
+  bladeSwing(): { blade: { x1: number; y1: number; x2: number; y2: number }; box: AttackBox; active: boolean } | null {
+    const a = this.attack;
+    if (!a || a.points[0]?.file !== BLADE_FILE) return null;
+    const blade = this.blade();
+    if (!blade) return null;
+    const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
+    if (t < this.attackActive[0] - 0.12 || t > this.attackActive[1]) return null;
+    return { blade, box: a, active: t >= this.attackActive[0] };
+  }
+
+  /** Blades clashed with `foe`: this swing can't hurt it any more, and the Kubot springs back (dirX) after its freeze. */
+  clashWith(foe: Kubotz, dirX: number, speed: number): void {
+    this.attack?.clashed.add(foe);
+    this.attack?.hit.add(foe);
+    this.recoilVx = dirX * speed;
+  }
+
+  /** Its plasma blade held up ready (not swinging, reeling, dodging or grappling): a swing into it clangs off. */
+  get bladeReady(): boolean {
+    const now = this.hooks.now();
+    return this.weapon === 'plasmaBlade' && !this.carrying && this.isAlive() && !this.attack && !this.charging
+      && now >= this.hitstunUntil && !this.tumbling && !this.dodging && !this.heldBy && !this.holding && !this.down && !this.onLedge;
+  }
+
+  /** Moves a frozen Kubot sideways (a blade lock squares the pair up): it stays there until the freeze ends. */
+  holdAt(x: number): void {
+    this.body.setPosition(x, this.y);
+    this.freezeAt = { x, y: this.y, vx: 0, vy: 0 };
+  }
+
+  /** Fresh presses since the last call, in a blade lock. */
+  takeMashes(): number {
+    const n = this.mashes;
+    this.mashes = 0;
+    return n;
+  }
+
+  /**
+   * Starts or ends a blade lock (frozen by the arena meanwhile). The swing
+   * that met the other blade is dropped: locked, the Kubot holds its blade
+   * up in front in its guard stance, the two blades crossed.
+   */
+  setBladeLock(on: boolean): void {
+    this.bladeLocked = on;
+    this.mashes = 0;
+    this.lockPrev = { ...this.raw };
+    this.cancelActions();
+    this.lockPush = 0;
+    if (on) this.anim.play('bladeLock', { restart: true, fade: 90 });
+  }
+
+  /** A blade lock won: the forward smash carries through from its raised blade, over the beaten `foe` (already struck). */
+  followThrough(foe: Kubotz): void {
+    this.strike(BLADE_DIR_MOVES.fsmash, this.hooks.now(), 1, LOCK_POSE);
+    this.attack!.hit.add(foe);
+    this.attack!.clashed.add(foe);
+  }
+
   bladeMiddle(): { x: number; y: number } {
-    const { sword: t, swordBase: b } = PART_TIPS;
-    return this.model.pointOn(SWORD_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
+    const { bladeTip: t, bladeBase: b } = PART_TIPS;
+    return this.model.pointOn(BLADE_FILE, (t.x + b.x) / 2, (t.y + b.y) / 2) ?? { x: this.x, y: this.body.top };
   }
 
   /** For the debug view. */
@@ -625,7 +729,7 @@ export class Kubotz implements Damageable, Teamed {
     return new Phaser.Geom.Rectangle(this.body.x - w / 2, this.body.bottom - h, w, h);
   }
 
-  /** The active melee / sword hitbox, if any, on the striking part of the Kubot. */
+  /** The active melee / plasma blade hitbox, if any, on the striking part of the Kubot. */
   currentAttack(): AttackBox | null {
     const a = this.attack;
     if (!a) return null;
@@ -648,17 +752,17 @@ export class Kubotz implements Damageable, Teamed {
    * The swing as it sweeps (from just before the active frames to their end):
    * the striking point and a point nearer the body, for the smear behind it.
    */
-  swingArc(): { ox: number; oy: number; ix: number; iy: number } | null {
+  swingArc(): { ox: number; oy: number; ix: number; iy: number; blade?: boolean } | null {
     const a = this.attack;
     if (!a) return null;
     const t = (this.hooks.now() - this.attackStart) / (this.attackEndsAt - this.attackStart);
     if (t < this.attackActive[0] - 0.12 || t > this.attackActive[1]) return null;
-    const sword = a.points[0]?.file === SWORD_FILE;
-    if (sword) {
-      const { sword: tip, swordBase: base } = PART_TIPS;
-      const o = this.model.pointOn(SWORD_FILE, tip.x, tip.y);
-      const i = this.model.pointOn(SWORD_FILE, base.x, base.y);
-      return o && i ? { ox: o.x, oy: o.y, ix: i.x, iy: i.y } : null;
+    const bladed = a.points[0]?.file === BLADE_FILE;
+    if (bladed) {
+      const { bladeTip: tip, bladeBase: base } = PART_TIPS;
+      const o = this.model.pointOn(BLADE_FILE, tip.x, tip.y);
+      const i = this.model.pointOn(BLADE_FILE, base.x, base.y);
+      return o && i ? { ox: o.x, oy: o.y, ix: i.x, iy: i.y, blade: true } : null;
     }
     const pts = a.points.flatMap((p) => this.model.pointsOn(p.file, p.x, p.y));
     if (pts.length === 0) return null;
@@ -694,12 +798,19 @@ export class Kubotz implements Damageable, Teamed {
     this.rawGuard = raw.guard;
     // A shield press that can tech (one every 40 frames).
     if (guardPressed && now >= this.techLockUntil) { this.techPressAt = now; this.techLockUntil = now + TECH_LOCKOUT; }
+    // A blade lock: any fresh button press counts (one a frame), whichever is mashed.
+    if (this.bladeLocked) {
+      const p = this.lockPrev;
+      if ((['attack', 'special', 'jump', 'grab'] as const).some((k) => raw[k] && !p[k])) this.mashes++;
+      this.lockPrev = { ...raw };
+    }
     // Hitlag: frozen where the hit landed, the move and the stun waiting; the struck Kubot can SDI.
     if (now < this.hitlagUntil) { this.updateHitlag(dt, raw); return; }
     if (this.freezeAt) {
       const f = this.freezeAt;
       this.freezeAt = null;
-      if (!this.pendingLaunch) this.body.setVelocity(f.vx, f.vy);
+      if (!this.pendingLaunch) this.body.setVelocity(f.vx + this.recoilVx, f.vy);
+      this.recoilVx = 0;
     }
     if (this.pendingLaunch) this.launch(raw);
     // Buffered presses, for people (not while shielding: no attacks out of shield).
@@ -756,10 +867,10 @@ export class Kubotz implements Damageable, Teamed {
     // specials' bursts keep their speed (spikes, dive kicks), easing back after.
     const f = feel();
     // The feel's gravity, over the world's (which every body falls under).
-    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity - Config.GRAVITY) * UNIT * dt;
+    if (!this.grounded && !this.dodging) this.body.vy += (f.gravity * this.lowGravity - Config.GRAVITY) * UNIT * dt;
     if (!this.grounded && this.body.vy > 0 && !this.dodging) {
-      this.body.vy += (f.fallGravity - f.gravity) * UNIT * dt;
-      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT;
+      this.body.vy += (f.fallGravity - f.gravity) * this.lowGravity * UNIT * dt;
+      const cap = (this.fastFalling ? f.fastFall : f.fall) * UNIT * (this.lowGravity < 1 ? 0.55 : 1);
       if (this.body.vy > cap && now >= this.hitstunUntil && !this.currentMove?.burst) {
         this.body.vy = Math.max(cap, this.body.vy - 90 * UNIT * dt);
       }
@@ -863,7 +974,7 @@ export class Kubotz implements Damageable, Teamed {
     this.anim.freeze(null);
     if (attack) {
       // The get-up attack: a sweep to both sides.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
       this.comboStep = 0;
       this.safeUntil = now + GETUP_ATTACK_SAFE;
       this.strike({ ...moves.dsmash, ...GETUP_ATTACK, ms: GETUP_ATTACK_MS, both: true }, now);
@@ -1083,7 +1194,7 @@ export class Kubotz implements Damageable, Teamed {
     this.guarding = false;
     if (upSmash) {
       this.attackHeld = true;
-      this.startSmash((this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
+      this.startSmash((this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES).usmash, 'up', now);
     } else if (upSpecial) {
       this.specialHeld = true;
       this.startSpecial('up', 0, now);
@@ -1262,6 +1373,8 @@ export class Kubotz implements Damageable, Teamed {
   /** handleActions, then: a buffered press that started something is used up.
    * (A jab combo's next hit is queued by the press itself, so it keeps the buffer until it starts.) */
   private act(pad: PadState, now: number): void {
+    // Ball in hand: no attacks (grab throws it).
+    if (this.ball) pad = { ...pad, attack: false, special: false, smash: false, cstick: undefined };
     const before = { move: this.currentMove, charging: this.charging, attack: this.attack, lock: this.lockUntil };
     this.handleActions(pad, now);
     // Started: a new move, attack or charge (not one ending), or a commitment such as a taunt.
@@ -1274,8 +1387,8 @@ export class Kubotz implements Damageable, Teamed {
   }
 
   private handleActions(pad: PadState, now: number): void {
-    const combo = this.weapon === 'laserSword' ? SWORD_COMBO : COMBO;
-    const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+    const combo = this.weapon === 'plasmaBlade' ? BLADE_COMBO : COMBO;
+    const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
     // Edges: the attack press, and a direction newly pressed (for smash flicks).
     // A press now, or one buffered while the Kubot could not act.
     const attackPressed = (pad.attack && !this.attackHeld) || this.buffered('attack', now);
@@ -1510,20 +1623,26 @@ export class Kubotz implements Damageable, Teamed {
 
   /** Starts a strike; on the ground it advances the combo. */
   private strike(move: Move, now: number, power = 1, from = 0): void {
-    const sword = move.points[0]?.file === SWORD_FILE;
+    const bladed = move.points[0]?.file === BLADE_FILE;
     this.attack = {
       circles: [],
       // The blade is covered by circles from hilt to tip; fists and feet by one on the striking one.
-      radius: (move.radius ?? (sword ? 0.3 : 0.35)) * UNIT,
+      radius: (move.radius ?? (bladed ? 0.3 : 0.35)) * UNIT,
       points: move.points,
-      striker: !sword && !move.all,
+      striker: !bladed && !move.all,
       behind: !!move.behind,
       all: !!move.all,
       both: !!move.both,
       damage: Math.round(move.damage * power),
-      launch: { ...move.launch, knockback: move.launch.knockback * power },
+      launch: { ...move.launch, knockback: move.launch.knockback * power * (bladed ? BLADE_KNOCKBACK : 1) },
       hit: new Set(),
+      clashed: new Set(),
     };
+    // The plasma blade hums through the swing, lower and louder for the strong ones.
+    if (bladed && !this.carrying) {
+      const strong = move.damage >= 12;
+      this.hooks.playSfx(`blade-swing-${Math.floor(Math.random() * 3)}`, strong ? 0.5 : 0.36, (strong ? -250 : 0) + (Math.random() * 160 - 80));
+    }
     // A charged smash resumes from its held wind-up (`from`).
     this.attackStart = now - from * move.ms;
     this.attackEndsAt = this.attackStart + move.ms;
@@ -1531,7 +1650,7 @@ export class Kubotz implements Damageable, Teamed {
     this.currentMove = move;
     if (from > 0) this.anim.freeze(null);
     else this.anim.play(move.anim, { restart: true, ms: move.ms, fade: 45 });
-    this.inCombo = COMBO.includes(move) || SWORD_COMBO.includes(move);
+    this.inCombo = COMBO.includes(move) || BLADE_COMBO.includes(move);
     if (this.inCombo) {
       this.comboStep = (this.comboStep + 1) % COMBO.length;
       this.comboUntil = this.attackEndsAt + COMBO_WINDOW;
@@ -1808,7 +1927,7 @@ export class Kubotz implements Damageable, Teamed {
     this.wasGrounded = true;
     if (c.kind === 'attack') {
       // The get-up attack: a sweeping kick across the ledge.
-      const moves = this.weapon === 'laserSword' ? SWORD_DIR_MOVES : DIR_MOVES;
+      const moves = this.weapon === 'plasmaBlade' ? BLADE_DIR_MOVES : DIR_MOVES;
       this.comboStep = 0;
       this.strike({ ...moves.ftilt, ...LEDGE_ATTACK, ms: c.ms * 0.45 }, now);
     }
@@ -1817,6 +1936,7 @@ export class Kubotz implements Damageable, Teamed {
   // --------------------------------------------------------------- power ups
   givePowerUp(type: PowerUpType, now: number): void {
     const def = POWER_UPS[type];
+    if (def.weapon && this.carrying) return; // the flag stays in hand
     // A new weapon replaces the current one instead of stacking.
     if (def.weapon) {
       const old = this.powerUps.find((p) => POWER_UPS[p.type].weapon);
@@ -1824,6 +1944,33 @@ export class Kubotz implements Damageable, Teamed {
     }
     def.onStart(this);
     if (def.timed) this.powerUps.push({ type, endsAt: now + Config.POWERUP_DURATION });
+  }
+
+  /**
+   * Struck by something that is not a Kubot (Skychase's Hunters): damage,
+   * flung at this velocity (pixels/s), stunned a moment.
+   */
+  struck(damage: number, vx: number, vy: number): void {
+    if (this.dead || this.invincible || this.intangible) return;
+    const now = this.hooks.now();
+    if (this.holding || this.heldBy) this.breakGrab();
+    this.releaseLedge(now);
+    this.health = Math.max(0, this.health - damage * this.damageScale);
+    this.body.setVelocity(vx, vy);
+    this.hitstunUntil = Math.max(this.hitstunUntil, now + 450);
+    this.tumbleUntil = this.hitstunUntil;
+    this.hitUntil = now + 450;
+    this.flashUntil = now + 70;
+    this.attack = null;
+    this.currentMove = null;
+    this.anim.play('tumble', { restart: true, fade: 40 });
+  }
+
+  /** Capture the Flag: takes the flag in hand (it fights with the plasma blade's moves), or lets go of it. */
+  carryFlag(flag: CtfFlag | null): void {
+    if (flag) for (const p of [...this.powerUps]) if (POWER_UPS[p.type].weapon) this.removePowerUp(p);
+    this.carrying = flag;
+    this.weapon = flag ? 'plasmaBlade' : this.dead ? 'none' : this.armed;
   }
 
   private removePowerUp(p: ActivePowerUp): void {
@@ -1839,6 +1986,7 @@ export class Kubotz implements Damageable, Teamed {
   // ------------------------------------------------------------------ damage
   takeDamage(amount: number, attacker: Kubotz, launch: Launch, dirX: 1 | -1): number {
     if (this.dead || this.invincible || this.intangible || !canHurt(attacker, this)) return 0;
+    amount *= this.damageScale;
     const now = this.hooks.now();
     // Parry (Ultimate): the shield let go just before the hit. No damage, no push, free to act at once.
     if (now - this.shieldDropAt <= PARRY_MS && this.grounded && !this.heldBy) {
@@ -1971,9 +2119,11 @@ export class Kubotz implements Damageable, Teamed {
   /** RespawnSystem SPAWNING state. */
   respawn(x: number, y: number): void {
     this.dead = false;
-    this.health = Config.KUBOTZ_HEALTH;
+    this.eliminated = false;
+    this.health = this.maxHealth;
+    this.weapon = this.armed;
     this.energy = Config.KUBOTZ_ENERGY;
-    this.maxJumps = Config.NB_JUMPS;
+    this.maxJumps = this.baseJumps;
     this.lastAttacker = null;
     this.guard = Config.GUARD_MAX;
     this.stunnedUntil = 0;
@@ -1996,13 +2146,13 @@ export class Kubotz implements Damageable, Teamed {
   render(now: number, dtMs: number): void {
     if (this.dead) return;
     this.updateAnimationState(now);
-    // Hitlag holds the pose.
+    // Hitlag holds the pose (a blade lock blends into its own, held by the animator).
     const frozen = now < this.hitlagUntil;
-    this.anim.tick(frozen ? 0 : dtMs);
+    this.anim.tick(frozen && !this.bladeLocked ? 0 : dtMs);
 
     const maps: string[] = [];
     if (this.look.head) maps.push(this.look.head);
-    if (this.weapon === 'laserSword') maps.push('weapon_laserSword');
+    if (this.weapon === 'plasmaBlade') maps.push('weapon_plasmaBlade');
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
     if (this.weapon === 'none' && this.currentMove?.maps && (this.attack || this.charging)) maps.push(...this.currentMove.maps);
 
@@ -2024,6 +2174,8 @@ export class Kubotz implements Damageable, Teamed {
     const vx = this.body.vx / (feel().run * UNIT);
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
+    // Locked blades: leaning into the push, or bent back by it.
+    if (this.bladeLocked) lean += this.facing * (0.07 + 0.12 * this.lockPush);
     const squash = now < this.squashUntil ? 1 - 0.12 * Math.sin(((this.squashUntil - now) / 160) * Math.PI) : 1;
     const pose = this.anim.pose();
     // Footsteps land when the other foot touches down in the run.
@@ -2041,7 +2193,9 @@ export class Kubotz implements Damageable, Teamed {
     const c = this.charge;
     // The struck Kubot shudders through its hitlag.
     const shake = c > 0 && this.charging ? Math.sin(now / 18) * 2.5 * c
-      : frozen && this.pendingLaunch ? Math.sin(now / 9) * 3.5 : 0;
+      : frozen && this.pendingLaunch ? Math.sin(now / 9) * 3.5
+      // Straining in a blade lock.
+      : this.bladeLocked ? Math.sin(now / 13) * 1.6 : 0;
     this.model.update(pose, maps, this.body.x + shake, this.body.bottom, yaw, {
       dtMs,
       lean, squash,
@@ -2069,6 +2223,7 @@ export class Kubotz implements Damageable, Teamed {
     const a = this.anim;
     if (now < this.materializeUntil) { a.play(ANIM.IDLE, { fade: 0 }); return; } // standing in the spawn beam
     if (this.heldBy) { a.play('held', { fade: 60 }); return; }
+    if (this.bladeLocked) { a.play('bladeLock', { fade: 90 }); return; }
     if (this.down) return; // lying on the floor (the knockdown, held)
     if (this.throwing || this.climb) return; // the throw or the get-up plays out
     if (this.holding) { if (now >= this.pummelUntil) a.play('grabHold', { fade: 80 }); return; }
@@ -2105,7 +2260,7 @@ export class Kubotz implements Damageable, Teamed {
     // Constant on-screen size whatever the camera zoom.
     const zoom = this.scene.cameras.main.zoom;
     const y = this.body.top - UNIT * 0.75;
-    this.tag.setPosition(this.x, y - 6).setScale(0.42 / zoom).setAlpha(now < this.appearAt ? 0 : 1);
+    this.tag.setPosition(this.x, y - 6).setScale((0.42 / zoom) * this.tagStyle.scale).setAlpha(now < this.appearAt ? 0 : this.tagStyle.alpha);
     // The HUD cards carry health; over the Kubot it shows only while low (red),
     // so close fights stay readable.
     const low = this.health <= 30;

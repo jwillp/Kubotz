@@ -4,5 +4,5 @@
   "points": "blade",
   "damage": 7,
   "launch": {"knockback":5,"angle":35,"stun":320},
-  "active": [0.28,0.66]
+  "active": [0.24,0.62]
 }

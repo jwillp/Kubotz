@@ -1,0 +1,12 @@
+{
+  "note": "A Plasma Blade swung: the hum bends up and down past you over an airy whoosh (variant 3).",
+  "length": 0.69,
+  "seed": 3,
+  "reverb": 0.2,
+  "normalize": 0.95,
+  "layers": [
+    {"name":"Hum","type":"tone","at":0,"dur":0.44,"gain":0.16,"clip":1.2,"partials":[[1,1],[2,0.55],[3,0.4],[5,0.22],[1.012,0.7],[2.024,0.3]],"freq":{"from":114,"to":176.7,"curve":"arch","k":0.8},"env":{"shape":"arch","bend":0.75,"k":1.6}},
+    {"name":"Whoosh","type":"noise","at":0,"dur":0.44,"gain":0.11,"filters":[{"type":"bandpass","q":2.85714,"cutoff":{"from":500,"to":2400,"curve":"arch","k":0.8}}],"env":{"shape":"arch","bend":0.75,"k":1.6}},
+    {"name":"Sizzle","type":"tone","at":0,"dur":0.44,"gain":0.025,"freq":{"from":1740,"to":2436,"curve":"arch"},"wobble":{"rate":68.18182,"depth":0.03},"env":{"shape":"arch","bend":0.75,"k":1.6}}
+  ]
+}

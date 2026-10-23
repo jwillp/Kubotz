@@ -58,7 +58,22 @@ export interface ArenaDef {
   lights?: MapLight[];
   /** The match's music (audio/Sounds.ts MUSIC); default the game's theme. */
   music?: string;
+  /** Capture the Flag only: the flag stands (the pole's foot), the players' first; spawns nearest a stand belong to its team. */
+  flags?: [x: number, y: number][];
+  /** Portals inside the arena, in pairs (1st and 2nd, 3rd and 4th...): going into one comes out of the other. */
+  portals?: Rect[];
+  /** The one mode this arena is played in (and the only arena that mode plays); others never list it. */
+  mode?: ArenaMode;
+  /** Ball games: goals (rifts on a wall's face) and the team each one belongs to (the other team scores in it). */
+  goals?: [team: number, x: number, y: number, w: number, h: number][];
+  /** Ball games: where the ball is put into play (its centre). */
+  ball?: [x: number, y: number];
+  /** Kubeball: where each play starts and comes back to (feet), red's then blue's: guardian, defender, support, striker. */
+  roleSpots?: [x: number, y: number][];
 }
+
+/** Modes that play their own arena. */
+export type ArenaMode = 'ctf' | 'kubeball' | 'skychase';
 
 export type LightEffect = 'steady' | 'pulse' | 'flicker';
 /**
@@ -139,6 +154,13 @@ export function loadArenas(byId: Record<string, ArenaData>): void {
   ARENA_INFO.push({ name: 'The Kube', description: 'The original arena' }, ...ARENAS.slice(1).map((a) => ({ name: a!.name, description: a!.description })));
 }
 loadArenas(fromFiles(DATA_FILES).arenas);
+
+/** The arena a mode plays (index into ARENA_INFO), or -1 when it plays any of the others. */
+export const arenaOf = (mode: ArenaMode | undefined): number => (mode ? ARENAS.findIndex((a) => a?.mode === mode) : -1);
+/** Arenas that belong to one mode are not offered to the others. */
+export const isModeArena = (i: number): boolean => !!ARENAS[i]?.mode;
+/** The Capture the Flag arena (looked up each time: the editor can reload the arenas). */
+export const ctfArena = (): number => arenaOf('ctf');
 
 /** A map like the TMX one, for an arena: same tiles, generated layers and objects. */
 export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
@@ -221,6 +243,11 @@ export function buildArenaMap(def: ArenaDef, base: TmxMap): TmxMap {
     ...def.warps.map(([x, y, w, h]) => obj('WARP_ZONE', x, y, w, h)),
     ...def.spawns.map(([x, y]) => obj('PLAYER_SPAWN', x - 0.5, y - 1, 1, 1)),
     ...def.bonus.map(([x, y]) => obj('BONUS_SPAWN', x - 0.5, y - 0.5, 1, 1)),
+    ...(def.flags ?? []).map(([x, y]) => obj('FLAG_STAND', x - 0.5, y - 1, 1, 1)),
+    ...(def.portals ?? []).map(([x, y, w, h]) => obj('PORTAL', x, y, w, h)),
+    ...(def.goals ?? []).map(([team, x, y, w, h]) => obj(`GOAL_${team}`, x, y, w, h)),
+    ...(def.ball ? [obj('BALL_SPOT', def.ball[0] - 0.5, def.ball[1] - 0.5, 1, 1)] : []),
+    ...(def.roleSpots ?? []).map(([x, y], i) => obj(`ROLE_SPOT_${i}`, x - 0.5, y - 1, 1, 1)),
   ];
   const tileLayers: TileLayer[] = (['fades', 'blocks', 'platforms'] as const).map((name) => ({ name, visible: true, gids: layers[name] }));
   return { width: W, height: H, tileWidth: U, tileHeight: U, tileImages: base.tileImages, layers: tileLayers, objects };

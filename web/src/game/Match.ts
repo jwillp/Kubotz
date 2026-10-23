@@ -2,6 +2,7 @@
 
 import type { Pose } from '../anim/Rig';
 import type { Shield } from '../anim/Kubot2D';
+import type { MatchMode } from './Modes';
 
 /** Who drives a Kubot: keyboard set 1 or 2 (with any pad), or the computer. */
 export type InputKind = 'P1' | 'P2' | 'CPU';
@@ -57,6 +58,13 @@ export interface MatchResult {
   blocks: { x: number; y: number; width: number; height: number }[];
   /** The arena played (its backdrop and light), and its portals (world pixels). */
   arena: number;
+  /** The battle mode; for Horde, the wave reached (the last one cleared when they won). */
+  mode?: MatchMode;
+  wave?: number;
+  /** Capture the Flag: captures (players, black team). Training: CPUs defeated, of how many. */
+  score?: [number, number];
+  defeated?: number;
+  target?: number;
   warpZones: { x: number; y: number; width: number; height: number }[];
 }
 
@@ -69,9 +77,10 @@ export interface KubotFrame {
   shield?: Shield;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
-  /** Its laser blade (hilt x, y, tip x, y), and the swing trail's newest edge (outer x, y, inner x, y). */
+  /** Its plasma blade (hilt x, y, tip x, y), and the swing trail's newest edge (outer x, y, inner x, y). */
   blade?: [number, number, number, number];
-  swing?: [number, number, number, number];
+  /** (A fifth value of 1: a plasma blade, smeared along its whole length.) */
+  swing?: [number, number, number, number] | [number, number, number, number, number];
   /** Power-up motes circling it (ImpactFx.aura keys). */
   auras?: string[];
 }
@@ -105,7 +114,7 @@ export type ReplayEvent =
   | { kind: 'pe'; name: string; x: number; y: number; tint?: number }
   | { kind: 'twirl'; kubot: number; color: number; ms: number };
 
-export type HighlightKind = 'ko' | 'recovery' | 'combo';
+export type HighlightKind = 'goal' | 'ko' | 'recovery' | 'combo';
 
 /**
  * One of the match's best moments and the frames around it. `subject` is the
@@ -143,6 +152,10 @@ export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
 /** What the setup screen hands to GameScene. */
 export interface MatchSetup {
+  /** The battle mode (default Gladiator). */
+  mode?: MatchMode;
+  /** Training: how many CPUs to defeat. */
+  target?: number;
   /** One per Kubot, in slot order (at most 4). */
   fighters: FighterSpec[];
   /** Index into ARENA_INFO / ARENAS. */
@@ -183,10 +196,19 @@ export interface Teamed { readonly team: number }
  */
 export const canHurt = (a: Teamed, b: Teamed): boolean => a !== b && a.team !== b.team;
 
-/** The teams with at least one Kubot still in the match (not eliminated). */
+/**
+ * The black team: CPUs nobody plays (Horde's waves, an arena's NPCs), hostile
+ * to every player. No HUD card, and never counted as a team still standing.
+ */
+export const BLACK_TEAM = 99;
+export const BLACK_COLOR = 0x2a2d33;
+/** Its player tag's colour (BLACK_COLOR would not read over the arenas). */
+export const BLACK_TAG = 0x8d96a6;
+export const isBlackTeam = (f: Teamed): boolean => f.team === BLACK_TEAM;
+
+/** The players' teams with at least one Kubot still in the match (not eliminated); the black team and the map's NPCs (they have a home spot) never count. */
 export function teamsLeft(fighters: { team: number; eliminated: boolean; home?: unknown }[]): number[] {
-  // The map's NPCs (they have a home spot) never count: the match is between the players.
-  return [...new Set(fighters.filter((f) => !f.eliminated && !f.home).map((f) => f.team))];
+  return [...new Set(fighters.filter((f) => !f.eliminated && !isBlackTeam(f) && !f.home).map((f) => f.team))];
 }
 
 /** The default match: P1 against a CPU on the original arena. */

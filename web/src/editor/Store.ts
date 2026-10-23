@@ -4,6 +4,7 @@ import { DATA_FILES, fileTexts, fromFiles, type GameData } from '../game/DataFil
 import { KEPT_KEY, keptDocs } from '../game/EditedData';
 import { loadArenas, type ArenaData } from '../map/Arenas';
 import { EDITED_KEY } from '../game/EditedData';
+import { SOUND_FILES, loadSounds } from '../audio/Synth';
 
 /**
  * The editor's documents (the clips and the moves, as their data files hold
@@ -15,7 +16,7 @@ export const FPS = 60;
 export const FRAME_MS = 1000 / FPS;
 
 /** A move: which table it is in and its key there (its file is src/data/moves/<table>/<key>.json). */
-export interface MoveRef { table: 'combo' | 'swordCombo' | 'dir' | 'swordDir' | 'specials'; key: string }
+export interface MoveRef { table: 'combo' | 'bladeCombo' | 'dir' | 'bladeDir' | 'specials'; key: string }
 
 export interface ListEntry { group: string; label: string; ref: MoveRef | null; anim: string }
 
@@ -29,11 +30,11 @@ const LIST: ListEntry[] = [
   m('Aerials', 'Neutral air', 'dir', 'nair'), m('Aerials', 'Forward air', 'dir', 'fair'), m('Aerials', 'Back air', 'dir', 'bair'), m('Aerials', 'Up air', 'dir', 'uair'), m('Aerials', 'Down air', 'dir', 'dair'),
   m('Specials', 'Ion Punch', 'specials', 'ion'), m('Specials', 'Raptor Dash', 'specials', 'raptor'), m('Specials', 'Raptor Dash (air)', 'specials', 'raptorAir'),
   m('Specials', 'Shadow Dive', 'specials', 'dive'), m('Specials', 'Plasma Kick', 'specials', 'kick'), m('Specials', 'Plasma Kick (air)', 'specials', 'kickAir'),
-  m('Laser sword', 'Sword jab', 'swordCombo', '0'), m('Laser sword', 'Sword jab 2', 'swordCombo', '1'), m('Laser sword', 'Sword jab 3', 'swordCombo', '2'),
-  m('Laser sword', 'Sword forward tilt', 'swordDir', 'ftilt'), m('Laser sword', 'Sword down tilt', 'swordDir', 'dtilt'), m('Laser sword', 'Sword up tilt', 'swordDir', 'utilt'), m('Laser sword', 'Sword dash attack', 'swordDir', 'dash'),
-  m('Laser sword', 'Sword forward smash', 'swordDir', 'fsmash'), m('Laser sword', 'Sword up smash', 'swordDir', 'usmash'), m('Laser sword', 'Sword down smash', 'swordDir', 'dsmash'),
-  m('Laser sword', 'Sword neutral air', 'swordDir', 'nair'), m('Laser sword', 'Sword forward air', 'swordDir', 'fair'), m('Laser sword', 'Sword back air', 'swordDir', 'bair'),
-  m('Laser sword', 'Sword up air', 'swordDir', 'uair'), m('Laser sword', 'Sword down air', 'swordDir', 'dair'),
+  m('Plasma blade', 'Blade jab', 'bladeCombo', '0'), m('Plasma blade', 'Blade jab 2', 'bladeCombo', '1'), m('Plasma blade', 'Blade jab 3', 'bladeCombo', '2'),
+  m('Plasma blade', 'Blade forward tilt', 'bladeDir', 'ftilt'), m('Plasma blade', 'Blade down tilt', 'bladeDir', 'dtilt'), m('Plasma blade', 'Blade up tilt', 'bladeDir', 'utilt'), m('Plasma blade', 'Blade dash attack', 'bladeDir', 'dash'),
+  m('Plasma blade', 'Blade forward smash', 'bladeDir', 'fsmash'), m('Plasma blade', 'Blade up smash', 'bladeDir', 'usmash'), m('Plasma blade', 'Blade down smash', 'bladeDir', 'dsmash'),
+  m('Plasma blade', 'Blade neutral air', 'bladeDir', 'nair'), m('Plasma blade', 'Blade forward air', 'bladeDir', 'fair'), m('Plasma blade', 'Blade back air', 'bladeDir', 'bair'),
+  m('Plasma blade', 'Blade up air', 'bladeDir', 'uair'), m('Plasma blade', 'Blade down air', 'bladeDir', 'dair'),
   c('Laser gun', 'Shot', 'shoot'),
   c('Grab and throws', 'Grab', 'grab'), c('Grab and throws', 'Holding', 'grabHold'), c('Grab and throws', 'Pummel', 'pummel'),
   c('Grab and throws', 'Forward throw', 'throwF'), c('Grab and throws', 'Back throw', 'throwB'), c('Grab and throws', 'Up throw', 'throwU'), c('Grab and throws', 'Down throw', 'throwD'),
@@ -59,6 +60,9 @@ export interface Selection {
   /** The arena open in the Arena tab (its file name), and the piece picked on it. */
   arena: string;
   piece: ArenaPiece | null;
+  /** The sound open in the Sound tab, and its layer being edited. */
+  sound: string;
+  layer: number;
 }
 
 /** A piece of an arena: a wall, platform or portal (a rectangle), or a spawn or bonus spot (a point), by its index. */
@@ -92,21 +96,23 @@ export function setPoint(a: ArenaData, kind: PointKind, i: number, x: number, y:
 }
 
 type Docs = GameData;
-type Kind = 'clips' | 'moves' | 'particles' | 'arenas';
+type Kind = 'clips' | 'moves' | 'particles' | 'arenas' | 'sounds';
 type Listener = () => void;
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+/** Edits saved before the Sound tab have no sounds: the build's. */
+const withSounds = (d: Docs): Docs => ({ ...d, sounds: d.sounds ?? clone(SOUND_FILES) });
 
 export class Store {
   /** The data files as last exported (or as the build has them), to write only the ones that changed. */
   private saved = fileTexts(fromFiles(DATA_FILES));
   /** What is being edited: the build's data, or the edits saved in this browser (keptDocs). */
-  docs: Docs = clone(keptDocs() ?? fromFiles(DATA_FILES));
+  docs: Docs = withSounds(clone(keptDocs() ?? fromFiles(DATA_FILES)));
   /** Edits not saved in this browser yet (Save). */
   unsaved = false;
-  sel: Selection = { clip: 'idle', move: null, t: 0, bone: null, effect: 'hitStars', arena: 'the-foundry', piece: null };
+  sel: Selection = { clip: 'idle', move: null, t: 0, bone: null, effect: 'hitStars', arena: 'the-foundry', piece: null, sound: 'boom', layer: 0 };
   /** Files changed since the last export (the edits saved in this browser count). */
-  dirty = new Set<Kind>(keptDocs() ? ['clips', 'moves', 'particles', 'arenas'] : []);
+  dirty = new Set<Kind>(keptDocs() ? ['clips', 'moves', 'particles', 'arenas', 'sounds'] : []);
   private undoStack: string[] = [];
   private redoStack: string[] = [];
   private listeners: Listener[] = [];
@@ -178,7 +184,7 @@ export class Store {
     this.docs = clone(fromFiles(DATA_FILES));
     this.unsaved = false;
     this.dirty.clear();
-    for (const k of ['clips', 'moves', 'arenas'] as const) this.apply(k);
+    for (const k of ['clips', 'moves', 'arenas', 'sounds'] as const) this.apply(k);
     this.sel.piece = null;
     this.emit();
   }
@@ -215,7 +221,8 @@ export class Store {
     if (!prev) return;
     to.push(JSON.stringify(this.docs));
     this.docs = JSON.parse(prev) as Docs;
-    this.dirty.add('clips').add('moves').add('particles').add('arenas');
+    this.dirty.add('clips').add('moves').add('particles').add('arenas').add('sounds');
+    if (!this.docs.sounds[this.sel.sound]) this.sel.sound = Object.keys(this.docs.sounds)[0] ?? '';
     if (!this.docs.arenas[this.sel.arena]) this.sel.arena = Object.keys(this.docs.arenas)[0] ?? '';
     this.sel.piece = null;
     if (!this.docs.clips[this.sel.clip]) this.sel.clip = 'idle';
@@ -224,6 +231,7 @@ export class Store {
     this.apply('clips');
     this.apply('moves');
     this.apply('arenas');
+    this.apply('sounds');
     this.emit();
   }
 
@@ -232,6 +240,7 @@ export class Store {
     if (what === 'clips') loadClips(clone(this.docs.clips));
     else if (what === 'moves') loadMoves(clone(this.docs.moves));
     else if (what === 'arenas') loadArenas(clone(this.docs.arenas));
+    else if (what === 'sounds') loadSounds(clone(this.docs.sounds));
     // Particle effects are read straight from the documents (StageScene rebuilds them when they change).
   }
 

@@ -3,7 +3,7 @@ import { UNIT } from '../config';
 import { CLIPS, sampleClip } from '../anim/Clips';
 import { BONES, Rig, type Bone, type Pose } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
-import { HEADS, HURTBOX, SLOT_COLORS, SWORD_FILE, partTexture, type Move } from '../game/Kubotz';
+import { HEADS, HURTBOX, SLOT_COLORS, BLADE_FILE, partTexture, type Move } from '../game/Kubotz';
 import { opaqueOutline } from '../scenes/GameScene';
 import type { SpriterData } from '../spriter/Spriter';
 import { FRAME_MS, type Store } from './Store';
@@ -26,8 +26,8 @@ export const PARENT: Record<Bone, Bone | null> = {
 };
 const descendants = (b: Bone): Bone[] => BONES.filter((c) => { for (let p = PARENT[c]; p; p = PARENT[p]) if (p === b) return true; return false; });
 
-/** Clips played with the laser sword in hand. */
-const SWORD_CLIPS = /^(slash\d|s(ftilt|dtilt|usmash|fsmash|dsmash|nair|bair|uair|dair))$/;
+/** Clips played with the plasma blade in hand. */
+const BLADE_CLIPS = /^(slash\d|s(ftilt|dtilt|usmash|fsmash|dsmash|nair|bair|uair|dair))$/;
 const COLOR = SLOT_COLORS[0];
 const DUMMY_COLOR = SLOT_COLORS[1];
 const HANDLE = 0xffb547;
@@ -243,10 +243,10 @@ export class StageScene extends Phaser.Scene {
     const out: string[] = [];
     const head = HEADS[this.view.helmet];
     if (head) out.push(head);
-    const sword = move ? move.points[0]?.file === SWORD_FILE : SWORD_CLIPS.test(this.store.sel.clip);
-    if (sword) out.push('weapon_laserSword');
+    const bladed = move ? move.points[0]?.file === BLADE_FILE : BLADE_CLIPS.test(this.store.sel.clip);
+    if (bladed) out.push('weapon_plasmaBlade');
     else if (this.store.sel.clip === 'shoot') out.push('weapon_laserGunMkI');
-    if (move?.maps && !sword) out.push(...move.maps);
+    if (move?.maps && !bladed) out.push(...move.maps);
     return out;
   }
 
@@ -294,9 +294,9 @@ export class StageScene extends Phaser.Scene {
     let active = false;
     if (move) {
       active = t >= move.active[0] && t <= move.active[1];
-      const sword = move.points[0]?.file === SWORD_FILE;
-      const r = (move.radius ?? (sword ? 0.3 : 0.35)) * UNIT;
-      const striker = !sword && !move.all;
+      const bladed = move.points[0]?.file === BLADE_FILE;
+      const r = (move.radius ?? (bladed ? 0.3 : 0.35)) * UNIT;
+      const striker = !bladed && !move.all;
       const dir = move.behind ? -1 : 1;
       const setName = s.move()!.points;
       const at = move.points.map((p, index) => this.kubot.pointsOn(p.file, p.x, p.y).map((q) => ({ ...q, index, file: p.file })));

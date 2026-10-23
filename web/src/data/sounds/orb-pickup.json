@@ -1,0 +1,13 @@
+{
+  "note": "Picking a power-up: an energy sweep up with digital blips.",
+  "length": 1.2,
+  "reverb": 0.35,
+  "layers": [
+    {"name":"Charge","type":"tone","at":0,"dur":0.32,"gain":0.22,"freq":{"from":380,"to":2660,"curve":"exp"},"wobble":{"rate":68.75,"depth":0.06},"env":{"attack":0.02667,"shape":"linear","end":0.5}},
+    {"name":"Shimmer","type":"tone","at":0.02,"dur":0.3,"gain":0.08,"freq":{"from":772,"to":5404,"curve":"exp"},"env":{"attack":0.03,"shape":"linear"}},
+    {"name":"Blip 1","type":"tone","at":0.3,"dur":0.07,"gain":0.1,"freq":{"from":2093},"env":{"attack":0.00175,"shape":"linear"},"lfo":{"shape":"square","rate":428.57143,"depth":0.6,"duty":-0.2}},
+    {"name":"Blip 2","type":"tone","at":0.36,"dur":0.07,"gain":0.1,"freq":{"from":2637},"env":{"attack":0.00175,"shape":"linear"},"lfo":{"shape":"square","rate":428.57143,"depth":0.6,"duty":-0.2}},
+    {"name":"Blip 3","type":"tone","at":0.42,"dur":0.07,"gain":0.1,"freq":{"from":3136},"env":{"attack":0.00175,"shape":"linear"},"lfo":{"shape":"square","rate":428.57143,"depth":0.6,"duty":-0.2}},
+    {"name":"Landing ring","type":"tone","at":0.48,"dur":0.6,"gain":0.09,"freq":{"from":2093},"env":{"attack":0.01,"shape":"exp","k":5}}
+  ]
+}
