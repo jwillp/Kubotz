@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from './Grade';
 import { Config, UNIT } from '../config';
 import { vfx, vfxChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
@@ -98,9 +99,9 @@ export class ImpactFx {
 
   constructor(scene: Phaser.Scene) {
     // Twirl motes passing behind a Kubot are drawn under it.
-    this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(Phaser.BlendModes.ADD);
+    this.behind = scene.add.graphics().setDepth(9.8).setBlendMode(pureAdd(scene));
     this.dust = scene.add.graphics().setDepth(14);
-    this.glow = scene.add.graphics().setDepth(16).setBlendMode(Phaser.BlendModes.ADD);
+    this.glow = scene.add.graphics().setDepth(16).setBlendMode(pureAdd(scene));
     // The K.O. smoke, glitched as one (made up front: the results scene sorts new objects onto its cameras once).
     this.wispG = scene.add.graphics();
     this.smokeG = scene.add.graphics();

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from '../fx/Grade';
 import { lit } from '../fx/NormalMaps';
 import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { Config, UNIT } from '../config';
@@ -146,13 +147,13 @@ export class PowerUpOrb {
     this.body = new ItemBody(physics, x, y, this.radius);
     this.body.push(Phaser.Math.Between(-3, 3) * UNIT, 0);
     const size = this.radius * 2;
-    this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(Phaser.BlendModes.ADD).setTint(def.color).setDisplaySize(size * 2.6, size * 2.6);
+    this.glow = scene.add.image(x, y, 'glow').setDepth(7).setBlendMode(pureAdd(scene)).setTint(def.color).setDisplaySize(size * 2.6, size * 2.6);
     this.sprite = lit(scene.add.image(0, 0, def.image));
     const tint = type === 'invincibility' ? 0xffd84d : type === 'energy' ? 0xfff27a : null;
     if (tint !== null) this.sprite.setTint(tint);
     this.sprite.setDisplaySize(size, size);
     this.shade = scene.add.image(0, 0, 'ball-shade').setDisplaySize(size, size);
-    this.shine = scene.add.image(0, 0, 'ball-shine').setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(size, size);
+    this.shine = scene.add.image(0, 0, 'ball-shine').setBlendMode(pureAdd(scene)).setDisplaySize(size, size);
     this.view = scene.add.container(x, y, [this.sprite, this.shade, this.shine]).setDepth(8);
     this.expiresAt = now + Config.POWERUP_LIFETIME;
   }

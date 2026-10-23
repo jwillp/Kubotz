@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from './Grade';
 import { UNIT } from '../config';
 
 /**
@@ -320,7 +321,7 @@ export class HoloSpawns {
 
   constructor(private readonly scene: Phaser.Scene) {
     // The beam over the Kubot, the projector in front of its feet.
-    this.add = scene.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
+    this.add = scene.add.graphics().setDepth(10.4).setBlendMode(pureAdd(scene));
     this.g = scene.add.graphics().setDepth(10.5);
   }
 

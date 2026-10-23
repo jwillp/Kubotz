@@ -449,7 +449,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
     // A lit edge along the top of every block, like the 3D version's glowing rims.
     const mood = backdropOf(this.arena);
-    const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+    const rims = this.add.graphics().setDepth(2.6).setBlendMode(pureAdd(this));
     for (const b of this.blocks) {
       rims.lineStyle(7, mood.glow, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
       rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
@@ -929,7 +929,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private drawSabers(now: number): void {
-    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(pureAdd(this));
     const g = this.sabers.clear();
     for (const k of this.fighters) {
       const b = k.blade();
@@ -960,7 +960,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         .setIntensity(Math.min(2.2, 0.5 + l.intensity * 0.35)).setRadius(UNIT * (4 + Math.sqrt(l.intensity) * 2.5));
     });
     while (this.glows.length < lights.length) {
-      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(13));
+      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(pureAdd(this)).setDepth(13));
     }
     this.glows.forEach((img, i) => {
       const l = lights[i];
@@ -1041,13 +1041,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const x = l.x * UNIT, y = l.y * UNIT, r = l.radius * UNIT;
       const depth = LAYER_DEPTH[l.layer ?? 'behind'];
       if (l.shape !== 'cone') {
-        const glow = this.add.image(x, y, 'light-pool').setBlendMode(Phaser.BlendModes.ADD).setTint(color).setDisplaySize(r * 2, r * 2).setDepth(depth);
+        const glow = this.add.image(x, y, 'light-pool').setBlendMode(pureAdd(this)).setTint(color).setDisplaySize(r * 2, r * 2).setDepth(depth);
         return { light: this.lights.addLight(x, y, r, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
       }
       // A cone: its glow a wedge from the lamp; the light itself (Light2D lights all around) set
       // part way along it, so it falls mostly where the cone points.
       const angle = Phaser.Math.DegToRad(l.angle ?? CONE_ANGLE);
-      const glow = this.add.image(x, y, this.coneTexture(l.spread ?? CONE_SPREAD)).setBlendMode(Phaser.BlendModes.ADD).setTint(color)
+      const glow = this.add.image(x, y, this.coneTexture(l.spread ?? CONE_SPREAD)).setBlendMode(pureAdd(this)).setTint(color)
         .setDisplaySize(r * 2, r * 2).setRotation(angle).setDepth(depth);
       const light = this.lights.addLight(x + Math.cos(angle) * r * 0.5, y + Math.sin(angle) * r * 0.5, r * 0.65, color, l.intensity);
       return { light, glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };

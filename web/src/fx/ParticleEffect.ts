@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { pureAdd } from './Grade';
 import { UNIT } from '../config';
 import { vfx, vfxCount } from '../game/Settings';
 
@@ -432,7 +433,7 @@ export class ParticleFx {
       this.parent?.add(img);
     }
     return img.setTexture(key).setVisible(true).setDepth(this.depth)
-      .setBlendMode(additive ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
+      .setBlendMode(additive ? pureAdd(this.scene) : Phaser.BlendModes.NORMAL);
   }
 
   release(img: Phaser.GameObjects.Image): void {
