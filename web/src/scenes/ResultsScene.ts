@@ -234,7 +234,7 @@ export class ResultsScene extends Phaser.Scene {
     const title = r.mode === 'horde'
       ? (winners.length ? `Survived ${r.wave} waves!` : `Fell on wave ${r.wave}`)
       : trial ? (winners.length ? `Training cleared: ${r.defeated} defeated!` : `Defeated ${r.defeated} of ${r.target}`)
-      : r.mode === 'ctf' ? `${winners.length ? 'Red team' : 'Black team'} wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`
+      : r.mode === 'ctf' ? `${winners.length ? 'Red team' : 'Blue team'} wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`
       : r.mode === 'kubeball' || r.mode === 'skychase'
         ? (r.winnerTeam === null ? `Draw ${r.score?.[0] ?? 0}-${r.score?.[1] ?? 0}` : `${r.winnerTeam === 0 ? 'Red' : 'Blue'} team wins ${Math.max(...(r.score ?? [0, 0]))}-${Math.min(...(r.score ?? [0, 0]))}`)
       : winners.length ? `${winners.map((i) => r.names[i]).join(' & ')} ${winners.length > 1 ? 'WIN' : 'WINS'}!` : 'DRAW';

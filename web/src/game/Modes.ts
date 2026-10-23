@@ -59,8 +59,8 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   ctf: {
     group: 'battle',
     name: 'Capture the Flag',
-    tagline: 'Bring the black team\'s flag home.',
-    rules: ['A giant hall with pits and portals', 'Grab the black flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
+    tagline: 'Red against blue: bring their flag home.',
+    rules: ['A giant hall with pits and portals', 'Grab the blue flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
     ctf: true,
   },
   kubeball: {

@@ -1457,7 +1457,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const side = this.playerSpawns.filter((p) => (team === 0 ? p.x < mid : p.x >= mid));
       return side.length ? side : this.playerSpawns;
     }
-    const stand = this.flagStands[isBlackTeam({ team }) ? 1 : 0];
+    const stand = this.flagStands[team === HORDE_TEAM ? 0 : 1];
     if (!stand) return this.playerSpawns;
     const near = [...this.playerSpawns].sort((a, b) => Math.abs(a.x - stand.x) - Math.abs(b.x - stand.x));
     return near.slice(0, Math.max(1, Math.ceil(near.length / 2)));
@@ -1465,24 +1465,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /**
    * Capture the Flag: the two flags on their stands, two guardians on the
-   * players' team, and the black team: as many strikers as the players'
-   * side, and two guardians. The CPUs appear as the countdown starts.
+   * players' team (red), and the blue team: as many strikers as the
+   * players' side, two interceptors and two guardians. The CPUs appear as
+   * the countdown starts, without HUD cards.
    */
   private setupCtf(): void {
     if (this.flagStands.length < 2) return;
-    const colors = [SLOT_COLORS[HORDE_TEAM], BLACK_COLOR];
-    const teams = [HORDE_TEAM, BLACK_TEAM];
-    this.flags = teams.map((team, i) => new CtfFlag(this, this.physicsWorld, team, colors[i], this.flagStands[i]));
-    // The black team plays a little sharper than the players' own guardians.
+    const teams = [HORDE_TEAM, CTF_RIVAL];
+    this.flags = teams.map((team, i) => new CtfFlag(this, this.physicsWorld, team, SLOT_COLORS[team], this.flagStands[i]));
+    // The blue team plays a little sharper than the players' own guardians.
     const add = (team: number, role: 'striker' | 'guardian' | 'interceptor', helmet: number) => {
-      const black = team === BLACK_TEAM;
-      const k = this.spawnFoe(team, black ? BLACK_COLOR : SLOT_COLORS[team], black ? 7 : 5, Config.KUBOTZ_HEALTH, helmet, Infinity, this.countdownAt);
+      const k = this.spawnFoe(team, SLOT_COLORS[team], team === CTF_RIVAL ? 7 : 5, Config.KUBOTZ_HEALTH, helmet, Infinity, this.countdownAt);
       k.role = role;
+      k.hudless = true;
     };
     for (let i = 0; i < CTF_GUARDIANS; i++) add(HORDE_TEAM, 'guardian', 7);
-    for (let i = 0; i < this.specs.length; i++) add(BLACK_TEAM, 'striker', BLACK_HELMET);
-    for (let i = 0; i < CTF_INTERCEPTORS; i++) add(BLACK_TEAM, 'interceptor', 1);
-    for (let i = 0; i < CTF_GUARDIANS; i++) add(BLACK_TEAM, 'guardian', 7);
+    for (let i = 0; i < this.specs.length; i++) add(CTF_RIVAL, 'striker', [2, 4, 6, 9][i % 4]);
+    for (let i = 0; i < CTF_INTERCEPTORS; i++) add(CTF_RIVAL, 'interceptor', 1);
+    for (let i = 0; i < CTF_GUARDIANS; i++) add(CTF_RIVAL, 'guardian', 7);
     // Everyone goes down much faster than in a duel: a few good hits launch.
     for (const k of this.fighters) k.damageScale = CTF_DAMAGE;
   }
@@ -1698,6 +1698,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
+  /** Debug view (F3): a Kubot's job in its mode (Kubeball play, CTF / Skychase role, sandbox dummy), or null. */
+  roleOf(k: Kubotz): string | null {
+    const play = this.plays.get(k);
+    if (play) return play + (k.controller.label === 'CPU' ? '' : ' (read)');
+    if (k.controller instanceof CpuController && k.controller.dummy) return `dummy ${k.controller.dummy}`;
+    return k.role ?? null;
+  }
+
+  /** Debug view (F3): each team's strategy in this mode, or null. */
+  strategyLine(): string | null {
+    if (this.tactics.size) return [...this.tactics].map(([t, tac]) => `${t === 0 ? 'RED' : 'BLUE'} ${TACTICS[tac]}`).join('   ·   ');
+    const m = MODES[this.mode];
+    if (m.ctf) return `RED strikers + ${CTF_GUARDIANS} guardians   ·   BLUE ${this.specs.length} strikers, ${CTF_INTERCEPTORS} interceptors, ${CTF_GUARDIANS} guardians`;
+    if (m.ball === 'skychase') return 'each team: a Spark seeker, the rest go for the Core';
+    return null;
+  }
+
   /** Kubeball's pitch, as the plays see it. */
   private pitch(): Pitch | null {
     const ball = this.balls[0];
@@ -1817,7 +1834,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (c) {
         if (c.tumbling) {
           flag.drop(now, c.body.vx, c.body.vy);
-          this.floatText(c.x, c.y - UNIT, 'FLAG DROPPED', flag.color === BLACK_COLOR ? 0xffffff : flag.color);
+          this.floatText(c.x, c.y - UNIT, 'FLAG DROPPED', flag.color);
           this.events.emit('flag', flag);
           continue;
         }
@@ -1839,19 +1856,19 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       if (!taker) continue;
       flag.take(taker);
       this.playSfx('holo-spawn', 0.4, 300);
-      this.floatText(taker.x, taker.y - UNIT, taker.team === flag.team ? 'FLAG RECOVERED' : 'FLAG TAKEN', isBlackTeam(taker) ? 0xffffff : taker.look.color);
+      this.floatText(taker.x, taker.y - UNIT, taker.team === flag.team ? 'FLAG RECOVERED' : 'FLAG TAKEN', taker.look.color);
       this.events.emit('flag', flag);
     }
   }
 
   /** A capture: the team scores; at CTF_CAPTURES it wins, else every Kubot and both flags go back to the start. */
   private capture(by: Kubotz, now: number): void {
-    const side = isBlackTeam(by) ? 1 : 0;
+    const side = by.team === HORDE_TEAM ? 0 : 1;
     this.captures[side]++;
     this.events.emit('capture', side, [...this.captures]);
     this.shake(0.5);
     if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.5, 400);
-    if (this.captures[side] >= CTF_CAPTURES) { this.endMatch(isBlackTeam(by) ? BLACK_TEAM : HORDE_TEAM, now); return; }
+    if (this.captures[side] >= CTF_CAPTURES) { this.endMatch(by.team, now); return; }
     for (const f of this.flags) f.reset();
     for (const k of this.fighters) {
       if (!k.isAlive()) continue;
@@ -2046,8 +2063,9 @@ const PREVIEW_BAKE = 0.3;
 /** Horde: the breather between two waves, and between two Kubotz of a wave coming in (ms). */
 const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
-/** Ball games: red (team 0) against blue. */
+/** Ball games and Capture the Flag: red (team 0) against blue. */
 const BALL_RIVAL = 1;
+const CTF_RIVAL = 1;
 /** Skychase: the drones' laser bolts' speed (pixels/s). */
 const DRONE_SHOT_SPEED = 26 * UNIT;
 /** Skychase: the Spark comes out this long after "Fight" (ms). */

@@ -27,7 +27,7 @@ const NO_PICKUP_MS = 350;
 /**
  * A ball's art, drawn once in the Kubotz' flat style (no outlines): the
  * ball (Kubeball's, Skychase's Core), a faceted crystal split magenta /
- * cyan with broken ring arcs, a glitchy data shard; the Spark, a dark glass
+ * cyan with broken ring arcs on a dark glass sphere, a glitchy data shard; the Spark, a dark glass
  * sphere lit from inside along neon green hex seams; a Hunter, a hovering
  * hex drone with a red lens and two thruster pods.
  */
@@ -73,7 +73,10 @@ function ballTexture(scene: Phaser.Scene, kind: BallKind): string {
     lens.addColorStop(0, '#ffd0c8'); lens.addColorStop(0.45, '#ff2d3a'); lens.addColorStop(1, '#4a0008');
     ctx.fillStyle = lens; ctx.beginPath(); ctx.arc(m, m, n * 0.13, 0, Math.PI * 2); ctx.fill();
   } else {
-    // The ball: a faceted crystal, its halves magenta and cyan, broken ring arcs round it.
+    // The ball: a faceted crystal, its halves magenta and cyan, broken ring arcs round it, on a dark glass sphere like the Spark's.
+    const glass = ctx.createRadialGradient(m * 0.8, m * 0.72, n * 0.04, m, m, m - 2);
+    glass.addColorStop(0, '#2a2f4a'); glass.addColorStop(1, '#07080f');
+    ctx.fillStyle = glass; ctx.beginPath(); ctx.arc(m, m, m - 2, 0, Math.PI * 2); ctx.fill();
     ctx.lineWidth = 3; ctx.shadowBlur = 8;
     for (const [from, to, col] of [[0.1, 1.2, '#ff3df0'], [1.9, 2.9, '#3ef0ff'], [3.5, 4.4, '#ff3df0'], [5.0, 5.9, '#3ef0ff']] as const) {
       ctx.shadowColor = col; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(m, m, n * 0.4, from, to); ctx.stroke();

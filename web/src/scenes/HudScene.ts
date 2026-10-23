@@ -206,7 +206,7 @@ export class HudScene extends Phaser.Scene {
       const left = g.fighters.filter((k) => isBlackTeam(k) && !k.eliminated).length;
       this.waveText.setText(mode.sandbox ? `DUMMY: ${(g.dummyMode() ?? '').toUpperCase()}   ·   SELECT / TAB: CHANGE`
         : mode.trial ? `DEFEATED ${g.defeated} / ${g.target}`
-          : mode.ctf ? `CAPTURES   RED ${g.captures[0]}  –  ${g.captures[1]} BLACK   ·   FIRST TO ${CTF_CAPTURES}`
+          : mode.ctf ? `CAPTURES   RED ${g.captures[0]}  –  ${g.captures[1]} BLUE   ·   FIRST TO ${CTF_CAPTURES}`
             : mode.ball ? `RED ${g.captures[0]}  –  ${g.captures[1]} BLUE   ·   ${g.scoreLimit ? `FIRST TO ${g.scoreLimit}` : 'NO LIMIT'}${mode.ball === 'skychase' ? '   ·   SPARK +30' : ''}`
             : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
@@ -382,7 +382,7 @@ export class HudScene extends Phaser.Scene {
 
   /** Capture the Flag: a capture's title, in the scoring team's colour. */
   private onCapture(side: number): void {
-    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, side === 0 ? 'RED TEAM SCORES' : 'BLACK TEAM SCORES', 80).setDepth(20).setAlpha(0);
+    const t = heading(this, this.scale.width / 2, this.scale.height / 2 - 60, side === 0 ? 'RED TEAM SCORES' : 'BLUE TEAM SCORES', 80).setDepth(20).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, duration: 200 });
     this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
     this.glitchTitle(t, 1500);
