@@ -63,6 +63,8 @@ function robotBallTextures(scene: Phaser.Scene): [string, string] {
   ctx = lights.getContext('2d')!;
   ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8; ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(m, m, n * 0.13, 0, Math.PI * 2); ctx.stroke();
+  // A lit rim all round: the ball's outline glows in the colour, so it reads against the Kubotz.
+  ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(m, m, r - 2, 0, Math.PI * 2); ctx.stroke();
   ctx.beginPath(); ctx.arc(m, m, n * 0.05, 0, Math.PI * 2); ctx.fill();
   for (const [x0, x1] of [[0.06, 0.24], [0.76, 0.94]]) ctx.fillRect(n * x0, m - 1.5, n * (x1 - x0), 3);
   for (const [x, y] of [[0.36, 0.14], [0.64, 0.86]]) { ctx.beginPath(); ctx.arc(n * x, n * y, n * 0.025, 0, Math.PI * 2); ctx.fill(); }
@@ -138,6 +140,8 @@ export class GameBall {
   private readonly image: Phaser.GameObjects.Image;
   /** The robot ball's lights (tinted: neutral loose, a team's colour in its hands). */
   private readonly lights?: Phaser.GameObjects.Image;
+  /** Its bloom, over the Kubotz, so the ball stands out of a crowd: in the same colour as its bubble. */
+  private readonly halo?: Phaser.GameObjects.Image;
   private readonly glow: Phaser.GameObjects.Image;
   /** The Spark: where it is flying to, and when it picks a new spot; its trail (recent positions) and what draws it. */
   wander = { x: 0, y: 0, until: 0 };
@@ -158,7 +162,11 @@ export class GameBall {
     const [shell, glowKey] = robot ? robotBallTextures(scene) : [ballTexture(scene, kind), ''];
     const image = scene.add.image(spot.x, spot.y, shell).setDisplaySize(size, size).setDepth(11);
     this.image = kind === 'hunter' || robot ? lit(image) : image;
-    if (robot) this.lights = scene.add.image(spot.x, spot.y, glowKey).setDisplaySize(size, size).setDepth(11.1).setBlendMode(Phaser.BlendModes.ADD);
+    if (robot) {
+      this.lights = scene.add.image(spot.x, spot.y, glowKey).setDisplaySize(size, size).setDepth(11.1).setBlendMode(Phaser.BlendModes.ADD);
+      this.halo = scene.add.image(spot.x, spot.y, 'glow').setDisplaySize(size * 2.8, size * 2.8).setDepth(11.2).setBlendMode(Phaser.BlendModes.ADD);
+      this.glow.setDisplaySize(size * 4, size * 4);
+    }
     if (kind === 'spark') this.trailG = scene.add.graphics().setDepth(10.8).setBlendMode(Phaser.BlendModes.ADD);
   }
 
@@ -222,8 +230,10 @@ export class GameBall {
     if (this.lights) {
       // The team holding it lights it up in its colour; loose, it glows neutral.
       const color = this.carrier ? this.carrier.look.color : NEUTRAL;
-      this.lights.setPosition(x, y).setRotation(rot).setTint(color).setAlpha(0.85 + 0.15 * Math.sin(now / 120));
-      this.glow.setTint(color);
+      const pulse = Math.sin(now / 120);
+      this.lights.setPosition(x, y).setRotation(rot).setTint(color).setAlpha(0.9 + 0.1 * pulse);
+      this.glow.setTint(color).setAlpha(0.95);
+      this.halo?.setPosition(x, y).setTint(color).setAlpha(0.8 + 0.2 * pulse);
     }
   }
 
@@ -240,13 +250,14 @@ export class GameBall {
     }
   }
 
-  props(): Prop[] { return [propOf(this.glow), propOf(this.image), ...(this.lights ? [propOf(this.lights)] : [])]; }
+  props(): Prop[] { return [propOf(this.glow), propOf(this.image), ...(this.lights ? [propOf(this.lights)] : []), ...(this.halo ? [propOf(this.halo)] : [])]; }
 
   destroy(): void {
     this.body.destroy();
     this.image.destroy();
     this.glow.destroy();
     this.lights?.destroy();
+    this.halo?.destroy();
     this.trailG?.destroy();
   }
 }
