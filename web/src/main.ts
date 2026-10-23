@@ -14,6 +14,22 @@ import { ShutterScene } from './ui/Plate';
 import { installFullscreen } from './ui/Fullscreen';
 import { useEditedData, useKeptEdits } from './game/EditedData';
 
+// Gamepads in an embedding page that doesn't allow them (the artifact frame):
+// getGamepads() throws "Permissions check failed" on every call, so it answers
+// "no pads" instead. And Phaser's gamepad plugin keeps pads by their index, so a
+// pad on index 1 leaves a hole at 0 that its shutdown trips on: holes are skipped.
+const getPads = navigator.getGamepads?.bind(navigator);
+if (getPads) navigator.getGamepads = () => { try { return getPads(); } catch { return []; } };
+const padPlugin = Phaser.Input.Gamepad.GamepadPlugin.prototype as unknown as { stopListeners(): void; disconnectAll(): void; gamepads: (Phaser.Input.Gamepad.Gamepad | undefined)[] };
+for (const name of ['stopListeners', 'disconnectAll'] as const) {
+  const original = padPlugin[name];
+  padPlugin[name] = function (this: typeof padPlugin) {
+    const pads = this.gamepads;
+    this.gamepads = pads.filter(Boolean);
+    try { original.call(this); } finally { this.gamepads = pads; }
+  };
+}
+
 // Dev builds: the edits saved in this browser; opened from the editor's "Test in game": its data.
 useKeptEdits();
 useEditedData();
