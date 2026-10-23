@@ -186,7 +186,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
 
     this.arena = setup.arena;
-    this.bakeScale = setup.preview ? PREVIEW_BAKE : 1;
+    // Big maps bake their art smaller: canvases the size of a 200 x 160 map at full size run the
+    // page out of memory (and past the GPU's largest texture).
+    const pw = this.map.width * this.map.tileWidth, ph = this.map.height * this.map.tileHeight;
+    this.bakeScale = Math.min(setup.preview ? PREVIEW_BAKE : 1, MAX_BAKE_SIDE / Math.max(pw, ph), Math.sqrt(MAX_BAKE_AREA / (pw * ph)));
     this.arenaBuilt = JSON.stringify(ARENAS[setup.arena] ?? null);
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
@@ -1520,6 +1523,9 @@ function cpuCanvas(w: number, h: number): HTMLCanvasElement {
 
 /** The setup screen's arena preview is baked at this fraction of the match's resolution (a sixteenth of the work at 0.25). */
 const PREVIEW_BAKE = 0.3;
+/** The largest arena art baked (pixels): a side, and an area (the Kube's 52 x 38 is 8.1 M). */
+const MAX_BAKE_SIDE = 8192;
+const MAX_BAKE_AREA = 12e6;
 
 /** The match is over: how long the winners dance before "press to continue" (ms). */
 const CONTINUE_DELAY = 1600;
