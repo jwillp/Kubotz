@@ -1710,11 +1710,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Debug view (F3): a Kubot's job in its mode (Kubeball play, CTF / Skychase role, sandbox dummy), or null. */
   roleOf(k: Kubotz): string | null {
     let play: string | undefined = this.plays.get(k);
-    // Total Football: whether it is one of the two going for the ball right now, or holding the line.
+    // Total Football: attacker while one of the two going for the ball, defender while holding the line.
     if (play === 'free' && this.balls[0]) {
       const b = this.balls[0];
       const nearest = this.teamOf(k.team).filter((t) => t.isAlive()).sort((p, q) => Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y));
-      play = nearest.indexOf(k) < 2 ? 'chaser' : 'hold line';
+      play = nearest.indexOf(k) < 2 ? 'attacker' : 'defender';
     }
     if (play) return play + (k.controller.label === 'CPU' ? '' : ' (read)');
     if (k.controller instanceof CpuController && k.controller.dummy) return `dummy ${k.controller.dummy}`;

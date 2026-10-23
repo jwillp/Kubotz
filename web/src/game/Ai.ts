@@ -19,6 +19,8 @@ export interface Objective {
   fightWithin?: number;
   /** Press grab now (take the ball in reach, throw the one in hand). */
   grab?: boolean;
+  /** A ball to fetch, exactly as a power-up ball is: the A* run to it, a grab once in reach. */
+  ball?: { x: number; y: number };
 }
 
 export interface AiWorld {
@@ -143,6 +145,12 @@ export class CpuController implements Controller {
       if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) this.fleeTarget = this.refuge(danger);
       dest = { ...this.fleeTarget, bottom: this.fleeTarget.y };
       this.debug.mode = 'flee';
+    } else if (job?.ball) {
+      // A ball game's ball: fetched like a power-up.
+      this.fleeTarget = null;
+      dest = { ...job.ball, bottom: job.ball.y };
+      this.debug.mode = 'ball';
+      if (manhattan(me, job.ball) < 1.6) pad.grab = true;
     } else if (jobDest) {
       this.fleeTarget = null;
       dest = { ...jobDest, bottom: jobDest.y };
