@@ -5,7 +5,7 @@ import { Rig } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import type { SpriterData } from '../spriter/Spriter';
 import {
-  GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, SWORD_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
+  GUN_FILE, HEADS, PART_TIPS, ROOT_MOTION_GAIN, SLOT_COLORS, BLADE_FILE, THROWS, hex, partTexture, type Launch, type ThrowKind,
 } from '../game/Kubotz';
 import { MOVE_LIST, type MoveEntry, type Step } from '../game/MoveList';
 import { opaqueOutline } from './GameScene';
@@ -495,7 +495,7 @@ export class MoveListScene extends Phaser.Scene {
     const maps: string[] = [];
     if (HEADS[1]) maps.push(HEADS[1]);
     const w = this.entry.weapon ?? 'none';
-    if (w === 'laserSword') maps.push('weapon_laserSword');
+    if (w === 'plasmaBlade') maps.push('weapon_plasmaBlade');
     else if (w !== 'none') maps.push('weapon_laserGunMkI');
     const m = this.run.step?.move;
     if (w === 'none' && m?.maps) maps.push(...m.maps);
@@ -534,13 +534,13 @@ export class MoveListScene extends Phaser.Scene {
     const g = this.fx.clear();
     // The strike's active part: a glow on the striking points.
     if (m && !holding && r.progress >= m.active[0] && r.progress <= m.active[1]) {
-      const sword = m.points[0]?.file === SWORD_FILE;
+      const bladed = m.points[0]?.file === BLADE_FILE;
       let pts = m.points.flatMap((p) => this.kubot.pointsOn(p.file, p.x, p.y));
-      if (!sword && !m.all && pts.length) {
+      if (!bladed && !m.all && pts.length) {
         const best = pts.reduce((a, b) => ((m.behind ? b.x < a.x : b.x > a.x) ? b : a));
         pts = [best];
       }
-      const rad = (sword ? 0.3 : 0.35) * UNIT;
+      const rad = (bladed ? 0.3 : 0.35) * UNIT;
       for (const p of pts) {
         g.fillStyle(COLOR, 0.28).fillCircle(p.x, p.y, rad);
         g.fillStyle(0xffffff, 0.5).fillCircle(p.x, p.y, rad * 0.35);

@@ -56,7 +56,7 @@ interface Pending { h: Highlight; from: number; to: number }
 export class ReplayRecorder {
   private frames: ReplayFrame[] = [];
   private pending: Pending[] = [];
-  private candidates: Record<HighlightKind, Highlight[]> = { ko: [], recovery: [], combo: [] };
+  private candidates: Record<HighlightKind, Highlight[]> = { goal: [], ko: [], recovery: [], combo: [] };
   private events: ReplayEvent[] = [];
   private blows = new Map<number, Blow>();
   private combos = new Map<number, Combo>();
@@ -174,6 +174,17 @@ export class ReplayRecorder {
     this.blows.delete(victim);
   }
 
+  /**
+   * A goal (the ball games) by `scorer` (null: nobody touched it last), the
+   * ball thrown or struck from `distance` units away and in flight `airMs`:
+   * long shots and long flights are the best, then the one that wins it.
+   */
+  goal(scorer: number | null, now: number, distance: number, airMs: number, final: boolean): void {
+    const score = distance * 0.25 + Math.min(2, airMs / 800) + (final ? 1.5 : 0);
+    this.queue({ kind: 'goal', subject: scorer ?? 0, by: scorer, score, focus: now - Math.min(airMs, 900), frames: [], final, margin: distance },
+      now - REPLAY_BEFORE, now + REPLAY_AFTER);
+  }
+
   /** Cuts out the highlights still waiting for their last frames (the match is leaving) and ranks them. */
   flush(): Highlight[] {
     for (const [v, c] of this.combos) this.endCombo(v, c, false);
@@ -234,7 +245,7 @@ export class ReplayRecorder {
 }
 
 /**
- * The best few of each kind, in the order they are shown: K.O.s, recoveries,
+ * The best few of each kind, in the order they are shown: goals (the ball games), K.O.s, recoveries,
  * combos, each counting down to the best. A moment already shown (the same
  * Kubot, overlapping in time) is not shown again in a later kind.
  */
@@ -246,7 +257,7 @@ export function pickHighlights(candidates: Record<HighlightKind, Highlight[]>): 
     const [a0, a1] = span(p); const [b0, b1] = span(h);
     return Math.min(a1, b1) - Math.max(a0, b0) > 0.5 * Math.min(a1 - a0, b1 - b0);
   });
-  for (const kind of ['ko', 'recovery', 'combo'] as HighlightKind[]) {
+  for (const kind of ['goal', 'ko', 'recovery', 'combo'] as HighlightKind[]) {
     const best = [...candidates[kind]].sort((a, b) => b.score - a.score).filter((h) => !shown(h)).slice(0, HIGHLIGHTS_PER_KIND);
     picked.push(...best.reverse());
   }

@@ -3,12 +3,33 @@ import { Config, UNIT } from '../config';
 import { Controller, PadState, emptyPad } from './Input';
 import type { Kubotz } from './Kubotz';
 import type { Link, Nav, Surface } from './Nav';
+import type { DummyMode } from './Modes';
+
+/**
+ * A job beyond fighting (Capture the Flag): a place to go (`goal`), an enemy
+ * to go after whatever else is near (`target`), and for a guardian a circle
+ * it keeps to (`leash`: it only fights enemies inside it, and walks back to
+ * its centre when none are). Enemies closer than `fightWithin` units are
+ * fought on the way to the goal.
+ */
+export interface Objective {
+  goal?: { x: number; y: number };
+  target?: Kubotz | null;
+  leash?: { x: number; y: number; r: number };
+  fightWithin?: number;
+  /** Press grab now (take the ball in reach, throw the one in hand). */
+  grab?: boolean;
+  /** A ball to fetch, exactly as a power-up ball is: the A* run to it, a grab once in reach. */
+  ball?: { x: number; y: number };
+}
 
 export interface AiWorld {
   enemiesOf(k: Kubotz): Kubotz[];
   powerUpPositions(): { x: number; y: number }[];
   now(): number;
   nav: Nav;
+  /** The CPU's job, if it has one beyond fighting (see Objective). */
+  objective?(k: Kubotz): Objective | null;
 }
 
 /**
@@ -49,8 +70,12 @@ export class CpuController implements Controller {
   private pummelFor = 0;
   private ledgeSince = 0;
   private ledgeWait = 0;
+  /** Sandbox: the dummy's behaviour ('fight' plays like any CPU), and where it stands. */
+  dummy?: DummyMode;
+  dummyHome?: { x: number; y: number };
 
-  constructor(private world: AiWorld, private reactionMs = 140) {}
+  /** `reactionMs` can change between lives (Horde's Kubotz come back at a new level). */
+  constructor(private world: AiWorld, public reactionMs = 140) {}
 
   read(): PadState {
     const now = this.world.now();
@@ -72,6 +97,12 @@ export class CpuController implements Controller {
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
     this.debug.dest = null;
+    if (me.bladeLocked) {
+      // A blade lock: a fresh press every think (quicker CPUs mash faster).
+      this.debug.mode = 'blade lock';
+      pad.attack = true;
+      return pad;
+    }
     if (this.behaviour === 'dummy') { this.debug.mode = 'dummy'; return pad; }
     if (me.heldBy) {
       // Mash out: a fresh button press every think (two now and then), and a stick wiggle.
@@ -105,6 +136,7 @@ export class CpuController implements Controller {
     this.holdSince = 0;
     this.ledgeSince = 0;
     if (this.recover(pad)) { this.debug.mode = 'recover'; return pad; }
+    if (this.dummy && this.dummy !== 'fight') return this.dummyPad(pad, now);
     const manhattan = (a: { x: number; y: number }, b: { x: number; y: number }) =>
       (Math.abs(a.x - b.x) + Math.abs(a.y - b.y)) / UNIT;
     const alive = this.world.enemiesOf(me).filter((e) => e.isAlive());
@@ -126,10 +158,26 @@ export class CpuController implements Controller {
     const fleeing = this.behaviour === 'flee' && enemy && manhattan(me, enemy) < 12 ? enemy : null;
     if (this.behaviour === 'flee' && !fleeing) { this.debug.mode = 'flee (nobody near)'; return pad; }
 
+    // A job (Capture the Flag): a set enemy, a leash round the flag, a place to go.
+    const job = this.world.objective?.(me) ?? null;
+    let jobDest: { x: number; y: number } | null = null;
+    if (job) {
+      if (job.target?.isAlive()) enemy = job.target;
+      else if (job.leash) {
+        const { x, y, r } = job.leash;
+        const inside = enemies.filter((e) => Math.hypot(e.x - x, e.y - y) < r * UNIT);
+        enemy = inside.sort((a, b) => manhattan(me, a) - manhattan(me, b))[0] ?? null;
+        if (!enemy && Math.hypot(me.x - x, me.y - y) > 1.5 * UNIT) jobDest = { x, y };
+      }
+      if (job.goal && !job.target && !(enemy && manhattan(me, enemy) < (job.fightWithin ?? 3))) jobDest = job.goal;
+      if (job.grab) { pad.grab = true; this.debug.mode = 'grab (job)'; return pad; }
+      if (!jobDest && job.leash && !enemy) { this.debug.mode = 'guard post'; return pad; }
+    }
+
     let dest: { x: number; y: number; bottom: number } | null = null;
     let wantsAttack = false;
 
-    const danger = fleeing ?? untouchable[0] ?? (enemy && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
+    const danger = fleeing ?? untouchable[0] ?? (enemy && !job && me.health <= 25 && manhattan(me, enemy) < 7 ? enemy : null);
     if (danger) {
       // Cornered on the ground: now and then a dodge roll away (or through it).
       if (me.grounded && manhattan(me, danger) < 2.2 && !me.rolling && Math.random() < 0.15) {
@@ -142,9 +190,19 @@ export class CpuController implements Controller {
       if (!this.fleeTarget || manhattan(this.fleeTarget, danger) < 20) this.fleeTarget = this.refuge(danger);
       dest = { ...this.fleeTarget, bottom: this.fleeTarget.y };
       this.debug.mode = 'flee';
+    } else if (job?.ball) {
+      // A ball game's ball: fetched like a power-up.
+      this.fleeTarget = null;
+      dest = { ...job.ball, bottom: job.ball.y };
+      this.debug.mode = 'ball';
+      if (manhattan(me, job.ball) < 1.6) pad.grab = true;
+    } else if (jobDest) {
+      this.fleeTarget = null;
+      dest = { ...jobDest, bottom: jobDest.y };
+      this.debug.mode = 'objective';
     } else {
       this.fleeTarget = null;
-      const orbs = now < this.ignoreOrbsUntil ? [] : this.world.powerUpPositions();
+      const orbs = now < this.ignoreOrbsUntil || job ? [] : this.world.powerUpPositions();
       const orb = orbs.sort((a, b) => manhattan(me, a) - manhattan(me, b))[0];
       if (orb && manhattan(me, orb) < 14 && (!enemy || manhattan(me, orb) < manhattan(me, enemy) * 0.6)) {
         dest = { ...orb, bottom: orb.y };
@@ -169,8 +227,17 @@ export class CpuController implements Controller {
 
     if (wantsAttack && enemy) {
       const facingEnemy = Math.sign(dx) === me.facing || Math.abs(dx) < 4;
+      // Plasma blades: a swing coming is answered with a swing, so blades meet (clangs and blade locks).
+      const ex = enemy.x - me.x;
+      if (me.weapon === 'plasmaBlade' && enemy.weapon === 'plasmaBlade' && enemy.attacking && me.grounded
+        && Math.abs(ex) < 2.6 * UNIT && Math.abs(enemy.y - me.y) < UNIT && Math.random() < 0.55) {
+        pad[ex > 0 ? 'right' : 'left'] = true;
+        pad.attack = true;
+        if (Math.random() < 0.4) pad.smash = true;
+        return pad;
+      }
       const ranged = me.weapon === 'laserGunMkI' || me.weapon === 'laserGunMkII';
-      const reach = me.weapon === 'laserSword' ? 1.8 : 1.3;
+      const reach = me.weapon === 'plasmaBlade' ? 1.8 : 1.3;
       if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) {
         pad.attack = true;
         // Mostly quick shots; now and then a charged bolt, more often from afar.
@@ -255,10 +322,51 @@ export class CpuController implements Controller {
       this.stuckSince = 0;
     }
     this.lastX = me.x;
-    const stuck = this.stuckSince && now - this.stuckSince > 250;
+    // Held up a while (not a teammate brushing past): hop over it.
+    const stuck = this.stuckSince && now - this.stuckSince > 600;
 
     if (dy < -1.2 * UNIT || stuck || me.body.wall !== 0) pad.up = true;
     else if (dy > 2 * UNIT && close) pad.down = true;
+    return pad;
+  }
+
+  /**
+   * Sandbox: the dummy does one thing (stand, walk to and fro, hop, hold its
+   * guard, dodge what comes at it), and walks back to its spot when knocked
+   * away from it.
+   */
+  private dummyPad(pad: PadState, now: number): PadState {
+    const me = this.agent;
+    const home = this.dummyHome ?? { x: me.x, y: me.y };
+    const away = home.x - me.x;
+    this.debug.mode = `dummy: ${this.dummy}`;
+    const back = () => { if (Math.abs(away) > 2.5 * UNIT && me.grounded) pad[away < 0 ? 'left' : 'right'] = true; };
+    switch (this.dummy) {
+      case 'stand': back(); break;
+      case 'walk': {
+        // To and fro over 3 units either side of its spot, walking (not running).
+        const phase = Math.floor(now / 1600) % 2 === 0 ? 1 : -1;
+        const want = home.x + phase * 3 * UNIT;
+        if (Math.abs(want - me.x) > 0.4 * UNIT) { pad[want < me.x ? 'left' : 'right'] = true; pad.walk = true; pad.walkAmount = 0.7; }
+        break;
+      }
+      case 'jump': back(); if (me.grounded && now % 1100 < 150) pad.up = true; break;
+      case 'guard': back(); pad.guard = true; break;
+      case 'dodge': {
+        back();
+        // Something swinging at it, close: roll through or away, or a spot dodge.
+        const foe = this.world.enemiesOf(me).find((e) => e.isAlive() && e.attacking && Math.abs(e.x - me.x) < 2.5 * UNIT && Math.abs(e.y - me.y) < 2 * UNIT);
+        if (foe && Math.random() < 0.7) {
+          pad.guard = true;
+          const r = Math.random();
+          if (r < 0.4) pad[foe.x < me.x ? 'right' : 'left'] = true;
+          else if (r < 0.8) pad[foe.x < me.x ? 'left' : 'right'] = true;
+          else pad.down = true;
+        }
+        break;
+      }
+      default: break;
+    }
     return pad;
   }
 
