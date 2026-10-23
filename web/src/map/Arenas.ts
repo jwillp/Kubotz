@@ -66,11 +66,13 @@ export type LightEffect = 'steady' | 'pulse' | 'flicker';
  * (radius, units), how strong it is, and whether it stays steady, pulses
  * slowly or flickers like a failing tube. Round (all around), or a cone:
  * pointing at `angle` (degrees, 0 right, 90 down), `spread` degrees wide.
- * Its glow is drawn on `layer` (default behind the arena).
+ * Its glow is drawn on `layer` (default behind the arena), cut off by blocks with `shadows`.
  */
 export interface MapLight {
   x: number; y: number; color: string; radius: number; intensity: number; effect?: LightEffect;
   shape?: 'round' | 'cone'; angle?: number; spread?: number; layer?: MapLayer;
+  /** Its glow stops at walls and platforms (the light on the tiles and Kubotz does not: Light2D has no shadows). */
+  shadows?: boolean;
 }
 /** A cone light's direction and width when the file leaves them out: pointing down, 60 degrees wide. */
 export const CONE_ANGLE = 90;

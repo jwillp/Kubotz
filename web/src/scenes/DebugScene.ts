@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { Fixture } from 'planck';
 import { Config, UNIT } from '../config';
 import { CpuController } from '../game/Ai';
-import { ledgeZone, type GameScene } from './GameScene';
+import type { GameScene } from './GameScene';
+import { ledgeZone } from '../game/Ledges';
 import type { Ledge } from '../game/Kubotz';
 
 /** What the debug mode shows and how it runs the game (see GameScene.update). */

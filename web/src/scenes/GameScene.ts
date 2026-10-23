@@ -16,13 +16,15 @@ import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
+import { lightPolygon } from '../fx/Shadows';
+import { LEDGE_REACH, findLedges } from '../game/Ledges';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
-import { arenaMap, eachTile } from '../map/ArenaArt';
+import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import { ALL_LAYERS, type DebugState } from './DebugScene';
@@ -186,10 +188,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
 
     this.arena = setup.arena;
-    // Big maps bake their art smaller: canvases the size of a 200 x 160 map at full size run the
-    // page out of memory (and past the GPU's largest texture).
-    const pw = this.map.width * this.map.tileWidth, ph = this.map.height * this.map.tileHeight;
-    this.bakeScale = Math.min(setup.preview ? PREVIEW_BAKE : 1, MAX_BAKE_SIDE / Math.max(pw, ph), Math.sqrt(MAX_BAKE_AREA / (pw * ph)));
+    this.bakeScale = arenaBakeScale(this.map.width * this.map.tileWidth, this.map.height * this.map.tileHeight, setup.preview ? PREVIEW_BAKE : 1);
     this.arenaBuilt = JSON.stringify(ARENAS[setup.arena] ?? null);
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
@@ -1045,6 +1044,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const depth = LAYER_DEPTH[l.layer ?? 'behind'];
       if (l.shape !== 'cone') {
         const glow = this.add.image(x, y, 'light-pool').setBlendMode(pureAdd(this)).setTint(color).setDisplaySize(r * 2, r * 2).setDepth(depth);
+        if (l.shadows) this.shadowMask(glow, x, y, r);
         return { light: this.lights.addLight(x, y, r, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
       }
       // A cone: its glow a wedge from the lamp; the light itself (Light2D lights all around) set
@@ -1052,11 +1052,20 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const angle = Phaser.Math.DegToRad(l.angle ?? CONE_ANGLE);
       const glow = this.add.image(x, y, this.coneTexture(l.spread ?? CONE_SPREAD)).setBlendMode(pureAdd(this)).setTint(color)
         .setDisplaySize(r * 2, r * 2).setRotation(angle).setDepth(depth);
+      if (l.shadows) this.shadowMask(glow, x, y, r);
       const light = this.lights.addLight(x + Math.cos(angle) * r * 0.5, y + Math.sin(angle) * r * 0.5, r * 0.65, color, l.intensity);
       return { light, glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
     });
     this.updateMapLights(0);
     this.placeFixedLights();
+  }
+
+  /** A light's Shadows: its glow masked by what it can see of the arena (walls and platforms cut it off). */
+  private shadowMask(glow: Phaser.GameObjects.Image, x: number, y: number, r: number): void {
+    const shape = this.make.graphics({}, false);
+    shape.fillStyle(0xffffff).fillPoints(lightPolygon(x, y, r, this.blocks), true);
+    glow.setMask(shape.createGeometryMask());
+    glow.once(Phaser.GameObjects.Events.DESTROY, () => shape.destroy());
   }
 
   /** A cone light's glow, pointing right from the middle of the texture, `spread` degrees wide (one texture per width). */
@@ -1524,9 +1533,6 @@ function cpuCanvas(w: number, h: number): HTMLCanvasElement {
 
 /** The setup screen's arena preview is baked at this fraction of the match's resolution (a sixteenth of the work at 0.25). */
 const PREVIEW_BAKE = 0.3;
-/** The largest arena art baked (pixels): a side, and an area (the Kube's 52 x 38 is 8.1 M). */
-const MAX_BAKE_SIDE = 8192;
-const MAX_BAKE_AREA = 12e6;
 
 /** The match is over: how long the winners dance before "press to continue" (ms). */
 const CONTINUE_DELAY = 1600;
@@ -1554,36 +1560,3 @@ const INTRO_CAMERA_PACE = 3;
 /** How long the camera keeps a newly spawned power-up ball in view. */
 const ORB_FOCUS_MS = 2000;
 
-/**
- * Ledges, Melee-style: the top corners of solid blocks with room to stand on
- * just inside the corner and room to hang just outside it. Soft platforms
- * have none.
- */
-/**
- * Where a falling Kubot catches a ledge: its centre 0.1 to 1 unit out from
- * the corner, the top of its body from 0.85 unit above the ledge to 0.45
- * below (ledgeNear). The box the top of its body must reach (pixels), for
- * the debug view and the editor.
- */
-export const LEDGE_REACH = { outMin: 0.1, outMax: 1.0, above: 0.85, below: 0.45 };
-export function ledgeZone(l: Ledge): Phaser.Geom.Rectangle {
-  const near = l.x + l.dir * LEDGE_REACH.outMin * UNIT;
-  const far = l.x + l.dir * LEDGE_REACH.outMax * UNIT;
-  return new Phaser.Geom.Rectangle(Math.min(near, far), l.y - LEDGE_REACH.above * UNIT, Math.abs(far - near), (LEDGE_REACH.above + LEDGE_REACH.below) * UNIT);
-}
-
-export function findLedges(blocks: NavBlock[], blocked?: Ledge[]): Ledge[] {
-  const solid = blocks.filter((b) => !b.soft);
-  const free = (x1: number, y1: number, x2: number, y2: number) =>
-    !solid.some((o) => o.x < Math.max(x1, x2) - 1 && o.x + o.width > Math.min(x1, x2) + 1 && o.y < Math.max(y1, y2) - 1 && o.y + o.height > Math.min(y1, y2) + 1);
-  const out: Ledge[] = [];
-  for (const b of solid) {
-    for (const dir of [-1, 1] as const) {
-      const x = dir < 0 ? b.x : b.x + b.width;
-      const y = b.y;
-      if (free(x, y - 2 * UNIT, x - dir * UNIT, y) && free(x, y - 0.5 * UNIT, x + dir * 1.2 * UNIT, y + 2.2 * UNIT)) out.push({ x, y, dir });
-      else blocked?.push({ x, y, dir });
-    }
-  }
-  return out;
-}

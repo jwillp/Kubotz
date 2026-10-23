@@ -455,6 +455,7 @@ export function installDevHud(game: Phaser.Game): void {
             num('Direction °', l.angle ?? CONE_ANGLE, (n) => setL((q) => { q.angle = ((Math.round(n) % 360) + 360) % 360; }), 15),
             num('Spread °', l.spread ?? CONE_SPREAD, (n) => setL((q) => { q.spread = Phaser.Math.Clamp(Math.round(n), 5, 360); }), 5)) : null)!,
           layerField(l.layer ?? 'behind', (v) => setL((q) => { if (v === 'behind') delete q.layer; else q.layer = v; })),
+          check('Shadows', 'Its glow stops at walls and platforms, as if they blocked the light (the light on the tiles and Kubotz still passes).', !!l.shadows, (on) => setL((q) => { if (on) q.shadows = true; else delete q.shadows; })),
           choose('Effect', 'Steady, a slow pulse, or a flicker like a failing tube.', [['steady', 'steady'], ['pulse', 'pulse'], ['flicker', 'flicker']], l.effect ?? 'steady',
             (val) => setL((q) => { if (val === 'steady') delete q.effect; else q.effect = val as LightEffect; })),
           (a.lights!.length > MAX_MAP_LIGHTS ? h('p', { cls: 'dev-note', textContent: `Only the first ${MAX_MAP_LIGHTS} lights are lit.` }) : null)!,

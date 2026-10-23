@@ -6,7 +6,8 @@ import { eachTile } from '../map/ArenaArt';
 import type { TmxMap } from '../map/TmxMap';
 import { Fingers } from './Fingers';
 import { drawLedges } from '../scenes/DebugScene';
-import { findLedges } from '../scenes/GameScene';
+import { lightPolygon } from '../fx/Shadows';
+import { findLedges } from '../game/Ledges';
 import type { Ledge } from '../game/Kubotz';
 import { POINT_KINDS, pointOf, setPoint, type ArenaPiece, type PointKind, type Store } from './Store';
 
@@ -237,9 +238,12 @@ export class ArenaScene extends Phaser.Scene {
       g.lineStyle(px(2), isSel('npcs', i) ? COLORS.sel : 0xffffff, 1).strokeTriangle(x * UNIT, y * UNIT, x * UNIT - s, y * UNIT - 2 * s, x * UNIT + s, y * UNIT - 2 * s);
     });
     // Lights: a disc in their colour, and a faint ring (or cone) as far as they reach.
-    (a.lights ?? []).forEach(({ x, y, color, radius, shape, angle, spread }, i) => {
+    const solids = [...a.walls, ...a.platforms].map(([bx, by, bw, bh]) => ({ x: bx * UNIT, y: by * UNIT, width: bw * UNIT, height: bh * UNIT }));
+    (a.lights ?? []).forEach(({ x, y, color, radius, shape, angle, spread, shadows }, i) => {
       const c = parseInt(color.replace('#', ''), 16);
       g.lineStyle(px(1.5), c, 0.35);
+      // With shadows: the area it lights, cut off by the blocks.
+      if (shadows) g.strokePoints(lightPolygon(x * UNIT, y * UNIT, radius * UNIT, solids), true);
       if (shape === 'cone') {
         const at = Phaser.Math.DegToRad(angle ?? CONE_ANGLE);
         const half = Phaser.Math.DegToRad((spread ?? CONE_SPREAD) / 2);
