@@ -73,7 +73,7 @@ function tones(r: number, g: number, b: number): [Rgb, Rgb] {
   }
   const l = 0.299 * r + 0.587 * g + 0.114 * b;
   if (l <= 0.2) return [[0.09, 0.1, 0.17], [0.035, 0.035, 0.08]];
-  const step = Math.min(1, Math.round(l * 5) / 5 + 0.06);
+  const step = Math.min(1, Math.round(l * 5) / 5 * 0.9);
   const lit: Rgb = [step * 0.98, step, Math.min(1, step * 1.03 + 0.02)];
   const shadow: Rgb = [step * 0.52 + 0.02, step * 0.56 + 0.03, step * 0.74 + 0.08];
   return [lit, shadow];
@@ -225,7 +225,7 @@ function toonFrag(lightFrag: string): string {
   return lightFrag
     .replace('#define SHADER_NAME PHASER_LIGHT_FS', '#define SHADER_NAME KUBOTZ_TOON_LIGHT_FS')
     .replace('vec3 diffuse = light.color * diffuseFactor;', 'float lit = attenuation * diffuseFactor; float band = step(0.08, lit) * 0.35 + step(0.3, lit) * 0.35 + step(0.6, lit) * 0.3;')
-    .replace('finalColor += (attenuation * diffuse) * light.intensity;', 'finalColor += light.color * band * light.intensity * 0.8;');
+    .replace('finalColor += (attenuation * diffuse) * light.intensity;', 'finalColor += light.color * band * light.intensity * 0.5;');
 }
 
 class ToonLightPipeline extends Phaser.Renderer.WebGL.Pipelines.LightPipeline {
