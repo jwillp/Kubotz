@@ -1,0 +1,11 @@
+{
+  "anim": "shadowDive",
+  "ms": 640,
+  "points": "fists",
+  "damage": 9,
+  "launch": {"knockback":12,"angle":78},
+  "active": [0.14,0.55],
+  "ghosts": true,
+  "burst": [4,-20],
+  "sustain": 0.25
+}

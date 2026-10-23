@@ -1,0 +1,8 @@
+{
+  "anim": "sutilt",
+  "ms": 583.333333,
+  "points": "blade",
+  "damage": 9,
+  "launch": {"knockback":10,"angle":85},
+  "active": [0.228571,0.371429]
+}

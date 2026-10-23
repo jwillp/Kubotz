@@ -1,0 +1,9 @@
+{
+  "anim": "sfair",
+  "ms": 850,
+  "points": "blade",
+  "damage": 10,
+  "launch": {"knockback":11,"angle":40},
+  "active": [0.313725,0.509804],
+  "ghosts": true
+}

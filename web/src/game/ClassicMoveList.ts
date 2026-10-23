@@ -5,8 +5,8 @@ import {
   PUMMEL_DAMAGE, PUMMEL_MS, SHORT_HOP, SMASH_CHARGE_BONUS, SMASH_CHARGE_MS, TAUNT_MS, type Move, type ThrowKind,
 } from './Kubotz';
 import {
-  CLASSIC_COMBO as COMBO, CLASSIC_DIR_MOVES as DIR_MOVES, CLASSIC_SPECIALS as SPECIALS, CLASSIC_SWORD_COMBO as SWORD_COMBO,
-  CLASSIC_SWORD_DIR_MOVES as SWORD_DIR_MOVES, CLASSIC_THROWS as THROWS,
+  CLASSIC_COMBO as COMBO, CLASSIC_DIR_MOVES as DIR_MOVES, CLASSIC_SPECIALS as SPECIALS, CLASSIC_BLADE_COMBO as BLADE_COMBO,
+  CLASSIC_BLADE_DIR_MOVES as BLADE_DIR_MOVES, CLASSIC_THROWS as THROWS,
 } from './ClassicMoves';
 import type { MoveEntry, Step } from './MoveList';
 
@@ -50,7 +50,7 @@ const ledge = (kind: 'climb' | 'roll'): Step =>
   clip(kind === 'roll' ? 'ledgeRoll' : 'climb', { ms: LEDGE_GETUP_MS[kind], path: [LEDGE_INWARD[kind], 0], ghostly: true });
 
 const D = DIR_MOVES;
-const S = SWORD_DIR_MOVES;
+const S = BLADE_DIR_MOVES;
 const SP = SPECIALS;
 
 export const CLASSIC_MOVE_LIST: MoveEntry[] = [
@@ -62,7 +62,7 @@ export const CLASSIC_MOVE_LIST: MoveEntry[] = [
   // ---------------------------------------------------------------- legs (X)
   { group: 'Legs (X)', name: 'Kick', keys: 'P', pad: 'X', desc: `The jumping spin kick (the classic combo's third hit). ${stats(COMBO[2])}.`, steps: ground(COMBO[2]) },
   { group: 'Legs (X)', name: 'Forward tilt', keys: 'Hold A/D, then P', pad: 'Tilt ◀▶ + X', desc: `A low side kick. ${stats(D.ftilt)}.`, steps: ground(D.ftilt) },
-  { group: 'Legs (X)', name: 'Down tilt', keys: 'Hold S, then P', pad: 'Tilt ▼ + X', desc: `A crouching sweep that pops up. ${stats(D.dtilt)}.`, steps: ground(D.dtilt) },
+  { group: 'Legs (X)', name: 'Crouch attack (down tilt)', keys: 'Hold S, then P', pad: 'Tilt ▼ + X', desc: `A crouching sweep that pops up. ${stats(D.dtilt)}.`, steps: ground(D.dtilt) },
   { group: 'Legs (X)', name: 'Dash attack', keys: 'Run + P', pad: 'Dash + X', desc: `A flying kick out of a run. ${stats(D.dash)}.`, steps: [clip('run', { ms: 380, vel: [Config.MAX_SPEED, null], run: true }), strike(D.dash)] },
   { group: 'Legs (X)', name: 'Up smash', keys: 'W with P', pad: 'Flick ▲ + X, or right stick', desc: `A vertical scissor kick. ${stats(D.usmash)}. ${CHARGE}`, steps: smash(D.usmash) },
   { group: 'Legs (X)', name: 'Down smash', keys: 'S with P', pad: 'Flick ▼ + X, or right stick', desc: `A split kick to both sides. ${stats(D.dsmash)}. ${CHARGE}`, steps: smash(D.dsmash) },
@@ -81,27 +81,27 @@ export const CLASSIC_MOVE_LIST: MoveEntry[] = [
   { group: 'Specials (A + X)', name: 'Plasma Kick', keys: 'S + O + P', pad: '▼ + A + X', desc: `A sliding fire kick along the ground. ${stats(SP.kick)}.`, steps: ground(SP.kick) },
   { group: 'Specials (A + X)', name: 'Plasma Kick (air)', keys: 'S + O + P in the air', pad: '▼ + A + X in the air', desc: `A diagonal dive kick, ending on landing. ${stats(SP.kickAir)}.`, steps: [clip('jump', { jump: 1, ms: 420 }), strike(SP.kickAir, { endOnLand: true }), LAND] },
 
-  // ---------------------------------------------------------------- sword
-  { group: 'Laser sword', name: 'Sword jab', keys: 'O', pad: 'A', desc: `An overhead slash, the first of the sword combo. ${stats(SWORD_COMBO[0])}.`, weapon: 'laserSword', steps: ground(SWORD_COMBO[0]) },
-  { group: 'Laser sword', name: 'Sword forward tilt', keys: 'Hold A/D, then O', pad: 'Tilt ◀▶ + A', desc: `A full spinning slash. ${stats(S.ftilt)}.`, weapon: 'laserSword', steps: ground(S.ftilt) },
-  { group: 'Laser sword', name: 'Sword down tilt', keys: 'Hold S, then O', pad: 'Tilt ▼ + A', desc: `A low slash. ${stats(S.dtilt)}.`, weapon: 'laserSword', steps: ground(S.dtilt) },
-  { group: 'Laser sword', name: 'Sword up tilt', keys: 'Hold W (landed), then O', pad: 'Tilt ▲ + A', desc: `An overhead arc. ${stats(S.utilt)}.`, weapon: 'laserSword', steps: ground(S.utilt) },
-  { group: 'Laser sword', name: 'Sword dash attack', keys: 'Run + O', pad: 'Dash + A', desc: `A lunging slash out of a run. ${stats(S.dash)}.`, weapon: 'laserSword', steps: [clip('run', { ms: 380, vel: [Config.MAX_SPEED, null], run: true }), strike(S.dash)] },
-  { group: 'Laser sword', name: 'Sword forward smash', keys: 'A/D with O', pad: 'Flick ◀▶ + A', desc: `${stats(S.fsmash)}. ${CHARGE}`, weapon: 'laserSword', steps: smash(S.fsmash) },
-  { group: 'Laser sword', name: 'Sword up smash', keys: 'W with O', pad: 'Flick ▲ + A', desc: `${stats(S.usmash)}. ${CHARGE}`, weapon: 'laserSword', steps: smash(S.usmash) },
-  { group: 'Laser sword', name: 'Sword down smash', keys: 'S with O', pad: 'Flick ▼ + A', desc: `A flat spin slash round both sides. ${stats(S.dsmash)}. ${CHARGE}`, weapon: 'laserSword', steps: smash(S.dsmash) },
-  { group: 'Laser sword', name: 'Sword neutral air', keys: 'O in the air', pad: 'A in the air', desc: `${stats(S.nair)}.`, weapon: 'laserSword', steps: aerial(S.nair) },
-  { group: 'Laser sword', name: 'Sword forward air', keys: 'Forward + O in the air', pad: '◀▶ + A in the air', desc: `${stats(S.fair)}.`, weapon: 'laserSword', steps: aerial(S.fair) },
-  { group: 'Laser sword', name: 'Sword back air', keys: 'Back + O in the air', pad: 'Back + A in the air', desc: `${stats(S.bair)}.`, weapon: 'laserSword', steps: aerial(S.bair) },
-  { group: 'Laser sword', name: 'Sword up air', keys: 'W + O in the air', pad: '▲ + A in the air', desc: `${stats(S.uair)}.`, weapon: 'laserSword', steps: aerial(S.uair) },
-  { group: 'Laser sword', name: 'Sword down air', keys: 'S + O in the air', pad: '▼ + A in the air', desc: `${stats(S.dair)}.`, weapon: 'laserSword', steps: aerial(S.dair) },
+  // ---------------------------------------------------------------- plasma blade
+  { group: 'Plasma blade', name: 'Blade jab', keys: 'O', pad: 'A', desc: `An overhead slash, the first of the plasma blade combo. ${stats(BLADE_COMBO[0])}.`, weapon: 'plasmaBlade', steps: ground(BLADE_COMBO[0]) },
+  { group: 'Plasma blade', name: 'Blade forward tilt', keys: 'Hold A/D, then O', pad: 'Tilt ◀▶ + A', desc: `A full spinning slash. ${stats(S.ftilt)}.`, weapon: 'plasmaBlade', steps: ground(S.ftilt) },
+  { group: 'Plasma blade', name: 'Blade crouch attack (down tilt)', keys: 'Hold S, then O', pad: 'Tilt ▼ + A', desc: `A low slash. ${stats(S.dtilt)}.`, weapon: 'plasmaBlade', steps: ground(S.dtilt) },
+  { group: 'Plasma blade', name: 'Blade up tilt', keys: 'Hold W (landed), then O', pad: 'Tilt ▲ + A', desc: `An overhead arc. ${stats(S.utilt)}.`, weapon: 'plasmaBlade', steps: ground(S.utilt) },
+  { group: 'Plasma blade', name: 'Blade dash attack', keys: 'Run + O', pad: 'Dash + A', desc: `A lunging slash out of a run. ${stats(S.dash)}.`, weapon: 'plasmaBlade', steps: [clip('run', { ms: 380, vel: [Config.MAX_SPEED, null], run: true }), strike(S.dash)] },
+  { group: 'Plasma blade', name: 'Blade forward smash', keys: 'A/D with O', pad: 'Flick ◀▶ + A', desc: `${stats(S.fsmash)}. ${CHARGE}`, weapon: 'plasmaBlade', steps: smash(S.fsmash) },
+  { group: 'Plasma blade', name: 'Blade up smash', keys: 'W with O', pad: 'Flick ▲ + A', desc: `${stats(S.usmash)}. ${CHARGE}`, weapon: 'plasmaBlade', steps: smash(S.usmash) },
+  { group: 'Plasma blade', name: 'Blade down smash', keys: 'S with O', pad: 'Flick ▼ + A', desc: `A flat spin slash round both sides. ${stats(S.dsmash)}. ${CHARGE}`, weapon: 'plasmaBlade', steps: smash(S.dsmash) },
+  { group: 'Plasma blade', name: 'Blade neutral air', keys: 'O in the air', pad: 'A in the air', desc: `${stats(S.nair)}.`, weapon: 'plasmaBlade', steps: aerial(S.nair) },
+  { group: 'Plasma blade', name: 'Blade forward air', keys: 'Forward + O in the air', pad: '◀▶ + A in the air', desc: `${stats(S.fair)}.`, weapon: 'plasmaBlade', steps: aerial(S.fair) },
+  { group: 'Plasma blade', name: 'Blade back air', keys: 'Back + O in the air', pad: 'Back + A in the air', desc: `${stats(S.bair)}.`, weapon: 'plasmaBlade', steps: aerial(S.bair) },
+  { group: 'Plasma blade', name: 'Blade up air', keys: 'W + O in the air', pad: '▲ + A in the air', desc: `${stats(S.uair)}.`, weapon: 'plasmaBlade', steps: aerial(S.uair) },
+  { group: 'Plasma blade', name: 'Blade down air', keys: 'S + O in the air', pad: '▼ + A in the air', desc: `${stats(S.dair)}.`, weapon: 'plasmaBlade', steps: aerial(S.dair) },
 
   // ---------------------------------------------------------------- gun
   { group: 'Laser gun', name: 'Quick shot', keys: 'Tap O', pad: 'Tap A', desc: `A tap (under ${GUN_TAP_MS} ms) fires a light bolt: ${shotDamage(0)} dmg (Mk I).`, weapon: 'laserGunMkI', steps: [clip('idle', { ms: 300 }), shot(0), clip('idle', { ms: 250 }), shot(0)] },
   { group: 'Laser gun', name: 'Charged shot', keys: 'Hold O, release', pad: 'Hold A, release', desc: `Charges for up to ${GUN_CHARGE_MS / 1000} s: a big, slower bolt with strong recoil, up to ${shotDamage(1)} dmg (Mk I).`, weapon: 'laserGunMkI', steps: [clip('idle', { ms: GUN_CHARGE_MS, gather: true }), shot(1)] },
 
   // ---------------------------------------------------------------- grabs
-  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'LB', desc: 'Reaches just in front (not a robot behind its guard); also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
+  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'LB', desc: 'Reaches just in front (not a Kubot behind its guard); also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
   { group: 'Grab and throws', name: 'Pummel', keys: 'O while holding', pad: 'A while holding', desc: `${PUMMEL_DAMAGE} dmg a hit.`, victim: true, steps: [clip('grab'), clip('grabHold', { ms: 300 }), clip('pummel', { ms: PUMMEL_MS }), clip('pummel', { ms: PUMMEL_MS }), clip('grabHold', { ms: 300 })] },
   { group: 'Grab and throws', name: 'Forward throw', keys: 'Forward while holding', pad: '◀▶ while holding', desc: `${stats(THROWS.forward)}.`, victim: true, steps: throwSteps('forward') },
   { group: 'Grab and throws', name: 'Back throw', keys: 'Back while holding', pad: 'Back while holding', desc: `With a spin. ${stats(THROWS.back)}.`, victim: true, steps: throwSteps('back') },
@@ -119,7 +119,7 @@ export const CLASSIC_MOVE_LIST: MoveEntry[] = [
   { group: 'Defence and ledges', name: 'Taunt', keys: 'U', pad: 'D-pad', desc: `A ${TAUNT_MS / 1000} s pose on the ground; a hit ends it.`, steps: [clip('taunt', { ms: TAUNT_MS })] },
 
   // ---------------------------------------------------------------- combos
-  { group: 'Combos', name: 'Sword combo', keys: 'O, O, O (or hold O)', pad: 'A, A, A (or hold A)', desc: `Overhead slash, rising slash, finisher: ${sum(SWORD_COMBO)} dmg.`, weapon: 'laserSword', steps: SWORD_COMBO.map((m) => strike(m)) },
+  { group: 'Combos', name: 'Blade combo', keys: 'O, O, O (or hold O)', pad: 'A, A, A (or hold A)', desc: `Overhead slash, rising slash, finisher: ${sum(BLADE_COMBO)} dmg.`, weapon: 'plasmaBlade', steps: BLADE_COMBO.map((m) => strike(m)) },
   { group: 'Combos', name: 'Up tilt → up air', keys: 'W + O, Space, W + P', pad: 'Tilt ▲ + A, Y, ▲ + X', desc: `The up tilt pops them up; jump and follow with the up air: ${D.utilt.damage + D.uair.damage} dmg.`, steps: [strike(D.utilt), JUMP, strike(D.uair), FALL, LAND] },
   { group: 'Combos', name: 'Down tilt → forward air', keys: 'S + P, Space, forward + P', pad: 'Tilt ▼ + X, Y, ◀▶ + X', desc: `The sweep lifts them; a short hop forward air follows: ${D.dtilt.damage + D.fair.damage} dmg.`, steps: [strike(D.dtilt), HOP, strike(D.fair), FALL, LAND] },
   { group: 'Combos', name: 'Short hop nair → jab combo', keys: 'Tap Space, P, land, O O', pad: 'Tap Y, X, land, A A', desc: `A neutral air on the way down, then the jab combo on landing: ${D.nair.damage + sum(COMBO.slice(0, 2))} dmg.`, steps: [HOP, strike(D.nair), FALL, ...COMBO.slice(0, 2).map((m) => strike(m))] },

@@ -1,0 +1,11 @@
+{
+  "anim": "sdsmash",
+  "ms": 933.333333,
+  "points": "blade",
+  "damage": 13,
+  "launch": {"knockback":14,"angle":25},
+  "active": [0.214286,0.464286],
+  "both": true,
+  "ghosts": true,
+  "hold": 0.071429
+}

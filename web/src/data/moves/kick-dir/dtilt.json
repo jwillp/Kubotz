@@ -1,0 +1,8 @@
+{
+  "anim": "dtilt",
+  "ms": 450,
+  "points": "feet",
+  "damage": 6,
+  "launch": {"knockback":9,"angle":80},
+  "active": [0.259259,0.333333]
+}

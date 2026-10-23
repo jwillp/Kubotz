@@ -1,0 +1,16 @@
+{
+  "note": "A Kubot going through a portal: a swept whoosh, a warp tone and a thump.",
+  "length": 1.1,
+  "seed": 1,
+  "reverb": 0.35,
+  "layers": [
+    {"name":"Whoosh","type":"noise","at":0,"dur":0.55,"gain":0.14,"filters":[{"type":"bandpass","q":2.85714,"cutoff":{"from":300,"to":2900,"curve":"arch","k":0.8}}],"env":{"shape":"arch"}},
+    {"name":"Warp in","type":"tone","at":0,"dur":0.26,"gain":0.1,"freq":{"from":260,"to":1040,"curve":"exp"},"wobble":{"rate":53.84615,"depth":0.08},"env":{"attack":0.065}},
+    {"name":"Warp out","type":"tone","at":0.26,"dur":0.4,"gain":0.1,"freq":{"from":1200,"to":420,"curve":"exp"},"wobble":{"rate":25,"depth":0.08},"env":{"shape":"pow","k":2}},
+    {"name":"Thump","type":"tone","at":0.24,"dur":0.25,"gain":0.32,"freq":{"from":125,"to":55,"curve":"drop","k":8},"env":{"attack":0.00167,"shape":"exp","k":7}},
+    {"name":"Mote 1","type":"ping","at":0.27,"freq":2637,"gain":0.03},
+    {"name":"Mote 2","type":"ping","at":0.315,"freq":3520,"gain":0.03},
+    {"name":"Mote 3","type":"ping","at":0.36,"freq":2960,"gain":0.03},
+    {"name":"Mote 4","type":"ping","at":0.405,"freq":4186,"gain":0.03}
+  ]
+}

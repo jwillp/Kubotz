@@ -7,11 +7,8 @@ export interface Blade { file: string; points: { x: number; y: number }[] }
 /** How far above the floor the blade is kept (Spriter pixels). */
 const BLADE_CLEARANCE = 6;
 
-/** Clips whose forward motion moves the robot itself (root motion) instead of only its drawing. */
-const ROOT_MOTION = new Set(['jab', 'cross', 'kick', 'jab1', 'jab2', 'jabEnd', 'slash1', 'slash2', 'slash3', 'grab', 'dash', 'dtilt', 'sdtilt', 'ftilt', 'sftilt', 'fsmash', 'sfsmash', 'pftilt', 'pdtilt', 'pdash', 'kfsmash', 'sdash']);
-
 /**
- * Plays the clips of one robot: time, the blend from the previous pose on each
+ * Plays the clips of one Kubot: time, the blend from the previous pose on each
  * switch, keeping the boots on the ground, and the forward travel of strikes
  * (handed to the game as root motion so the body really moves).
  */
@@ -79,7 +76,7 @@ export class Animator {
       else { this.time = this.clip.ms; this.finished = true; }
     }
     this.blend += dtMs;
-    if (ROOT_MOTION.has(this.clip.name)) {
+    if (this.clip.rootMotion) {
       const x = sampleClip(this.clip, this.progress).x ?? 0;
       this.rootTravel += x - this.rootX;
       this.rootX = x;
@@ -97,7 +94,7 @@ export class Animator {
   private bladeLift(p: Pose): number {
     const b = this.blade;
     if (!b) return 0;
-    const part = this.rig.solve({ ...p, y: 0 }, ['weapon_laserSword']).find((q) => q.file.name === b.file);
+    const part = this.rig.solve({ ...p, y: 0 }, ['weapon_plasmaBlade']).find((q) => q.file.name === b.file);
     if (!part) return 0;
     const low = Math.min(...b.points.map((pt) => pointOnPart(part, pt.x, pt.y).y));
     return BLADE_CLEARANCE - low;
@@ -106,7 +103,7 @@ export class Animator {
   /** The pose to draw now. */
   pose(): Pose {
     let p = sampleClip(this.clip, this.progress);
-    if (ROOT_MOTION.has(this.clip.name)) p = { ...p, x: 0 }; // the body travels instead
+    if (this.clip.rootMotion) p = { ...p, x: 0 }; // the body travels instead
     if (this.clip.planted) p = { ...p, y: (p.y ?? 0) + Math.max(this.rig.groundLift(p), this.bladeLift(p)) };
     if (this.from && this.blend < this.blendMs) {
       const f = this.blend / this.blendMs;

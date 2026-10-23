@@ -1,21 +1,21 @@
 # Post-fight stats and highlights
 
-After a match the review shows a stats table per robot, then up to 9 highlights: the 3 best K.O.s, recoveries and combos. Damage is in health points: every robot starts at 100 and explodes at 0, so 1 point = 1 % of the health bar.
+After a match the review shows a stats table per Kubot, then up to 9 highlights: the 3 best K.O.s, recoveries and combos. Damage is in health points: every Kubot starts at 100 and explodes at 0, so 1 point = 1 % of the health bar.
 
-The stats are counted live in `Kubotz.countHit` and `GameScene.checkDeaths`. The highlights are spotted and scored live by `ReplayRecorder` (`src/game/Replay.ts`) from every hit that gets through (`ArenaHooks.landed`) and every frame's robot positions, and played by `ResultsScene`.
+The stats are counted live in `Kubotz.countHit` and `GameScene.checkDeaths`. The highlights are spotted and scored live by `ReplayRecorder` (`src/game/Replay.ts`) from every hit that gets through (`ArenaHooks.landed`) and every frame's Kubot positions, and played by `ResultsScene`.
 
 ## Stats table
 
-A hit counts only when it gets through: hits on a raised guard, a shield power-up, an invincible robot or a dodging robot add nothing. Laser bolts and flying K.O. debris count like any other hit.
+A hit counts only when it gets through: hits on a raised guard, a shield power-up, an invincible Kubot or a dodging Kubot add nothing. Laser bolts and flying K.O. debris count like any other hit.
 
 | Column | How it is counted |
 | --- | --- |
-| K.O.s | +1 for the robot that hit the victim last, if that hit was less than 6 s before the K.O. A fall with no recent hit gives nobody a K.O. |
-| Falls | +1 every time the robot is K.O.'d, whoever caused it (self-destructs included). |
-| Damage dealt | Sum of the damage of the robot's hits that got through, capped at the health the victim had left. |
-| Damage taken | Same sum, seen from the robot that was hit. |
-| Hits | Number of the robot's hits that got through. |
-| Best combo | The longest run of hits by this robot on one victim, each landing before the previous hit's stun wore off. |
+| K.O.s | +1 for the Kubot that hit the victim last, if that hit was less than 6 s before the K.O. A fall with no recent hit gives nobody a K.O. |
+| Falls | +1 every time the Kubot is K.O.'d, whoever caused it (self-destructs included). |
+| Damage dealt | Sum of the damage of the Kubot's hits that got through, capped at the health the victim had left. |
+| Damage taken | Same sum, seen from the Kubot that was hit. |
+| Hits | Number of the Kubot's hits that got through. |
+| Best combo | The longest run of hits by this Kubot on one victim, each landing before the previous hit's stun wore off. |
 
 A hit "before the stun wore off" means before the later of the end of the previous hit's hitstun and 250 ms after it landed. A hit from someone else, or one after that window, starts a new run at 1.
 
@@ -39,10 +39,10 @@ A K.O. with no killer (a fall on its own, or a last hit too long ago) has its sc
 
 A recovery is a hard launch survived after coming within 7 units of the blast zone (6 units past the arena's sides and bottom, 20 above its top).
 
-1. A hit launching a robot at 12 units/s or more starts watching it. Another hit while it is watched becomes the new blow; the closest distance so far is kept.
+1. A hit launching a Kubot at 12 units/s or more starts watching it. Another hit while it is watched becomes the new blow; the closest distance so far is kept.
 2. Every frame, the distance to the nearest blast-zone edge is measured; the smallest one and its time (the closest call) are kept.
-3. The recovery ends once the robot has left the ground and then stands on a platform, or holds or climbs a ledge.
-4. It counts only if the closest call was 7 units or less. A robot K.O.'d on the way, or still away after 9 s, is dropped.
+3. The recovery ends once the Kubot has left the ground and then stands on a platform, or holds or climbs a ledge.
+4. It counts only if the closest call was 7 units or less. A Kubot K.O.'d on the way, or still away after 9 s, is dropped.
 
     score = 3 × (1 − m / 7) + 0.3 × t + v / 25 + (1 − h_low / 100)
 
@@ -55,7 +55,7 @@ A recovery is a hard launch survived after coming within 7 units of the blast zo
 
 ## Combo score
 
-A combo is 3 or more hits by one robot on one victim, each landing before the previous hit's stun wore off (the Best combo rule). It ends at the first hit that does not chain, after 1.5 s with no new hit, or at the victim's K.O. (a K.O. within 1.5 s of the last hit is the combo's finish).
+A combo is 3 or more hits by one Kubot on one victim, each landing before the previous hit's stun wore off (the Best combo rule). It ends at the first hit that does not chain, after 1.5 s with no new hit, or at the victim's K.O. (a K.O. within 1.5 s of the last hit is the combo's finish).
 
     score = d / 6 + 0.5 × min(n, 8) + (3 if it ended in a K.O.)
 
@@ -63,7 +63,7 @@ A combo is 3 or more hits by one robot on one victim, each landing before the pr
 
 ## Picking and playing the highlights
 
-The 3 highest scores of each kind are shown in this order: K.O.s, recoveries, combos, each opening with a title card and counting down from #3 to #1. While the match runs only the best 6 candidates per kind are kept. A moment is shown once: a recovery or combo is skipped when an already picked highlight shows the same robot for more than half of the shorter clip.
+The 3 highest scores of each kind are shown in this order: K.O.s, recoveries, combos, each opening with a title card and counting down from #3 to #1. While the match runs only the best 6 candidates per kind are kept. A moment is shown once: a recovery or combo is skipped when an already picked highlight shows the same Kubot for more than half of the shorter clip.
 
 | Kind | Clip | Key moment | Speed |
 | --- | --- | --- | --- |

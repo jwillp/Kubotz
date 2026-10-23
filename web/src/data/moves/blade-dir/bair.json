@@ -1,0 +1,9 @@
+{
+  "anim": "sbair",
+  "ms": 500,
+  "points": "blade",
+  "damage": 8,
+  "launch": {"knockback":12,"angle":35},
+  "active": [0.2,0.6],
+  "behind": true
+}

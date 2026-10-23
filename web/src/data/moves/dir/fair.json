@@ -1,0 +1,8 @@
+{
+  "anim": "pfair",
+  "ms": 716.666667,
+  "points": "fists",
+  "damage": 9,
+  "launch": {"knockback":10,"angle":35},
+  "active": [0.162791,0.651163]
+}

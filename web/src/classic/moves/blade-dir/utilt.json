@@ -1,0 +1,8 @@
+{
+  "anim": "susmash",
+  "ms": 400,
+  "points": "blade",
+  "damage": 7,
+  "launch": {"knockback":10,"angle":85},
+  "active": [0.38,0.75]
+}

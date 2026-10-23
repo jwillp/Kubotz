@@ -1,0 +1,10 @@
+{
+  "anim": "snair",
+  "ms": 420,
+  "points": "blade",
+  "damage": 7,
+  "launch": {"knockback":9,"angle":40},
+  "active": [0.2,0.75],
+  "both": true,
+  "ghosts": true
+}

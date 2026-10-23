@@ -1,0 +1,9 @@
+{
+  "anim": "ionPunch",
+  "ms": 1716.666667,
+  "points": "fireFists",
+  "damage": 22,
+  "launch": {"knockback":19,"angle":35},
+  "active": [0.514563,0.563107],
+  "ghosts": true
+}

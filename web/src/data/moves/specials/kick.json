@@ -1,0 +1,12 @@
+{
+  "anim": "falconKick",
+  "ms": 1133.333333,
+  "points": "feet",
+  "damage": 12,
+  "launch": {"knockback":14,"angle":38},
+  "active": [0.191176,0.5],
+  "ghosts": true,
+  "burst": [22,null],
+  "burstFrom": 0.191176,
+  "sustain": 0.5
+}

@@ -1,0 +1,9 @@
+{
+  "anim": "pdash",
+  "ms": 516.666667,
+  "points": "fists",
+  "damage": 7,
+  "launch": {"knockback":11,"angle":35},
+  "active": [0.129032,0.516129],
+  "ghosts": true
+}

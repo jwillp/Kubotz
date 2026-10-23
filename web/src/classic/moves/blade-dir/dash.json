@@ -1,0 +1,9 @@
+{
+  "anim": "slash3",
+  "ms": 420,
+  "points": "blade",
+  "damage": 9,
+  "launch": {"knockback":13,"angle":35},
+  "active": [0.31,0.62],
+  "ghosts": true
+}

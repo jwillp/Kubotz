@@ -20,7 +20,7 @@
         <file id="3" name="arms/hand-sha.png" width="62" height="67" pivot_x="0.234375" pivot_y="0.42029"/>
         <file id="4" name="arms/shoulder.png" width="148" height="104" pivot_x="0.486667" pivot_y="0.622642"/>
         <file id="5" name="arms/shoulder-sha.png" width="100" height="76" pivot_x="0.362745" pivot_y="0.512821"/>
-        <file id="6" name="arms/lazer-sword.png" width="329" height="241" pivot_x="0" pivot_y="1"/>
+        <file id="6" name="arms/plasma-blade.png" width="329" height="241" pivot_x="0" pivot_y="1"/>
         <file id="7" name="arms/gun-mk1.png" width="329" height="241" pivot_x="0" pivot_y="1"/>
         <file id="8" name="arms/fire-arm.png" width="329" height="241" pivot_x="0" pivot_y="1"/>
         <file id="9" name="arms/fire-fist.png" width="73" height="107" pivot_x="0" pivot_y="1"/>
@@ -86,7 +86,7 @@
         <character_map id="12" name="head_brute">
             <map folder="4" file="0" target_folder="4" target_file="10"/>
         </character_map>
-        <character_map id="3" name="weapon_laserSword">
+        <character_map id="3" name="weapon_plasmaBlade">
             <map folder="3" file="2"/>
             <map folder="3" file="0" target_folder="3" target_file="6"/>
         </character_map>
@@ -1365,7 +1365,7 @@
                 </key>
             </timeline>
         </animation>
-        <animation id="3" name="Sword_slash1" length="1000">
+        <animation id="3" name="Blade_slash1" length="1000">
             <mainline>
                 <key id="0">
                     <bone_ref id="0" timeline="13" key="0"/>

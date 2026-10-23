@@ -1,14 +1,15 @@
 import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Config } from '../config';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import {
   BONUS_RATES, CPU_LEVEL, CPU_LEVELS, RATE_ORDER, TEAM_NAMES,
   type BonusRate, type FighterSpec, type MatchSetup,
 } from '../game/Match';
-import { ARENA_INFO } from '../map/Arenas';
+import { CTF_CAPTURES, KUBEBALL_POINTS, SKYCHASE_POINTS, HORDE_TEAM, MODES, TRAINING_RECHARGES, TRAINING_TARGETS, teamUp, type MatchMode } from '../game/Modes';
+import { ARENA_INFO, arenaOf, isModeArena, type ArenaMode } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
 import { GlitchBursts } from '../fx/GlitchBursts';
 import type { SpriterData } from '../spriter/Spriter';
@@ -17,6 +18,7 @@ import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutt
 import { LOGO_RES } from './BootScene';
 import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
+import { BACKDROPS, backdropOf } from '../fx/Backdrops';
 import { uiSound } from '../audio/Sounds';
 
 /**
@@ -29,7 +31,7 @@ type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 interface Seat { device: Device; team: number; helmet: number; level: number }
 
 /** The setup screen's choices, kept in the registry so a rematch from the title keeps them. */
-interface SetupState { seats: Seat[]; arena: number; stocks: number; minutes: number; bonuses: BonusRate }
+interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate; /** Training: CPUs to defeat. */ target?: number; /** Ball games: the score to reach (0: none), per game. */ score?: Partial<Record<'kubeball' | 'skychase', number>> }
 
 const SLOTS = 4;
 const SLOT_W = 282;
@@ -39,7 +41,7 @@ const SLOT_TOP = 398;
 /** The chosen arena's frame, top centre. */
 const CAROUSEL_Y = 212;
 const CENTER_W = 300;
-const STOCKS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const RECHARGES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
 const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
@@ -76,7 +78,7 @@ const deviceBlurb = (s: Seat): string => {
 };
 
 /** A focusable thing: a rule at the top, a field of a slot, or START. */
-type Focus = { kind: 'arena' | 'stocks' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
+type Focus = { kind: 'arena' | 'recharges' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
 
 interface Row {
   label: Phaser.GameObjects.Text;
@@ -90,7 +92,7 @@ interface Slot {
   slotNo: Phaser.GameObjects.Text;
   blurb: Phaser.GameObjects.Text;
   rows: Record<Field, Row>;
-  robot: Robot2D;
+  kubot: Kubot2D;
   anim: Animator;
   /** The colour the preview's parts are painted in. */
   color: number;
@@ -159,9 +161,9 @@ class StartButton extends Phaser.GameObjects.Container {
 }
 
 /**
- * The setup screen: arena, rules and robots on one page (it replaced the
+ * The setup screen: arena, rules and Kubotz on one page (it replaced the
  * join screen and the arena select). The chosen arena fills the background,
- * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
+ * dimmed and soft, and shows whole in the frame at the top, both rendered live; recharges, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.
  *
  * One cursor (arrows / WASD, any gamepad's D-pad or stick) moves up and down
@@ -184,9 +186,11 @@ export class SetupScene extends Phaser.Scene {
   private arenaFrame!: Phaser.GameObjects.Graphics;
   private arenaName!: HeadingText;
   private arenaBlurb!: Phaser.GameObjects.Text;
-  private rules: Record<'stocks' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
+  private rules: Record<'recharges' | 'time' | 'bonuses', { title: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
   private start!: StartButton;
   private status!: Phaser.GameObjects.Text;
+  /** The battle mode picked on the mode screen. */
+  private mode: MatchMode = 'gladiator';
   /** Pad buttons down last frame, per pad, for joins and leaves. */
   private padDown = new Map<number, Set<number>>();
   private keyPresses = new Map<string, number>();
@@ -198,6 +202,7 @@ export class SetupScene extends Phaser.Scene {
     this.slots = [];
     this.leaving = false;
     this.padDown.clear();
+    this.mode = (this.registry.get('mode') as MatchMode | undefined) ?? 'gladiator';
     const saved = this.registry.get('setup') as SetupState | undefined;
     this.state = saved ? structuredClone(saved) : {
       seats: [
@@ -207,18 +212,24 @@ export class SetupScene extends Phaser.Scene {
         { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL },
       ],
       arena: (this.registry.get('arena') as number | undefined) ?? 0,
-      stocks: Config.NB_LIVES,
+      recharges: Config.NB_LIVES,
       minutes: 0,
       bonuses: (this.registry.get('bonuses') as BonusRate | undefined) ?? 'normal',
     };
     // Pads that went away since: their slots empty.
     for (const s of this.state.seats) if (typeof s.device === 'number' && !this.pad(s.device)) s.device = 'OFF';
+    this.state.target ??= 10;
+    // Training is for one player: slot 1 is a person (the keyboard by default).
+    if (this.solo && (this.state.seats[0].device === 'OFF' || this.state.seats[0].device === 'CPU')) this.state.seats[0].device = 'K1';
+    // Capture the Flag plays its own arena, and only it does.
+    if (this.modeArena >= 0) this.state.arena = this.modeArena;
+    else if (isModeArena(this.state.arena)) this.state.arena = 0;
     this.focus = { kind: 'start' };
 
     const { width } = this.scale;
     this.live = this.sys.renderer.type === Phaser.WEBGL;
     // Every arena's room painted now, while the screen change still covers the screen, not on the first switch to it.
-    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, i));
+    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, BACKDROPS.indexOf(backdropOf(i))));
     kubeBackdrop(this, this.live ? 0 : 0.3);
     // The chosen arena is the menu's background (GameScene behind this scene), dimmed except in its frame.
     this.dim = this.add.graphics();
@@ -294,26 +305,54 @@ export class SetupScene extends Phaser.Scene {
     this.arenaBlurb = this.add.text(width / 2, CAROUSEL_Y + h / 2 + 53, '', body(14, { fontStyle: '500', color: '#9fe3ff' })).setOrigin(0.5);
   }
 
-  /** Stocks and time on the right of the arena, power-ups on the left. */
+  /** Recharges and time on the right of the arena, power-ups on the left. */
   private makeRules(): void {
     const { width } = this.scale;
-    const rule = (key: 'stocks' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
+    const rule = (key: 'recharges' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
       const glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
       const g = this.add.graphics();
       const box = new Phaser.Geom.Rectangle(x - 80, y - 36, 160, 72);
       drawPlate(g, box.x, box.y, box.width, box.height, { cut: 12, alpha: 0.7 });
-      this.add.text(x, y - 18, title, body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0.5);
+      const label = this.add.text(x, y - 18, title, body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0.5);
       const value = this.add.text(x, y + 10, '', body(26, { fontStyle: '800' })).setOrigin(0.5);
       this.arrow(x - 58, y + 10, '◀', () => d(-1));
       this.arrow(x + 58, y + 10, '▶', () => d(1));
       this.add.zone(x, y, 100, 72).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.setFocus({ kind: key }));
-      this.rules[key] = { value, glow, box };
+      this.rules[key] = { title: label, value, glow, box };
     };
     const right = width - 136;
-    rule('stocks', right, CAROUSEL_Y - 50, 'STOCKS', (d) => this.change({ kind: 'stocks' }, d));
+    rule('recharges', right, CAROUSEL_Y - 50, 'RECHARGES', (d) => this.change({ kind: 'recharges' }, d));
     rule('time', right, CAROUSEL_Y + 50, 'TIME', (d) => this.change({ kind: 'time' }, d));
     rule('bonuses', 136, CAROUSEL_Y + 50, 'POWER-UPS', (d) => this.change({ kind: 'bonuses' }, d));
+    // The mode picked on the previous screen, above the power-ups (Back changes it).
+    const y = CAROUSEL_Y - 50;
+    const g = drawPlate(this.add.graphics(), 136 - 80, y - 36, 160, 72, { cut: 12, alpha: 0.7 });
+    drawStrip(g, 136 - 80 + 12, y + 36, 136 + 80, y + 36, NEON, 2);
+    this.add.text(136, y - 18, 'MODE', body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0.5);
+    const name = this.add.text(136, y + 10, MODES[this.mode].name.toUpperCase(), body(22, { fontStyle: 'italic 800' })).setOrigin(0.5);
+    if (name.width > 140) name.setScale(140 / name.width); // long names (Capture the Flag) fit the plate
   }
+
+  /** Horde: every Kubot on the players' team against the black team. */
+  private get oneTeam(): boolean { return teamUp(MODES[this.mode]) || this.solo; }
+  /** The arena a mode plays only (Capture the Flag, the ball games), or -1. */
+  private get modeArena(): number {
+    const m = MODES[this.mode];
+    return arenaOf((m.ctf ? 'ctf' : m.ball) as ArenaMode | undefined);
+  }
+
+  /** Ball games: the score to reach picked here (0: none). */
+  private ballScore(): number {
+    const ball = MODES[this.mode].ball;
+    if (!ball) return 0;
+    return this.state.score?.[ball] ?? (ball === 'kubeball' ? 7 : 150);
+  }
+
+  /** Training: one player, slot 1 only. */
+  private get solo(): boolean { return !!MODES[this.mode].solo; }
+  /** A seat's team in this mode. */
+  /** A seat's team in this mode (ball games: red or blue). */
+  private teamOf(seat: Seat): number { return this.oneTeam ? HORDE_TEAM : MODES[this.mode].ball ? seat.team % 2 : seat.team; }
 
   private makeSlot(i: number, rig: Rig): Slot {
     const x = this.slotX(i);
@@ -334,9 +373,9 @@ export class SetupScene extends Phaser.Scene {
         ],
       };
     });
-    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, robot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
-    // The robot stands over the top right of its slot, in front of the plate.
-    slot.robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
+    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, kubot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
+    // The Kubot stands over the top right of its slot, in front of the plate.
+    slot.kubot = new Kubot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
     slot.anim.play('idle', { restart: true });
     return slot;
   }
@@ -355,6 +394,7 @@ export class SetupScene extends Phaser.Scene {
     // No free pad known yet: a slot waiting for one.
     if (!devs.some((d) => typeof d === 'number' && !taken.has(d))) devs.push('PAD');
     const out = devs.filter((d) => d === 'OFF' || !taken.has(d)).map((device) => ({ ...seat, device }));
+    if (this.solo) return out.filter((c) => c.device !== 'OFF'); // training: a person, never a CPU or nobody
     for (let l = 1; l <= CPU_LEVELS; l++) out.push({ ...seat, device: 'CPU', level: l });
     return out;
   }
@@ -363,8 +403,19 @@ export class SetupScene extends Phaser.Scene {
     const s = this.state;
     switch (f.kind) {
       case 'arena': this.pickArena(d); return;
-      case 'stocks': s.stocks = STOCKS[(STOCKS.indexOf(s.stocks) + d + STOCKS.length) % STOCKS.length]; break;
-      case 'time': s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
+      case 'recharges': {
+        const ball = MODES[this.mode].ball;
+        if (ball) {
+          const list = ball === 'kubeball' ? KUBEBALL_POINTS : SKYCHASE_POINTS;
+          s.score = { ...s.score, [ball]: list[(list.indexOf(this.ballScore()) + d + list.length) % list.length] };
+          break;
+        }
+      }
+        if (this.fixedRecharges() !== null) return; s.recharges = RECHARGES[(RECHARGES.indexOf(s.recharges) + d + RECHARGES.length) % RECHARGES.length]; break;
+      case 'time':
+        if (MODES[this.mode].trial) { s.target = TRAINING_TARGETS[(TRAINING_TARGETS.indexOf(s.target ?? 10) + d + TRAINING_TARGETS.length) % TRAINING_TARGETS.length]; break; }
+        if (this.oneTeam) return;
+        s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
       case 'bonuses': s.bonuses = RATE_ORDER[(RATE_ORDER.indexOf(s.bonuses) + d + RATE_ORDER.length) % RATE_ORDER.length]; break;
       case 'start': return;
       case 'slot': {
@@ -376,12 +427,14 @@ export class SetupScene extends Phaser.Scene {
           seat.device = next.device;
           seat.level = next.level;
           if (seat.device !== 'OFF') this.taunt(f.slot);
-        } else if (seat.device === 'OFF') {
+        } else if (seat.device === 'OFF' || (f.field === 'team' && this.oneTeam)) {
           return;
         } else if (f.field === 'helmet') {
           seat.helmet = (seat.helmet + d + HEADS.length) % HEADS.length;
         } else {
-          seat.team = (seat.team + d + SLOT_COLORS.length) % SLOT_COLORS.length;
+          // Ball games: red or blue.
+          const teams = MODES[this.mode].ball ? 2 : SLOT_COLORS.length;
+          seat.team = ((seat.team % teams) + d + teams) % teams;
           this.taunt(f.slot);
         }
       }
@@ -392,7 +445,10 @@ export class SetupScene extends Phaser.Scene {
 
   private pickArena(d: number): void {
     const s = this.state;
+    if (this.modeArena >= 0) d = 0; // its own arena only
     s.arena = (s.arena + d + ARENA_INFO.length) % ARENA_INFO.length;
+    // An arena that belongs to one mode is skipped by the others.
+    while (isModeArena(s.arena) && this.modeArena < 0) s.arena = (s.arena + (d || 1) + ARENA_INFO.length) % ARENA_INFO.length;
     if (d) uiSound(this, 'move');
     const { width } = this.scale;
     this.center.setTexture(arenaThumbnail(this, s.arena, CENTER_W));
@@ -402,7 +458,7 @@ export class SetupScene extends Phaser.Scene {
       this.tweens.add({ targets: this.center, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });
     }
     this.arenaName.setText(ARENA_INFO[s.arena].name);
-    this.arenaBlurb.setText(ARENA_INFO[s.arena].blurb);
+    this.arenaBlurb.setText(ARENA_INFO[s.arena].description);
     if (d) this.focus = { kind: 'arena' };
     this.refresh();
   }
@@ -438,11 +494,20 @@ export class SetupScene extends Phaser.Scene {
   }
 
   /** The slots in the match (a slot still waiting for a pad is one). */
-  private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF'); }
+  private seats(): Seat[] { return this.state.seats.filter((s, i) => s.device !== 'OFF' && (!this.solo || i === 0)); }
 
-  /** Why START is greyed out, if it is: too few robots (the grey button says it), or everyone on one team. */
+  /** Recharges the mode sets itself (∞ in the sandbox and Capture the Flag, 3 in training), or null when they are picked here. */
+  private fixedRecharges(): number | null {
+    const m = MODES[this.mode];
+    return m.sandbox || m.ctf ? Infinity : m.trial ? TRAINING_RECHARGES : null;
+  }
+
+  /** Why START is greyed out, if it is: too few Kubotz (the grey button says it), or everyone on one team. */
   private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
+    // Horde: one Kubot is enough, and everyone is on one team anyway.
+    // Ball games: CPUs fill both teams.
+    if (this.oneTeam || MODES[this.mode].ball) return seats.length < 1 ? 'few' : null;
     if (seats.length < 2) return 'few';
     if (new Set(seats.map((s) => s.team)).size < 2) return 'one team';
     return null;
@@ -451,10 +516,10 @@ export class SetupScene extends Phaser.Scene {
   // -------------------------------------------------------------- navigation
   /** The rows the cursor steps through, top to bottom, for the slot it is in (or the first). */
   private order(slot: number): Focus[] {
-    const seat = this.state.seats[slot];
-    const fields: Field[] = seat.device === 'OFF' ? ['input'] : [...FIELDS];
+    const seat = this.state.seats[this.solo ? 0 : slot];
+    const fields: Field[] = seat.device === 'OFF' ? ['input'] : FIELDS.filter((f) => f !== 'team' || !this.oneTeam);
     return [
-      { kind: 'arena' }, { kind: 'stocks' }, { kind: 'time' }, { kind: 'bonuses' },
+      { kind: 'arena' }, { kind: 'recharges' }, { kind: 'time' }, { kind: 'bonuses' },
       ...fields.map((field): Focus => ({ kind: 'slot', slot, field })),
       { kind: 'start' },
     ];
@@ -476,6 +541,7 @@ export class SetupScene extends Phaser.Scene {
 
   /** Q / E, or a pad's shoulders: the same row of the next slot. */
   private jumpSlot(d: number): void {
+    if (this.solo) return;
     const f = this.focus;
     const slot = ((f.kind === 'slot' ? f.slot : this.lastSlot) + d + SLOTS) % SLOTS;
     const field = f.kind === 'slot' && (f.field === 'input' || this.state.seats[slot].device !== 'OFF') ? f.field : 'input';
@@ -544,7 +610,7 @@ export class SetupScene extends Phaser.Scene {
     if (seats.some((s) => s.device === device)) return;
     // A slot waiting for a pad (for a pad), else the first empty slot, else the first CPU's.
     const waiting = typeof device === 'number' ? seats.findIndex((s) => s.device === 'PAD') : -1;
-    const i = waiting >= 0 ? waiting : seats.findIndex((s) => s.device === 'OFF') >= 0 ? seats.findIndex((s) => s.device === 'OFF') : seats.findIndex((s) => s.device === 'CPU');
+    const i = this.solo ? 0 : waiting >= 0 ? waiting : seats.findIndex((s) => s.device === 'OFF') >= 0 ? seats.findIndex((s) => s.device === 'OFF') : seats.findIndex((s) => s.device === 'CPU');
     if (i < 0) return;
     seats[i].device = device;
     uiSound(this, 'confirm');
@@ -553,6 +619,7 @@ export class SetupScene extends Phaser.Scene {
   }
 
   private leave(device: Device): void {
+    if (this.solo) return; // training keeps its one player
     const seat = this.state.seats.find((s) => s.device === device);
     if (seat) { seat.device = 'OFF'; this.refresh(); uiSound(this, 'back'); }
   }
@@ -563,10 +630,17 @@ export class SetupScene extends Phaser.Scene {
     const f = this.focus;
     const on = (k: Focus['kind']) => f.kind === k;
     // Rules: values, and the focused one glows.
-    this.rules.stocks.value.setText(String(s.stocks));
-    this.rules.time.value.setText(s.minutes ? `${s.minutes}:00` : '∞');
+    const fixed = this.fixedRecharges();
+    const ball = MODES[this.mode].ball;
+    this.rules.recharges.title.setText(ball ? 'POINTS' : 'RECHARGES');
+    this.rules.recharges.value.setText(ball ? (this.ballScore() || '∞').toString()
+      : fixed === null ? String(s.recharges) : Number.isFinite(fixed) ? String(fixed) : '∞');
+    // The time box: the training's target, Capture the Flag's captures, else the time limit.
+    const m = MODES[this.mode];
+    this.rules.time.title.setText(m.trial ? 'DEFEAT' : m.ctf ? 'CAPTURES' : 'TIME');
+    this.rules.time.value.setText(m.trial ? String(s.target ?? 10) : m.ctf ? String(CTF_CAPTURES) : s.minutes && !this.oneTeam ? `${s.minutes}:00` : '∞');
     this.rules.bonuses.value.setText(BONUS_RATES[s.bonuses].label).setFontSize(s.bonuses === 'frequent' ? 20 : 24);
-    for (const k of ['stocks', 'time', 'bonuses'] as const) {
+    for (const k of ['recharges', 'time', 'bonuses'] as const) {
       const r = this.rules[k];
       r.glow.clear();
       if (on(k)) drawGlow(r.glow, r.box.x, r.box.y, r.box.width, r.box.height, { cut: 12 });
@@ -598,7 +672,7 @@ export class SetupScene extends Phaser.Scene {
   private drawSlot(p: Slot, i: number, seat: Seat, tag: string): void {
     const x = this.slotX(i);
     const off = seat.device === 'OFF';
-    const color = off ? 0x3a4a66 : SLOT_COLORS[seat.team];
+    const color = off ? 0x3a4a66 : SLOT_COLORS[this.teamOf(seat)];
     const f = this.focus;
     const focused = f.kind === 'slot' && f.slot === i ? f.field : null;
     p.color = color;
@@ -625,12 +699,16 @@ export class SetupScene extends Phaser.Scene {
     p.blurb.setText(deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
     p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
-    p.rows.team.label.setText(`${TEAM_NAMES[seat.team]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
+    p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
     for (const field of ['helmet', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
-      for (const a of p.rows[field].arrows) a.setVisible(!off);
+      for (const a of p.rows[field].arrows) a.setVisible(!off && (field !== 'team' || !this.oneTeam));
     }
-    p.robot.visible = !off;
+    p.kubot.visible = !off;
+    // Training: only slot 1 shows.
+    const shown = !this.solo || i === 0;
+    for (const o of [p.frame, p.glow, p.tag, p.slotNo, p.blurb, ...Object.values(p.rows).flatMap((r) => [r.label, ...r.arrows])]) if (!shown) o.setVisible(false);
+    if (!shown) p.kubot.visible = false;
   }
 
   // ------------------------------------------------------------------- frame
@@ -641,14 +719,14 @@ export class SetupScene extends Phaser.Scene {
     this.menu.update(time);
     const seats = this.state.seats;
     this.slots.forEach((p, i) => {
-      if (seats[i].device === 'OFF') return;
+      if (seats[i].device === 'OFF' || (this.solo && i > 0)) return;
       p.anim.tick(deltaMs);
       if (p.anim.finished) p.anim.play('idle', { fade: 150 });
       const head = HEADS[seats[i].helmet];
       // Standing over the slot's top right, facing into the slot.
-      p.robot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
+      p.kubot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
         { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
-      p.robot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
+      p.kubot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
     });
   }
 
@@ -659,10 +737,11 @@ export class SetupScene extends Phaser.Scene {
     const taken = new Set(this.state.seats.map((s) => s.device).filter((d) => typeof d === 'number'));
     const freePad = () => { let i = 0; while (taken.has(i)) i++; taken.add(i); return i; };
     return this.seats().map((s): FighterSpec => {
-      if (s.device === 'CPU') return { input: 'CPU', team: s.team, helmet: s.helmet, cpuLevel: s.level };
+      const team = this.teamOf(s);
+      if (s.device === 'CPU') return { input: 'CPU', team, helmet: s.helmet, cpuLevel: s.level };
       const n = humans++;
-      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team: s.team, helmet: s.helmet };
-      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team: s.team, helmet: s.helmet };
+      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team, helmet: s.helmet };
+      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team, helmet: s.helmet };
     });
   }
 
@@ -670,13 +749,16 @@ export class SetupScene extends Phaser.Scene {
     if (this.problem() || this.leaving) return;
     this.leaving = true;
     const s = this.state;
-    const setup: MatchSetup = { fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, stocks: s.stocks, minutes: s.minutes };
+    const setup: MatchSetup = {
+      mode: this.mode, fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, recharges: s.recharges, minutes: this.oneTeam ? 0 : s.minutes,
+      target: MODES[this.mode].ball ? this.ballScore() : s.target,
+    };
     shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }
 
   private back(): void {
     if (this.leaving) return;
     this.leaving = true;
-    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Title'); }, 'back');
+    shutter(this, () => { this.scene.stop('Game'); this.scene.start('Modes'); }, 'back');
   }
 }

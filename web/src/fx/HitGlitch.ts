@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 
 /**
- * The hit glitch: when a robot is struck it still flashes white, and on top
+ * The hit glitch: when a Kubot is struck it still flashes white, and on top
  * of that its picture breaks up like a bad digital signal for a moment.
  * Bands of rows tear sideways, the red and blue split apart at the edges,
  * scan lines run through it and a few rows drop out or burn bright. It is
@@ -25,7 +25,7 @@ uniform float uSeed;
 uniform float uZoom;
 // How much bigger the bands and tears are than the scan lines (1: the same).
 uniform float uCoarse;
-// Scan line spacing (1: every 3 pixels at the robots' scale; never under 2 screen pixels).
+// Scan line spacing (1: every 3 pixels at the Kubotz' scale; never under 2 screen pixels).
 uniform float uScan;
 // Opacity of the whole picture, applied after it is put together (so overlaps don't show).
 uniform float uOpacity;
@@ -75,7 +75,7 @@ void main () {
 }
 `;
 
-/** The glitch pass on a robot's container. */
+/** The glitch pass on a Kubot's container. */
 export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
   static readonly key = 'HitGlitch';
   /** 0..1: how hard it glitches now. */
@@ -85,9 +85,9 @@ export class HitGlitchPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPip
   camera: Phaser.Cameras.Scene2D.Camera | null = null;
   /** A shield hexagon in world pixels (centre, half height) and how hard it glitches inside, or null. */
   hex: HexGlitch | null = null;
-  /** How coarse the bands and tears are (1: sized like a robot's); the scan lines stay fine. */
+  /** How coarse the bands and tears are (1: sized like a Kubot's); the scan lines stay fine. */
   coarse = 1;
-  /** Scan line spacing (1: as on a hit robot). */
+  /** Scan line spacing (1: as on a hit Kubot). */
   scan = 1;
   opacity = 1;
 
@@ -132,7 +132,7 @@ export interface HexGlitch { x: number; y: number; r: number; amount: number }
  * nothing: the white flash alone shows the hit. The title logo glitches
  * through it too.
  */
-export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
+export function hitGlitch(obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image | Phaser.GameObjects.Text, amount: number, camera?: Phaser.Cameras.Scene2D.Camera, hex?: HexGlitch | null, coarse = 1, scan = 1, opacity = 1): void {
   if (obj.scene.sys.renderer.type !== Phaser.WEBGL) return;
   let p = obj.getPostPipeline(HitGlitchPipeline.key) as HitGlitchPipeline | HitGlitchPipeline[] | undefined;
   if (Array.isArray(p)) p = p[0];

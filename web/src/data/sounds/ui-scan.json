@@ -1,0 +1,13 @@
+{
+  "note": "The menu screen like an old TV changing stations.",
+  "length": 1.3,
+  "seed": 1,
+  "reverb": 0.15,
+  "layers": [
+    {"name":"Static","type":"noise","at":0,"dur":1.05,"gain":0.11,"filters":[{"type":"tilt","amount":0.6}],"env":{"attack":0.075,"shape":"pow","k":1.5},"lfo":{"shape":"sine","rate":21.90476,"depth":0.5}},
+    {"name":"Tuner whistle","type":"tone","at":0.08,"dur":0.6,"gain":0.03,"freq":{"from":2600,"to":900},"wobble":{"rate":2.38732,"depth":300,"hz":true},"env":{"shape":"arch"}},
+    {"name":"Tube buzz","type":"tone","at":0,"dur":1.05,"gain":0.06,"freq":{"from":60},"env":{"attack":0.105,"shape":"linear"}},
+    {"name":"Buzz overtone","type":"tone","at":0,"dur":1.05,"gain":0.025,"freq":{"from":180},"env":{"attack":0.105,"shape":"linear"}},
+    {"name":"Dial click","type":"ping","at":0,"freq":900,"gain":0.05}
+  ]
+}

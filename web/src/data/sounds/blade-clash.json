@@ -1,0 +1,16 @@
+{
+  "note": "Two Plasma Blades clashing: a crack of contact, electric crackle and buzz, and the blades ringing.",
+  "length": 0.8,
+  "seed": 1,
+  "reverb": 0.3,
+  "normalize": 0.95,
+  "layers": [
+    {"name":"Crackle","type":"noise","at":0,"dur":0.45,"gain":0.5,"filters":[{"type":"highpass","cutoff":{"from":4865}}],"env":{"attack":0.00033,"shape":"exp","k":3.15},"lfo":{"shape":"random","rate":176,"depth":0.85,"duty":0.6}},
+    {"name":"Buzz","type":"tone","at":0,"dur":0.42,"gain":0.2,"clip":1.2,"partials":[[1,1],[2,0.55],[3,0.4],[5,0.22],[1.012,0.7],[2.024,0.3]],"freq":{"from":150,"to":110},"env":{"attack":0.00105,"shape":"exp","k":5}},
+    {"name":"Buzz 2","type":"tone","at":0,"dur":0.3,"gain":0.11,"clip":1.2,"partials":[[1,1],[2,0.55],[3,0.4],[5,0.22],[1.012,0.7],[2.024,0.3]],"freq":{"from":223,"to":253},"env":{"shape":"exp","k":6}},
+    {"name":"Ring 1","type":"ping","at":0,"freq":1870,"gain":0.06},
+    {"name":"Ring 2","type":"ping","at":0.002,"freq":2790,"gain":0.05},
+    {"name":"Ring 3","type":"ping","at":0.004,"freq":4150,"gain":0.04},
+    {"name":"Ring 4","type":"ping","at":0.006,"freq":5600,"gain":0.03}
+  ]
+}

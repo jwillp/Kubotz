@@ -1,0 +1,8 @@
+{
+  "anim": "pftilt",
+  "ms": 383.333333,
+  "points": "fists",
+  "damage": 6,
+  "launch": {"knockback":10,"angle":28},
+  "active": [0.26087,0.391304]
+}

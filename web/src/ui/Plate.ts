@@ -10,7 +10,7 @@ import { liveCameras, screenScan, tvCut } from '../fx/ScreenScan';
 /**
  * The "Kube plate": the panel every HUD element and menu is built from.
  * Hard-edged gunmetal like the Kube's walls, two opposite corners cut at 45°
- * like the robots' helmets, lit by cyan strips like the arenas' block edges.
+ * like the Kubotz' helmets, lit by cyan strips like the arenas' block edges.
  */
 export const METAL_TOP = 0x2a3a50;
 export const METAL = 0x0d1520;
@@ -167,7 +167,8 @@ export function menuArena(scene: Phaser.Scene): number {
   let n = reg.get('menuArena') as number | undefined;
   if (n === undefined) {
     const last = reg.get('menuArenaLast') as number | undefined;
-    const choices = BACKDROPS.map((_, i) => i).filter((i) => i !== last || BACKDROPS.length < 2);
+    // The original arenas' rooms (the first four).
+    const choices = BACKDROPS.slice(0, 4).map((_, i) => i).filter((i) => i !== last);
     n = Phaser.Utils.Array.GetRandom(choices);
     reg.set('menuArena', n);
     reg.set('menuArenaLast', n);

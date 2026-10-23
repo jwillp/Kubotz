@@ -1,0 +1,9 @@
+{
+  "anim": "jabEnd",
+  "ms": 633.333333,
+  "points": "feet",
+  "damage": 6,
+  "launch": {"knockback":13,"angle":40},
+  "active": [0.052632,0.315789],
+  "ghosts": true
+}

@@ -1,0 +1,10 @@
+{
+  "anim": "pdair",
+  "ms": 816.666667,
+  "points": "fists",
+  "damage": 9,
+  "launch": {"knockback":10,"angle":-70},
+  "active": [0.244898,0.469388],
+  "all": true,
+  "ghosts": true
+}

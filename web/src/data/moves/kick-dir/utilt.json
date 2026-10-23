@@ -1,0 +1,8 @@
+{
+  "anim": "kutilt",
+  "ms": 450,
+  "points": "backFoot",
+  "damage": 7,
+  "launch": {"knockback":10,"angle":88},
+  "active": [0.111111,0.296296]
+}

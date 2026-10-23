@@ -19,7 +19,7 @@ as a fresh one. In Ultimate terms, 1 point of health lost is about 3 % of
 damage (0 % health ≈ 300 %).
 
 A hit sends the Kubot along the move's **launch angle** (0° straight
-forwards, 90° straight up). Light hits (the first jab hits, the first sword
+forwards, 90° straight up). Light hits (the first jab hits, the first plasma blade
 slashes) only push and briefly stun, so the next hit of the combo connects.
 
 ## What happens when a hit lands

@@ -1,0 +1,10 @@
+{
+  "anim": "pbair",
+  "ms": 800,
+  "points": "fists",
+  "damage": 11,
+  "launch": {"knockback":14,"angle":35},
+  "active": [0.1875,0.25],
+  "behind": true,
+  "ghosts": true
+}

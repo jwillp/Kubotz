@@ -1,0 +1,9 @@
+{
+  "anim": "jab2",
+  "ms": 333.333333,
+  "points": "fists",
+  "damage": 4,
+  "launch": {"knockback":4,"angle":20,"stun":340},
+  "active": [0.05,0.2],
+  "cancel": 0.3
+}

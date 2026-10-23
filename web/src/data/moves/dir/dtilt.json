@@ -1,0 +1,8 @@
+{
+  "anim": "pdtilt",
+  "ms": 450,
+  "points": "fists",
+  "damage": 5,
+  "launch": {"knockback":8,"angle":70},
+  "active": [0.259259,0.333333]
+}

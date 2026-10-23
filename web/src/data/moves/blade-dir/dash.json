@@ -1,0 +1,9 @@
+{
+  "anim": "sdash",
+  "ms": 933.333333,
+  "points": "blade",
+  "damage": 12,
+  "launch": {"knockback":13,"angle":40},
+  "active": [0.357143,0.428571],
+  "ghosts": true
+}

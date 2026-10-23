@@ -1,0 +1,9 @@
+{
+  "anim": "bair",
+  "ms": 440,
+  "points": "feet",
+  "damage": 10,
+  "launch": {"knockback":14,"angle":35},
+  "active": [0.25,0.72],
+  "behind": true
+}

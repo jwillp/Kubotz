@@ -1,0 +1,11 @@
+{
+  "anim": "pusmash",
+  "ms": 916.666667,
+  "points": "fists",
+  "damage": 14,
+  "launch": {"knockback":16,"angle":88},
+  "active": [0.145455,0.218182],
+  "all": true,
+  "ghosts": true,
+  "hold": 0.036364
+}

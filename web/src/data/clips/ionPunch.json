@@ -1,0 +1,15 @@
+{
+  "ms": 1717,
+  "loop": false,
+  "planted": true,
+  "keys": [
+    {"t":0,"pose":{"body":-96,"torso":86,"head":92,"shoulderF":-74,"armF":46,"handF":57,"shoulderB":-60,"armB":-37,"handB":-12,"thighF":-50,"legF":-108,"footF":-86,"thighB":-98,"legB":-128,"footB":-84}},
+    {"t":0.09,"pose":{"body":-96,"torso":92,"head":92,"shoulderF":-150,"armF":-90,"handF":-80,"shoulderB":-20,"armB":10,"handB":20,"thighF":-38,"legF":-112,"footF":-88,"thighB":-128,"legB":-118,"footB":-96,"tilt":6,"yaw":28,"x":-4},"ease":"out"},
+    {"t":0.24,"pose":{"body":-96,"torso":104,"head":96,"shoulderF":-176,"armF":152,"handF":160,"shoulderB":8,"armB":22,"handB":70,"thighF":-30,"legF":-112,"footF":-88,"thighB":-146,"legB":-126,"footB":-100,"tilt":-10,"yaw":40,"x":-18,"y":-4},"ease":"inOut"},
+    {"t":0.49,"pose":{"body":-96,"torso":108,"head":98,"shoulderF":-178,"armF":148,"handF":156,"shoulderB":12,"armB":26,"handB":74,"thighF":-26,"legF":-114,"footF":-88,"thighB":-150,"legB":-124,"footB":-100,"tilt":-13,"yaw":44,"x":-26,"y":-8},"ease":"inOut"},
+    {"t":0.515,"pose":{"body":-96,"torso":56,"head":70,"shoulderF":2,"armF":0,"handF":0,"shoulderB":-162,"armB":-174,"handB":-170,"thighF":-6,"legF":-64,"footF":-46,"thighB":-162,"legB":-172,"footB":-136,"tilt":22,"yaw":0,"x":196},"ease":"snap"},
+    {"t":0.56,"pose":{"body":-96,"torso":57,"head":71,"shoulderF":0,"armF":-2,"handF":-2,"shoulderB":-160,"armB":-172,"handB":-168,"thighF":-6,"legF":-64,"footF":-46,"thighB":-162,"legB":-172,"footB":-136,"tilt":22,"x":200}},
+    {"t":0.86,"pose":{"body":-96,"torso":64,"head":76,"shoulderF":-10,"armF":-6,"handF":-4,"shoulderB":-150,"armB":-160,"handB":-156,"thighF":-14,"legF":-76,"footF":-56,"thighB":-156,"legB":-164,"footB":-128,"tilt":16,"x":204},"ease":"inOut"},
+    {"t":1,"pose":{"body":-96,"torso":74,"head":88,"shoulderF":-22,"armF":14,"handF":22,"shoulderB":-125,"armB":-150,"handB":-160,"thighF":-38,"legF":-112,"footF":-88,"thighB":-128,"legB":-118,"footB":-96,"tilt":6,"x":196},"ease":"inOut"}
+  ]
+}

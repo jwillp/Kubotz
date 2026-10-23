@@ -1,0 +1,11 @@
+{
+  "anim": "pdsmash",
+  "ms": 866.666667,
+  "points": "fists",
+  "damage": 12,
+  "launch": {"knockback":14,"angle":30},
+  "active": [0.115385,0.153846],
+  "all": true,
+  "both": true,
+  "hold": 0.038462
+}

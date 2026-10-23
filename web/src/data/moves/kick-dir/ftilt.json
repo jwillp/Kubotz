@@ -1,0 +1,8 @@
+{
+  "anim": "ftilt",
+  "ms": 383.333333,
+  "points": "feet",
+  "damage": 7,
+  "launch": {"knockback":10,"angle":30},
+  "active": [0.26087,0.391304]
+}

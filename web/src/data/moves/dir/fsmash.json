@@ -1,0 +1,10 @@
+{
+  "anim": "fsmash",
+  "ms": 750,
+  "points": "fireFists",
+  "damage": 14,
+  "launch": {"knockback":17,"angle":32},
+  "active": [0.288889,0.377778],
+  "ghosts": true,
+  "hold": 0.088889
+}
