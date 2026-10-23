@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Config } from '../config';
+import { Config, UNIT } from '../config';
 import { POWER_UPS } from '../game/PowerUps';
 import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { BLACK_COLOR, BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
@@ -9,6 +9,8 @@ import { fx } from '../game/Settings';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
+import { BUBBLE_GREY, greyHexa } from '../fx/OffscreenBubbles';
+import { pureAdd } from '../fx/Grade';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 
 const PAUSE_ITEMS = ['Resume', 'Settings', 'Controls', 'Quit to title'];
@@ -17,6 +19,9 @@ const PAUSE_ITEMS = ['Resume', 'Settings', 'Controls', 'Quit to title'];
 const CARD_W = 270;
 const CARD_H = 78;
 const CARD_GAP = 14;
+/** How much of the screen the HUD covers (px): the cards along the bottom, the timer plate at the top. The match camera frames the Kubotz between them. */
+export const HUD_BOTTOM = CARD_H + 10;
+export const HUD_TOP = 40;
 /** The helmet-colour slab holding the P1 / CPU tag. */
 const SLAB = 64;
 const SEGMENTS = 12;
@@ -33,9 +38,17 @@ interface Card {
   status: Phaser.GameObjects.Text;
   /** The status shown (its chip is redrawn only when it changes). */
   shown: string;
+  /** 0..1: how see-through it is now, while a Kubot is behind it. */
+  fade: number;
   /** Infinite recharges (Sandbox, Capture the Flag): an ∞ instead of pips. */
   infinite: Phaser.GameObjects.Text;
 }
+
+/** How faint a HUD card gets while a Kubot is behind it, and how fast it fades (per second). */
+const BEHIND_ALPHA = 0.25;
+const FADE_SPEED = 8;
+/** particles/hexa.png: its hexagon's height, corner to corner (px). */
+const HEXA_ART = 629;
 
 /**
  * HUDSystem: a "Kube plate" card per Kubot along the bottom edge (tag on a
@@ -44,6 +57,9 @@ interface Card {
  */
 export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
+  /** The pointers of the off-screen bubbles, and the shield art over each. */
+  private rings!: Phaser.GameObjects.Graphics;
+  private shields: { fill: Phaser.GameObjects.Image; sheen: Phaser.GameObjects.Image }[] = [];
   private cards = new Map<Kubotz, Card>();
   private timer!: Phaser.GameObjects.Text;
   /** Horde: the wave and the black-team Kubotz left, under the timer. */
@@ -73,6 +89,8 @@ export class HudScene extends Phaser.Scene {
     this.pauseItems = [];
     const { width, height } = this.scale;
 
+    this.rings = this.add.graphics();
+    this.shields = [];
     const tg = this.add.graphics();
     drawPlate(tg, width / 2 - 64, -14, 128, 50, { cut: 12 });
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
@@ -188,10 +206,10 @@ export class HudScene extends Phaser.Scene {
     const status = this.add.text(SLAB + 8, -14, '', body(11, { fontStyle: '800' })).setOrigin(0, 0.5);
     const infinite = this.add.text(SLAB + 12, 56, '∞', body(20, { fontStyle: '800', color: '#' + hex(color) })).setOrigin(0, 0.5).setVisible(false);
     c.add([g, tag, name, team, bars, kills, chip, status, infinite]);
-    return { container: c, bars, kills, chip, status, shown: '', infinite };
+    return { container: c, bars, kills, chip, status, shown: '', fade: 0, infinite };
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     this.updateGlitches();
     const g = this.game_;
     if (!g?.fighters) return;
@@ -218,6 +236,8 @@ export class HudScene extends Phaser.Scene {
     // Training: each CPU coming in gets a card (its health in sight), gone once defeated.
     if (MODES[g.mode].trial) this.syncCards();
     for (const [k, card] of this.cards) if (card.container.visible) this.drawCard(k, card, time);
+    for (const [k, card] of this.cards) this.fadeCard(k, card, delta);
+    this.drawBubbleRings();
   }
 
   /** Horde: a new wave's number comes in big, like the countdown. */
@@ -236,6 +256,40 @@ export class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: t, alpha: 0, delay: 1500, duration: 400, onComplete: () => t.destroy() });
     this.glitchTitle(t, 1500);
   }
+
+  /**
+   * Over each off-screen bubble (fx/OffscreenBubbles.ts), the guard's shield
+   * exactly as a Kubot raises it (Kubot2D.drawShield), only grey like the HUD
+   * instead of the Kubot's colour: the hexagon art filled grey, its sheen
+   * added from a grey copy of the art, the same flicker; and a grey pointer
+   * towards the Kubot.
+   */
+  private drawBubbleRings(): void {
+    const g = this.rings.clear();
+    const marks = this.game_.bubbles?.marks ?? [];
+    while (this.shields.length < marks.length) {
+      this.shields.push({
+        fill: this.add.image(0, 0, 'p-hexa'),
+        sheen: this.add.image(0, 0, greyHexa(this)).setBlendMode(pureAdd(this)).setTint(0xffffff),
+      });
+    }
+    this.shields.forEach(({ fill, sheen }, i) => {
+      const m = marks[i];
+      fill.setVisible(!!m);
+      sheen.setVisible(!!m);
+      if (!m) return;
+      const { x, y, r, angle: a } = m;
+      const flicker = Math.random() < 0.12 ? 0.55 : 1;
+      // The art's hexagon is HEXA_ART px from corner to corner.
+      const scale = (2 * r) / HEXA_ART;
+      fill.setPosition(x, y).setScale(scale).setTintFill(BUBBLE_GREY).setAlpha(0.3 * flicker);
+      sheen.setPosition(x, y).setScale(scale).setAlpha(0.3 * flicker);
+      const tip = r + 16;
+      g.fillStyle(BUBBLE_GREY, 0.7 * flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
+        x + Math.cos(a + 0.3) * (r - 6), y + Math.sin(a + 0.3) * (r - 6), x + Math.cos(a - 0.3) * (r - 6), y + Math.sin(a - 0.3) * (r - 6));
+    });
+  }
+
 
   private drawCard(k: Kubotz, card: Card, time: number): void {
     const b = card.bars.clear();
@@ -276,6 +330,13 @@ export class HudScene extends Phaser.Scene {
     this.drawStatus(k, card, time, stunned);
   }
 
+  /** A card dimmed once eliminated, and faint while a Kubot is behind it (like Smash's), so the fight shows through. */
+  private fadeCard(k: Kubotz, card: Card, delta: number): void {
+    const behind = card.container.visible && this.kubotBehind(card.container.x, card.container.y, CARD_W, CARD_H);
+    card.fade = Phaser.Math.Clamp(card.fade + (behind ? 1 : -1) * FADE_SPEED * delta / 1000, 0, 1);
+    card.container.setAlpha((k.eliminated ? 0.45 : 1) * Phaser.Math.Linear(1, BEHIND_ALPHA, card.fade));
+  }
+
   /** The status chip above a card, and the card dimmed once eliminated. */
   private drawStatus(k: Kubotz, card: Card, time: number, stunned: boolean): void {
     // The status chip above the card.
@@ -304,7 +365,21 @@ export class HudScene extends Phaser.Scene {
       chip.lineStyle(1, tone, 0.9).strokeRect(SLAB, -24, cw, 20);
       if (left > 0) chip.fillStyle(tone, 1).fillRect(SLAB + 2, -7, (cw - 4) * left, 2);
     }
-    card.container.setAlpha(k.eliminated ? 0.45 : 1);
+  }
+
+  /** Whether a Kubot still in the fight is drawn (on screen) over this rectangle, in screen px. */
+  private kubotBehind(x: number, y: number, w: number, h: number): boolean {
+    const cam = this.game_.cameras.main;
+    const view = cam.worldView;
+    return this.game_.fighters.some((k) => {
+      if (!k.isAlive()) return false;
+      // Its body, and the head over it.
+      const sx = (k.x - view.x) * cam.zoom;
+      const top = (k.body.top - 0.6 * UNIT - view.y) * cam.zoom;
+      const bottom = (k.body.bottom - view.y) * cam.zoom;
+      const half = 0.6 * UNIT * cam.zoom;
+      return sx + half > x && sx - half < x + w && bottom > y && top < y + h;
+    });
   }
 
   private onCountdown(word: string): void {
