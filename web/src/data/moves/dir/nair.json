@@ -1,0 +1,10 @@
+{
+  "anim": "nair",
+  "ms": 420,
+  "points": "limbs",
+  "damage": 7,
+  "launch": {"knockback":9,"angle":40},
+  "active": [0.2,0.75],
+  "all": true,
+  "ghosts": true
+}

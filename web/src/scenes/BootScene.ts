@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import { loadRecordedSounds, makeSynthSounds } from '../audio/Sounds';
 import { SpriterData } from '../spriter/Spriter';
 import { parseTmx, TmxMap } from '../map/TmxMap';
-import { EffectDef, parseEffect } from '../fx/ParticleEffect';
+import { EffectDef, effectFromData } from '../fx/ParticleEffect';
+import { DATA_FILES, fromFiles } from '../game/DataFiles';
+import { editedParticles, testArena } from '../game/EditedData';
 import { addNormalMap } from '../fx/NormalMaps';
 import { WORN, weather } from '../fx/Surface';
 import { TvIdent } from '../fx/TvIdent';
@@ -15,7 +17,11 @@ export const MAIN_MAP = 'maps/debug-map.tmx';
 /** The logo's texture is this many times the original's 298 x 134. */
 export const LOGO_RES = 3;
 
-/** Particle effects by name: the files the full-on-scripting branch plays. */
+/**
+ * Particle effects the game plays by name, and the original file (public/particles,
+ * as the full-on-scripting branch plays them) each was converted from: they
+ * now live in src/data/particles/<name>.json.
+ */
 export const PARTICLE_FILES = {
   landingDust: 'landing-dust.pe', // Constants.PARTICLES_LANDING_DUST
   hitStars: 'eclat-rouille.pe', // Constants.PARTICLES_HIT_STARS
@@ -25,8 +31,10 @@ export const PARTICLE_FILES = {
   stars: 'stars.pe',
 } as const;
 export type ParticleName = keyof typeof PARTICLE_FILES;
+/** The particle images (public/particles) effects can use. */
+export const PARTICLE_IMAGES = ['pre-particle.png', 'particle001.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png'];
 
-/** Where each part of the boot ends on the load bar: first files, robot parts and tiles, then the made textures. */
+/** Where each part of the boot ends on the load bar: first files, Kubot parts and tiles, then the made textures. */
 const PHASES = [0.45, 0.75] as const;
 /** The longest the boot work holds the page before it lets the load screen draw a frame (ms). */
 const PACE_MS = 12;
@@ -34,7 +42,7 @@ const PACE_MS = 12;
 /** Loads the original assets: Spriter file + its images, TMX map + tiles, particles, sounds. */
 export class BootScene extends Phaser.Scene {
   private ident?: TvIdent;
-  /** 0 while the first files load, 1 for the robot parts and tiles. */
+  /** 0 while the first files load, 1 for the Kubot parts and tiles. */
   private loadPhase = 0;
 
   constructor() { super('Boot'); }
@@ -56,8 +64,7 @@ export class BootScene extends Phaser.Scene {
     for (const b of ['gun', 'health', 'jump', 'laser-sword', 'shield', 'speed']) this.load.image(`bonus-${b}`, `entities/bonus-${b}.png`);
     this.load.image('bullet', 'entities/bullet.png');
     // LibGDX particle effects (full-on-scripting branch) and their images.
-    for (const [key, file] of Object.entries(PARTICLE_FILES)) this.load.text(`pe-file:${key}`, `particles/${file}`);
-    for (const img of ['pre-particle.png', 'piou.png', 'star.png', 'star2.png', 'hexa.png', 'flameche.png']) this.load.image(`pe:${img}`, `particles/${img}`);
+    for (const img of PARTICLE_IMAGES) this.load.image(`pe:${img}`, `particles/${img}`);
     // Original music and sounds (audio/Sounds.ts lists every sound).
     loadRecordedSounds(this.load);
   }
@@ -70,7 +77,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('spriter', spriter);
     this.registry.set('map', map);
     const effects: Record<string, EffectDef> = {};
-    for (const key of Object.keys(PARTICLE_FILES)) effects[key] = parseEffect(this.cache.text.get(`pe-file:${key}`));
+    for (const [key, data] of Object.entries(editedParticles ?? fromFiles(DATA_FILES).particles)) effects[key] = effectFromData(data);
     this.registry.set('effects', effects);
 
     for (const file of spriter.allFiles()) this.load.image(`kubotz:${file}`, `animations/${file}`);
@@ -83,7 +90,13 @@ export class BootScene extends Phaser.Scene {
       await sounds;
       this.ident?.setProgress(1);
       // From the load screen's snow to the title, as any screen change.
-      void bodyFont.then(() => shutter(this, () => this.scene.start('Title'), null));
+      void bodyFont.then(() => {
+        // The editor's arena test: straight into a match, you against a CPU.
+        if (testArena !== null) this.scene.start('Game', { fighters: [{ input: 'P1', team: 0, helmet: 0 }, { input: 'CPU', team: 1, helmet: 1 }], arena: testArena, bonuses: 'normal' });
+        // The editor (editor.html) boots into its own scene; the game, from the load screen's snow to the title, as any screen change.
+        else if (this.registry.get('bootNext')) this.scene.start(this.registry.get('bootNext'));
+        else shutter(this, () => this.scene.start('Title'), null);
+      });
     });
     this.load.start();
   }
@@ -111,7 +124,7 @@ export class BootScene extends Phaser.Scene {
     let step = 0;
     const steps = 4;
     const pace = (within = 0) => this.pace(PHASES[1] + (1 - PHASES[1]) * Math.min(1, (step + within) / steps));
-    // Normal maps so the lights shade the art: robot parts and bonus chips as
+    // Normal maps so the lights shade the art: Kubot parts and bonus chips as
     // rounded metal shells, the arena tiles with a flatter bevel.
     const spriter = this.registry.get('spriter') as SpriterData;
     const map = this.registry.get('map') as TmxMap;
@@ -125,7 +138,7 @@ export class BootScene extends Phaser.Scene {
         addNormalMap(this.textures, `head:${hex(color)}:${file}`, {}, `kubotz:${file}`);
         await pace(c / SLOT_COLORS.length);
       }
-      // P1 / P2 / CPU tags in each robot colour, drawn in the heading font.
+      // P1 / P2 / CPU tags in each Kubot colour, drawn in the heading font.
       for (const who of ['CPU', 'P1', 'P2']) makeTagTexture(this, `label-${who}:${hex(color)}`, who, color);
       this.recolor('bullet', `bullet:${hex(color)}`, color, false);
       this.recolor(`kubotz:${SWORD_FILE}`, `sword:${hex(color)}`, color, false);
@@ -133,7 +146,7 @@ export class BootScene extends Phaser.Scene {
       await pace((c + 1) / SLOT_COLORS.length);
     }
     step = 2;
-    // Worn copies of every robot part, helmets and blades in every colour
+    // Worn copies of every Kubot part, helmets and blades in every colour
     // (fx/Surface.ts): the look in play, G switches back to the clean art.
     const parts: [string, string][] = spriter.allFiles().map((f) => [`kubotz:${f}`, f]);
     for (const color of SLOT_COLORS) {
@@ -244,7 +257,7 @@ export class BootScene extends Phaser.Scene {
       this.ident.setProgress(progress);
       this.game.events.on(Phaser.Core.Events.STEP, step);
     });
-    // The bar is the whole boot: the first files, then the robot parts and tiles, then the textures made from them.
+    // The bar is the whole boot: the first files, then the Kubot parts and tiles, then the textures made from them.
     this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => {
       progress = this.loadPhase === 0 ? PHASES[0] * p : PHASES[0] + (PHASES[1] - PHASES[0]) * p;
       this.ident?.setProgress(progress);

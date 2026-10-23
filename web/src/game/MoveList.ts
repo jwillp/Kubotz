@@ -9,7 +9,7 @@ import {
 /**
  * The move list (MoveListScene): every move and a few combos, each with its
  * inputs, a line on what it does (numbers from the move tables in Kubotz.ts)
- * and the steps the preview robot plays in a loop.
+ * and the steps the preview Kubot plays in a loop.
  */
 
 /** One step of a preview: a clip, and what the body does while it plays. */
@@ -31,7 +31,7 @@ export interface Step {
   path?: [number, number];
   /** Keeps its speed on the ground (a run). */
   run?: boolean;
-  /** Plays until the robot lands. */
+  /** Plays until the Kubot lands. */
   untilLand?: boolean;
   /** Ends early on landing (the air kick). */
   endOnLand?: boolean;
@@ -55,10 +55,10 @@ export interface MoveEntry {
   pad: string;
   desc: string;
   weapon?: Weapon;
-  /** Where the robot starts (units, x forwards, y up) and whether a ledge stands at x = 0. */
+  /** Where the Kubot starts (units, x forwards, y up) and whether a ledge stands at x = 0. */
   start?: [number, number];
   ledge?: boolean;
-  /** A second robot stands in reach to be grabbed, pummelled, thrown and hit. */
+  /** A second Kubot stands in reach to be grabbed, pummelled, thrown and hit. */
   victim?: boolean;
   steps: Step[];
 }
@@ -149,7 +149,7 @@ export const MOVE_LIST: MoveEntry[] = [
   { group: 'Laser gun', name: 'Charged shot', keys: 'Hold O, release', pad: 'Hold A, release', desc: `Charges for up to ${GUN_CHARGE_MS / 1000} s: a big, slower bolt with strong recoil, up to ${shotDamage(1)} dmg (Mk I).`, weapon: 'laserGunMkI', steps: [clip('idle', { ms: GUN_CHARGE_MS, gather: true }), shot(1)] },
 
   // ---------------------------------------------------------------- grabs
-  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front (not a robot behind its guard); also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
+  { group: 'Grab and throws', name: 'Grab', keys: 'I', pad: 'L', desc: 'Reaches just in front (not a Kubot behind its guard); also picks up power-up balls. A miss has end lag.', victim: true, steps: [clip('grab'), clip('grabHold', { ms: 700 })] },
   { group: 'Grab and throws', name: 'Pummel', keys: 'O while holding', pad: 'A while holding', desc: `${PUMMEL_DAMAGE} dmg a hit.`, victim: true, steps: [clip('grab'), clip('grabHold', { ms: 300 }), clip('pummel', { ms: PUMMEL_MS }), clip('pummel', { ms: PUMMEL_MS }), clip('grabHold', { ms: 300 })] },
   { group: 'Grab and throws', name: 'Forward throw', keys: 'Forward while holding', pad: '◀▶ while holding', desc: `${stats(THROWS.forward)}.`, victim: true, steps: throwSteps('forward') },
   { group: 'Grab and throws', name: 'Back throw', keys: 'Back while holding', pad: 'Back while holding', desc: `With a spin. ${stats(THROWS.back)}.`, victim: true, steps: throwSteps('back') },

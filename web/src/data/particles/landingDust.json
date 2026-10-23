@@ -1,0 +1,41 @@
+{
+  "emitters": [
+    {
+      "name": "right",
+      "image": "pre-particle.png",
+      "additive": true,
+      "duration": {"low":[300,300]},
+      "count": [0,500],
+      "emission": {"low":[0,0],"high":[200,200],"curve":[[0,1]]},
+      "life": {"low":[0,0],"high":[500,1000],"curve":[[0,1],[0.66,1],[0.9931507,0]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0,0],"high":[0.4,0.4],"curve":[[0,1],[1,0.6862745]]},
+      "velocity": {"low":[0,0],"high":[2,4],"curve":[[0,0.88235295],[1,0.29411766]]},
+      "angle": {"low":[0,0],"high":[0,90],"curve":[[0,1],[0.999,1],[1,1]]},
+      "gravity": {"low":[0,0],"high":[2,2],"curve":[[0,0],[0.32876712,0.21568628],[1,1]]},
+      "colors": [[0,0.4,0.38431373,0.23529412]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0.8764045],[0.9018405,0.1741573]]}
+    },
+    {
+      "name": "left",
+      "image": "pre-particle.png",
+      "additive": true,
+      "duration": {"low":[300,300]},
+      "count": [0,500],
+      "emission": {"low":[0,0],"high":[200,200],"curve":[[0,1]]},
+      "life": {"low":[0,0],"high":[500,1000],"curve":[[0,1],[0.66,1],[0.9931507,0]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0,0],"high":[0.3,0.3],"curve":[[0,1],[1,0.6862745]]},
+      "velocity": {"low":[0,0],"high":[2,4],"curve":[[0,0.88235295],[1,0.29411766]]},
+      "angle": {"low":[0,0],"high":[180,0],"curve":[[0,1]]},
+      "rotation": {"low":[0,180],"high":[360,360],"curve":[[0,1],[1,1]]},
+      "gravity": {"low":[0,0],"high":[2,2],"curve":[[0,0.1764706],[0.34246576,0.37254903],[1,1]]},
+      "colors": [[0,0.21176471,0.20392157,0.1254902]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0.8764045],[0.9018405,0.1741573]]}
+    }
+  ]
+}

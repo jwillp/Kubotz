@@ -27,9 +27,9 @@ interface Piece {
 }
 
 /**
- * K.O.: the robot blows apart. Every body part (helmet, arms, legs, weapon...)
+ * K.O.: the Kubot blows apart. Every body part (helmet, arms, legs, weapon...)
  * flies off as a spinning piece that bounces around the arena, and knocks the
- * robots it hits a little. Then each piece, one by one, scans out like a
+ * Kubotz it hits a little. Then each piece, one by one, scans out like a
  * hologram switching off (fx/Hologram.ts).
  */
 export class DebrisField {
@@ -49,7 +49,7 @@ export class DebrisField {
     for (const part of k.model.pieces()) {
       const radius = Phaser.Math.Clamp(part.size * 0.32, 0.12 * UNIT, 0.45 * UNIT);
       const body = new DebrisBody(this.physics, part.x, part.y, radius);
-      // Outwards from the robot's middle, a little upwards, plus its momentum.
+      // Outwards from the Kubot's middle, a little upwards, plus its momentum.
       let dx = part.x - cx + Phaser.Math.FloatBetween(-8, 8);
       let dy = part.y - cy - 18 + Phaser.Math.FloatBetween(-8, 8);
       const len = Math.hypot(dx, dy) || 1;
@@ -64,7 +64,7 @@ export class DebrisField {
     }
   }
 
-  /** Moves the pieces with their bodies (after the physics step), hurts robots, clears old ones. */
+  /** Moves the pieces with their bodies (after the physics step), hurts Kubotz, clears old ones. */
   update(now: number, fighters: Kubotz[], onHit: (victim: Kubotz, x: number, y: number) => void): void {
     for (const p of this.pieces) {
       const { x, y } = p.body;
@@ -79,7 +79,7 @@ export class DebrisField {
         if (!Phaser.Geom.Intersects.CircleToRectangle(circle, f.hurtbox())) continue;
         p.hit.add(f);
         f.takeDamage(DAMAGE, p.owner, { knockback: PUSH, angle: 45 }, (p.body.vx || f.x - x) < 0 ? -1 : 1);
-        // The piece bounces off the robot.
+        // The piece bounces off the Kubot.
         p.body.setVelocity(-p.body.vx * 0.4, -Math.abs(p.body.vy) * 0.5 - 3 * UNIT);
         onHit(f, x, y);
       }
@@ -99,7 +99,7 @@ export class DebrisField {
     return this.pieces.map((p) => new Phaser.Geom.Circle(p.body.x, p.body.y, p.radius));
   }
 
-  /** Bright flash where a robot blew up, fading out. */
+  /** Bright flash where a Kubot blew up, fading out. */
   lights(now: number): { x: number; y: number; color: number; intensity: number }[] {
     return this.flashes.map((f) => ({ x: f.x, y: f.y, color: f.color, intensity: 40 * (1 - (now - f.born) / 600) }));
   }

@@ -23,6 +23,12 @@ const RECORDED: Record<string, string> = {
   'narrator-fight': 'narrator-fight.mp3',
 };
 
+/** The music an arena can play (its file's `music`), for the editors' Music list: [key, label]. */
+export const MUSIC: [string, string][] = [
+  ['music-game', 'Techno theme (the match music)'],
+  ['music-title', 'Dashboard (the title music)'],
+  ['none', 'None'],
+];
 
 /** Queues the recorded sounds on the loader. */
 export function loadRecordedSounds(load: Phaser.Loader.LoaderPlugin): void {

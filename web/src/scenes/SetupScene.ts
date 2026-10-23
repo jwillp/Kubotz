@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
-import { ART_SCALE, Robot2D } from '../anim/Robot2D';
+import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
 import { Config } from '../config';
 import { HEADS, SLOT_COLORS, hex, partTexture } from '../game/Kubotz';
 import {
@@ -17,6 +17,7 @@ import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutt
 import { LOGO_RES } from './BootScene';
 import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
+import { BACKDROPS, backdropOf } from '../fx/Backdrops';
 import { uiSound } from '../audio/Sounds';
 
 /**
@@ -29,7 +30,7 @@ type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 interface Seat { device: Device; team: number; helmet: number; level: number }
 
 /** The setup screen's choices, kept in the registry so a rematch from the title keeps them. */
-interface SetupState { seats: Seat[]; arena: number; stocks: number; minutes: number; bonuses: BonusRate }
+interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate }
 
 const SLOTS = 4;
 const SLOT_W = 282;
@@ -39,7 +40,7 @@ const SLOT_TOP = 398;
 /** The chosen arena's frame, top centre. */
 const CAROUSEL_Y = 212;
 const CENTER_W = 300;
-const STOCKS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const RECHARGES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
 const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
@@ -76,7 +77,7 @@ const deviceBlurb = (s: Seat): string => {
 };
 
 /** A focusable thing: a rule at the top, a field of a slot, or START. */
-type Focus = { kind: 'arena' | 'stocks' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
+type Focus = { kind: 'arena' | 'recharges' | 'time' | 'bonuses' | 'start' } | { kind: 'slot'; slot: number; field: Field };
 
 interface Row {
   label: Phaser.GameObjects.Text;
@@ -90,7 +91,7 @@ interface Slot {
   slotNo: Phaser.GameObjects.Text;
   blurb: Phaser.GameObjects.Text;
   rows: Record<Field, Row>;
-  robot: Robot2D;
+  kubot: Kubot2D;
   anim: Animator;
   /** The colour the preview's parts are painted in. */
   color: number;
@@ -159,9 +160,9 @@ class StartButton extends Phaser.GameObjects.Container {
 }
 
 /**
- * The setup screen: arena, rules and robots on one page (it replaced the
+ * The setup screen: arena, rules and Kubotz on one page (it replaced the
  * join screen and the arena select). The chosen arena fills the background,
- * dimmed and soft, and shows whole in the frame at the top, both rendered live; stocks, time and power-ups beside it; four
+ * dimmed and soft, and shows whole in the frame at the top, both rendered live; recharges, time and power-ups beside it; four
  * slots below, each with its Kubot in its team colour and helmet; START.
  *
  * One cursor (arrows / WASD, any gamepad's D-pad or stick) moves up and down
@@ -184,7 +185,7 @@ export class SetupScene extends Phaser.Scene {
   private arenaFrame!: Phaser.GameObjects.Graphics;
   private arenaName!: HeadingText;
   private arenaBlurb!: Phaser.GameObjects.Text;
-  private rules: Record<'stocks' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
+  private rules: Record<'recharges' | 'time' | 'bonuses', { value: Phaser.GameObjects.Text; glow: Phaser.GameObjects.Graphics; box: Phaser.Geom.Rectangle }> = {} as never;
   private start!: StartButton;
   private status!: Phaser.GameObjects.Text;
   /** Pad buttons down last frame, per pad, for joins and leaves. */
@@ -207,7 +208,7 @@ export class SetupScene extends Phaser.Scene {
         { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL },
       ],
       arena: (this.registry.get('arena') as number | undefined) ?? 0,
-      stocks: Config.NB_LIVES,
+      recharges: Config.NB_LIVES,
       minutes: 0,
       bonuses: (this.registry.get('bonuses') as BonusRate | undefined) ?? 'normal',
     };
@@ -218,7 +219,7 @@ export class SetupScene extends Phaser.Scene {
     const { width } = this.scale;
     this.live = this.sys.renderer.type === Phaser.WEBGL;
     // Every arena's room painted now, while the screen change still covers the screen, not on the first switch to it.
-    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, i));
+    if (this.live) ARENA_INFO.forEach((_, i) => paintRoomOnce(this, BACKDROPS.indexOf(backdropOf(i))));
     kubeBackdrop(this, this.live ? 0 : 0.3);
     // The chosen arena is the menu's background (GameScene behind this scene), dimmed except in its frame.
     this.dim = this.add.graphics();
@@ -294,10 +295,10 @@ export class SetupScene extends Phaser.Scene {
     this.arenaBlurb = this.add.text(width / 2, CAROUSEL_Y + h / 2 + 53, '', body(14, { fontStyle: '500', color: '#9fe3ff' })).setOrigin(0.5);
   }
 
-  /** Stocks and time on the right of the arena, power-ups on the left. */
+  /** Recharges and time on the right of the arena, power-ups on the left. */
   private makeRules(): void {
     const { width } = this.scale;
-    const rule = (key: 'stocks' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
+    const rule = (key: 'recharges' | 'time' | 'bonuses', x: number, y: number, title: string, d: (n: number) => void) => {
       const glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
       const g = this.add.graphics();
       const box = new Phaser.Geom.Rectangle(x - 80, y - 36, 160, 72);
@@ -310,7 +311,7 @@ export class SetupScene extends Phaser.Scene {
       this.rules[key] = { value, glow, box };
     };
     const right = width - 136;
-    rule('stocks', right, CAROUSEL_Y - 50, 'STOCKS', (d) => this.change({ kind: 'stocks' }, d));
+    rule('recharges', right, CAROUSEL_Y - 50, 'RECHARGES', (d) => this.change({ kind: 'recharges' }, d));
     rule('time', right, CAROUSEL_Y + 50, 'TIME', (d) => this.change({ kind: 'time' }, d));
     rule('bonuses', 136, CAROUSEL_Y + 50, 'POWER-UPS', (d) => this.change({ kind: 'bonuses' }, d));
   }
@@ -334,9 +335,9 @@ export class SetupScene extends Phaser.Scene {
         ],
       };
     });
-    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, robot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
-    // The robot stands over the top right of its slot, in front of the plate.
-    slot.robot = new Robot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
+    const slot: Slot = { frame, glow, tag, slotNo, blurb, rows, kubot: null!, anim: new Animator(rig), color: SLOT_COLORS[0] };
+    // The Kubot stands over the top right of its slot, in front of the plate.
+    slot.kubot = new Kubot2D(this, rig, (file) => partTexture(this.textures, file, slot.color));
     slot.anim.play('idle', { restart: true });
     return slot;
   }
@@ -363,7 +364,7 @@ export class SetupScene extends Phaser.Scene {
     const s = this.state;
     switch (f.kind) {
       case 'arena': this.pickArena(d); return;
-      case 'stocks': s.stocks = STOCKS[(STOCKS.indexOf(s.stocks) + d + STOCKS.length) % STOCKS.length]; break;
+      case 'recharges': s.recharges = RECHARGES[(RECHARGES.indexOf(s.recharges) + d + RECHARGES.length) % RECHARGES.length]; break;
       case 'time': s.minutes = MINUTES[(MINUTES.indexOf(s.minutes) + d + MINUTES.length) % MINUTES.length]; break;
       case 'bonuses': s.bonuses = RATE_ORDER[(RATE_ORDER.indexOf(s.bonuses) + d + RATE_ORDER.length) % RATE_ORDER.length]; break;
       case 'start': return;
@@ -402,7 +403,7 @@ export class SetupScene extends Phaser.Scene {
       this.tweens.add({ targets: this.center, x: width / 2, alpha: 1, duration: 180, ease: 'Cubic.out' });
     }
     this.arenaName.setText(ARENA_INFO[s.arena].name);
-    this.arenaBlurb.setText(ARENA_INFO[s.arena].blurb);
+    this.arenaBlurb.setText(ARENA_INFO[s.arena].description);
     if (d) this.focus = { kind: 'arena' };
     this.refresh();
   }
@@ -440,7 +441,7 @@ export class SetupScene extends Phaser.Scene {
   /** The slots in the match (a slot still waiting for a pad is one). */
   private seats(): Seat[] { return this.state.seats.filter((s) => s.device !== 'OFF'); }
 
-  /** Why START is greyed out, if it is: too few robots (the grey button says it), or everyone on one team. */
+  /** Why START is greyed out, if it is: too few Kubotz (the grey button says it), or everyone on one team. */
   private problem(): 'few' | 'one team' | null {
     const seats = this.seats();
     if (seats.length < 2) return 'few';
@@ -454,7 +455,7 @@ export class SetupScene extends Phaser.Scene {
     const seat = this.state.seats[slot];
     const fields: Field[] = seat.device === 'OFF' ? ['input'] : [...FIELDS];
     return [
-      { kind: 'arena' }, { kind: 'stocks' }, { kind: 'time' }, { kind: 'bonuses' },
+      { kind: 'arena' }, { kind: 'recharges' }, { kind: 'time' }, { kind: 'bonuses' },
       ...fields.map((field): Focus => ({ kind: 'slot', slot, field })),
       { kind: 'start' },
     ];
@@ -563,10 +564,10 @@ export class SetupScene extends Phaser.Scene {
     const f = this.focus;
     const on = (k: Focus['kind']) => f.kind === k;
     // Rules: values, and the focused one glows.
-    this.rules.stocks.value.setText(String(s.stocks));
+    this.rules.recharges.value.setText(String(s.recharges));
     this.rules.time.value.setText(s.minutes ? `${s.minutes}:00` : '∞');
     this.rules.bonuses.value.setText(BONUS_RATES[s.bonuses].label).setFontSize(s.bonuses === 'frequent' ? 20 : 24);
-    for (const k of ['stocks', 'time', 'bonuses'] as const) {
+    for (const k of ['recharges', 'time', 'bonuses'] as const) {
       const r = this.rules[k];
       r.glow.clear();
       if (on(k)) drawGlow(r.glow, r.box.x, r.box.y, r.box.width, r.box.height, { cut: 12 });
@@ -630,7 +631,7 @@ export class SetupScene extends Phaser.Scene {
       p.rows[field].label.setVisible(!off);
       for (const a of p.rows[field].arrows) a.setVisible(!off);
     }
-    p.robot.visible = !off;
+    p.kubot.visible = !off;
   }
 
   // ------------------------------------------------------------------- frame
@@ -646,9 +647,9 @@ export class SetupScene extends Phaser.Scene {
       if (p.anim.finished) p.anim.play('idle', { fade: 150 });
       const head = HEADS[seats[i].helmet];
       // Standing over the slot's top right, facing into the slot.
-      p.robot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
+      p.kubot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
         { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
-      p.robot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
+      p.kubot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
     });
   }
 
@@ -670,7 +671,7 @@ export class SetupScene extends Phaser.Scene {
     if (this.problem() || this.leaving) return;
     this.leaving = true;
     const s = this.state;
-    const setup: MatchSetup = { fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, stocks: s.stocks, minutes: s.minutes };
+    const setup: MatchSetup = { fighters: this.fighters(), arena: s.arena, bonuses: s.bonuses, recharges: s.recharges, minutes: s.minutes };
     shutter(this, () => { this.scene.stop('Game'); this.scene.start('Game', setup); });
   }
 

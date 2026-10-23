@@ -1,0 +1,22 @@
+{
+  "emitters": [
+    {
+      "name": "laserSmoke",
+      "image": "pre-particle.png",
+      "additive": true,
+      "duration": {"low":[300,300]},
+      "count": [0,500],
+      "emission": {"low":[0,0],"high":[200,200],"curve":[[0,1]]},
+      "life": {"low":[0,0],"high":[500,1000],"curve":[[0,1],[0.66,1],[0.9931507,0]]},
+      "shape": "point",
+      "spawnWidth": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "spawnHeight": {"low":[0,0],"high":[0,0],"curve":[[0,1]]},
+      "scale": {"low":[0,0],"high":[0.1,1],"curve":[[0,1]]},
+      "velocity": {"low":[0,0],"high":[2,4],"curve":[[0,1]]},
+      "angle": {"low":[0,0],"high":[0,360],"curve":[[0,1],[0.999,1],[1,1]]},
+      "rotation": {"low":[0,180],"high":[360,360],"curve":[[0,1],[1,1]]},
+      "colors": [[0,0,0.3647059,1]],
+      "transparency": {"low":[0,0],"high":[1,1],"curve":[[0,0],[0.2,1],[0.8,0.75],[1,0]]}
+    }
+  ]
+}

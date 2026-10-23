@@ -1,0 +1,8 @@
+{
+  "anim": "sdtilt",
+  "ms": 380,
+  "points": "blade",
+  "damage": 6,
+  "launch": {"knockback":9,"angle":75},
+  "active": [0.3,0.72]
+}

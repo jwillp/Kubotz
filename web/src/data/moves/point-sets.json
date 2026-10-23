@@ -1,0 +1,8 @@
+{
+  "fists": [{"file":"arms/hand.png","x":36,"y":53},{"file":"arms/hand-sha.png","x":34,"y":34}],
+  "feet": [{"file":"feet/foot.png","x":21,"y":40},{"file":"feet/foot-sha.png","x":24,"y":45}],
+  "blade": [{"file":"arms/lazer-sword.png","x":142.5,"y":102.5},{"file":"arms/lazer-sword.png","x":195,"y":145},{"file":"arms/lazer-sword.png","x":247.5,"y":187.5},{"file":"arms/lazer-sword.png","x":300,"y":230}],
+  "frontFoot": [{"file":"feet/foot.png","x":21,"y":40}],
+  "fireFists": [{"file":"arms/hand.png","x":36,"y":53},{"file":"arms/hand-sha.png","x":34,"y":34},{"file":"arms/fire-fist.png","x":36,"y":53}],
+  "limbs": [{"file":"arms/hand.png","x":36,"y":53},{"file":"arms/hand-sha.png","x":34,"y":34},{"file":"feet/foot.png","x":21,"y":40},{"file":"feet/foot-sha.png","x":24,"y":45}]
+}

@@ -1,0 +1,9 @@
+{
+  "anim": "sdair",
+  "ms": 420,
+  "points": "blade",
+  "damage": 9,
+  "launch": {"knockback":10,"angle":-70},
+  "active": [0.3,1],
+  "ghosts": true
+}

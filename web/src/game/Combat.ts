@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
+import { pureAdd } from '../fx/Grade';
 import { Config, UNIT } from '../config';
 import type { Kubotz } from './Kubotz';
 
 /**
- * Laser bullet (BulletFactory): no gravity, dies on contact with walls or robots.
+ * Laser bullet (BulletFactory): no gravity, dies on contact with walls or Kubotz.
  * It moves in a straight line, so it is integrated here rather than by Box2D.
  */
 export class Bullet {
@@ -36,7 +37,7 @@ export class Bullet {
     this.sprite = scene.add.image(x, y, scene.textures.exists(key) ? key : 'bullet').setDepth(12);
     this.sprite.setDisplaySize(1.1 * UNIT * (0.6 + 0.4 * size), 0.6 * UNIT * size);
     this.sprite.setFlipX(vx > 0);
-    this.sprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.sprite.setBlendMode(pureAdd(scene));
     this.expiresAt = now + Config.BULLET_LIFESPAN;
   }
 

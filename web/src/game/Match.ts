@@ -1,9 +1,9 @@
 // Shared match types for the menus (setup, settings, results) and GameScene (phase 11).
 
 import type { Pose } from '../anim/Rig';
-import type { Shield } from '../anim/Robot2D';
+import type { Shield } from '../anim/Kubot2D';
 
-/** Who drives a robot: keyboard set 1 or 2 (with any pad), or the computer. */
+/** Who drives a Kubot: keyboard set 1 or 2 (with any pad), or the computer. */
 export type InputKind = 'P1' | 'P2' | 'CPU';
 
 export interface FighterSpec {
@@ -16,6 +16,8 @@ export interface FighterSpec {
   helmet: number;
   /** A CPU's level, 1 to 9 (see cpuReactionMs). */
   cpuLevel?: number;
+  /** A CPU that does nothing, a target to test on (the editor's matches). */
+  dummy?: boolean;
 }
 
 /** CPU levels: the highest a CPU can be set to, and the default. */
@@ -24,7 +26,7 @@ export const CPU_LEVEL = 5;
 /** How long a CPU takes to react at a level: 140 ms at level 5 (the original tuning), quicker above, slower below. */
 export const cpuReactionMs = (level = CPU_LEVEL): number => Math.round(140 * 1.25 ** (CPU_LEVEL - level));
 
-/** Per-robot numbers collected during a match, shown on the results screen. */
+/** Per-Kubot numbers collected during a match, shown on the results screen. */
 export interface FighterStats {
   kos: number;
   falls: number;
@@ -58,12 +60,12 @@ export interface MatchResult {
   warpZones: { x: number; y: number; width: number; height: number }[];
 }
 
-/** One robot as drawn on one frame (see Robot2D.DrawState); hidden while dead. */
-export interface RobotFrame {
+/** One Kubot as drawn on one frame (see Kubot2D.DrawState); hidden while dead. */
+export interface KubotFrame {
   visible: boolean;
   pose: Pose; maps: string[]; x: number; bottom: number; yaw: number;
   lean: number; squash: number; alpha: number; flash: boolean; glitch?: boolean;
-  /** A raised guard's shield hexagon (anim/Robot2D.ts). */
+  /** A raised guard's shield hexagon (anim/Kubot2D.ts). */
   shield?: Shield;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
@@ -82,11 +84,11 @@ export interface RobotFrame {
  */
 export type Prop = [string, string | number, number, number, number, number, number, number, number, number, number, number, number, number, number, number];
 
-/** A recorded frame: the match clock, the arena camera (centre, zoom, roll) and every robot. */
+/** A recorded frame: the match clock, the arena camera (centre, zoom, roll) and every Kubot. */
 export interface ReplayFrame {
   t: number;
   camX: number; camY: number; zoom: number; rotation: number;
-  robots: RobotFrame[];
+  kubotz: KubotFrame[];
   /** The lit lights, flat: x, y, radius, colour, intensity for each. */
   lights: number[];
   /** Sounds and impact effects started on this frame, replayed as the frame passes. */
@@ -96,18 +98,18 @@ export interface ReplayFrame {
   ambient: number;
 }
 
-/** A sound (key, volume, detune), an effect (an ImpactFx or PortalFx method and its arguments), a .pe effect or power-up motes round a robot. */
+/** A sound (key, volume, detune), an effect (an ImpactFx or PortalFx method and its arguments), a .pe effect or power-up motes round a Kubot. */
 export type ReplayEvent =
   | { kind: 'sfx'; key: string; volume: number; detune: number }
   | { kind: 'fx'; method: string; args: number[]; on?: 'portals' }
   | { kind: 'pe'; name: string; x: number; y: number; tint?: number }
-  | { kind: 'twirl'; robot: number; color: number; ms: number };
+  | { kind: 'twirl'; kubot: number; color: number; ms: number };
 
 export type HighlightKind = 'ko' | 'recovery' | 'combo';
 
 /**
  * One of the match's best moments and the frames around it. `subject` is the
- * robot it happens to (the K.O.'d robot, the one recovering, the one comboed),
+ * Kubot it happens to (the K.O.'d Kubot, the one recovering, the one comboed),
  * `by` the opponent (null for a fall on its own); `focus` is the moment played
  * in slow motion (the blow, the closest call, the last hit).
  */
@@ -141,19 +143,27 @@ export const RATE_ORDER: BonusRate[] = ['off', 'rare', 'normal', 'frequent'];
 
 /** What the setup screen hands to GameScene. */
 export interface MatchSetup {
-  /** One per robot, in slot order (at most 4). */
+  /** One per Kubot, in slot order (at most 4). */
   fighters: FighterSpec[];
   /** Index into ARENA_INFO / ARENAS. */
   arena: number;
   bonuses: BonusRate;
-  /** Lives per robot (default Config.NB_LIVES). */
-  stocks?: number;
+  /** Lives per Kubot (default Config.NB_LIVES). */
+  recharges?: number;
   /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
   minutes?: number;
   /**
-   * Setup screen preview: no robots, music, HUD or rules; the whole arena
+   * Setup screen preview: no Kubotz, music, HUD or rules; the whole arena
    * fitted into this screen rectangle, lit and animated as in a match.
    */
+  /** Started from the in-game editor: no intro, countdown or music, the Kubotz straight in. */
+  editor?: boolean;
+  /**
+   * The editor rebuilding the arena under a match: each Kubot of the specs
+   * where it was (body centre, pixels), facing, health and lives as they
+   * were, already there (no hologram, no spawn sound).
+   */
+  keep?: { x: number; y: number; facing: 1 | -1; health: number; lives: number }[];
   preview?: {
     x: number; y: number; width: number; height: number;
     /** Cover the rectangle with the arena (cropped, blurred: a menu's background) and fit it whole into `inset`. */
@@ -164,18 +174,19 @@ export interface MatchSetup {
 /** Faction names, by team (same order as SLOT_COLORS). */
 export const TEAM_NAMES = ['Red', 'Blue', 'Green', 'Purple'];
 
-/** Anything on a team: robots (Kubotz.team), and what they own. */
+/** Anything on a team: Kubotz (Kubotz.team), and what they own. */
 export interface Teamed { readonly team: number }
 
 /**
  * The one friendly-fire rule: `a` can hurt `b` (hit, shoot, grab, debris)
- * only if they are on different teams. A robot never hurts itself.
+ * only if they are on different teams. A Kubot never hurts itself.
  */
 export const canHurt = (a: Teamed, b: Teamed): boolean => a !== b && a.team !== b.team;
 
-/** The teams with at least one robot still in the match (not eliminated). */
-export function teamsLeft(fighters: { team: number; eliminated: boolean }[]): number[] {
-  return [...new Set(fighters.filter((f) => !f.eliminated).map((f) => f.team))];
+/** The teams with at least one Kubot still in the match (not eliminated). */
+export function teamsLeft(fighters: { team: number; eliminated: boolean; home?: unknown }[]): number[] {
+  // The map's NPCs (they have a home spot) never count: the match is between the players.
+  return [...new Set(fighters.filter((f) => !f.eliminated && !f.home).map((f) => f.team))];
 }
 
 /** The default match: P1 against a CPU on the original arena. */

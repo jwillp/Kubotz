@@ -1,0 +1,8 @@
+{
+  "anim": "throwF",
+  "ms": 440,
+  "release": 0.45,
+  "damage": 7,
+  "launch": {"knockback":13,"angle":40},
+  "dir": 1
+}

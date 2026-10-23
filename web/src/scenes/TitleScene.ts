@@ -14,6 +14,8 @@ const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
   // Over the title, which waits paused until Back.
   { label: 'Controls', scene: 'Controls', overlay: true },
   { label: 'Settings', scene: 'Settings', overlay: true },
+  // Dev builds only (editor/DevTools.ts): the animation and particle editor.
+  ...(__EDITOR__ ? [{ label: 'Editor', scene: 'EditorMenu' }] : []),
 ];
 
 export class TitleScene extends Phaser.Scene {

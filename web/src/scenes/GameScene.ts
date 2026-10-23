@@ -8,23 +8,26 @@ import { FEEL_ORDER, setFeel } from '../game/Feel';
 import { Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS } from '../game/Kubotz';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
 import { Bullet } from '../game/Combat';
-import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type RobotFrame } from '../game/Match';
+import { BONUS_RATES, canHurt, cpuReactionMs, defaultSetup, teamsLeft, type FighterSpec, type MatchResult, type MatchSetup, type KubotFrame } from '../game/Match';
 import type { ParticleName } from './BootScene';
-import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
+import { EffectDef, ParticleFx, type ParticleHandle } from '../fx/ParticleEffect';
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
 import { backdropOf, tintArt } from '../fx/Backdrops';
+import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
+import { lightPolygon } from '../fx/Shadows';
+import { LEDGE_REACH, findLedges } from '../game/Ledges';
 import { ImpactFx, LASER_SMOKE_MODES, drawBlade, laserSmoke } from '../fx/Impact';
 import { PortalFx } from '../fx/Portals';
 import { HOLO_COLOR, HoloSpawns } from '../fx/Hologram';
 import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
-import { arenaMap, eachTile } from '../map/ArenaArt';
+import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
-import type { DebugState } from './DebugScene';
+import { ALL_LAYERS, type DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
 import { addMusic, duckMusic, fx, onSettingsChange, particleCount, sfxVolume } from '../game/Settings';
 import { ReplayRecorder, propOf } from '../game/Replay';
@@ -59,7 +62,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private map!: TmxMap;
   physicsWorld!: PhysicsWorld;
   /** Debug mode and its time controls (F3, see DebugScene). */
-  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true };
+  readonly debugState: DebugState = { on: false, timeScale: 1, frozen: false, steps: 0, nav: true, show: { ...ALL_LAYERS } };
   private glows: Phaser.GameObjects.Image[] = [];
   /** Lightsaber blades: a white-hot core in a coloured glow, drawn over the blade art. */
   private sabers!: Phaser.GameObjects.Graphics;
@@ -74,13 +77,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** How finely the arena is baked: 1 in a match, less for the setup screen's preview (shown small and blurred) so switching arenas does not stall. */
   private bakeScale = 1;
   private perspective: ArenaPerspective | null = null;
-  /** Ledges robots can hang from (top corners of solid blocks). */
+  /** Ledges Kubotz can hang from (top corners of solid blocks). */
   ledges: Ledge[] = [];
+  /** The arena's definition this match was built from (JSON): the dev HUD rebuilds the match when it changes. */
+  arenaBuilt = '';
+  /** Top corners of solid blocks with no ledge (no room to hang or to climb onto), for the debug view and the editor. */
+  blockedLedges: Ledge[] = [];
   private nav!: Nav;
   private debris!: DebrisField;
   private playerSpawns: Phaser.Math.Vector2[] = [];
   private bonusSpawns: Phaser.Math.Vector2[] = [];
   private warpZones: Phaser.Geom.Rectangle[] = [];
+  /** Where each portal leads (pixels; null: to the other one of a pair), from the arena file. */
+  private warpExits: (Phaser.Math.Vector2 | null)[] = [];
+  /** Things just sent through a portal, until when they cannot take one again (no ping-pong between an exit and a portal). */
+  private warpedUntil = new WeakMap<object, number>();
+  /** The last frame's time step (s), to tell what a fast bolt crossed. */
+  private lastDt = 1 / 60;
   private portals!: PortalFx;
   /** The spawn holograms (match start, respawns). */
   private holo!: HoloSpawns;
@@ -99,8 +112,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private camTarget = new Phaser.Math.Vector2();
   private camVisibleWidth = 30;
   /** The arena being played (index into ARENA_INFO). */
-  private arena = 0;
-  /** The robots' specs from the setup screen, by fighter index. */
+  arena = 0;
+  /** How this match was started (the in-game editor restarts it as it was). */
+  setup?: MatchSetup;
+  /** The Kubotz' specs from the setup screen, by fighter index. */
   specs: FighterSpec[] = [];
   /** The winning team, null for a draw; undefined while the match runs. */
   winnerTeam: number | null | undefined;
@@ -108,13 +123,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   clock = 0;
   /** When the fight starts (after the 3-2-1 countdown), on the match clock. */
   startedAt: number = Config.COUNTDOWN;
-  /** Lives each robot starts with, and the match length in ms (0: no limit). */
-  stocks: number = Config.NB_LIVES;
+  /** Lives each Kubot starts with, and the match length in ms (0: no limit). */
+  recharges: number = Config.NB_LIVES;
   timeLimit = 0;
   private countdownStep = -1;
-  /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every robot's spawn is shown). */
+  /** Match intro: when the 3-2-1 countdown starts, on the match clock (after every Kubot's spawn is shown). */
   private countdownAt = 0;
-  /** Match intro: when each robot starts its spawn, by fighter index; the spawn sound plays on each. */
+  /** Match intro: when each Kubot starts its spawn, by fighter index; the spawn sound plays on each. */
   private introAt: number[] = [];
   private introSounded = 0;
   paused = false;
@@ -133,7 +148,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   constructor() { super('Game'); }
 
   init(): void {
+    // Every match starts running, at full speed, its camera its own: a pause or slow motion from the
+    // debug keys or the dev HUD ends with the match (the HUD sets them again when it rebuilds one).
+    Object.assign(this.debugState, { on: false, timeScale: 1, frozen: false, steps: 0, holdCamera: false, show: { ...ALL_LAYERS } });
     this.fighters = [];
+    this.mapLights = [];
     this.orbs = [];
     this.bullets = [];
     this.playerSpawns = [];
@@ -156,8 +175,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   create(data?: Partial<MatchSetup>): void {
     const setup: MatchSetup = { ...defaultSetup(), ...data };
+    this.setup = setup;
     this.specs = setup.fighters.slice(0, 4);
-    this.stocks = setup.stocks ?? Config.NB_LIVES;
+    this.recharges = setup.recharges ?? Config.NB_LIVES;
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
@@ -168,13 +188,15 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = this.map.width * this.map.tileWidth;
 
     this.arena = setup.arena;
-    this.bakeScale = setup.preview ? PREVIEW_BAKE : 1;
+    this.bakeScale = arenaBakeScale(this.map.width * this.map.tileWidth, this.map.height * this.map.tileHeight, setup.preview ? PREVIEW_BAKE : 1);
+    this.arenaBuilt = JSON.stringify(ARENAS[setup.arena] ?? null);
     this.scene.launch('Backdrop', { arena: setup.arena });
     this.scene.sendToBack('Backdrop');
     this.buildMap();
     this.recorder.setArena(this.map.width * UNIT, this.map.height * UNIT);
     this.debris = new DebrisField(this, this.physicsWorld);
     this.createEffects();
+    this.startMapEmitters();
     this.portals = new PortalFx(this, this.warpZones);
     this.recorder.watch(this.portals, ['burst'], 'portals');
     this.holo = new HoloSpawns(this);
@@ -184,10 +206,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.registry.remove('menuArena');
 
     let humans = 0;
-    // Each robot forms as a hologram while the camera is on it and waits; once
+    // Each Kubot forms as a hologram while the camera is on it and waits; once
     // all are shown the countdown starts, and they materialize together during
     // it, let go on "Fight".
-    this.countdownAt = this.specs.length * INTRO_FOCUS_MS;
+    this.countdownAt = setup.editor ? -Config.COUNTDOWN - 1000 : this.specs.length * INTRO_FOCUS_MS;
     this.specs.forEach((spec, i) => {
       let controller: Controller;
       const color = SLOT_COLORS[spec.team % SLOT_COLORS.length];
@@ -199,6 +221,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           now: () => this.clock,
           nav: this.nav,
         }, cpuReactionMs(spec.cpuLevel));
+        if (spec.dummy) (controller as CpuController).behaviour = 'dummy';
       } else {
         // Joined with a gamepad: that pad only; with a keyboard set: those keys only.
         humans++;
@@ -207,21 +230,26 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
           ? new HumanController(this, null, spec.input, spec.pad, `P${humans}`)
           : new HumanController(this, keys, spec.input, -1, `P${humans}`);
       }
-      const spawn = this.playerSpawns[i % this.playerSpawns.length];
+      const kept = setup.editor ? setup.keep?.[i] : undefined;
+      const spawn = kept ? new Phaser.Math.Vector2(kept.x, kept.y) : this.playerSpawns[i % this.playerSpawns.length];
       const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
       if (controller instanceof CpuController) controller.agent = k;
-      k.lives = this.stocks;
+      // Below 0: infinite (the editor's own arena match, so a K.O. never ends it).
+      k.lives = this.recharges < 0 ? Infinity : this.recharges;
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
-      const at = i * INTRO_FOCUS_MS;
+      const at = setup.editor ? 0 : i * INTRO_FOCUS_MS;
+      // The editor rebuilding the arena: the Kubot stays as it was, no hologram or spawn sound.
+      if (kept) { k.facing = kept.facing; k.health = kept.health; k.lives = kept.lives; return; }
       this.introAt.push(at);
       k.appearAt = at;
       this.holo.start(k, at, (x, y) => k.teleport(x, y), spawn.y, this.countdownAt);
     });
+    this.addNpcs(rig, setup);
     this.startedAt = this.countdownAt + Config.COUNTDOWN;
 
-    // The camera starts on the first robot's spawn (updateCamera follows the intro).
+    // The camera starts on the first Kubot's spawn (updateCamera follows the intro).
     const cam = this.cameras.main;
     const first = this.introFocus() ?? this.centerOfFighters();
     this.camTarget.set(first.x, first.y);
@@ -234,8 +262,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.nextBonusAt = this.bonusRate.most === 0 ? Infinity : this.startedAt + Phaser.Math.Between(this.bonusRate.min, this.bonusRate.max);
 
     this.sound.stopByKey('music-title');
-    this.music = addMusic(this, 'music-game', 0.28);
-    this.music.play();
+    // The arena's music (its file's `music`), or none.
+    const tune = ARENAS[this.arena]?.music ?? 'music-game';
+    this.music = addMusic(this, tune === 'none' ? 'music-game' : tune, 0.28);
+    if (!setup.editor && tune !== 'none') this.music.play();
 
     this.scene.launch('Hud');
     this.scene.bringToTop('Hud');
@@ -267,7 +297,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       laserSmoke.mode = LASER_SMOKE_MODES[(LASER_SMOKE_MODES.indexOf(laserSmoke.mode) + 1) % LASER_SMOKE_MODES.length];
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Laser smoke: ${laserSmoke.mode}`, 0xffffff);
     });
-    // Debug mode (F3): K knocks out the nearest robot that isn't P1, to see the K.O. smoke.
+    // Debug mode (F3): K knocks out the nearest Kubot that isn't P1, to see the K.O. smoke.
     kb.on('keydown-K', () => {
       if (!this.debugState.on) return;
       const p1 = this.fighters[0];
@@ -277,7 +307,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     });
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;
-      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn robots' : 'Clean robots', 0xffffff);
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, surface.worn ? 'Worn Kubotz' : 'Clean Kubotz', 0xffffff);
     });
     // Debug mode; the function keys are kept from the browser while the game has the keyboard.
     kb.addCapture([Phaser.Input.Keyboard.KeyCodes.F3, Phaser.Input.Keyboard.KeyCodes.F4, Phaser.Input.Keyboard.KeyCodes.F6,
@@ -285,6 +315,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const d = this.debugState;
     const toggleDebug = () => {
       d.on = !d.on;
+      d.show = { ...ALL_LAYERS };
       if (d.on) { this.scene.launch('Debug'); this.scene.bringToTop('Debug'); } else { this.scene.stop('Debug'); d.timeScale = 1; d.frozen = false; }
     };
     kb.on('keydown-F3', toggleDebug);
@@ -351,6 +382,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   private updatePreview(deltaMs: number): void {
     const now = this.clock += deltaMs;
+    this.updateMapEmitters(deltaMs);
+    this.updateMapLights(now);
     this.particles.update(deltaMs);
     this.impact.update(now, deltaMs);
     this.portals.update(now, deltaMs);
@@ -411,18 +444,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     if (this.warpZones.length > 0) this.buildHull(actx.canvas, mapW, mapH);
+    this.warpExits = this.warpZones.map((_, i) => {
+      const w = ARENAS[this.arena]?.warps[i];
+      const exit = w ? warpExit(w) : null;
+      return exit ? new Phaser.Math.Vector2(exit[0] * UNIT, exit[1] * UNIT) : null;
+    });
     // A lit edge along the top of every block, like the 3D version's glowing rims.
     const mood = backdropOf(this.arena);
-    const rims = this.add.graphics().setDepth(2.6).setBlendMode(Phaser.BlendModes.ADD);
+    const rims = this.add.graphics().setDepth(2.6).setBlendMode(pureAdd(this));
     for (const b of this.blocks) {
       rims.lineStyle(7, mood.glow, 0.18).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
       rims.lineStyle(2, mood.rimLine, 0.75).lineBetween(b.x, b.y + 1, b.x + b.width, b.y + 1);
     }
     this.perspective = new ArenaPerspective(this, this.blocks, this.arenaLayers, rims);
     this.nav = new Nav(this.blocks);
-    this.ledges = findLedges(this.blocks);
-    // The original map has a single PLAYER_SPAWN (the second robot was hard-coded
-    // at (8, 7)): add mirrored and central spawns so up to four robots start apart.
+    this.blockedLedges = [];
+    this.ledges = findLedges(this.blocks, this.blockedLedges);
+    // The original map has a single PLAYER_SPAWN (the second Kubot was hard-coded
+    // at (8, 7)): add mirrored and central spawns so up to four Kubotz start apart.
     if (this.playerSpawns.length >= 4) { this.nav = new Nav(this.blocks); return; }
     const first = this.playerSpawns[0] ?? new Phaser.Math.Vector2(8 * UNIT, 30 * UNIT);
     this.playerSpawns.push(
@@ -578,6 +617,59 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.tweens.add({ targets: layer, alpha: 0.6, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
+  /**
+   * The arena's NPCs: CPUs of the black team (hostile to every player), at
+   * their spots, with the behaviour the arena gives them. They have no HUD
+   * card, come back to their spot after a K.O. and never count to win.
+   */
+  private addNpcs(rig: Rig, setup: MatchSetup): void {
+    for (const n of ARENAS[this.arena]?.npcs ?? []) {
+      const spot = this.spawnPoint({ id: 0, type: 'NPC', x: (n.x - 0.5) * UNIT, y: (n.y - 1) * UNIT, width: UNIT, height: UNIT });
+      const controller = new CpuController({
+        enemiesOf: (k) => this.fighters.filter((f) => canHurt(k, f) && !f.eliminated),
+        powerUpPositions: () => [],
+        now: () => this.clock,
+        nav: this.nav,
+      }, cpuReactionMs(n.level ?? 5));
+      controller.behaviour = n.behaviour;
+      const k = new Kubotz(this, this.fighters.length, controller, NPC_COLOR, rig, spot.x, spot.y, this, this.physicsWorld, { team: NPC_TEAM, helmet: n.helmet ?? 3 });
+      controller.agent = k;
+      k.home = { x: spot.x, y: spot.y, respawnMs: n.respawnMs };
+      // Its recharges (below 0: infinite); it never counts to win either way.
+      const recharges = npcRecharges(n);
+      k.lives = recharges < 0 ? Infinity : Math.max(1, recharges);
+      k.facing = spot.x < (this.map.width * UNIT) / 2 ? 1 : -1;
+      this.fighters.push(k);
+      // In the editor's rebuilds an NPC is simply there (no hologram).
+      if (setup.editor) continue;
+      k.appearAt = this.countdownAt;
+      this.holo.start(k, this.countdownAt, (x, y) => k.teleport(x, y), spot.y, this.countdownAt);
+    }
+  }
+
+  /** The arena's particle emitters, played over and over (see updateMapEmitters). */
+  private mapEmitters: { def: EffectDef; x: number; y: number; flip: boolean; every: number; once: boolean; scale: number; tint?: number; depth?: number; handle: ParticleHandle | null; wait: number; played: boolean }[] = [];
+
+  private startMapEmitters(): void {
+    this.mapEmitters = (ARENAS[this.arena]?.emitters ?? []).flatMap((e) => {
+      const def = (this.effects as Record<string, EffectDef>)[e.effect];
+      const tint = e.tint ? parseInt(e.tint.replace('#', ''), 16) : undefined;
+      return def ? [{ def, x: e.x * UNIT, y: e.y * UNIT, flip: !!e.flip, every: e.every ?? 0, once: !!e.once, scale: e.scale ?? 1, tint, depth: e.layer ? LAYER_DEPTH[e.layer] : undefined, handle: null, wait: 0, played: false }] : [];
+    });
+  }
+
+  /** Each emitter starts its effect again `every` ms after the last one ended (or plays it once). */
+  private updateMapEmitters(dtMs: number): void {
+    for (const m of this.mapEmitters) {
+      if (m.handle && !m.handle.done) continue;
+      if (m.handle) { m.handle = null; m.wait = m.every; }
+      if (m.once && m.played) continue;
+      if ((m.wait -= dtMs) > 0) continue;
+      m.handle = this.particles.play(m.def, m.x, m.y, { tint: m.tint, flip: m.flip, scale: m.scale, depth: m.depth });
+      m.played = true;
+    }
+  }
+
   private spawnPoint(o: MapObject): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(o.x + o.width / 2, o.y + o.height - (Config.KUBOTZ_HEIGHT * UNIT) / 2);
   }
@@ -640,6 +732,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.impact.airJump(x, y, color);
   }
 
+  effect(name: string, x: number, y: number, flip: boolean): ParticleHandle | null {
+    const def = (this.effects as Record<string, EffectDef>)[name];
+    return def ? this.particles.play(def, x, y, { flip }) : null;
+  }
+
   fireBullet(shooter: Kubotz, damage: number, speed: number, size = 1, power = 1): void {
     const { x, y } = shooter.muzzle();
     const b = new Bullet(this, shooter, x, y, shooter.facing * speed, 0, damage, this.clock, size, power);
@@ -699,7 +796,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const l of this.ledges) {
       const out = (k.x - l.x) * l.dir;
       const below = l.y - k.body.top;
-      if (out < 0.1 * UNIT || out > 1.0 * UNIT || below < -0.45 * UNIT || below > 0.85 * UNIT) continue;
+      if (out < LEDGE_REACH.outMin * UNIT || out > LEDGE_REACH.outMax * UNIT || below < -LEDGE_REACH.below * UNIT || below > LEDGE_REACH.above * UNIT) continue;
       const holder = this.fighters.find((o) => o !== k && o.ledgeHeld === l);
       if (holder && !holder.hanging) continue;
       holder?.trumped(this.clock);
@@ -732,6 +829,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       dtMs = 1000 / 60;
     }
     const dt = dtMs / 1000;
+    this.lastDt = dt;
     // One clock for everything (cooldowns, power-ups, respawns, the HUD timers):
     // it stops while the game is paused.
     const now = this.clock += dtMs;
@@ -759,21 +857,21 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.checkDeaths(now);
     this.checkTime(now);
     this.updateBonusSpawns(now);
-    const drawn = new Map<Kubotz, Partial<RobotFrame>>();
+    const drawn = new Map<Kubotz, Partial<KubotFrame>>();
     for (const k of this.fighters) {
       k.render(now, dtMs);
       // A trail behind the striking fist or foot, and behind the laser blade
       // whenever it swings fast (not only during strikes).
       const arc = k.isAlive() ? this.bladeArc(k, dtMs) ?? k.swingArc() : null;
       this.impact.swing(k, arc, k.look.color);
-      // Invincibility and shield: the orb's motes keep circling the robot while they last.
+      // Invincibility and shield: the orb's motes keep circling the Kubot while they last.
       const auras: string[] = [];
       if (k.isAlive() && k.invincible) auras.push('invincibility');
       if (k.isAlive() && k.shield > 0) auras.push('shield');
       // Just respawned: the spawn's cyan motes keep swirling while it is invincible.
       if (k.isAlive() && k.spawnProtected) auras.push('hologram');
       for (const key of auras) this.impact.aura(k, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as 'shield'].color);
-      // What the replays draw with the robot.
+      // What the replays draw with the Kubot.
       const b = k.isAlive() ? k.blade() : null;
       drawn.set(k, {
         ...(b ? { blade: [b.x1, b.y1, b.x2, b.y2] as [number, number, number, number] } : {}),
@@ -789,15 +887,17 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     this.holo.update(now);
+    this.updateMapEmitters(dtMs);
+    this.updateMapLights(now);
     this.particles.update(dtMs);
     this.impact.update(now, dtMs);
     this.portals.update(now, dtMs);
-    this.updateCamera(dt);
+    if (!d.holdCamera) this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
     const amb = this.lights.ambientColor;
     this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now), {
-      robot: (k) => drawn.get(k) ?? {},
+      kubot: (k) => drawn.get(k) ?? {},
       props: [
         ...this.debris.props(now),
         ...this.orbs.flatMap((o) => o.props()),
@@ -846,7 +946,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private drawSabers(now: number): void {
-    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    if (!this.sabers) this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(pureAdd(this));
     const g = this.sabers.clear();
     for (const k of this.fighters) {
       const b = k.blade();
@@ -877,7 +977,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         .setIntensity(Math.min(2.2, 0.5 + l.intensity * 0.35)).setRadius(UNIT * (4 + Math.sqrt(l.intensity) * 2.5));
     });
     while (this.glows.length < lights.length) {
-      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(13));
+      this.glows.push(this.add.image(0, 0, 'glow').setBlendMode(pureAdd(this)).setDepth(13));
     }
     this.glows.forEach((img, i) => {
       const l = lights[i];
@@ -917,7 +1017,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   // -------------------------------------------------------------- lights
   /**
-   * Light2D over the arena and robots (their normal maps are generated at
+   * Light2D over the arena and Kubotz (their normal maps are generated at
    * boot): a warm key light from the upper front, a cool rim light from
    * behind, both following the camera, and a pool of coloured point lights.
    */
@@ -940,7 +1040,82 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         this.lights.addLight(x, b.y - UNIT * 1.2, Math.max(UNIT * 6, (b.width / n) * 0.9), mood.glow, 2.4);
       }
     }
+    // The lights placed in the map, for ambience: each lights the tiles and Kubotz near it, and
+    // glows softly in the air behind the arena (the backdrop takes no light of its own).
+    if (!this.textures.exists('light-pool')) {
+      const c = this.textures.createCanvas('light-pool', 256, 256)!;
+      const ctx = c.getContext();
+      const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g.addColorStop(0, 'rgba(255,255,255,1)');
+      g.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 256);
+      c.refresh();
+    }
+    this.mapLights = (ARENAS[this.arena]?.lights ?? []).slice(0, MAX_MAP_LIGHTS).map((l, i) => {
+      const color = parseInt(l.color.replace('#', ''), 16);
+      const x = l.x * UNIT, y = l.y * UNIT, r = l.radius * UNIT;
+      const depth = LAYER_DEPTH[l.layer ?? 'behind'];
+      if (l.shape !== 'cone') {
+        const glow = this.add.image(x, y, 'light-pool').setBlendMode(pureAdd(this)).setTint(color).setDisplaySize(r * 2, r * 2).setDepth(depth);
+        if (l.shadows) this.shadowMask(glow, x, y, r);
+        return { light: this.lights.addLight(x, y, r, color, l.intensity), glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
+      }
+      // A cone: its glow a wedge from the lamp; the light itself (Light2D lights all around) set
+      // part way along it, so it falls mostly where the cone points.
+      const angle = Phaser.Math.DegToRad(l.angle ?? CONE_ANGLE);
+      const glow = this.add.image(x, y, this.coneTexture(l.spread ?? CONE_SPREAD)).setBlendMode(pureAdd(this)).setTint(color)
+        .setDisplaySize(r * 2, r * 2).setRotation(angle).setDepth(depth);
+      if (l.shadows) this.shadowMask(glow, x, y, r);
+      const light = this.lights.addLight(x + Math.cos(angle) * r * 0.5, y + Math.sin(angle) * r * 0.5, r * 0.65, color, l.intensity);
+      return { light, glow, base: l.intensity, effect: l.effect ?? 'steady', phase: i * 1.7 };
+    });
+    this.updateMapLights(0);
     this.placeFixedLights();
+  }
+
+  /** A light's Shadows: its glow masked by what it can see of the arena (walls and platforms cut it off). */
+  private shadowMask(glow: Phaser.GameObjects.Image, x: number, y: number, r: number): void {
+    const shape = this.make.graphics({}, false);
+    shape.fillStyle(0xffffff).fillPoints(lightPolygon(x, y, r, this.blocks), true);
+    glow.setMask(shape.createGeometryMask());
+    glow.once(Phaser.GameObjects.Events.DESTROY, () => shape.destroy());
+  }
+
+  /** A cone light's glow, pointing right from the middle of the texture, `spread` degrees wide (one texture per width). */
+  private coneTexture(spread: number): string {
+    const s = Phaser.Math.Clamp(Math.round(spread), 5, 360);
+    const key = `light-cone-${s}`;
+    if (this.textures.exists(key)) return key;
+    const c = this.textures.createCanvas(key, 256, 256)!;
+    const ctx = c.getContext();
+    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    // Soft sides: the wedge drawn blurred.
+    ctx.filter = 'blur(4px)';
+    ctx.fillStyle = g;
+    const half = Phaser.Math.DegToRad(s / 2);
+    ctx.beginPath(); ctx.moveTo(128, 128); ctx.arc(128, 128, 128, -half, half); ctx.closePath(); ctx.fill();
+    c.refresh();
+    return key;
+  }
+
+  /** The map's lights: pulsing ones breathe slowly, flickering ones drop out now and then like a failing tube. */
+  private mapLights: { light: Phaser.GameObjects.Light; glow: Phaser.GameObjects.Image; base: number; effect: LightEffect; phase: number }[] = [];
+  private updateMapLights(now: number): void {
+    for (const m of this.mapLights) {
+      let k = 1;
+      if (m.effect === 'pulse') k = 0.65 + 0.35 * Math.sin(now / 600 + m.phase);
+      else if (m.effect === 'flicker') {
+        const noise = Math.abs((Math.sin(Math.floor(now / 70 + m.phase * 10) * 12.9898 + m.phase) * 43758.5453) % 1);
+        k = noise < 0.12 ? 0.15 : 0.9 + 0.1 * noise;
+      }
+      m.light.intensity = m.base * k;
+      m.glow.setAlpha(Math.min(0.6, 0.16 * m.base * k));
+    }
   }
 
   private placeFixedLights(): void {
@@ -960,7 +1135,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Narrator "3, 2, 1, Fight!" (InGameScreen countdown); inputs are off until "Fight". */
   private updateCountdown(now: number): void {
-    if (now < this.countdownAt) return; // the intro is still showing the robots
+    if (now < this.countdownAt || this.setup?.editor) return; // the intro is still showing the Kubotz (the editor's restarts have none)
     const step = Math.min(3, Math.floor((now - this.countdownAt) / 1000));
     if (step === this.countdownStep) return;
     this.countdownStep = step;
@@ -969,7 +1144,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.events.emit('countdown', word === 'fight' ? 'FIGHT!' : word);
   }
 
-  /** What the attacker's hits and bolts can land on: robots of the other teams (teammates are passed through). */
+  /** What the attacker's hits and bolts can land on: Kubotz of the other teams (teammates are passed through). */
   private damageablesFor(attacker: Kubotz): Damageable[] {
     return this.fighters.filter((f) => canHurt(attacker, f) && f.isAlive() && !f.intangible);
   }
@@ -1012,7 +1187,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
   }
 
-  /** Robots running into a power-up ball kick it along. */
+  /** Kubotz running into a power-up ball kick it along. */
   private kickOrbs(now: number): void {
     for (const orb of this.orbs) {
       if (now < orb.kickedUntil) continue;
@@ -1104,37 +1279,63 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * WARP_ZONE objects (unused in the original) wrap robots and laser bullets
+   * WARP_ZONE objects (unused in the original) wrap Kubotz and laser bullets
    * across the arena, so a shot fired into a portal comes back from the other
    * side. Falling out of the arena kills.
    */
   private checkBoundsAndWarps(_now: number): void {
     const mapW = this.map.width * UNIT;
     const mapH = this.map.height * UNIT;
+    // The blast zone: how far past each edge a Kubot can go (the arena's file can set it).
+    const [left, top, right, bottom] = ARENAS[this.arena]?.blast ?? DEFAULT_BLAST;
     for (const k of this.fighters) {
       if (!k.isAlive()) continue;
-      if (k.y > mapH + 6 * UNIT || k.y < -20 * UNIT || k.x < -6 * UNIT || k.x > mapW + 6 * UNIT) {
+      if (k.y > mapH + bottom * UNIT || k.y < -top * UNIT || k.x < -left * UNIT || k.x > mapW + right * UNIT) {
         k.health = 0;
         continue;
       }
-      // A robot going through makes the rift's whoosh (in replays too: playSfx records it).
-      this.warp(k.x, k.y, k.body.vx, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
+      // A Kubot going through makes the rift's whoosh (in replays too: playSfx records it).
+      this.warp(k, k.x, k.y, k.body.vx, k.body.vy, (x, y) => { k.teleport(x, y); this.playSfx('portal-warp', 0.5, Phaser.Math.Between(-60, 60)); });
     }
     // Everything else that moves goes through the portals too: laser bolts,
     // power-up balls and debris (anything with a position, a velocity and a move).
-    const movers: { x: number; y: number; vx: number; teleport: (x: number, y: number) => void }[] = [
-      ...this.bullets.filter((b) => !b.dead),
-      ...this.orbs.map((o) => ({ x: o.x, y: o.y, vx: o.body.vx, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
-      ...this.debris.bodies.map((d) => ({ x: d.x, y: d.y, vx: d.vx, teleport: (x: number, y: number) => d.setPosition(x, y) })),
+    const movers: { key: object; x: number; y: number; vx: number; vy: number; teleport: (x: number, y: number) => void }[] = [
+      ...this.bullets.filter((b) => !b.dead).map((b) => ({ key: b, x: b.x, y: b.y, vx: b.vx, vy: b.vy, teleport: (x: number, y: number) => b.teleport(x, y) })),
+      ...this.orbs.map((o) => ({ key: o, x: o.x, y: o.y, vx: o.body.vx, vy: o.body.vy ?? 0, teleport: (x: number, y: number) => o.body.setPosition(x, y) })),
+      ...this.debris.bodies.map((d) => ({ key: d, x: d.x, y: d.y, vx: d.vx, vy: d.vy ?? 0, teleport: (x: number, y: number) => d.setPosition(x, y) })),
     ];
-    for (const m of movers) this.warp(m.x, m.y, m.vx, (x, y) => m.teleport(x, y));
+    for (const m of movers) this.warp(m.key, m.x, m.y, m.vx, m.vy, (x, y) => m.teleport(x, y));
   }
 
-  private warp(x: number, y: number, vx: number, teleport: (x: number, y: number) => void): void {
-    if (this.warpZones.length !== 2) return;
-    const [a, b] = this.warpZones[0].x < this.warpZones[1].x ? this.warpZones : [this.warpZones[1], this.warpZones[0]];
-    // "Past the zone's inner edge" rather than "inside it", so fast bullets
-    // cannot skip over a 1-unit-wide portal between two frames.
+  /**
+   * Portals. A portal with an exit (the arena file) sends what crosses into
+   * it out at its exit point, at the same height in the lane and the same
+   * speed. Two portals without exits lead to each other: "past the zone's
+   * inner edge" rather than "inside it", so fast bullets cannot skip over a
+   * 1-unit-wide portal between two frames.
+   */
+  private warp(key: object, x: number, y: number, vx: number, vy: number, teleport: (x: number, y: number) => void): void {
+    const zones = this.warpZones;
+    if (zones.length === 0 || (this.warpedUntil.get(key) ?? 0) > this.clock) return;
+    const sent = (from: Phaser.Geom.Rectangle, to: Phaser.Math.Vector2 | null, tx: number, ty: number) => {
+      teleport(tx, ty);
+      this.warpedUntil.set(key, this.clock + 250);
+      this.portals.burst(from.centerX, y, this.clock);
+      if (to) this.portals.burst(tx, ty, this.clock);
+    };
+    // Portals with their own exit: what moved into one this frame (the segment from where it was).
+    const line = new Phaser.Geom.Line(x - vx * this.lastDt, y - vy * this.lastDt, x, y);
+    for (let i = 0; i < zones.length; i++) {
+      const exit = this.warpExits[i];
+      const z = zones[i];
+      if (!exit || !(z.contains(x, y) || Phaser.Geom.Intersects.LineToRectangle(line, z))) continue;
+      sent(z, exit, exit.x, exit.y + (y - z.centerY));
+      return;
+    }
+    // A pair without exits.
+    const pair = zones.filter((_, i) => !this.warpExits[i]);
+    if (pair.length !== 2 || zones.length !== 2) return;
+    const [a, b] = pair[0].x < pair[1].x ? pair : [pair[1], pair[0]];
     const inLane = (z: Phaser.Geom.Rectangle) => y >= z.top && y <= z.bottom;
     if (vx < 0 && x < a.right && inLane(a)) {
       teleport(b.x - UNIT, y);
@@ -1162,6 +1363,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.holo.cancel(k);
       if (this.cache.audio.exists('boom')) this.playSfx('boom', 0.7);
       k.kill(now);
+      // A map NPC comes back after its own delay.
+      if (k.home?.respawnMs !== undefined) k.respawnAt = now + k.home.respawnMs;
       this.floatText(k.x, k.y - UNIT, k.eliminated ? `${k.name} ELIMINATED` : 'K.O.', k.look.color);
     }
     // Last team standing: the match ends when one team (or nobody) is left.
@@ -1186,7 +1389,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const f of this.fighters) if (!f.eliminated && f.team === winner) f.celebrating = true;
   }
 
-  /** The robots of a team. */
+  /** The Kubotz of a team. */
   teamOf(team: number): Kubotz[] {
     return this.fighters.filter((f) => f.team === team);
   }
@@ -1210,7 +1413,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   private respawn(k: Kubotz): void {
-    // Prefer the spawn point farthest from the other robots.
+    // A map NPC comes back to its own spot.
+    if (k.home) {
+      k.respawn(k.home.x, k.home.y);
+      this.holo.start(k, this.clock, (x, y) => k.teleport(x, y), k.home.y);
+      return;
+    }
+    // Prefer the spawn point farthest from the other Kubotz.
     const others = this.fighters.filter((f) => f !== k && f.isAlive());
     const spawn = [...this.playerSpawns].sort((p, q) => {
       const d = (v: Phaser.Math.Vector2) => Math.min(...others.map((o) => Phaser.Math.Distance.Between(v.x, v.y, o.x, o.y)), 1e9);
@@ -1224,10 +1433,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   // ------------------------------------------------------------------ camera
-  /** What the camera keeps in view: the robots still fighting, and the power-ups on offer. */
+  /** What the camera keeps in view: the Kubotz still fighting, and the power-ups on offer. */
   private focusPoints(): { x: number; y: number }[] {
-    const alive = this.fighters.filter((f) => f.isAlive());
-    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the robots.
+    const alive = this.fighters.filter((f) => f.isAlive() && !f.home); // the map's NPCs are not followed
+    // A new power-up ball is shown for its first 2 seconds, then the camera keeps to the Kubotz.
     const fresh = this.orbs.filter((o) => this.clock < o.expiresAt - Config.POWERUP_LIFETIME + ORB_FOCUS_MS);
     return alive.length === 0 ? [] : [...alive, ...fresh];
   }
@@ -1240,15 +1449,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return new Phaser.Math.Vector2((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
-  /** Match intro: the robot whose spawn the camera is showing (its spawn point), or null once all are shown. */
+  /** Match intro: the Kubot whose spawn the camera is showing (its spawn point), or null once all are shown. */
   private introFocus(): { x: number; y: number } | null {
     const i = Math.floor(this.clock / INTRO_FOCUS_MS);
     const k = this.fighters[i];
-    // A little low, so the projector under the robot shows above the HUD cards.
-    return this.clock < this.fighters.length * INTRO_FOCUS_MS && k ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    // A little low, so the projector under the Kubot shows above the HUD cards.
+    // (No intro in the editor's rebuilds: the camera stays on the match.)
+    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
   }
 
-  /** CameraSystem: lerp to the centre of all robots (and new power-ups), zoom to fit them. */
+  /** CameraSystem: lerp to the centre of all Kubotz (and new power-ups), zoom to fit them. */
   private updateCamera(dt: number): void {
     const pts = this.focusPoints();
     // The intro moves faster: close on each spawn in turn, then back out to the fight.
@@ -1355,9 +1565,9 @@ const SHAKE_DECAY = 1.8;
 const PAUSE_MUSIC = 0.3;
 
 /**
- * Match intro: the robots appear as holograms one after the other, the
+ * Match intro: the Kubotz appear as holograms one after the other, the
  * camera on each for INTRO_FOCUS_MS, then the 3-2-1 countdown starts while
- * the camera takes INTRO_RETURN_MS back out to the fight view; the robots
+ * the camera takes INTRO_RETURN_MS back out to the fight view; the Kubotz
  * materialize during the countdown (fx/Hologram.ts). INTRO_VIEW_WIDTH is how
  * much of the arena (units) shows round a spawn; INTRO_CAMERA_PACE how much faster than in
  * the fight the camera moves meanwhile.
@@ -1370,22 +1580,3 @@ const INTRO_CAMERA_PACE = 3;
 /** How long the camera keeps a newly spawned power-up ball in view. */
 const ORB_FOCUS_MS = 2000;
 
-/**
- * Ledges, Melee-style: the top corners of solid blocks with room to stand on
- * just inside the corner and room to hang just outside it. Soft platforms
- * have none.
- */
-export function findLedges(blocks: NavBlock[]): Ledge[] {
-  const solid = blocks.filter((b) => !b.soft);
-  const free = (x1: number, y1: number, x2: number, y2: number) =>
-    !solid.some((o) => o.x < Math.max(x1, x2) - 1 && o.x + o.width > Math.min(x1, x2) + 1 && o.y < Math.max(y1, y2) - 1 && o.y + o.height > Math.min(y1, y2) + 1);
-  const out: Ledge[] = [];
-  for (const b of solid) {
-    for (const dir of [-1, 1] as const) {
-      const x = dir < 0 ? b.x : b.x + b.width;
-      const y = b.y;
-      if (free(x, y - 2 * UNIT, x - dir * UNIT, y) && free(x, y - 0.5 * UNIT, x + dir * 1.2 * UNIT, y + 2.2 * UNIT)) out.push({ x, y, dir });
-    }
-  }
-  return out;
-}

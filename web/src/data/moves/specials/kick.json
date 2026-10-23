@@ -1,0 +1,11 @@
+{
+  "anim": "dash",
+  "ms": 560,
+  "points": "feet",
+  "damage": 12,
+  "launch": {"knockback":14,"angle":38},
+  "active": [0.12,0.72],
+  "ghosts": true,
+  "burst": [22,null],
+  "sustain": 0.55
+}

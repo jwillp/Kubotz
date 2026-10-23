@@ -1,0 +1,9 @@
+{
+  "anim": "suair",
+  "ms": 480,
+  "points": "blade",
+  "damage": 8,
+  "launch": {"knockback":11,"angle":85},
+  "active": [0.2,0.62],
+  "ghosts": true
+}
