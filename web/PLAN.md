@@ -879,7 +879,7 @@ the Okuba Cloud / Exo 2 pairing.
   health bar (red under 30%), a thin amber guard bar, the shield as a cyan
   overlay, recharge as small cube pips in the helmet colour, K.O. count.
 - Status line above each card: power-up chips with a draining bar, GUARD
-  BROKEN (red), respawn countdown, ELIMINATED (card dims).
+  BROKEN (red), respawn countdown, TERMINATED (card dims).
 - Timer: a small chamfered plate top centre with a cyan underline.
 - Countdown and winner banner keep Okuba Cloud; the winner banner sits on a
   plate strip lit in the winner's colour.

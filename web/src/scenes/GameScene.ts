@@ -824,17 +824,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.particles = new ParticleFx(this, 'pe:');
     this.impact = new ImpactFx(this);
     this.impact.solids = this.solids; // the K.O. smoke stops at walls and platforms
-    this.recorder.watch(this.impact, ['hit', 'clash', 'bladeSparks', 'bladeBurn', 'pop', 'airJump', 'runDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
+    this.recorder.watch(this.impact, ['hit', 'clash', 'bladeSparks', 'bladeBurn', 'pop', 'airJump', 'runDust', 'landDust', 'laserTrail', 'koSmoke', 'charge', 'motes']);
     this.effects = this.registry.get('effects');
     // Small sparkles for portals and power-ups appearing.
     this.pickupFx = this.add.particles(0, 0, 'spark', {
       speed: { min: 60, max: 220 }, lifespan: 500, scale: { start: 0.8, end: 0 }, blendMode: 'ADD', emitting: false,
     }).setDepth(15);
-  }
-
-  private fx(name: ParticleName, x: number, y: number, tint?: number): void {
-    this.particles.play(this.effects[name], x, y, tint);
-    this.recorder.particles(name, x, y, tint);
   }
 
   // -------------------------------------------------------------- ArenaHooks
@@ -856,7 +851,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   dust(x: number, y: number): void {
-    this.fx('landingDust', x, y);
+    this.impact.landDust(x, y);
   }
 
   /** Jumping off and landing: the subtle run dust, kicked out to both sides. */
@@ -1960,7 +1955,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // Kubeball: a K.O.'d Kubot sits out until the next goal (a power play for the other side).
       if (MODES[this.mode].ball === 'kubeball') k.respawnAt = Infinity;
       if (MODES[this.mode].trial && k.team !== HORDE_TEAM && k.eliminated) { this.defeated++; this.events.emit('trial', this.defeated); }
-      this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} ELIMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
+      this.floatText(k.x, k.y - UNIT, k.eliminated && !isBlackTeam(k) ? `${k.name} TERMINATED` : 'K.O.', isBlackTeam(k) ? 0xffffff : k.look.color);
     }
     // Sandbox and Capture the Flag: K.O.s never end it. Training: it ends when you are out (or by the count, see updateTrial).
     if (MODES[this.mode].sandbox || MODES[this.mode].ctf || MODES[this.mode].ball) return;

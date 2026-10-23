@@ -283,7 +283,7 @@ export class HudScene extends Phaser.Scene {
     let tone = NEON;
     let left = 0;
     const pu = k.powerUps[0];
-    if (k.eliminated) { status = 'ELIMINATED'; tone = 0xff5252; }
+    if (k.eliminated) { status = 'TERMINATED'; tone = 0xff5252; }
     else if (stunned) { status = 'GUARD BROKEN'; tone = 0xff5252; }
     else if (!k.isAlive()) status = Number.isFinite(k.respawnAt) ? `RESPAWN ${Math.max(0, Math.ceil((k.respawnAt - time) / 1000))}` : 'OUT UNTIL THE NEXT GOAL';
     else if (pu) {

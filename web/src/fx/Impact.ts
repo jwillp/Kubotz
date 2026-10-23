@@ -20,7 +20,7 @@ export const laserSmoke = { mode: ((): LaserSmokeMode => {
 })() };
 const laserAlone = () => laserSmoke.mode === 'alone';
 
-type Kind = 'spark' | 'ring' | 'flash' | 'puff' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
+type Kind = 'spark' | 'ring' | 'flash' | 'dust' | 'bit' | 'beam' | 'mote' | 'smoke' | 'haze';
 
 interface Particle {
   kind: Kind;
@@ -34,8 +34,9 @@ interface Particle {
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
   len?: number; // beams: length behind the point (signed: the bolt's direction)
   lenY?: number; // beams: its vertical part (a bolt batted back at an angle)
-  body?: number; // smoke: the bright colour inside its deep rim (`color`)
+  body?: number; // smoke and dust: the bright colour inside its deep rim (`color`)
   collide?: boolean; // stopped by the arena's walls and platforms
+  spin?: number; // dust: where its lumps sit round it (radians)
 }
 
 /** A swing's smear: per sample, the striking point (o) and one nearer the body (i); a plasma blade's from hilt (i) to tip (o). */
@@ -55,6 +56,8 @@ const TWIRL_FADE = 300;
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
+/** Dust, cel-shaded like Wind Waker's in the Kube's steel blues: a pale body over a soft, low-contrast shade. */
+const DUST = { color: 0x56739a, body: 0x98b4d8 };
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -64,12 +67,13 @@ const mix = (a: number, b: number, f: number) => {
     ca.red + (cb.red - ca.red) * f, ca.green + (cb.green - ca.green) * f, ca.blue + (cb.blue - ca.blue) * f);
 };
 const rand = Phaser.Math.FloatBetween;
+const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 
 /**
  * Impact effects drawn over the 3D world: sparks stretched along their motion,
  * flash rings and a brief light where hits land, swing trails behind the
  * striking fist, foot or blade, rings under double jumps and dust kicked up
- * by running. Glowing parts are drawn additively, dust normally.
+ * by running. Glowing parts are drawn additively; dust is cel-shaded like the K.O. smoke.
  */
 export class ImpactFx {
   private readonly glow: Phaser.GameObjects.Graphics;
@@ -302,14 +306,28 @@ export class ImpactFx {
     }
   }
 
-  /** Dust kicked up behind a running Kubot (`dir`: away from the run). */
+  /** Dust kicked up behind a running Kubot (`dir`: away from the run): low puffs that skid out, stop and drift up. */
   runDust(x: number, y: number, dir: number): void {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) {
       this.add({
-        kind: 'puff', x: x + dir * rand(0, 0.2) * UNIT, y: y - rand(0, 0.1) * UNIT,
-        vx: dir * rand(1.5, 3.5) * UNIT, vy: -rand(0.6, 1.8) * UNIT,
-        color: 0xb9c4d0, size: rand(0.08, 0.13) * UNIT, grow: rand(0.15, 0.25) * UNIT,
-        life: rand(320, 480), gravity: 0, drag: 0.15,
+        kind: 'dust', x: x + dir * rand(0, 0.15) * UNIT, y: y - rand(0, 0.06) * UNIT,
+        vx: dir * rand(2.5, 5) * UNIT * (1 - i * 0.25), vy: -rand(0.2, 0.7) * UNIT,
+        ...DUST, size: rand(0.06, 0.09) * UNIT, grow: rand(0.12, 0.2) * (1 - i * 0.2) * UNIT,
+        life: rand(360, 520), gravity: -3 * UNIT, drag: 0.004, spin: rand(0, Math.PI * 2),
+      });
+    }
+  }
+
+  /** A landing: puffs rolling out along the ground to both sides, biggest near the feet, then rising as they stop. */
+  landDust(x: number, y: number): void {
+    for (let i = 0; i < 10; i++) {
+      const side = i % 2 ? 1 : -1;
+      const out = Math.floor(i / 2) / 4; // 0 near the feet .. 1 at the ends of the row
+      this.add({
+        kind: 'dust', x: x + side * rand(0.05, 0.2) * UNIT, y: y - rand(0, 0.05) * UNIT,
+        vx: side * (2 + 6 * out) * rand(0.85, 1.15) * UNIT, vy: -rand(0.1, 0.5) * UNIT,
+        ...DUST, size: rand(0.07, 0.1) * UNIT, grow: (0.3 - 0.16 * out) * rand(0.85, 1.15) * UNIT,
+        life: rand(420, 620) * (1 - 0.3 * out), gravity: -3.2 * UNIT, drag: 0.003, spin: rand(0, Math.PI * 2),
       });
     }
   }
@@ -525,14 +543,13 @@ export class ImpactFx {
           g.fillStyle(p.color, a).fillCircle(p.x, p.y, p.size);
           break;
         }
-        case 'puff':
-          d.fillStyle(p.color, 0.35 * fade).fillCircle(p.x, p.y, p.size + p.grow * f);
-          break;
+        case 'dust':
         case 'smoke':
         case 'haze':
-          break; // drawSmoke(), in layers
+          break; // drawDust() and drawSmoke(), in layers
       }
     }
+    this.drawDust(d);
     this.drawSmoke();
     for (const [owner, trail] of this.trails) {
       trail.points = trail.points.filter((q) => this.now - q.t < TRAIL_MS);
@@ -563,6 +580,36 @@ export class ImpactFx {
         // The white-hot rim along the striking point's path (faint on a blade, whose whole length streaks).
         g.lineStyle((trail.blade ? 0.04 : 0.1) * UNIT * k, 0xffffff, (trail.blade ? 0.45 : 0.85) * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
       }
+    }
+  }
+
+  /**
+   * Dust, flat and soft like Wind Waker's: each puff a lumpy little cloud (a
+   * flat-bottomed body with two smaller lumps on top) in a pale tone over one
+   * low-contrast shade to the lower right, no outline and no highlight. Shades
+   * go down first so the bodies run together; each puff swells fast, its
+   * shade creeps over it, and it collapses, no fading.
+   */
+  private drawDust(g: Phaser.GameObjects.Graphics): void {
+    const dust = this.particles.filter((p) => p.kind === 'dust');
+    const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.5, 1, f)); };
+    // The body and its lumps (offset, size), turning slowly as the puff rolls.
+    const lumps = (p: Particle, r: number, fn: (x: number, y: number, rr: number) => void) => {
+      const a = (p.spin ?? 0) + (p.vx > 0 ? 1 : -1) * (p.age / 1000) * 2.5;
+      fn(p.x, p.y, r);
+      fn(p.x + Math.cos(a) * r * 0.55, p.y - r * 0.35 - Math.abs(Math.sin(a)) * r * 0.15, r * 0.7);
+      fn(p.x - Math.cos(a) * r * 0.5, p.y - r * 0.3, r * 0.6);
+    };
+    for (const p of dust) {
+      const r = radius(p);
+      g.fillStyle(p.color, 1);
+      lumps(p, r, (x, y, rr) => g.fillEllipse(x + rr * 0.12, y + rr * 0.1, rr * 2.2, rr * 1.9));
+    }
+    for (const p of dust) {
+      const r = radius(p);
+      const k = 1 - 0.6 * smooth(0.4, 0.9, p.age / p.life);
+      g.fillStyle(p.body ?? p.color, 1);
+      lumps(p, r, (x, y, rr) => g.fillEllipse(x - rr * 0.12 * k, y - rr * 0.14 * k, rr * 1.9 * k, rr * 1.6 * k));
     }
   }
 
@@ -600,7 +647,6 @@ export class ImpactFx {
     });
     for (const [i, l] of [rims, bodies, lights].entries()) for (let k = used[i]; k < l.pool.length && l.pool[k].visible; k++) l.pool[k].setVisible(false);
     const smoke = laserAlone() ? [] : this.particles.filter((p) => p.kind === 'smoke');
-    const smooth = (a: number, b: number, f: number) => { const t = Phaser.Math.Clamp((f - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
     const radius = (p: Particle) => { const f = p.age / p.life; return (p.size + p.grow * (1 - (1 - f) * (1 - f))) * (1 - smooth(0.6, 1, f)); };
     for (const p of smoke) g.fillStyle(p.color, 1).fillCircle(p.x, p.y, radius(p));
     for (const p of smoke) {
