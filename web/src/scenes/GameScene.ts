@@ -32,7 +32,7 @@ import type { DebugState } from './DebugScene';
 import type { BackdropScene } from './BackdropScene';
 import { addMusic, duckMusic, onSettingsChange, sfxVolume, vfx, vfxCount } from '../game/Settings';
 import { ReplayRecorder, propOf } from '../game/Replay';
-import { body } from '../ui/Type';
+import { body, heading, type HeadingText } from '../ui/Type';
 import { shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
 import { MenuInput } from './MenuInput';
@@ -136,6 +136,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private plays = new Map<Kubotz, Play>();
   private nextPlaysAt = 0;
   private tacticsShown = false;
+  /** Behaviour view (F9): each CPU's job over its player tag, in the tag's font; the strategies show on the HUD. */
+  showRoles = false;
+  private roleTags = new Map<Kubotz, HeadingText>();
   /** Skychase: the drones' laser bolts in flight, and what draws them. */
   private droneShots: { x: number; y: number; vx: number; vy: number; until: number }[] = [];
   private droneLasers?: Phaser.GameObjects.Graphics;
@@ -203,6 +206,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.plays = new Map();
     this.nextPlaysAt = 0;
     this.tacticsShown = false;
+    this.showRoles = false;
+    this.roleTags = new Map();
     this.defeated = 0;
     this.nextFoeAt = 0;
   }
@@ -369,6 +374,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     kb.on('keydown-F6', () => { if (d.on) d.frozen = !d.frozen; });
     kb.on('keydown-F7', () => { if (d.on) { d.frozen = true; d.steps++; } });
     kb.on('keydown-F8', () => { if (d.on) d.nav = !d.nav; });
+    // The behaviour view: roles over the CPUs and the teams' strategies, nothing else (to tune the team play).
+    kb.addCapture(Phaser.Input.Keyboard.KeyCodes.F9);
+    kb.on('keydown-F9', () => {
+      this.showRoles = !this.showRoles;
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, this.showRoles ? 'Roles on' : 'Roles off', 0xffffff);
+    });
     this.setupScreenFx();
     this.setupLights();
     // The settings screen (opened from the pause) applies its VFX level live.
@@ -390,6 +401,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       for (const f of this.flags) f.destroy();
       for (const b of this.balls) b.destroy();
       for (const k of this.fighters) k.destroy();
+      for (const t of this.roleTags.values()) t.destroy();
     });
   }
 
@@ -883,6 +895,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.updateCamera(dt);
     this.drawGlows();
     this.drawSabers(now);
+    this.drawRoleTags();
     const amb = this.lights.ambientColor;
     this.recorder.record(now, this.fighters, this.cameras.main, this.lights, (k) => this.holo.state(k, now), {
       kubot: (k) => drawn.get(k) ?? {},
@@ -1702,10 +1715,31 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Debug view (F3): a Kubot's job in its mode (Kubeball play, CTF / Skychase role, sandbox dummy), or null. */
   roleOf(k: Kubotz): string | null {
-    const play = this.plays.get(k);
+    let play: string | undefined = this.plays.get(k);
+    // Total Football: whether it is one of the two going for the ball right now, or holding the line.
+    if (play === 'free' && this.balls[0]) {
+      const b = this.balls[0];
+      const nearest = this.teamOf(k.team).filter((t) => t.isAlive()).sort((p, q) => Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y));
+      play = nearest.indexOf(k) < 2 ? 'chaser' : 'hold line';
+    }
     if (play) return play + (k.controller.label === 'CPU' ? '' : ' (read)');
     if (k.controller instanceof CpuController && k.controller.dummy) return `dummy ${k.controller.dummy}`;
     return k.role ?? null;
+  }
+
+  /** The behaviour view (F9): each CPU's job, in the player tag's font and its team's glow, just above the tag. */
+  private drawRoleTags(): void {
+    const zoom = this.cameras.main.zoom;
+    for (const k of this.fighters) {
+      const role = this.showRoles && k.controller.label === 'CPU' && k.isAlive() ? this.roleOf(k) : null;
+      let t = this.roleTags.get(k);
+      if (!role) { t?.setVisible(false); continue; }
+      if (!t) {
+        t = heading(this, 0, 0, '', 40, { glow: Phaser.Display.Color.IntegerToColor(k.look.color).darken(30).color }).setOrigin(0.5, 1).setDepth(22);
+        this.roleTags.set(k, t);
+      }
+      t.setText(role.toUpperCase()).setVisible(true).setScale(0.42 / zoom).setPosition(k.x, k.body.top - UNIT * 0.75 - 56 / zoom);
+    }
   }
 
   /** Debug view (F3): each team's strategy in this mode, or null. */

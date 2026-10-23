@@ -48,6 +48,8 @@ export class HudScene extends Phaser.Scene {
   private timer!: Phaser.GameObjects.Text;
   /** Horde: the wave and the black-team Kubotz left, under the timer. */
   private waveText?: Phaser.GameObjects.Text;
+  /** The behaviour view (F9): the teams' strategies, under the mode's line. */
+  private strategyText!: Phaser.GameObjects.Text;
   /** Capture the Flag: a bubble at the screen's edge for each flag out of view, and its state under it. */
   private bubbles!: Phaser.GameObjects.Graphics;
   private bubbleLabels: Phaser.GameObjects.Text[] = [];
@@ -83,6 +85,7 @@ export class HudScene extends Phaser.Scene {
       drawPlate(tg, width / 2 - 170, 40, 340, 30, { cut: 10, alpha: 0.85 });
       this.waveText = this.add.text(width / 2, 55, '', body(15, { fontStyle: '800', color: '#cfe9ff' })).setOrigin(0.5);
     }
+    this.strategyText = this.add.text(width / 2, 84, '', body(14, { fontStyle: '800', color: '#ffd27a' })).setOrigin(0.5).setShadow(0, 2, '#02060c', 0, false, true);
     this.bubbles = this.add.graphics().setDepth(15);
     this.bubbleLabels = [];
 
@@ -211,6 +214,7 @@ export class HudScene extends Phaser.Scene {
             : g.wave ? `WAVE ${g.wave} / ${HORDE_WAVES}  ·  ${left} LEFT` : `${HORDE_WAVES} WAVES`);
     }
     this.drawFlagBubbles();
+    this.strategyText.setText(g.showRoles ? (g.strategyLine() ?? '').toUpperCase() : '');
     // Training: each CPU coming in gets a card (its health in sight), gone once defeated.
     if (MODES[g.mode].trial) this.syncCards();
     for (const [k, card] of this.cards) if (card.container.visible) this.drawCard(k, card, time);
