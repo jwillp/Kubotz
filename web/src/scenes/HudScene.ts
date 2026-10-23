@@ -5,7 +5,8 @@ import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
-import { drawPlate, drawStrip, METAL_EDGE, PlateButton } from '../ui/Plate';
+import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
+import { BUBBLE_GREY, greyHexa } from '../fx/OffscreenBubbles';
 import { pureAdd } from '../fx/Grade';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 
@@ -170,9 +171,10 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * Over each off-screen bubble (fx/OffscreenBubbles.ts), the guard's shield
-   * as the Kubot raises it (Kubot2D.drawShield), in the HUD plates' steel grey:
-   * the hexagon art with an added sheen, flickering a little, and a pointer
-   * in the Kubot's colour towards it.
+   * exactly as a Kubot raises it (Kubot2D.drawShield), only grey like the HUD
+   * instead of the Kubot's colour: the hexagon art filled grey, its sheen
+   * added from a grey copy of the art, the same flicker; and a grey pointer
+   * towards the Kubot.
    */
   private drawBubbleRings(): void {
     const g = this.rings.clear();
@@ -180,7 +182,7 @@ export class HudScene extends Phaser.Scene {
     while (this.shields.length < marks.length) {
       this.shields.push({
         fill: this.add.image(0, 0, 'p-hexa'),
-        sheen: this.add.image(0, 0, 'p-hexa').setBlendMode(pureAdd(this)).setTint(0xffffff),
+        sheen: this.add.image(0, 0, greyHexa(this)).setBlendMode(pureAdd(this)).setTint(0xffffff),
       });
     }
     this.shields.forEach(({ fill, sheen }, i) => {
@@ -192,10 +194,10 @@ export class HudScene extends Phaser.Scene {
       const flicker = Math.random() < 0.12 ? 0.55 : 1;
       // The art's hexagon is HEXA_ART px from corner to corner.
       const scale = (2 * r) / HEXA_ART;
-      fill.setPosition(x, y).setScale(scale).setTintFill(METAL_EDGE).setAlpha(0.3 * flicker);
+      fill.setPosition(x, y).setScale(scale).setTintFill(BUBBLE_GREY).setAlpha(0.3 * flicker);
       sheen.setPosition(x, y).setScale(scale).setAlpha(0.3 * flicker);
       const tip = r + 16;
-      g.fillStyle(m.color, 0.7 * flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
+      g.fillStyle(BUBBLE_GREY, 0.7 * flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
         x + Math.cos(a + 0.3) * (r - 6), y + Math.sin(a + 0.3) * (r - 6), x + Math.cos(a - 0.3) * (r - 6), y + Math.sin(a - 0.3) * (r - 6));
     });
   }

@@ -14,6 +14,31 @@ const R_FAR = 44;
 const FAR = 24;
 /** How much of the arena a bubble shows, top to bottom (units). */
 const SHOWN = 5;
+/** The bubble's shield colour: the HUD plates' edge (ui/Plate METAL_EDGE), without its blue. */
+export const BUBBLE_GREY = 0x5f646b;
+
+/**
+ * The shield art (particles/hexa.png, a blue gradient) in greys, for the
+ * bubble's added sheen: the shield's own, which would add its blue, in grey.
+ */
+export function greyHexa(scene: Phaser.Scene): string {
+  const key = 'p-hexa-grey';
+  if (scene.textures.exists(key)) return key;
+  const src = scene.textures.get('p-hexa').getSourceImage() as HTMLImageElement;
+  const canvas = scene.textures.createCanvas(key, src.width, src.height)!;
+  const ctx = canvas.getContext();
+  ctx.drawImage(src, 0, 0);
+  const img = ctx.getImageData(0, 0, src.width, src.height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    // As bright as the art's own colour (its value), so the sheen is as strong as the shield's.
+    d[i] = d[i + 1] = d[i + 2] = Math.max(d[i], d[i + 1], d[i + 2]);
+  }
+  ctx.putImageData(img, 0, 0);
+  canvas.refresh();
+  return key;
+}
+
 /** Half width over radius of a hexagon with a corner on top. */
 export const HEX_W = Math.sqrt(3) / 2;
 
@@ -106,8 +131,8 @@ export class OffscreenBubbles {
   }
 
   private make(): { cam: Phaser.Cameras.Scene2D.Camera; cut?: BubbleHexPipeline } {
-    // The HUD plates' steel, see-through like the shield: the fight behind shows faintly.
-    const cam = this.scene.cameras.add(0, 0, 2, 2).setBackgroundColor('rgba(13, 21, 32, 0.5)').setRoundPixels(false);
+    // No background: like the shield, it shows what is behind.
+    const cam = this.scene.cameras.add(0, 0, 2, 2).setRoundPixels(false);
     let cut: BubbleHexPipeline | undefined;
     // (Canvas: square bubbles.)
     if (this.scene.sys.renderer.type === Phaser.WEBGL) {
