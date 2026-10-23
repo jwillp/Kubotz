@@ -65,22 +65,32 @@ function towardBlue(h: number, k: number): number {
  * their value in a few flat steps, lit a clean cool white, shadow a cool
  * blue-grey; black parts a deep navy whose shadow is darker still.
  */
-function tones(r: number, g: number, b: number): [Rgb, Rgb] {
+function tones(r: number, g: number, b: number, lift = 0.16): [Rgb, Rgb] {
   const [h, s, v] = hsv(r, g, b);
   if (s >= 0.3 && v > 0.2) {
     const lit = rgb(h, Math.min(1, s * 1.1 + 0.08), Math.min(1, v * 1.08 + 0.08));
     return [lit, rgb(towardBlue(h, 0.12), Math.min(1, s * 1.05 + 0.12), Math.min(1, v * 1.08 + 0.08) * 0.66)];
   }
   const l = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (!lift) {
+    // Arena tiles: dark panels painted in fine steps (0.1 to 0.2), kept in those steps.
+    const v = Math.max(0.03, Math.round(l * 20) / 20);
+    return [[v * 0.96, v, v * 1.12 + 0.01], [v * 0.55, v * 0.58, v * 0.8 + 0.01]];
+  }
   if (l <= 0.2) return [[0.15, 0.17, 0.28], [0.06, 0.06, 0.13]];
-  const step = Math.min(1, Math.round(l * 5) / 5 + 0.16);
+  const step = Math.min(1, Math.round(l * 5) / 5 + lift);
   const lit: Rgb = [step * 0.98, step, Math.min(1, step * 1.03 + 0.02)];
   const shadow: Rgb = [step * 0.52 + 0.02, step * 0.56 + 0.03, step * 0.74 + 0.08];
   return [lit, shadow];
 }
 
-/** A cel copy of a part image (from its clean art: wear would only break up the flat fills). */
-export function celPart(source: HTMLImageElement | HTMLCanvasElement): HTMLCanvasElement {
+/**
+ * A cel copy of a part image (from its clean art: wear would only break up the
+ * flat fills). Arena tiles (`shape: false`) skip the rounded volume, which
+ * would shade every tile's edges into a grid: only the art's own shading splits them,
+ * and their values are kept as painted (no lift), so the arena stays dark behind the Kubotz.
+ */
+export function celPart(source: HTMLImageElement | HTMLCanvasElement, { shape = true } = {}): HTMLCanvasElement {
   const w = source.width, h = source.height;
   const out = document.createElement('canvas');
   out.width = w; out.height = h;
@@ -105,20 +115,20 @@ export function celPart(source: HTMLImageElement | HTMLCanvasElement): HTMLCanva
   const height = boxBlur(boxBlur(alpha, w, h, r), w, h, r);
   // The art's own shading, smoothed so its shadow shapes come out as clean blobs.
   const shading = boxBlur(luma, w, h, 3);
-  const big = Math.min(w, h) > 90;
+  const big = shape && Math.min(w, h) > 90;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
       const o = i * 4;
       if (p[o + 3] === 0) continue;
-      const sa = soft[o + 3] / 255 || 1;
-      const cr = soft[o] / 255 / sa, cg = soft[o + 1] / 255 / sa, cb = soft[o + 2] / 255 / sa;
-      const [lit, shadow] = tones(Math.min(1, cr), Math.min(1, cg), Math.min(1, cb));
+      // (getImageData colours are not premultiplied: no division by alpha.)
+      const cr = soft[o] / 255, cg = soft[o + 1] / 255, cb = soft[o + 2] / 255;
+      const [lit, shadow] = tones(Math.min(1, cr), Math.min(1, cg), Math.min(1, cb), shape ? 0.16 : 0);
       // Facing the sun (straight above, a touch towards the front): the height's slope upwards,
       // plus a little of its dome so the middle of a part stays lit.
       const gy = height[i + (y < h - 1 ? w : 0)] - height[i - (y > 0 ? w : 0)];
       const gx = height[i + (x < w - 1 ? 1 : 0)] - height[i - (x > 0 ? 1 : 0)];
-      const facing = gy * r * 1.6 + (height[i] - 0.5) * 0.5;
+      const facing = shape ? gy * r * 1.6 + (height[i] - 0.5) * 0.5 : 0.1;
       // Against the flattened colour, how much darker the art paints this spot.
       const own = shading[i] - (0.299 * cr + 0.587 * cg + 0.114 * cb);
       const n = facing + own * 1.6;

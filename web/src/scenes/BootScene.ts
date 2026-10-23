@@ -166,6 +166,13 @@ export class BootScene extends Phaser.Scene {
       addNormalMap(this.textures, CEL + key, key.startsWith('kubotz:') ? { bevel: 5, detail: 0.4, strength: 1.5 } : {}, key);
       await pace((i + 1) / parts.length);
     }
+    // And of the arena tiles, for the cel arena GameScene bakes beside the classic one.
+    for (const tile of map.tileImages.values()) {
+      const key = `tile:${tile.source}`;
+      this.textures.addCanvas(CEL + key, celPart(this.textures.get(key).getSourceImage() as HTMLImageElement, { shape: false }));
+      addNormalMap(this.textures, CEL + key, { bevel: 3, detail: 0.3, strength: 1 }, key);
+      await pace();
+    }
     step = 4;
     this.measureWeapons();
     const g = this.make.graphics({}, false);

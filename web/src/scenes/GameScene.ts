@@ -14,7 +14,7 @@ import { EffectDef, ParticleFx, type ParticleHandle } from '../fx/ParticleEffect
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
-import { cel, setCel } from '../fx/Cel';
+import { CEL, cel, setCel } from '../fx/Cel';
 import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
 import { lightPolygon } from '../fx/Shadows';
@@ -182,6 +182,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.timeLimit = (setup.minutes ?? 0) * 60000;
     this.map = arenaMap(setup.arena, this.registry.get('map'));
     this.arenaLayers = [];
+    this.celSwaps = [];
     const spriter: SpriterData = this.registry.get('spriter');
     const rig = new Rig(spriter);
     for (const file of ['feet/foot.png', 'feet/foot-sha.png']) rig.setOutline(file, opaqueOutline(this, `kubotz:${file}`));
@@ -309,6 +310,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     // Y: the cel-shaded Kubotz or the classic ones (fx/Cel.ts), switched in place.
     kb.on('keydown-Y', () => {
       setCel(!cel.on);
+      for (const [img, key] of this.celSwaps) this.applyCel(img, key);
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, cel.on ? 'Cel-shaded Kubotz' : 'Classic Kubotz', 0xffffff);
     });
     kb.on('keydown-G', () => {
@@ -404,7 +406,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const mapW = m.width * m.tileWidth;
     const mapH = m.height * m.tileHeight;
     // Colour and normal map canvases of the whole arena, lit like everything else.
-    for (const key of ['arena', 'arena-normals']) if (this.textures.exists(key)) this.textures.remove(key);
+    for (const key of ['arena', 'arena-normals', CEL + 'arena']) if (this.textures.exists(key)) this.textures.remove(key);
     const s = this.bakeScale;
     const bw = Math.ceil(mapW * s);
     const bh = Math.ceil(mapH * s);
@@ -424,12 +426,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     actx.setTransform(1, 0, 0, 1, 0, 0);
     art.refresh();
     if (this.sys.renderer.type === Phaser.WEBGL) art.setDataSource(normals);
-    this.arenaLayers.push(lit(this.add.image(0, 0, 'arena').setOrigin(0, 0).setScale(1 / s).setDepth(2)));
+    const arenaImage = this.add.image(0, 0, 'arena').setOrigin(0, 0).setScale(1 / s).setDepth(2);
+    this.arenaLayers.push(arenaImage);
     // The tiles' blue light strips glow on their own, whatever the lights do.
     this.buildArenaGlow(actx.canvas, bw, bh);
     // Then the tiles take the arena's palette (fx/Backdrops.ts).
     const tiles = backdropOf(this.arena).tiles;
     if (tiles) { tintArt(actx, bw, bh, tiles); art.refresh(); }
+    // The cel arena (fx/Cel.ts): the same bake from the cel tiles, on the same normals; Y swaps them.
+    const celArt = this.textures.addCanvas(CEL + 'arena', cpuCanvas(bw, bh))!;
+    const cctx = celArt.getContext();
+    cctx.setTransform(s, 0, 0, s, 0, 0);
+    eachTile(this.textures, m, (_, key, x, y) => cctx.drawImage(this.textures.get(CEL + key).getSourceImage() as HTMLImageElement, x, y));
+    cctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (tiles) tintArt(cctx, bw, bh, tiles);
+    celArt.refresh();
+    if (this.sys.renderer.type === Phaser.WEBGL) celArt.setDataSource(normals);
+    this.celSwap(arenaImage, 'arena');
 
     for (const o of m.objects) {
       switch (o.type) {
@@ -475,6 +488,24 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       new Phaser.Math.Vector2(mapW / 2 - 3 * UNIT, 21.5 * UNIT),
       new Phaser.Math.Vector2(mapW / 2 + 3 * UNIT, 21.5 * UNIT),
     );
+  }
+
+  /** Arena images with a classic and a cel texture (fx/Cel.ts), swapped by Y. */
+  private celSwaps: [Phaser.GameObjects.Image, string][] = [];
+
+  private celSwap(img: Phaser.GameObjects.Image, key: string): Phaser.GameObjects.Image {
+    this.celSwaps.push([img, key]);
+    return this.applyCel(img, key);
+  }
+
+  /**
+   * The cel texture or the classic one, both through Light2D: the toon steps
+   * (fx/Cel.ts toonLit) cut the wide arena lights into big hard discs, so the
+   * arena keeps the smooth lights and only the Kubotz take the toon ones.
+   */
+  private applyCel(img: Phaser.GameObjects.Image, key: string): Phaser.GameObjects.Image {
+    const celKey = CEL + key;
+    return lit(img.setTexture(cel.on && this.textures.exists(celKey) ? celKey : key));
   }
 
   /**
@@ -542,24 +573,6 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       }
     }
     const S = (UNIT / 2) * this.bakeScale; // half resolution (in a match)
-    const art = document.createElement('canvas');
-    art.width = gw * S; art.height = gh * S;
-    const ctx = art.getContext('2d', { willReadFrequently: true })!;
-    // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
-    // Each tile shrunk once to the cell size: scaling the big tile images down for every cell was most of the hull's cost.
-    const tile = (name: string) => {
-      const c = document.createElement('canvas');
-      c.width = c.height = Math.max(1, Math.round(2 * S));
-      c.getContext('2d', { willReadFrequently: true })!.drawImage(this.textures.get(`tile:${name}`).getSourceImage() as HTMLImageElement, 0, 0, c.width, c.height);
-      return c;
-    };
-    const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner-top-left.png'), tile('corner-bottom-left.png')];
-    let seed = 11;
-    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) {
-      const r = rnd();
-      ctx.drawImage(r < 0.12 ? lines[Math.floor(r / 0.12 * 3)] : plain, x * S, y * S, 2 * S, 2 * S);
-    }
     // Alpha: solid near the frame, gone some 9 cells out; never over the play space.
     const mask = document.createElement('canvas');
     mask.width = gw; mask.height = gh;
@@ -571,17 +584,38 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     }
     mctx.putImageData(md, 0, 0);
     const soft = document.createElement('canvas');
-    soft.width = art.width; soft.height = art.height;
+    soft.width = gw * S; soft.height = gh * S;
     const sctx = soft.getContext('2d', { willReadFrequently: true })!;
     sctx.filter = `blur(${S * 1.2}px)`;
     sctx.drawImage(mask, 0, 0, soft.width, soft.height);
     const tiles = backdropOf(this.arena).tiles;
-    if (tiles) tintArt(ctx, art.width, art.height, tiles);
-    ctx.globalCompositeOperation = 'destination-in';
-    ctx.drawImage(soft, 0, 0);
-    if (this.textures.exists('arena-hull')) this.textures.remove('arena-hull');
-    this.textures.addCanvas('arena-hull', art);
-    this.arenaLayers.push(lit(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(UNIT / S).setDepth(1.9)));
+    // Baked twice: from the classic tiles and from the cel ones (fx/Cel.ts).
+    for (const prefix of ['', CEL]) {
+      const art = document.createElement('canvas');
+      art.width = gw * S; art.height = gh * S;
+      const ctx = art.getContext('2d', { willReadFrequently: true })!;
+      // Plating: the tiles' dark panels, with now and then a side panel's circuitry.
+      // Each tile shrunk once to the cell size: scaling the big tile images down for every cell was most of the hull's cost.
+      const tile = (name: string) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = Math.max(1, Math.round(2 * S));
+        c.getContext('2d', { willReadFrequently: true })!.drawImage(this.textures.get(`${prefix}tile:${name}`).getSourceImage() as HTMLImageElement, 0, 0, c.width, c.height);
+        return c;
+      };
+      const plain = tile('blank.png'); const lines = [tile('side02.png'), tile('corner-top-left.png'), tile('corner-bottom-left.png')];
+      let seed = 11;
+      const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) {
+        const r = rnd();
+        ctx.drawImage(r < 0.12 ? lines[Math.floor(r / 0.12 * 3)] : plain, x * S, y * S, 2 * S, 2 * S);
+      }
+      if (tiles) tintArt(ctx, art.width, art.height, tiles);
+      ctx.globalCompositeOperation = 'destination-in';
+      ctx.drawImage(soft, 0, 0);
+      if (this.textures.exists(prefix + 'arena-hull')) this.textures.remove(prefix + 'arena-hull');
+      this.textures.addCanvas(prefix + 'arena-hull', art);
+    }
+    this.arenaLayers.push(this.celSwap(this.add.image(-M * UNIT, -M * UNIT, 'arena-hull').setOrigin(0, 0).setScale(UNIT / S).setDepth(1.9), 'arena-hull'));
   }
 
   /**
