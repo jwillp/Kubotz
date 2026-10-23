@@ -10,6 +10,7 @@ import {
 } from '../game/Match';
 import { ARENA_INFO } from '../map/Arenas';
 import { arenaThumbnail } from '../map/ArenaThumb';
+import { GlitchBursts } from '../fx/GlitchBursts';
 import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 import { drawGlow, drawPlate, drawStrip, footer, kubeBackdrop, METAL_EDGE, shutter } from '../ui/Plate';
@@ -231,8 +232,10 @@ export class SetupScene extends Phaser.Scene {
 
     // The original logo top left, ARENA under it.
     // As on the title, at 0.62 / 1.3 of its size: ARENA centred under the logo.
-    const logo = this.add.image(48, 64, 'logo').setOrigin(0, 0.5).setScale(0.62 / LOGO_RES);
-    heading(this, logo.x + logo.displayWidth / 2, 64 + 108 * 0.62 / 1.3, 'A R E N A', 34 * 0.62 / 1.3);
+    // They glitch together, as on the title.
+    const logo = this.add.image(0, 0, 'logo').setOrigin(0, 0.5).setScale(0.62 / LOGO_RES);
+    const arena = heading(this, logo.displayWidth / 2, 108 * 0.62 / 1.3, 'A R E N A', 34 * 0.62 / 1.3, { glitch: false });
+    new GlitchBursts(this.add.container(48, 64, [logo, arena]), { jolt: 2 });
     this.add.text(width - 40, 40, 'Gamepads: Smash Ultimate layout\nKeyboards: P1 WASD + O / P · P2 Arrows + , / N',
       body(13, { fontStyle: '500', color: '#8fb6d8', align: 'right', lineSpacing: 4 })).setOrigin(1, 0);
 
@@ -317,7 +320,7 @@ export class SetupScene extends Phaser.Scene {
     const x = this.slotX(i);
     const glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
     const frame = this.add.graphics();
-    const tag = heading(this, x + 44, SLOT_TOP + 6, '', 30, { glow: null });
+    const tag = heading(this, x + 44, SLOT_TOP + 6, '', 30, { glow: null, glitch: false }); // a player tag, not a title
     const slotNo = this.add.text(x + 104, SLOT_TOP + 14, `SLOT ${i + 1}`, body(12, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5);
     const blurb = this.add.text(x + 18, SLOT_TOP + 58, '', body(12, { fontStyle: '500', color: '#cfe9ff', lineSpacing: 3 }));
     const rows = {} as Record<Field, Row>;
