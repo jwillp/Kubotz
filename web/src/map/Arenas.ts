@@ -110,14 +110,17 @@ export const ARENAS: (ArenaDef | null)[] = [
     name: 'The Pitch',
     blurb: 'Kubeball: a goal at each end',
     mode: 'kubeball',
-    size: [80, 32],
-    walls: [[6, 1, 68, 2], [4, 3, 2, 25], [74, 3, 2, 25], [6, 28, 68, 3]],
-    platforms: [[14, 22, 8, 1], [58, 22, 8, 1], [33, 17, 14, 1], [22, 11, 8, 1], [50, 11, 8, 1], [8, 16, 6, 1], [66, 16, 6, 1]],
+    size: [104, 36],
+    walls: [[6, 1, 92, 2], [4, 3, 2, 29], [98, 3, 2, 29], [6, 32, 92, 3]],
+    platforms: [
+      [8, 16, 6, 1], [90, 16, 6, 1], [16, 25, 8, 1], [80, 25, 8, 1], [30, 20, 10, 1], [64, 20, 10, 1],
+      [45, 15, 14, 1], [24, 11, 8, 1], [72, 11, 8, 1],
+    ],
     warps: [],
-    spawns: [[12, 28], [18, 28], [24, 28], [18, 22], [68, 28], [62, 28], [56, 28], [62, 22]],
-    bonus: [[40, 14], [26, 8], [54, 8]],
-    goals: [[0, 6, 6, 1, 6], [1, 73, 6, 1, 6]],
-    ball: [40, 15.5], // on the top middle platform: everyone has to climb for it
+    spawns: [[12, 32], [18, 32], [24, 32], [20, 25], [92, 32], [86, 32], [80, 32], [84, 25]],
+    bonus: [[52, 12], [28, 8], [76, 8]],
+    goals: [[0, 6, 6, 1, 6], [1, 97, 6, 1, 6]],
+    ball: [52, 13.5], // on the top middle platform: everyone has to climb for it
   },
   {
     // Skychase: a tall open tower, three ring rifts high on each side wall, a hole in the floor.

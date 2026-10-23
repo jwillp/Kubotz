@@ -140,7 +140,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private nextPlaysAt = 0;
   /** Behaviour view (F9): each CPU's job over its player tag, in the tag's font; the strategies show on the HUD. */
   showRoles = false;
-  private roleTags = new Map<Kubotz, HeadingText>();
+  private roleTags = new Map<Kubotz, { name: HeadingText; side: Phaser.GameObjects.Text }>();
   /** Skychase: the drones' laser bolts in flight, and what draws them. */
   private droneShots: { x: number; y: number; vx: number; vy: number; until: number }[] = [];
   private droneLasers?: Phaser.GameObjects.Graphics;
@@ -407,7 +407,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       for (const f of this.flags) f.destroy();
       for (const b of this.balls) b.destroy();
       for (const k of this.fighters) k.destroy();
-      for (const t of this.roleTags.values()) t.destroy();
+      for (const t of this.roleTags.values()) { t.name.destroy(); t.side.destroy(); }
     });
   }
 
@@ -1739,12 +1739,23 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     for (const k of this.fighters) {
       const role = this.showRoles && k.isAlive() ? this.roleOf(k)?.replace(' (read)', '') : null;
       let t = this.roleTags.get(k);
-      if (!role) { t?.setVisible(false); continue; }
+      if (!role) { t?.name.setVisible(false); t?.side.setVisible(false); continue; }
       if (!t) {
-        t = heading(this, 0, 0, '', 40, { glow: Phaser.Display.Color.IntegerToColor(k.look.color).darken(30).color }).setOrigin(0.5, 1).setDepth(22);
+        t = {
+          name: heading(this, 0, 0, '', 40, { glow: Phaser.Display.Color.IntegerToColor(k.look.color).darken(30).color }).setOrigin(0.5, 1).setDepth(22),
+          // (D) defence, (A) attack: in the body font (Okuba Cloud has no brackets).
+          side: this.add.text(0, 0, '', body(44, { fontStyle: '800', color: '#ffffff' })).setOrigin(0, 1).setDepth(22).setShadow(0, 2, '#02060c', 0, false, true),
+        };
         this.roleTags.set(k, t);
       }
-      t.setText(role.toUpperCase()).setVisible(true).setScale(0.42 / zoom).setPosition(k.x, k.body.top - UNIT * 0.75 - 56 / zoom);
+      const side = ROLE_SIDE[role] ?? '';
+      const y = k.body.top - UNIT * 0.75 - 56 / zoom;
+      t.name.setText((ROLE_NAMES[role] ?? role).toUpperCase()).setVisible(true).setScale(0.42 / zoom);
+      t.side.setText(side).setVisible(!!side).setScale(0.42 / zoom);
+      // The name and its side, centred together over the tag.
+      const sw = side ? t.side.displayWidth + 4 / zoom : 0;
+      t.name.setPosition(k.x - sw / 2, y);
+      t.side.setPosition(t.name.x + t.name.displayWidth / 2 + 4 / zoom, y + 3 / zoom);
     }
   }
 
@@ -2085,7 +2096,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
-    this.trauma = Math.min(1, this.trauma + amount * vfx());
+    // Ball games: eight Kubotz hitting each other would keep the camera shaking; a third as much.
+    const tame = MODES[this.mode].ball ? 0.35 : 1;
+    this.trauma = Math.min(1, this.trauma + amount * vfx() * tame);
   }
 
   private applyZoom(): void {
@@ -2146,6 +2159,14 @@ const PREVIEW_BAKE = 0.3;
 /** Horde: the breather between two waves, and between two Kubotz of a wave coming in (ms). */
 const WAVE_BREAK_MS = 3000;
 const WAVE_SPAWN_GAP_MS = 700;
+/**
+ * Kubeball's plays as the players read them over the Kubotz: the same names
+ * as Capture the Flag's (guardian, striker) and whether each defends (D) or
+ * attacks (A).
+ */
+const ROLE_NAMES: Record<string, string> = { goalie: 'guardian', attacker: 'striker' };
+const ROLE_SIDE: Record<string, string> = { goalie: '(D)', defender: '(D)', support: '(A)', attacker: '(A)' };
+
 /** Ball games and Capture the Flag: red (team 0) against blue. */
 const BALL_RIVAL = 1;
 const CTF_RIVAL = 1;
