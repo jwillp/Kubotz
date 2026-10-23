@@ -26,11 +26,18 @@ export const BASE_WIDEST = 58;
 /** Never wider than this, however big the map: past it the Kubotz get too small to read. */
 export const MAX_WIDEST = 84;
 
-/** How far out the camera may go on a map `w` x `h` units: enough for the whole map, within BASE_WIDEST..MAX_WIDEST. */
+/** The map size BASE_WIDEST was set for (map/Arenas.ts DEFAULT_SIZE). */
+const BASE_MAP = [52, 38];
+
+/**
+ * How far out the camera may go on a map `w` x `h` units: BASE_WIDEST, plus
+ * what the map has more than the usual size, up to MAX_WIDEST.
+ */
 export function widestFor(w: number, h: number, view: Omit<FrameView, 'narrowest' | 'widest'>): number {
   const aspect = view.screenW / view.screenH;
   const band = (view.screenH - view.hudTop - view.hudBottom) / view.screenH;
-  return Math.min(MAX_WIDEST, Math.max(BASE_WIDEST, w + 6, (h + 4) / band * aspect));
+  const more = Math.max(0, w - BASE_MAP[0], (h - BASE_MAP[1]) / band * aspect);
+  return Math.min(MAX_WIDEST, BASE_WIDEST + more);
 }
 
 /** The view for these points: its width (units) and the world point at the screen's centre. */

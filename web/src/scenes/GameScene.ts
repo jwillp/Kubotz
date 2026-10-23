@@ -26,6 +26,7 @@ import { Nav, NavBlock, NavPortal } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
 import { frame, widestFor, type FrameView } from '../game/CameraFrame';
+import { OffscreenBubbles } from '../fx/OffscreenBubbles';
 import { HUD_BOTTOM, HUD_TOP } from './HudScene';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
@@ -99,6 +100,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   private portals!: PortalFx;
   /** The spawn holograms (match start, respawns). */
   private holo!: HoloSpawns;
+  /** Kubotz out of the camera's view, shown in bubbles on the screen's edge (the HUD rings them). */
+  bubbles?: OffscreenBubbles;
   private orbs: PowerUpOrb[] = [];
   private bullets: Bullet[] = [];
   private nextBonusAt = 0;
@@ -204,6 +207,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.holo = new HoloSpawns(this);
 
     if (setup.preview) { this.createPreview(setup.preview); return; }
+    this.bubbles = new OffscreenBubbles(this);
     // A real match: the title picks a new room behind it when it comes back.
     this.registry.remove('menuArena');
 
@@ -1513,6 +1517,9 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     this.trauma = Math.max(0, this.trauma - SHAKE_DECAY * dt);
     this.perspective?.update(mid);
     this.placeFixedLights();
+    // Not in the intro (it shows one Kubot at a time) nor once the match is won.
+    const shown = this.fighters.filter((k) => k.isAlive() && !k.home && !k.eliminated).map((k) => ({ x: k.x, y: k.y, color: k.look.color }));
+    this.bubbles?.update(shown, HUD_TOP, HUD_BOTTOM, !focus && this.winnerTeam === undefined);
   }
 
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */

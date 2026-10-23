@@ -38,6 +38,8 @@ interface Card {
  */
 export class HudScene extends Phaser.Scene {
   private game_!: GameScene;
+  /** Rings around the off-screen bubbles. */
+  private rings!: Phaser.GameObjects.Graphics;
   private cards = new Map<Kubotz, Card>();
   private timer!: Phaser.GameObjects.Text;
   private banner!: Phaser.GameObjects.Container;
@@ -58,6 +60,7 @@ export class HudScene extends Phaser.Scene {
     this.pauseItems = [];
     const { width, height } = this.scale;
 
+    this.rings = this.add.graphics();
     const tg = this.add.graphics();
     drawPlate(tg, width / 2 - 64, -14, 128, 50, { cut: 12 });
     drawStrip(tg, width / 2 - 46, 35, width / 2 + 46, 35, NEON, 2);
@@ -151,6 +154,20 @@ export class HudScene extends Phaser.Scene {
       this.timer.setColor(g.timeLimit && shown <= 10 ? '#ff6a5a' : '#ffffff');
     }
     for (const [k, card] of this.cards) this.drawCard(k, card, time);
+    this.drawBubbleRings();
+  }
+
+  /** The rings and pointers around the off-screen bubbles (fx/OffscreenBubbles.ts), in each Kubot's colour. */
+  private drawBubbleRings(): void {
+    const g = this.rings.clear();
+    for (const m of this.game_.bubbles?.marks ?? []) {
+      const { x, y, r, angle: a } = m;
+      const tip = r + 13;
+      g.fillStyle(m.color, 1).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
+        x + Math.cos(a + 0.42) * (r - 1), y + Math.sin(a + 0.42) * (r - 1), x + Math.cos(a - 0.42) * (r - 1), y + Math.sin(a - 0.42) * (r - 1));
+      g.lineStyle(4, 0x0d1520, 0.9).strokeCircle(x, y, r + 2);
+      g.lineStyle(3, m.color, 1).strokeCircle(x, y, r);
+    }
   }
 
   private drawCard(k: Kubotz, card: Card, time: number): void {
