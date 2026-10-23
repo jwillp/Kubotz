@@ -55,7 +55,7 @@ const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
 const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
 /** Dust, cel-shaded like the K.O. smoke: a cool grey rim round a pale body. */
-const DUST = { color: 0x7b8592, body: 0xd3dae2 };
+const DUST = { color: 0x58626f, body: 0xa3aebb };
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -282,7 +282,7 @@ export class ImpactFx {
       this.add({
         kind: 'dust', x: x + dir * rand(0, 0.2) * UNIT, y: y - rand(0, 0.1) * UNIT,
         vx: dir * rand(1.5, 3.5) * UNIT, vy: -rand(0.6, 1.8) * UNIT,
-        ...DUST, size: rand(0.09, 0.14) * UNIT, grow: rand(0.16, 0.26) * UNIT,
+        ...DUST, size: rand(0.07, 0.11) * UNIT, grow: rand(0.13, 0.21) * UNIT,
         life: rand(320, 480), gravity: 0, drag: 0.15,
       });
     }
@@ -296,7 +296,7 @@ export class ImpactFx {
       this.add({
         kind: 'dust', x: x + side * rand(0, 0.25) * UNIT, y: y - rand(0, 0.08) * UNIT,
         vx: side * v, vy: -rand(0.2, 1.2) * UNIT,
-        ...DUST, size: rand(0.1, 0.18) * UNIT, grow: rand(0.2, 0.34) * UNIT,
+        ...DUST, size: rand(0.08, 0.14) * UNIT, grow: rand(0.16, 0.28) * UNIT,
         life: rand(380, 620), gravity: 0, drag: 0.04,
       });
     }
@@ -537,7 +537,7 @@ export class ImpactFx {
     }
     for (const p of dust) {
       const r = radius(p) * (1 - smooth(0.2, 0.5, p.age / p.life));
-      if (r > 0.12 * UNIT) g.fillStyle(0xfffbe6, 1).fillEllipse(p.x - r * 0.3, p.y - r * 0.38, r * 0.5, r * 0.3);
+      if (r > 0.16 * UNIT) g.fillStyle(0xe6e9e1, 1).fillEllipse(p.x - r * 0.3, p.y - r * 0.38, r * 0.5, r * 0.3);
     }
   }
 
