@@ -14,6 +14,9 @@ const PAUSE_ITEMS = ['Resume', 'Settings', 'Controls', 'Quit to title'];
 const CARD_W = 270;
 const CARD_H = 78;
 const CARD_GAP = 14;
+/** How much of the screen the HUD covers (px): the cards along the bottom, the timer plate at the top. The match camera frames the Kubotz between them. */
+export const HUD_BOTTOM = CARD_H + 10;
+export const HUD_TOP = 40;
 /** The helmet-colour slab holding the P1 / CPU tag. */
 const SLAB = 64;
 const SEGMENTS = 12;

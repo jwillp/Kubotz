@@ -25,6 +25,8 @@ import { PhysicsWorld } from '../physics/Physics';
 import { Nav, NavBlock, NavPortal } from '../game/Nav';
 import { DebrisField } from '../game/Debris';
 import { arenaBakeScale, arenaMap, eachTile } from '../map/ArenaArt';
+import { frame, widestFor, type FrameView } from '../game/CameraFrame';
+import { HUD_BOTTOM, HUD_TOP } from './HudScene';
 import { ArenaPerspective, look25 } from '../map/Perspective';
 import { Rig } from '../anim/Rig';
 import { ALL_LAYERS, type DebugState } from './DebugScene';
@@ -254,8 +256,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const first = this.introFocus() ?? this.centerOfFighters();
     this.camTarget.set(first.x, first.y);
     this.camVisibleWidth = INTRO_VIEW_WIDTH;
-    cam.centerOn(first.x, first.y - UNIT);
-    this.camMid.set(first.x, first.y - UNIT);
+    cam.centerOn(first.x, first.y);
+    this.camMid.set(first.x, first.y);
     this.trauma = 0;
     this.applyZoom();
     this.bonusRate = BONUS_RATES[setup.bonuses] ?? BONUS_RATES.normal;
@@ -1478,7 +1480,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     const k = this.fighters[i];
     // A little low, so the projector under the Kubot shows above the HUD cards.
     // (No intro in the editor's rebuilds: the camera stays on the match.)
-    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y + 0.9 * UNIT } : null;
+    return !this.setup?.editor && this.clock < this.specs.length * INTRO_FOCUS_MS && k && !k.home ? { x: k.x, y: k.y - 0.1 * UNIT } : null;
   }
 
   /** CameraSystem: lerp to the centre of all Kubotz (and new power-ups), zoom to fit them. */
@@ -1491,20 +1493,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, INTRO_VIEW_WIDTH, Math.min(1, Config.CAMERA_ZOOM_SPEED * intro * dt));
       this.camTarget.set(focus.x, focus.y);
     } else if (pts.length > 0) {
-      const xs = pts.map((f) => f.x);
-      const ys = pts.map((f) => f.y);
-      const spanX = (Math.max(...xs) - Math.min(...xs)) / UNIT;
-      const spanY = (Math.max(...ys) - Math.min(...ys)) / UNIT;
-      const aspect = this.scale.width / this.scale.height;
       // After the match the camera closes in on the dancing winner.
-      const wanted = this.winnerTeam !== undefined ? 15 : Phaser.Math.Clamp(Math.max(spanX + 14, (spanY + 10) * aspect), 24, 58);
-      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, wanted, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
-      this.camTarget.copy(this.centerOfFighters());
+      const view = this.frameView(this.winnerTeam !== undefined ? 15 : 24, this.winnerTeam !== undefined ? 15 : this.widestView());
+      const f = frame(pts.map((p) => ({ x: p.x / UNIT, y: p.y / UNIT, human: p instanceof Kubotz && p.controller.label !== 'CPU' })), view);
+      this.camVisibleWidth = Phaser.Math.Linear(this.camVisibleWidth, f.width, Math.min(1, Config.CAMERA_ZOOM_SPEED * 0.25 * intro * dt));
+      this.camTarget.set(f.x * UNIT, f.y * UNIT);
     }
     const cam = this.cameras.main;
     const t = Math.min(1, Config.CAMERA_SPEED * 0.5 * intro * dt);
     const mid = this.camMid;
-    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y - UNIT, t));
+    mid.set(Phaser.Math.Linear(mid.x, this.camTarget.x, t), Phaser.Math.Linear(mid.y, this.camTarget.y, t));
     this.applyZoom();
     // Shake: trauma squared drives a smooth wobble of position and roll, and wears off.
     const s = this.trauma * this.trauma;
@@ -1520,6 +1518,16 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /** Adds camera shake (0..1 of trauma): strong hits, hard landings, K.O.s. */
   shake(amount: number): void {
     if (fx().shake) this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  /** The screen, the HUD over it, and how near and far the match camera may zoom (units across). */
+  private frameView(narrowest: number, widest: number): FrameView {
+    return { screenW: this.scale.width, screenH: this.scale.height, hudTop: HUD_TOP, hudBottom: HUD_BOTTOM, narrowest, widest };
+  }
+
+  /** How far out the match camera may zoom: the arenas' usual view, wider on a bigger map (CameraFrame.widestFor). */
+  private widestView(): number {
+    return widestFor(this.map.width, this.map.height, this.frameView(0, 0));
   }
 
   private applyZoom(): void {
