@@ -11,10 +11,8 @@ all work as with a real pad. The setup screen names them Phone 1, Phone 2...
 2. WSL2 uses NAT networking, so phones can't reach WSL directly. In an **admin**
    PowerShell on Windows: `powershell -ExecutionPolicy Bypass -File tools\phone-pads-forward.ps1`
    (from the repo's `web` folder, e.g. `\\wsl$\Ubuntu\home\...\web`). It forwards
-   port 5180 to WSL, opens it in the firewall for private networks, and prints the
+   port 5180 to WSL, opens it in the firewall to the local subnet, and prints the
    URLs to open. WSL's IP changes on restart: run it again then. `-Remove` undoes it.
-   If the Wi-Fi is marked as a Public network in Windows, set it to Private (or the
-   firewall rule won't apply).
    Alternative: WSL mirrored networking (`networkingMode=mirrored` in `%UserProfile%\.wslconfig`)
    needs no port proxy, only the firewall rule.
 3. Open `http://localhost:5180/` on the PC, and `http://<PC's LAN IP>:5180/pad.html`

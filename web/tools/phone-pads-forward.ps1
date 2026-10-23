@@ -14,9 +14,9 @@ if ($Remove) {
 
 $wsl = ((wsl.exe hostname -I) -split '\s+' | Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+$' })[0]
 netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=$Port connectaddress=$wsl connectport=$Port
-if (-not (Get-NetFirewallRule -DisplayName $rule -ErrorAction SilentlyContinue)) {
-  New-NetFirewallRule -DisplayName $rule -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Private | Out-Null
-}
+# Any network profile (home Wi-Fi is often marked Public), but only from the local subnet.
+Remove-NetFirewallRule -DisplayName $rule -ErrorAction SilentlyContinue
+New-NetFirewallRule -DisplayName $rule -Direction Inbound -Protocol TCP -LocalPort $Port -Action Allow -Profile Any -RemoteAddress LocalSubnet | Out-Null
 
 Write-Host "Forwarding port $Port to WSL ($wsl). On a phone on the same Wi-Fi, open one of:"
 Get-NetIPAddress -AddressFamily IPv4 |
