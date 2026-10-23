@@ -1727,11 +1727,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     return k.role ?? null;
   }
 
-  /** The behaviour view (F9): each CPU's job, in the player tag's font and its team's glow, just above the tag. */
+  /** The behaviour view (F9): each Kubot's job (a human's as the CPUs read it), in the player tag's font and its team's glow, just above the tag. */
   private drawRoleTags(): void {
     const zoom = this.cameras.main.zoom;
     for (const k of this.fighters) {
-      const role = this.showRoles && k.controller.label === 'CPU' && k.isAlive() ? this.roleOf(k) : null;
+      const role = this.showRoles && k.isAlive() ? this.roleOf(k)?.replace(' (read)', '') : null;
       let t = this.roleTags.get(k);
       if (!role) { t?.setVisible(false); continue; }
       if (!t) {
