@@ -1753,10 +1753,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   /**
    * Telling Kubotz apart in a team of one colour: human players glow with
    * their own accent (P1 white, P2 yellow, P3 cyan, P4 magenta) and stand on
-   * a ring of it; CPU tags are smaller and dimmer; a Kubeball captain wears a
-   * gold chevron over its tag. Each can be turned off (marks, ?marks=).
+   * a ring of it, both soft; a Kubeball captain wears a gold chevron over its
+   * tag. Quieter CPU tags are there too, off. Each can be switched (marks, ?marks=).
    */
-  marks = { glow: true, ring: true, quietCpu: true, captain: true, colors: true };
+  marks = { glow: true, ring: true, quietCpu: false, captain: true, colors: true };
   private markG?: Phaser.GameObjects.Graphics;
   private humanGlows = new Map<Kubotz, Phaser.FX.Glow>();
 
@@ -1778,10 +1778,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // The glow: added once, strength set every frame.
       if (human && !this.humanGlows.has(k) && k.model.view.postFX) this.humanGlows.set(k, k.model.view.postFX.addGlow(this.accentOf(k), 0, 0, false, 0.1, 10));
       const fx = this.humanGlows.get(k);
-      if (fx) { fx.color = this.accentOf(k); fx.outerStrength = this.marks.glow && shown ? 2.4 + 0.6 * Math.sin(now / 200) : 0; }
+      if (fx) { fx.color = this.accentOf(k); fx.outerStrength = this.marks.glow && shown ? 1.3 + 0.3 * Math.sin(now / 200) : 0; }
       if (human && this.marks.ring && shown) {
         const c = this.accentOf(k);
-        const a = 0.55 + 0.2 * Math.sin(now / 180);
+        const a = 0.32 + 0.1 * Math.sin(now / 180); // a hint, not a spotlight
         g.lineStyle(4 / zoom, c, a).strokeEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
         g.fillStyle(c, a * 0.25).fillEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
       }
