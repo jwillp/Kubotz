@@ -43,7 +43,8 @@ void main () {
   float slip = step(0.92, hash(row * 7.1 + t)) * (hash(row + t * 3.3) - 0.5) * 12.0 / uRes.x;
   vec4 c = texture2D(uMainSampler, outTexCoord + vec2(slip, 0.0));
   float tear = step(0.975, hash(floor((p.y + uHex.z) / 2.0) * 3.7 + t * 1.3));
-  gl_FragColor = vec4(c.rgb + tear * 0.45, 1.0) * inside;
+  // (Premultiplied: the see-through background stays see-through.)
+  gl_FragColor = vec4(c.rgb + tear * 0.45, max(c.a, tear * 0.45)) * inside;
 }`;
 
 class BubbleHexPipeline extends Phaser.Renderer.WebGL.Pipelines.PostFXPipeline {
@@ -105,7 +106,8 @@ export class OffscreenBubbles {
   }
 
   private make(): { cam: Phaser.Cameras.Scene2D.Camera; cut?: BubbleHexPipeline } {
-    const cam = this.scene.cameras.add(0, 0, 2, 2).setBackgroundColor(0x0d1520).setRoundPixels(false);
+    // The HUD plates' steel, see-through like the shield: the fight behind shows faintly.
+    const cam = this.scene.cameras.add(0, 0, 2, 2).setBackgroundColor('rgba(13, 21, 32, 0.5)').setRoundPixels(false);
     let cut: BubbleHexPipeline | undefined;
     // (Canvas: square bubbles.)
     if (this.scene.sys.renderer.type === Phaser.WEBGL) {

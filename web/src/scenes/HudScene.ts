@@ -5,7 +5,7 @@ import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { TEAM_NAMES } from '../game/Match';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
-import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
+import { drawPlate, drawStrip, METAL_EDGE, PlateButton } from '../ui/Plate';
 import { pureAdd } from '../fx/Grade';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
 
@@ -170,9 +170,9 @@ export class HudScene extends Phaser.Scene {
 
   /**
    * Over each off-screen bubble (fx/OffscreenBubbles.ts), the guard's shield
-   * as the Kubot raises it (Kubot2D.drawShield): the hexagon art filled with
-   * its colour and an added sheen, flickering a little, and a pointer
-   * towards the Kubot.
+   * as the Kubot raises it (Kubot2D.drawShield), in the HUD plates' steel grey:
+   * the hexagon art with an added sheen, flickering a little, and a pointer
+   * in the Kubot's colour towards it.
    */
   private drawBubbleRings(): void {
     const g = this.rings.clear();
@@ -192,7 +192,7 @@ export class HudScene extends Phaser.Scene {
       const flicker = Math.random() < 0.12 ? 0.55 : 1;
       // The art's hexagon is HEXA_ART px from corner to corner.
       const scale = (2 * r) / HEXA_ART;
-      fill.setPosition(x, y).setScale(scale).setTintFill(m.color).setAlpha(0.3 * flicker);
+      fill.setPosition(x, y).setScale(scale).setTintFill(METAL_EDGE).setAlpha(0.3 * flicker);
       sheen.setPosition(x, y).setScale(scale).setAlpha(0.3 * flicker);
       const tip = r + 16;
       g.fillStyle(m.color, 0.7 * flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
