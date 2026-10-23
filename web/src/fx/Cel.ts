@@ -71,16 +71,18 @@ function tones(r: number, g: number, b: number): [Rgb, Rgb, Rgb] {
   const [h, s, v] = hsv(r, g, b);
   if (s >= 0.3 && v > 0.2) {
     const d = turnOf(h);
-    const body = rgb(h + d * 0.35, Math.min(1, s * 0.95 + 0.1), Math.min(1, v * 0.9 + 0.2));
-    const deep = rgb(h - Math.sign(d) * 0.05, Math.min(1, s + 0.15), v * 0.62);
+    const body = rgb(h + d * 0.12, Math.min(1, s * 1.05 + 0.05), Math.min(1, v * 1.05 + 0.04));
+    const deep = rgb(h - Math.sign(d) * 0.05, Math.min(1, s + 0.15), v * 0.6);
     return [deep, body, mixRgb(rgb(h + d * 0.6, 0.45, 1), CREAM, 0.45)];
   }
-  // Metal: two flat values (light plates / dark parts), cool shadows.
+  // Metal: its value in a few flat steps, slightly cool, with slate-violet
+  // shadows; black parts stay black, with only a faint cool light on their lit edges.
   const l = 0.299 * r + 0.587 * g + 0.114 * b;
-  const step = l > 0.42 ? 0.78 : l > 0.16 ? 0.4 : 0.14;
+  if (l <= 0.2) return [[0.015, 0.015, 0.035], [0.07, 0.07, 0.09], [0.22, 0.23, 0.28]];
+  const step = Math.round(l * 5) / 5;
   const body: Rgb = [step * 0.97, step * 0.99, step * 1.04 + 0.02];
-  const deep: Rgb = [step * 0.48 + 0.02, step * 0.47 + 0.02, step * 0.62 + 0.06];
-  return [deep, body, mixRgb(body, CREAM, 0.75)];
+  const deep: Rgb = [step * 0.5 + 0.01, step * 0.48 + 0.01, step * 0.64 + 0.05];
+  return [deep, body, mixRgb(body, CREAM, 0.6)];
 }
 
 /** A cel copy of a part image (from its clean art: wear would only break up the flat fills). */
