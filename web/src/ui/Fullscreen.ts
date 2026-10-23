@@ -75,6 +75,13 @@ export function installFullscreen(game: Phaser.Game): void {
     e.preventDefault(); // the game's own fullscreen rather than the browser's
     toggleFullscreen(game);
   });
+  // Alt+Enter too, as in PC games. Caught before the menus and the game see the key, so the Enter does not also select.
+  window.addEventListener('keydown', (e) => {
+    if (!e.altKey || (e.code !== 'Enter' && e.code !== 'NumpadEnter')) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (!e.repeat) toggleFullscreen(game);
+  }, { capture: true });
   game.scale.on(Phaser.Scale.Events.ENTER_FULLSCREEN, () => fillScreen(game, true));
   game.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, () => fillScreen(game, false));
   game.scale.on(Phaser.Scale.Events.FULLSCREEN_FAILED, () => say('The browser refused fullscreen: press F11 or click the game, then try again'));

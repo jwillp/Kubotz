@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { onSettingsChange, vfx } from '../game/Settings';
+import { fx, onSettingsChange } from '../game/Settings';
 import { BACKDROPS } from '../fx/Backdrops';
 import { GrainPipeline, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import type { BackdropScene } from '../scenes/BackdropScene';
@@ -130,7 +130,7 @@ export class PlateButton extends Phaser.GameObjects.Container {
     this.glow.setAlpha(1).setScale(1.04);
     tweens.add({ targets: this.glow, scale: 1, duration: 220, ease: 'Quad.out' });
     tweens.add({ targets: this.glow, alpha: 0.55, duration: 900, delay: 220, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    if (vfx() > 0) {
+    if (fx().lights) {
       const { w, h } = this;
       const g = this.sweep.clear().setVisible(true).setAlpha(1);
       g.fillStyle(0xbfe9ff, 0.22).fillPoints([new Phaser.Math.Vector2(-14, -h / 2), new Phaser.Math.Vector2(10, -h / 2),
@@ -194,7 +194,7 @@ export function kubeBackdrop(scene: Phaser.Scene, dim = 0.15): void {
 /**
  * The match's screen effects on a menu: its grain and scanlines over the
  * menu's own drawing (the room behind takes the whole grade), F toggling
- * them as in a match unless `keys` is false. Follows the VFX setting live.
+ * them as in a match unless `keys` is false. Follows the settings live.
  */
 export function menuScreenFx(scene: Phaser.Scene, { keys = true } = {}): void {
   const apply = () => {
@@ -238,12 +238,12 @@ export function frameTitle(scene: Phaser.Scene, text: string, y = 56): HeadingTe
 /**
  * The menu transition, an old TV changing stations: the picture breaks up
  * and rolls away into snow, `swap` runs while the screen is covered, then
- * the next screen locks on. With visual effects off, `swap` runs at once.
+ * the next screen locks on. With screen transitions off, `swap` runs at once.
  * It plays the confirm (or back) menu sound, unless `sound` is null.
  */
 export function shutter(scene: Phaser.Scene, swap: () => void, sound: 'confirm' | 'back' | null = 'confirm'): void {
   if (sound) uiSound(scene, sound);
-  if (vfx() <= 0) { swap(); return; }
+  if (!fx().transitions) { swap(); return; }
   // ShutterScene is in the game's scene list (main.ts): adding it here would return null when
   // called from a scene's update (the scene manager defers adds made while it steps the scenes).
   // A change asked for while one runs (a press during the cut) waits for it, then runs in turn.
@@ -296,9 +296,12 @@ export class ShutterScene extends Phaser.Scene {
         if (!swapped) { swapped = true; current(); this.scene.bringToTop(); }
       } else { const u = Math.min(1, (t - CUT_IN - CUT_HOLD) / CUT_OUT); k = 1 - u; a = (1 - u) * (1 - u); }
       cover.setAlpha(a);
-      // Every camera on screen, every frame: cameras come and go as scenes start and stop.
-      clearTvCut(this.game);
-      for (const cam of [...liveCameras(this.game), this.cameras.main]) tvCut(cam, k, roll * 0.35 * k * k);
+      // Every camera on screen, every frame: cameras come and go as scenes start and stop. Only the
+      // ones gone from the screen lose the look: taking the pass off a camera still showing would
+      // build it afresh each frame, and a new pass draws nothing on its first frame (a plain fade).
+      const live = [...liveCameras(this.game), this.cameras.main];
+      clearTvCut(this.game, live);
+      for (const cam of live) tvCut(cam, k, roll * 0.35 * k * k);
       if (swapped && t >= CUT_IN + CUT_HOLD + CUT_OUT) {
         const next = this.waiting.shift();
         if (next) {
@@ -323,7 +326,7 @@ export class ShutterScene extends Phaser.Scene {
   }
 }
 
-/** Takes the screen change's TV look off every camera of every scene, running or not. */
-function clearTvCut(game: Phaser.Game): void {
-  for (const s of game.scene.getScenes(false)) for (const cam of s.cameras?.cameras ?? []) tvCut(cam, 0, 0);
+/** Takes the screen change's TV look off every camera of every scene, running or not, but those in `keep`. */
+function clearTvCut(game: Phaser.Game, keep: Phaser.Cameras.Scene2D.Camera[] = []): void {
+  for (const s of game.scene.getScenes(false)) for (const cam of s.cameras?.cameras ?? []) if (!keep.includes(cam)) tvCut(cam, 0, 0);
 }

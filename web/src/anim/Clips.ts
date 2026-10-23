@@ -235,7 +235,7 @@ export const CLIPS: Record<string, Clip> = {
     } },
   ], { planted: false }),
 
-  /** Sword combo 1: overhead slash down. */
+  /** Plasma blade combo 1: overhead slash down. */
   slash1: clip('slash1', 340, [
     { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...READY, torso: 100, head: 100, tilt: -4, x: -6, shoulderF: 120, armF: 150, handF: 150 }, ease: 'out' },
@@ -244,7 +244,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 40 }, ease: 'inOut' },
   ]),
 
-  /** Sword combo 2: rising slash with a hop. */
+  /** Plasma blade combo 2: rising slash with a hop. */
   slash2: clip('slash2', 360, [
     { t: 0, pose: { ...READY, x: 40, shoulderF: -60, armF: -66 } },
     { t: 0.22, pose: { ...CROUCH, x: 44, shoulderF: -120, armF: -150, handF: -150 }, ease: 'out' },
@@ -254,7 +254,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 70 }, ease: 'inOut' },
   ]),
 
-  /** Sword combo 3: a long lunging thrust. */
+  /** Plasma blade combo 3: a long lunging thrust. */
   slash3: clip('slash3', 440, [
     { t: 0, pose: { ...READY, x: 70 } },
     { t: 0.3, pose: { ...READY, torso: 96, x: 60, shoulderF: -150, armF: -175, handF: -175, shoulderB: -20, armB: 40 }, ease: 'out' },
@@ -299,7 +299,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Sword up smash (and, quicker, up tilt): the blade sweeps from low in front, over the head, to behind. */
+  /** Plasma blade up smash (and, quicker, up tilt): the blade sweeps from low in front, over the head, to behind. */
   susmash: clip('susmash', 560, [
     { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...CROUCH, y: -8, shoulderF: -150, armF: -170, handF: -170 }, ease: 'out' },
@@ -453,8 +453,8 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...TUCK, torso: 86, spin: -360 }, ease: 'inOut' },
   ], { planted: false }),
 
-  // Sword versions.
-  /** Sword down tilt: a low sweep of the blade along the ground. */
+  // Plasma blade versions.
+  /** Plasma blade down tilt: a low sweep of the blade along the ground. */
   sdtilt: clip('sdtilt', 380, [
     { t: 0, pose: CROUCH },
     { t: 0.22, pose: { ...CROUCH, torso: 90, tilt: -4, shoulderF: -170, armF: -170, handF: -170, thighF: -40 }, ease: 'out' },
@@ -463,7 +463,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...CROUCH, x: 24 }, ease: 'inOut' },
   ]),
 
-  /** Sword back air: a cut behind, the blade arm reaching back over the shoulder. */
+  /** Plasma blade back air: a cut behind, the blade arm reaching back over the shoulder. */
   sbair: clip('sbair', 440, [
     { t: 0, pose: { ...TUCK, torso: 100, head: 104, shoulderF: 40, armF: 60, handF: 60 } },
     { t: 0.3, pose: { torso: 112, head: 100, tilt: -10, shoulderF: 170, armF: 178, handF: 178, shoulderB: -40, armB: 10, thighF: -20, legF: -120, footF: -100, thighB: -110, legB: -160, footB: -130 }, ease: 'snap' },
@@ -471,7 +471,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...TUCK, torso: 86 }, ease: 'inOut' },
   ], { planted: false }),
 
-  /** Sword up air: a rising flip with the blade swinging up and over. */
+  /** Plasma blade up air: a rising flip with the blade swinging up and over. */
   suair: clip('suair', 480, [
     { t: 0, pose: { ...TUCK, spin: 0, shoulderF: -130, armF: -150, handF: -150 } },
     { t: 0.28, pose: { torso: 100, head: 104, spin: -70, shoulderF: 30, armF: 50, handF: 50, shoulderB: -130, armB: -100, thighF: 10, legF: -110, thighB: -70, legB: -150 }, ease: 'snap' },
@@ -480,7 +480,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...TUCK, torso: 86, spin: -360 }, ease: 'inOut' },
   ], { planted: false }),
 
-  /** Sword down air: a plunging stab, blade under the feet. */
+  /** Plasma blade down air: a plunging stab, blade under the feet. */
   sdair: clip('sdair', 420, [
     { t: 0, pose: { ...TUCK, shoulderF: 60, armF: 100, handF: 100 } },
     { t: 0.3, pose: { torso: 104, head: 106, tilt: 10, shoulderF: -50, armF: -66, handF: -66, shoulderB: 60, armB: 120, thighF: -40, legF: -150, footF: -130, thighB: -120, legB: -170, footB: -140 }, ease: 'snap' },
@@ -652,7 +652,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: FIGHT, ease: 'inOut' },
   ]),
 
-  /** Sword forward tilt: a full spinning slash, the blade sweeping round flat. */
+  /** Plasma blade forward tilt: a full spinning slash, the blade sweeping round flat. */
   sftilt: clip('sftilt', 420, [
     { t: 0, pose: FIGHT },
     { t: 0.22, pose: { ...READY, yaw: 40, torso: 82, x: 10, shoulderF: -150, armF: -168, handF: -168, shoulderB: -40, armB: 30 }, ease: 'out' },
@@ -661,7 +661,24 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, yaw: 360, x: 66 }, ease: 'inOut' },
   ]),
 
-  /** Sword forward smash: blade raised overhead (held while charging), then a leaping cleave. */
+  /**
+   * Blade lock: a deep lunge into the other blade, leaning in, both hands on
+   * the hilt, quivering with the strain (the arena pushes it to and fro).
+   */
+  bladeLock: clip('bladeLock', 240, [
+    { t: 0, pose: {
+    ...S, torso: 70, head: 74, tilt: 4, x: 18, y: -6,
+    thighF: -24, legF: -96, footF: -80, thighB: -150, legB: -158, footB: -118,
+    shoulderF: -38, armF: 40, handF: 52, shoulderB: -26, armB: 34, handB: 46,
+  }, ease: 'inOut' },
+    { t: 0.5, pose: {
+    ...S, torso: 73, head: 76, tilt: 3, x: 13, y: -4,
+    thighF: -27, legF: -99, footF: -82, thighB: -146, legB: -154, footB: -116,
+    shoulderF: -44, armF: 35, handF: 47, shoulderB: -31, armB: 29, handB: 41,
+  }, ease: 'inOut' },
+  ], { loop: true }),
+
+  /** Plasma blade forward smash: blade raised overhead (held while charging), then a leaping cleave. */
   sfsmash: clip('sfsmash', 600, [
     { t: 0, pose: FIGHT },
     { t: 0.3, pose: {
@@ -679,7 +696,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, x: 150 }, ease: 'inOut' },
   ]),
 
-  /** Sword down smash: crouched, a flat spin slash round both sides. */
+  /** Plasma blade down smash: crouched, a flat spin slash round both sides. */
   sdsmash: clip('sdsmash', 520, [
     { t: 0, pose: FIGHT },
     { t: 0.3, pose: { ...CROUCH, yaw: 0, torso: 76, y: -6, shoulderF: -150, armF: -170, handF: -170, shoulderB: -40, armB: 40 }, ease: 'out' },
@@ -688,7 +705,7 @@ export const CLIPS: Record<string, Clip> = {
     { t: 1, pose: { ...READY, yaw: 360 }, ease: 'inOut' },
   ]),
 
-  /** Sword neutral air: spinning with the blade held out flat. */
+  /** Plasma blade neutral air: spinning with the blade held out flat. */
   snair: clip('snair', 420, [
     { t: 0, pose: { ...TUCK, shoulderF: -120, armF: -150, handF: -150 } },
     { t: 0.2, pose: { ...TUCK, yaw: 80, torso: 92, shoulderF: -6, armF: -2, handF: -2, shoulderB: -150, armB: -170 }, ease: 'out' },

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Animator } from '../anim/Animator';
 import { Rig } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
-import { HEADS, SLOT_COLORS, SWORD_FILE, partTexture } from '../game/Kubotz';
+import { HEADS, SLOT_COLORS, BLADE_FILE, partTexture } from '../game/Kubotz';
 import { flagTexture } from '../fx/Flag';
 import { BLACK_COLOR } from '../game/Match';
 import { MODE_ORDER, MODES, type MatchMode } from '../game/Modes';
@@ -12,7 +12,7 @@ import { drawPlate, drawStrip, footer, frameTitle, kubeBackdrop, PlateButton, sh
 import { MenuInput } from './MenuInput';
 
 /** A Kubot on the mode's stage: its colour, helmet, weapon (rig map) and which way it faces. */
-interface Actor { color: number; helmet: number; weapon?: string; face: 1 | -1; /** Holds a flag of this colour (on the sword's map). */ flag?: number }
+interface Actor { color: number; helmet: number; weapon?: string; face: 1 | -1; /** Holds a flag of this colour (on the plasma blade's map). */ flag?: number }
 
 /** Who stands on the stage for each mode. */
 const LINEUPS: Record<MatchMode, Actor[]> = {
@@ -32,14 +32,14 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
     { color: SLOT_COLORS[3], helmet: 1, weapon: 'weapon_laserGunMkI', face: -1 },
   ],
   blades: [
-    { color: SLOT_COLORS[1], helmet: 2, weapon: 'weapon_laserSword', face: 1 },
-    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', face: -1 },
+    { color: SLOT_COLORS[1], helmet: 2, weapon: 'weapon_plasmaBlade', face: 1 },
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_plasmaBlade', face: -1 },
   ],
   ctf: [
-    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', flag: SLOT_COLORS[1], face: 1 },
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_plasmaBlade', flag: SLOT_COLORS[1], face: 1 },
     { color: SLOT_COLORS[0], helmet: 2, face: 1 },
     { color: SLOT_COLORS[1], helmet: 2, face: -1 },
-    { color: SLOT_COLORS[1], helmet: 4, weapon: 'weapon_laserSword', flag: SLOT_COLORS[0], face: -1 },
+    { color: SLOT_COLORS[1], helmet: 4, weapon: 'weapon_plasmaBlade', flag: SLOT_COLORS[0], face: -1 },
   ],
   kubeball: [
     { color: SLOT_COLORS[0], helmet: 0, face: 1 },
@@ -59,10 +59,10 @@ const LINEUPS: Record<MatchMode, Actor[]> = {
   blasterTraining: [
     { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserGunMkI', face: 1 },
     { color: SLOT_COLORS[1], helmet: 4, face: -1 },
-    { color: SLOT_COLORS[2], helmet: 9, weapon: 'weapon_laserSword', face: -1 },
+    { color: SLOT_COLORS[2], helmet: 9, weapon: 'weapon_plasmaBlade', face: -1 },
   ],
   bladeTraining: [
-    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_laserSword', face: 1 },
+    { color: SLOT_COLORS[0], helmet: 0, weapon: 'weapon_plasmaBlade', face: 1 },
     { color: SLOT_COLORS[3], helmet: 5, weapon: 'weapon_laserGunMkI', face: -1 },
     { color: SLOT_COLORS[1], helmet: 6, face: -1 },
   ],
@@ -175,7 +175,7 @@ export class ModeScene extends Phaser.Scene {
     // A new cast on the stage, one taunting.
     for (const a of this.actors) a.kubot.destroy();
     this.actors = LINEUPS[MODE_ORDER[i]].map((actor) => {
-      const kubot = new Kubot2D(this, this.rig, (file) => (actor.flag !== undefined && file === SWORD_FILE
+      const kubot = new Kubot2D(this, this.rig, (file) => (actor.flag !== undefined && file === BLADE_FILE
         ? flagTexture(this, actor.flag) : partTexture(this.textures, file, actor.color)));
       const anim = new Animator(this.rig);
       anim.play('idle', { restart: true });

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { UNIT } from '../config';
-import { vfx } from '../game/Settings';
+import { fx } from '../game/Settings';
 
 interface Mote { x: number; y: number; a: number; r: number; age: number; life: number; size: number; out: boolean; }
 interface Portal { zone: Phaser.Geom.Rectangle; color: number; core: number; motes: Mote[]; light: Phaser.GameObjects.Light; burstAt: number; burstY: number; }
@@ -92,7 +92,7 @@ export class PortalFx {
         g.lineStyle(3, p.color, flare).strokeEllipse(cx, p.burstY, rx * 4 * (1.3 - flare), UNIT * 2.4 * (1.3 - flare));
       }
       // Motes: most are drawn in, spiralling to the middle; a few are thrown off the rim.
-      if (Math.random() < (dtMs / 45) * vfx()) p.motes.push(this.mote(p, Math.random() < 0.25, false));
+      if (Math.random() < (dtMs / 45) * fx().particles) p.motes.push(this.mote(p, Math.random() < 0.25, false));
       p.motes = p.motes.filter((m) => (m.age += dtMs) < m.life);
       for (const m of p.motes) {
         const k = m.age / m.life;

@@ -75,9 +75,10 @@ export interface KubotFrame {
   shield?: Shield;
   /** In its spawn hologram: ms into it, the projector's x and the feet's y (fx/Hologram.ts). */
   holo?: [number, number, number];
-  /** Its laser blade (hilt x, y, tip x, y), and the swing trail's newest edge (outer x, y, inner x, y). */
+  /** Its plasma blade (hilt x, y, tip x, y), and the swing trail's newest edge (outer x, y, inner x, y). */
   blade?: [number, number, number, number];
-  swing?: [number, number, number, number];
+  /** (A fifth value of 1: a plasma blade, smeared along its whole length.) */
+  swing?: [number, number, number, number] | [number, number, number, number, number];
   /** Power-up motes circling it (ImpactFx.aura keys). */
   auras?: string[];
 }

@@ -9,7 +9,7 @@ import { hex, partTexture } from '../game/Kubotz';
 import { ImpactFx, drawBlade } from '../fx/Impact';
 import { EffectDef, ParticleFx } from '../fx/ParticleEffect';
 import { PortalFx } from '../fx/Portals';
-import { GradePipeline, pureAdd, setPass } from '../fx/Grade';
+import { GradePipeline, pureAdd, setPass, wantScreenFx } from '../fx/Grade';
 import { HOLO_COLOR, clearHolo, drawSpawn, holoPiece, holoKubot } from '../fx/Hologram';
 import { backdropOf } from '../fx/Backdrops';
 import { POWER_UPS, type PowerUpType } from '../game/PowerUps';
@@ -59,6 +59,10 @@ const SECTIONS: Record<HighlightKind, { title: string; one: string }> = {
 };
 /** How long a section's title card holds (ms). */
 const CARD_MS = 1400;
+/** The Kubotz not in a highlight stay in the shadows: their parts darkened, a little see-through, their tags, blades and trails faint. */
+const OUT_SHADE = 0x4a5064;
+const OUT_ALPHA = 0.7;
+const OUT_FAINT = 0.3;
 
 const FONT = BODY_FAMILY;
 const css = (c: number) => '#' + hex(c);
@@ -98,7 +102,7 @@ export class ResultsScene extends Phaser.Scene {
   private particles!: ParticleFx;
   private effects: Record<string, EffectDef> = {};
   private portals: PortalFx | null = null;
-  private sabers!: Phaser.GameObjects.Graphics;
+  private blades!: Phaser.GameObjects.Graphics;
   /** The recorded images (debris, bolts, balls, glows), pooled. */
   private props: Phaser.GameObjects.Image[] = [];
   /** The last frame whose sounds and effects went off. */
@@ -157,7 +161,7 @@ export class ResultsScene extends Phaser.Scene {
       this.lights.enable().setAmbientColor(mood.ambient);
       for (let i = 0; i < LIGHT_POOL; i++) this.lightPool.push(this.lights.addLight(0, 0, UNIT, 0xffffff, 0).setVisible(false));
       // The match's grade on the arena (the backdrop has its own grain).
-      if (this.registry.get('screenFx') !== false && !new URLSearchParams(location.search).has('lowfx')) setPass(this, this.worldCam, GradePipeline, true);
+      if (this.registry.get('screenFx') !== false && wantScreenFx()) setPass(this, this.worldCam, GradePipeline, true);
     }
     const lit = <T extends Phaser.GameObjects.Image>(o: T) => (this.sys.renderer.type === Phaser.WEBGL ? o.setPipeline('Light2D') : o);
     if (r.hull && this.textures.exists('arena-hull')) lit(this.add.image(-12 * UNIT, -12 * UNIT, 'arena-hull').setOrigin(0, 0).setScale(2).setDepth(1.9));
@@ -186,8 +190,8 @@ export class ResultsScene extends Phaser.Scene {
       this.tags.push(this.add.image(0, 0, this.textures.exists(key) ? key : '__DEFAULT').setOrigin(0.5, 1).setDepth(21).setVisible(false));
       this.owners.push({ x: 0, y: 0 });
     });
-    // Laser blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
-    this.sabers = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
+    // Plasma blades, and the spawn holograms (fx/Hologram.ts): the beam over the Kubot, the projector in front of it.
+    this.blades = this.add.graphics().setDepth(10.5).setBlendMode(Phaser.BlendModes.ADD);
     this.holoAdd = this.add.graphics().setDepth(10.4).setBlendMode(Phaser.BlendModes.ADD);
     this.holoG = this.add.graphics().setDepth(10.5);
     // Hit sparks, rings, dust and smoke replayed from the match's calls.
@@ -387,7 +391,7 @@ export class ResultsScene extends Phaser.Scene {
     this.impact?.clear();
     this.particles?.clear();
     this.owners.forEach((o) => this.impact?.swing(o, null, 0));
-    this.sabers?.clear();
+    this.blades?.clear();
     this.holoG?.clear();
     this.holoAdd?.clear();
     for (const l of this.lightPool) l.setVisible(false);
@@ -433,7 +437,7 @@ export class ResultsScene extends Phaser.Scene {
     this.setLights(a);
     this.holoG.clear();
     this.holoAdd.clear();
-    this.sabers.clear();
+    this.blades.clear();
     a.kubotz.forEach((ra, i) => this.drawKubot(i, ra, b.kubotz[i], f, step, cam.zoom, this.tau - a.t));
     this.snap = false;
     this.drawProps(a, b, f);
@@ -482,7 +486,10 @@ export class ResultsScene extends Phaser.Scene {
       this.impact.swing(owner, null, 0);
       return;
     }
-    const color = this.result.colors[i];
+    const h = this.result.highlights[this.current];
+    const out = i !== h.subject && i !== h.by;
+    const faint = out ? OUT_FAINT : 1;
+    const color = out ? Phaser.Display.Color.IntegerToColor(this.result.colors[i]).darken(45).color : this.result.colors[i];
     const both = rb.visible;
     const L = (x: number, y: number) => (both ? x + (y - x) * f : x);
     const pose = both ? mixPoses(ra.pose, rb.pose, f) : ra.pose;
@@ -490,20 +497,21 @@ export class ResultsScene extends Phaser.Scene {
     const x = L(ra.x, rb.x);
     const bottom = L(ra.bottom, rb.bottom);
     kubot.update(pose, ra.maps, x, bottom, L(ra.yaw, rb.yaw), {
-      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha, flash: ra.flash, glitch: ra.glitch, shield: ra.shield, snap: this.snap,
+      dtMs, lean: L(ra.lean, rb.lean), squash: L(ra.squash, rb.squash), alpha: ra.alpha * (out ? OUT_ALPHA : 1), flash: ra.flash && !out,
+      glitch: ra.glitch, shield: ra.shield, snap: this.snap, shade: out ? OUT_SHADE : undefined,
     });
     // The tag over the head, at the same size on screen whatever the zoom (Kubotz.drawOverlay).
-    tag.setVisible(true).setPosition(x, bottom - Config.KUBOTZ_HEIGHT * UNIT - UNIT * 0.75 - 6).setScale(0.42 / zoom);
+    tag.setVisible(true).setPosition(x, bottom - Config.KUBOTZ_HEIGHT * UNIT - UNIT * 0.75 - 6).setScale(0.42 / zoom).setAlpha(faint);
     owner.x = x;
     owner.y = bottom - UNIT;
-    // The laser blade, its swing trail, the power-up motes round it.
+    // The plasma blade, its swing trail, the power-up motes round it.
     if (ra.blade) {
       const [x1, y1, x2, y2] = ra.blade;
-      drawBlade(this.sabers, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x));
+      drawBlade(this.blades, x1, y1, x2, y2, color, 0.9 + 0.1 * Math.sin(this.tau * 0.09 + x), faint);
     }
     const s = ra.swing;
-    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color);
-    for (const key of ra.auras ?? []) this.impact.aura(owner, key, POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
+    this.impact.swing(owner, s ? { ox: s[0], oy: s[1], ix: s[2], iy: s[3] } : null, color, s?.[4] === 1);
+    for (const key of ra.auras ?? []) this.impact.aura(owner, key, key === 'hologram' ? HOLO_COLOR : POWER_UPS[key as PowerUpType]?.color ?? 0xffffff);
     if (ra.holo) {
       const [age, hx, feet] = ra.holo;
       holoKubot(kubot.view, age + since, feet, feet - 2.15 * UNIT, this.worldCam);

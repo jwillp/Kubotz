@@ -5,7 +5,7 @@ import { hex, SLOT_COLORS, type Kubotz } from '../game/Kubotz';
 import { BLACK_COLOR, BLACK_TEAM, isBlackTeam, TEAM_NAMES } from '../game/Match';
 import { CTF_CAPTURES, HORDE_WAVES, MODES } from '../game/Modes';
 import { hitGlitch } from '../fx/HitGlitch';
-import { vfx } from '../game/Settings';
+import { fx } from '../game/Settings';
 import type { GameScene } from './GameScene';
 import { MenuInput } from './MenuInput';
 import { drawPlate, drawStrip, PlateButton } from '../ui/Plate';
@@ -335,7 +335,7 @@ export class HudScene extends Phaser.Scene {
       if (!gl.obj.active) return false;
       const t = now - gl.at;
       const amount = gl.steps[Math.floor(t / FLICKER_MS)] ?? 0;
-      hitGlitch(gl.obj, amount * vfx());
+      hitGlitch(gl.obj, fx().distortion ? amount : 0);
       // Sideways jolts on the hardest steps.
       if (amount > 0.6) gl.obj.x = this.scale.width / 2 + Phaser.Math.Between(-6, 6) * amount;
       else gl.obj.x = this.scale.width / 2;

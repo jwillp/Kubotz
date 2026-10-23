@@ -46,21 +46,21 @@ export const MODES: Record<MatchMode, ModeInfo> = {
     group: 'battle',
     name: 'Blasters',
     tagline: 'A laser gun for everyone, for good.',
-    rules: ['Every Kubot holds a laser gun all match', 'No sword or gun power-ups', 'Win with fire power alone'],
+    rules: ['Every Kubot holds a laser gun all match', 'No blade or gun power-ups', 'Win with fire power alone'],
     armed: 'laserGunMkI',
   },
   blades: {
     group: 'battle',
     name: 'Blades',
-    tagline: 'A laser sword for everyone, for good.',
-    rules: ['Every Kubot holds a laser sword all match', 'No sword or gun power-ups', 'Win with the blade alone'],
-    armed: 'laserSword',
+    tagline: 'A plasma blade for everyone, for good.',
+    rules: ['Every Kubot holds a plasma blade all match', 'No blade or gun power-ups', 'Win with the blade alone'],
+    armed: 'plasmaBlade',
   },
   ctf: {
     group: 'battle',
     name: 'Capture the Flag',
     tagline: 'Red against blue: bring their flag home.',
-    rules: ['A giant hall with pits and portals', 'Grab the blue flag, bring it to your spawn', 'The flag is a sword; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
+    rules: ['A giant hall with pits and portals', 'Grab the blue flag, bring it to your spawn', 'The flag swings like a plasma blade; a big hit knocks it loose', 'First to 3 captures; K.O.s come fast'],
     ctf: true,
   },
   kubeball: {
@@ -97,11 +97,11 @@ export const MODES: Record<MatchMode, ModeInfo> = {
   bladeTraining: {
     group: 'training',
     name: 'Blade Training',
-    tagline: 'Your laser sword against everything else.',
-    rules: ['You hold a laser sword all match', 'Defeat 5, 10 or 20 CPUs, one or two at a time', 'They fight with anything, and get tougher', '3 recharges'],
+    tagline: 'Your plasma blade against everything else.',
+    rules: ['You hold a plasma blade all match', 'Defeat 5, 10 or 20 CPUs, one or two at a time', 'They fight with anything, and get tougher', '3 recharges'],
     solo: true,
     trial: true,
-    armed: 'laserSword',
+    armed: 'plasmaBlade',
   },
 };
 

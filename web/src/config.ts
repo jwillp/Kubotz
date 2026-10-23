@@ -43,12 +43,13 @@ export const Config = {
   // practical 300 %. Ultimate's knockback formula (Mario's forward smash) launches about 3x
   // harder at 100 % than at 0 %, 4x at 150 % and 7x at 300 %, close to 1 + 6.2 x (% / 300).
   KNOCKBACK_GROWTH: 6.2,
-  // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT, like SSB's 0.4 x knockback;
-  // past TUMBLE_HITSTUN the Kubot tumbles, bouncing off walls and ceilings.
-  HITSTUN_BASE: 120,
-  HITSTUN_PER_UNIT: 30,
+  // Hitstun (ms) = HITSTUN_BASE + launch speed (units/s) x HITSTUN_PER_UNIT: Ultimate's 0.4 x knockback
+  // frames, with its launch speed of 0.03 x knockback units/frame, is 27.8 ms per Kubotz unit/s.
+  // Past TUMBLE_HITSTUN (Ultimate: knockback 80, 32 frames) the Kubot tumbles, bouncing off walls and ceilings.
+  HITSTUN_BASE: 0,
+  HITSTUN_PER_UNIT: 28,
   HITSTUN_MAX: 1500,
-  TUMBLE_HITSTUN: 600,
+  TUMBLE_HITSTUN: 533,
   WALL_BOUNCE: 0.65,
 
   // Grab (GrabComponent)
@@ -56,10 +57,10 @@ export const Config = {
   GRAB_COOLDOWN: 100,
   GRAB_RADIUS: 1, // phys.getWidth() * 2 with half-width 0.5
 
-  // Laser sword
-  LASER_SWORD_DAMAGE: 10,
-  LASER_SWORD_DURATION: 200,
-  LASER_SWORD_COOLDOWN: 100,
+  // Plasma blade
+  PLASMA_BLADE_DAMAGE: 10,
+  PLASMA_BLADE_DURATION: 200,
+  PLASMA_BLADE_COOLDOWN: 100,
 
   // Laser guns
   LASER_GUN_MK_I: { damage: 5, speed: 30, cooldown: 500, recoil: 7 },

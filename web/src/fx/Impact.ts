@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
-import { vfx, vfxChance } from '../game/Settings';
+import { fx, particleChance } from '../game/Settings';
 import { hitGlitch } from './HitGlitch';
 import { EffectDef, ParticleFx } from './ParticleEffect';
 
@@ -32,12 +32,13 @@ interface Particle {
   drag: number; // fraction of speed kept per second
   flat?: boolean; // rings drawn as a flat ellipse (on the ground)
   len?: number; // beams: length behind the point (signed: the bolt's direction)
+  lenY?: number; // beams: its vertical part (a bolt batted back at an angle)
   body?: number; // smoke: the bright colour inside its deep rim (`color`)
   collide?: boolean; // stopped by the arena's walls and platforms
 }
 
-/** A swing's smear: per sample, the striking point (o) and one nearer the body (i). */
-interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; }
+/** A swing's smear: per sample, the striking point (o) and one nearer the body (i); a plasma blade's from hilt (i) to tip (o). */
+interface Trail { points: { ox: number; oy: number; ix: number; iy: number; t: number }[]; color: number; blade: boolean; }
 
 /** A streak of the K.O. smoke whipping out from the core, tapering to a point. */
 interface Wisp { x: number; y: number; angle: number; len: number; width: number; bend: number; age: number; life: number; color: number }
@@ -52,6 +53,7 @@ const TWIRL_FADE = 300;
 
 const TRAIL_MS = 170;
 const SINGLE = new Set<Kind>(['ring', 'flash', 'beam']);
+const KO_SMOKE = new Set<Kind>(['smoke', 'haze']);
 const FLASH_MS = 160;
 
 const mix = (a: number, b: number, f: number) => {
@@ -150,6 +152,34 @@ export class ImpactFx {
     this.flashes.push({ x, y, color: 0xffe27a, intensity: 7, at: this.now });
   }
 
+  /** Two resting plasma blades crossed: a few small sparks crackling where they touch, in both colours. */
+  bladeSparks(x: number, y: number, a: number, b: number): void {
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.12 * UNIT, grow: -0.08 * UNIT, life: 60 });
+    for (let i = 0; i < 4; i++) {
+      const ang = rand(0, Math.PI * 2);
+      const speed = rand(4, 11) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - rand(1, 3) * UNIT,
+        color: i === 0 ? 0xffffff : mix(i % 2 ? a : b, 0xffffff, 0.45), size: rand(2, 3.2), life: rand(130, 240), gravity: 24 * UNIT, drag: 0.08,
+      });
+    }
+  }
+
+  /** A plasma blade burning into a wall or floor: a white-hot spot, molten sparks spraying off it, a glow on the wall. */
+  bladeBurn(x: number, y: number, color: number): void {
+    this.add({ kind: 'flash', x, y, color: 0xffffff, size: 0.14 * UNIT, grow: -0.08 * UNIT, life: 60 });
+    this.add({ kind: 'flash', x, y, color: mix(color, 0xffd27a, 0.5), size: 0.24 * UNIT, grow: -0.12 * UNIT, life: 80 });
+    for (let i = 0; i < 4; i++) {
+      const ang = rand(0, Math.PI * 2);
+      const speed = rand(6, 15) * UNIT;
+      this.add({
+        kind: 'spark', x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed - rand(2, 5) * UNIT,
+        color: i % 2 ? 0xffd27a : mix(color, 0xffffff, 0.5), size: rand(2, 3.5), life: rand(160, 320), gravity: 30 * UNIT, drag: 0.06,
+      });
+    }
+    this.flashes.push({ x, y, color: mix(color, 0xffd27a, 0.4), intensity: 1.2, at: this.now });
+  }
+
   /** A laser bolt ending on something. */
   pop(x: number, y: number, color: number): void {
     this.add({ kind: 'ring', x, y, color, size: 0.1 * UNIT, grow: 0.6 * UNIT, life: 180 });
@@ -181,7 +211,7 @@ export class ImpactFx {
    * with streaks whipping out of the core and glittering motes.
    */
   koSmoke(x: number, y: number, color: number): void {
-    if (vfx() <= 0) return;
+    if (fx().particles <= 0) return;
     this.lastKoAt = this.now;
     const { deep, bright } = smokeColors(color);
     this.add({ kind: 'flash', x, y, color: 0xffffff, size: 1 * UNIT, grow: 0.8 * UNIT, life: 150 });
@@ -284,13 +314,15 @@ export class ImpactFx {
   }
 
   /** Laser bolt wake: a fading beam line and flickering square data bits, no smoke. */
-  laserTrail(x: number, y: number, dir: number, color: number, size: number): void {
+  /** @param dir the bolt's direction: -1 / 1 sideways, or with `dirY` a unit vector (a deflected bolt). */
+  laserTrail(x: number, y: number, dir: number, color: number, size: number, dirY = 0): void {
     const hot = mix(color, 0xffffff, 0.55);
-    this.add({ kind: 'beam', x, y, color: hot, size: 0.05 * UNIT * size, life: 110, len: dir * 0.9 * UNIT });
+    this.add({ kind: 'beam', x, y, color: hot, size: 0.05 * UNIT * size, life: 110, len: dir * 0.9 * UNIT, lenY: dirY * 0.9 * UNIT });
     if (Math.random() < 0.7) {
+      const back = rand(0, 0.5) * UNIT;
       this.add({
-        kind: 'bit', x: x - dir * rand(0, 0.5) * UNIT, y: y + rand(-0.12, 0.12) * UNIT * size,
-        vx: -dir * rand(0.5, 2) * UNIT, vy: rand(-1.5, 1.5) * UNIT,
+        kind: 'bit', x: x - dir * back, y: y - dirY * back + rand(-0.12, 0.12) * UNIT * size,
+        vx: -dir * rand(0.5, 2) * UNIT, vy: -dirY * rand(0.5, 2) * UNIT + rand(-1.5, 1.5) * UNIT,
         color: Math.random() < 0.4 ? 0xffffff : hot, size: rand(1.5, 3) * Math.min(1.6, size), life: rand(140, 280), drag: 0.2,
       });
     }
@@ -339,14 +371,35 @@ export class ImpactFx {
   clearTwirls(owner: object): void { this.twirls = this.twirls.filter((w) => w.owner !== owner); }
 
   /** Follows a swing: call every frame with its arc (striking point and inner point), or null when not swinging. */
-  swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number): void {
+  /** @param blade a plasma blade: the smear covers the whole blade, and follows its arc between frames. */
+  swing(owner: object, at: { ox: number; oy: number; ix: number; iy: number } | null, color: number, blade = false): void {
     let trail = this.trails.get(owner);
-    if (!trail) this.trails.set(owner, trail = { points: [], color });
+    if (!trail) this.trails.set(owner, trail = { points: [], color, blade });
     trail.color = color;
+    trail.blade = blade;
     if (at) {
       const last = trail.points[trail.points.length - 1];
       // A new swing starting far from the last one starts a new smear.
       if (last && Math.hypot(at.ox - last.ox, at.oy - last.oy) > UNIT * 2.5) trail.points = [];
+      // A blade turns a long way in a frame: the samples in between follow its arc round the hilt.
+      const prev = trail.points[trail.points.length - 1];
+      if (blade && prev) {
+        const a0 = Math.atan2(prev.oy - prev.iy, prev.ox - prev.ix);
+        let d = Math.atan2(at.oy - at.iy, at.ox - at.ix) - a0;
+        if (d > Math.PI) d -= 2 * Math.PI;
+        if (d < -Math.PI) d += 2 * Math.PI;
+        const l0 = Math.hypot(prev.ox - prev.ix, prev.oy - prev.iy);
+        const l1 = Math.hypot(at.ox - at.ix, at.oy - at.iy);
+        const steps = Math.min(6, Math.ceil(Math.abs(d) / 0.25));
+        for (let n = 1; n < steps; n++) {
+          const f = n / steps;
+          const ix = prev.ix + (at.ix - prev.ix) * f;
+          const iy = prev.iy + (at.iy - prev.iy) * f;
+          const ang = a0 + d * f;
+          const len = l0 + (l1 - l0) * f;
+          trail.points.push({ ix, iy, ox: ix + Math.cos(ang) * len, oy: iy + Math.sin(ang) * len, t: prev.t + (this.now - prev.t) * f });
+        }
+      }
       trail.points.push({ ...at, t: this.now });
     }
   }
@@ -452,8 +505,9 @@ export class ImpactFx {
           break;
         case 'beam': {
           const len = (p.len ?? 0) * (0.4 + 0.6 * fade);
-          g.lineStyle(p.size * 3 * fade, p.color, 0.18 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
-          g.lineStyle(p.size * fade, p.color, 0.8 * fade).lineBetween(p.x - len, p.y, p.x, p.y);
+          const lenY = (p.lenY ?? 0) * (0.4 + 0.6 * fade);
+          g.lineStyle(p.size * 3 * fade, p.color, 0.18 * fade).lineBetween(p.x - len, p.y - lenY, p.x, p.y);
+          g.lineStyle(p.size * fade, p.color, 0.8 * fade).lineBetween(p.x - len, p.y - lenY, p.x, p.y);
           break;
         }
         case 'bit': {
@@ -488,18 +542,25 @@ export class ImpactFx {
       for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1];
         const b = pts[i];
-        const k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
-        const tail = i / pts.length;
+        let k = Math.max(0, 1 - (this.now - b.t) / TRAIL_MS); // 1 at the head
+        let tail = i / pts.length;
+        // A plasma blade's streak stays bright along its sweep, fading late.
+        if (trail.blade) { k = Math.sqrt(k); tail = Math.sqrt(tail); }
         // The inner edge sits part-way out, so the smear thins towards the body.
-        const inA = { x: a.ix + (a.ox - a.ix) * 0.35, y: a.iy + (a.oy - a.iy) * 0.35 };
-        const inB = { x: b.ix + (b.ox - b.ix) * 0.35, y: b.iy + (b.oy - b.iy) * 0.35 };
-        g.fillStyle(trail.color, 0.32 * k * tail);
+        // (A plasma blade smears along its whole length, in its own light.)
+        const inner = trail.blade ? 0.08 : 0.35;
+        const inA = { x: a.ix + (a.ox - a.ix) * inner, y: a.iy + (a.oy - a.iy) * inner };
+        const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
+        g.fillStyle(trail.color, (trail.blade ? 0.85 : 0.32) * k * tail);
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
-        g.fillStyle(0xffffff, 0.12 * k * tail);
-        const midA = { x: (a.ox + inA.x) / 2, y: (a.oy + inA.y) / 2 };
-        const midB = { x: (b.ox + inB.x) / 2, y: (b.oy + inB.y) / 2 };
+        g.fillStyle(trail.blade ? mix(trail.color, 0xffffff, 0.6) : 0xffffff, (trail.blade ? 0.55 : 0.12) * k * tail);
+        // A blade's hot core runs its whole length, not just near the tip.
+        const core = trail.blade ? 0.7 : 0.5;
+        const midA = { x: a.ox + (inA.x - a.ox) * core, y: a.oy + (inA.y - a.oy) * core };
+        const midB = { x: b.ox + (inB.x - b.ox) * core, y: b.oy + (inB.y - b.oy) * core };
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, midB, midA], true);
-        g.lineStyle(0.1 * UNIT * k, 0xffffff, 0.85 * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
+        // The white-hot rim along the striking point's path (faint on a blade, whose whole length streaks).
+        g.lineStyle((trail.blade ? 0.04 : 0.1) * UNIT * k, 0xffffff, (trail.blade ? 0.45 : 0.85) * k).lineBetween(a.ox, a.oy, b.ox, b.oy);
       }
     }
   }
@@ -602,8 +663,9 @@ export class ImpactFx {
   }
 
   private add(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y' | 'color' | 'size' | 'life'>): Particle | undefined {
-    // VFX setting: the many small bits thin out with it; single flashes, rings and beams stay until it is 0.
-    if (SINGLE.has(p.kind) ? vfx() <= 0 : !vfxChance()) return undefined;
+    // Particle quality: the many small bits thin out with it; single flashes, rings and beams stay until it is off.
+    // The K.O. smoke stays whole while there are particles at all.
+    if (KO_SMOKE.has(p.kind) || SINGLE.has(p.kind) ? fx().particles <= 0 : !particleChance()) return undefined;
     const particle = { vx: 0, vy: 0, age: 0, grow: 0, gravity: 0, drag: 1, ...p };
     this.particles.push(particle);
     return particle;
@@ -628,13 +690,13 @@ export class ImpactFx {
   }
 }
 
-/** A laser blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core. */
-export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number): void {
+/** A plasma blade from hilt to tip (additive): a wide soft halo, the coloured blade, then the white core; `alpha` dims it all. */
+export function drawBlade(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, c: number, flicker: number, alpha = 1): void {
   const hot = Phaser.Display.Color.IntegerToColor(c).lighten(35).color;
   const strokes: [number, number, number][] = [[48, c, 0.09], [28, c, 0.2], [14, hot, 0.6 * flicker], [6, 0xffffff, 0.95], [3, 0xffffff, 1]];
   for (const [w, col, a] of strokes) {
-    g.lineStyle(w, col, a).lineBetween(x1, y1, x2, y2);
-    g.fillStyle(col, a).fillCircle(x2, y2, w / 2);
+    g.lineStyle(w, col, a * alpha).lineBetween(x1, y1, x2, y2);
+    g.fillStyle(col, a * alpha).fillCircle(x2, y2, w / 2);
   }
 }
 

@@ -90,11 +90,37 @@ export class CpuController implements Controller {
     const pad = emptyPad();
     if (!me || !me.isAlive()) return pad;
     this.debug.dest = null;
+    if (me.bladeLocked) {
+      // A blade lock: a fresh press every think (quicker CPUs mash faster).
+      this.debug.mode = 'blade lock';
+      pad.attack = true;
+      return pad;
+    }
     if (me.heldBy) {
-      // Mash out: a fresh button press every think, and a stick wiggle now and then.
+      // Mash out: a fresh button press every think (two now and then), and a stick wiggle.
       this.debug.mode = 'mash';
       pad.attack = true;
+      if (Math.random() < 0.5) pad.grab = true;
       if (Math.random() < 0.5) pad[Math.random() < 0.5 ? 'left' : 'right'] = true;
+      return pad;
+    }
+    if (me.tumbling || now < me.hitstun) {
+      // Launched: hold towards the middle of the last floor stood on (DI), and press
+      // the shield now and then, which techs when it lands just before a contact.
+      this.debug.mode = 'launched';
+      const home = this.home;
+      const mid = home ? (home.x1 + home.x2) / 2 : me.x;
+      if (Math.abs(mid - me.x) > UNIT) pad[mid < me.x ? 'left' : 'right'] = true;
+      pad.guard = me.tumbling && Math.random() < 0.35;
+      return pad;
+    }
+    if (me.down) {
+      // Down on the floor: get up, roll or the get-up attack.
+      this.debug.mode = 'down';
+      const r = Math.random();
+      if (r < 0.3) pad.up = true;
+      else if (r < 0.6) pad[Math.random() < 0.5 ? 'left' : 'right'] = true;
+      else if (r < 0.8) pad.attack = true;
       return pad;
     }
     if (me.holding) { this.debug.mode = 'throw'; return this.grabbing(pad, now); }
@@ -182,8 +208,17 @@ export class CpuController implements Controller {
 
     if (wantsAttack && enemy) {
       const facingEnemy = Math.sign(dx) === me.facing || Math.abs(dx) < 4;
+      // Plasma blades: a swing coming is answered with a swing, so blades meet (clangs and blade locks).
+      const ex = enemy.x - me.x;
+      if (me.weapon === 'plasmaBlade' && enemy.weapon === 'plasmaBlade' && enemy.attacking && me.grounded
+        && Math.abs(ex) < 2.6 * UNIT && Math.abs(enemy.y - me.y) < UNIT && Math.random() < 0.55) {
+        pad[ex > 0 ? 'right' : 'left'] = true;
+        pad.attack = true;
+        if (Math.random() < 0.4) pad.smash = true;
+        return pad;
+      }
       const ranged = me.weapon === 'laserGunMkI' || me.weapon === 'laserGunMkII';
-      const reach = me.weapon === 'laserSword' ? 1.8 : 1.3;
+      const reach = me.weapon === 'plasmaBlade' ? 1.8 : 1.3;
       if (ranged && Math.abs(dy) < 0.8 * UNIT && facingEnemy && Math.abs(dx) < 16 * UNIT) {
         pad.attack = true;
         // Mostly quick shots; now and then a charged bolt, more often from afar.
