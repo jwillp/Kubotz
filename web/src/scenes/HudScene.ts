@@ -147,7 +147,7 @@ export class HudScene extends Phaser.Scene {
     return { container: c, bars, kills, chip, status, shown: '', fade: 0 };
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     const g = this.game_;
     if (!g?.fighters) return;
     if (g.paused) this.pauseMenu.update(this.time.now);
@@ -159,24 +159,42 @@ export class HudScene extends Phaser.Scene {
       this.timer.setText(`${Math.floor(shown / 60)}:${String(shown % 60).padStart(2, '0')}`);
       this.timer.setColor(g.timeLimit && shown <= 10 ? '#ff6a5a' : '#ffffff');
     }
-    for (const [k, card] of this.cards) this.drawCard(k, card, time);
+    for (const [k, card] of this.cards) this.drawCard(k, card, time, delta);
     this.drawBubbleRings();
   }
 
-  /** The rings and pointers around the off-screen bubbles (fx/OffscreenBubbles.ts), in each Kubot's colour. */
+  /**
+   * The frames around the off-screen bubbles (fx/OffscreenBubbles.ts), in the
+   * shield's look: a hexagon in the Kubot's colour with the art's light strips
+   * under its lower edges, a pointer towards the Kubot, and a little flicker.
+   */
   private drawBubbleRings(): void {
     const g = this.rings.clear();
     for (const m of this.game_.bubbles?.marks ?? []) {
       const { x, y, r, angle: a } = m;
-      const tip = r + 13;
-      g.fillStyle(m.color, 1).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
-        x + Math.cos(a + 0.42) * (r - 1), y + Math.sin(a + 0.42) * (r - 1), x + Math.cos(a - 0.42) * (r - 1), y + Math.sin(a - 0.42) * (r - 1));
-      g.lineStyle(4, 0x0d1520, 0.9).strokeCircle(x, y, r + 2);
-      g.lineStyle(3, m.color, 1).strokeCircle(x, y, r);
+      const flicker = Math.random() < 0.08 ? 0.6 : 1;
+      const corner = (i: number, d = r) => new Phaser.Math.Vector2(x + Math.cos(-Math.PI / 2 + i * Math.PI / 3) * d, y + Math.sin(-Math.PI / 2 + i * Math.PI / 3) * d);
+      const hexagon = (d: number) => [0, 1, 2, 3, 4, 5].map((i) => corner(i, d));
+      // The pointer, out of the edge towards the Kubot.
+      const tip = r + 18;
+      g.fillStyle(m.color, flicker).fillTriangle(x + Math.cos(a) * tip, y + Math.sin(a) * tip,
+        x + Math.cos(a + 0.36) * (r - 4), y + Math.sin(a + 0.36) * (r - 4), x + Math.cos(a - 0.36) * (r - 4), y + Math.sin(a - 0.36) * (r - 4));
+      g.lineStyle(6, 0x0d1520, 0.85).strokePoints(hexagon(r + 2), true, true);
+      g.lineStyle(3, m.color, flicker).strokePoints(hexagon(r), true, true);
+      g.lineStyle(1.5, 0xffffff, 0.5 * flicker).strokePoints(hexagon(r - 3), true, true);
+      // The art's light strips, just under the two lower edges.
+      const light = Phaser.Display.Color.IntegerToColor(m.color).lighten(35).color;
+      g.lineStyle(2.5, light, 0.9 * flicker);
+      for (const [from, to] of [[3, 4], [3, 2]] as const) {
+        const p = corner(from, r + 8);
+        const q = corner(to, r + 8);
+        g.lineBetween(Phaser.Math.Linear(p.x, q.x, 0.12), Phaser.Math.Linear(p.y, q.y, 0.12), Phaser.Math.Linear(p.x, q.x, 0.62), Phaser.Math.Linear(p.y, q.y, 0.62));
+      }
     }
   }
 
-  private drawCard(k: Kubotz, card: Card, time: number): void {
+
+  private drawCard(k: Kubotz, card: Card, time: number, delta: number): void {
     const b = card.bars.clear();
     const x0 = SLAB + 10;
     const w = CARD_W - x0 - 10;
@@ -234,9 +252,9 @@ export class HudScene extends Phaser.Scene {
       chip.lineStyle(1, tone, 0.9).strokeRect(SLAB, -24, cw, 20);
       if (left > 0) chip.fillStyle(tone, 1).fillRect(SLAB + 2, -7, (cw - 4) * left, 2);
     }
-    // A Kubot behind the card (or its status chip): the card fades, like Smash's, so the fight shows through.
-    const behind = this.kubotBehind(card.container.x, card.container.y - 24, CARD_W, CARD_H + 24);
-    card.fade = Phaser.Math.Clamp(card.fade + (behind ? 1 : -1) * FADE_SPEED * this.game.loop.delta / 1000, 0, 1);
+    // A Kubot behind the card: the card fades, like Smash's, so the fight shows through.
+    const behind = this.kubotBehind(card.container.x, card.container.y, CARD_W, CARD_H);
+    card.fade = Phaser.Math.Clamp(card.fade + (behind ? 1 : -1) * FADE_SPEED * delta / 1000, 0, 1);
     card.container.setAlpha((k.eliminated ? 0.45 : 1) * Phaser.Math.Linear(1, BEHIND_ALPHA, card.fade));
   }
 
@@ -246,10 +264,10 @@ export class HudScene extends Phaser.Scene {
     const view = cam.worldView;
     return this.game_.fighters.some((k) => {
       if (!k.isAlive()) return false;
-      // Its body and head (about 1 x 2.6 units), and its tag.
+      // Its body, and the head over it.
       const sx = (k.x - view.x) * cam.zoom;
-      const top = (k.y - view.y - 2 * UNIT) * cam.zoom;
-      const bottom = (k.y - view.y + UNIT) * cam.zoom;
+      const top = (k.body.top - 0.6 * UNIT - view.y) * cam.zoom;
+      const bottom = (k.body.bottom - view.y) * cam.zoom;
       const half = 0.6 * UNIT * cam.zoom;
       return sx + half > x && sx - half < x + w && bottom > y && top < y + h;
     });
