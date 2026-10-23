@@ -14,6 +14,7 @@ import { EffectDef, ParticleFx, type ParticleHandle } from '../fx/ParticleEffect
 import { GradePipeline, pureAdd, screenFxOn, setPass, wantScreenFx } from '../fx/Grade';
 import { lit, normalMapFor } from '../fx/NormalMaps';
 import { surface } from '../fx/Surface';
+import { cel, setCel } from '../fx/Cel';
 import { backdropOf, tintArt } from '../fx/Backdrops';
 import { ARENAS, CONE_ANGLE, CONE_SPREAD, DEFAULT_BLAST, LAYER_DEPTH, MAX_MAP_LIGHTS, NPC_COLOR, NPC_TEAM, npcRecharges, warpExit, type LightEffect } from '../map/Arenas';
 import { lightPolygon } from '../fx/Shadows';
@@ -304,6 +305,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const target = this.fighters.filter((k) => k !== p1 && k.isAlive())
         .sort((a, b) => Math.hypot(a.x - p1.x, a.y - p1.y) - Math.hypot(b.x - p1.x, b.y - p1.y))[0];
       if (target) target.health = 0;
+    });
+    // Y: the cel-shaded Kubotz or the classic ones (fx/Cel.ts), switched in place.
+    kb.on('keydown-Y', () => {
+      setCel(!cel.on);
+      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, cel.on ? 'Cel-shaded Kubotz' : 'Classic Kubotz', 0xffffff);
     });
     kb.on('keydown-G', () => {
       surface.worn = !surface.worn;

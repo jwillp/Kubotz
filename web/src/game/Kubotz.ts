@@ -12,6 +12,7 @@ import { canHurt, type Teamed } from './Match';
 import { emptyStats, type FighterStats } from './Match';
 import { makeTagTexture } from '../ui/Type';
 import { WORN, surface } from '../fx/Surface';
+import { CEL, cel } from '../fx/Cel';
 import type { ParticleHandle } from '../fx/ParticleEffect';
 import { EventPlayer } from '../anim/ClipEvents';
 import { DATA_FILES, fromFiles } from './DataFiles';
@@ -207,12 +208,13 @@ export const SLOT_COLORS = [0xed1c24, 0x29abe2, 0x3ccf4e, 0xa155ff];
 
 export const hex = (c: number) => c.toString(16).padStart(6, '0');
 
-/** The texture of a Kubot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off. */
+/** The texture of a Kubot part in a colour: helmets and the laser blade are recoloured (BootScene), and all of it worn (fx/Surface.ts) unless switched off, or cel-shaded (fx/Cel.ts). */
 export function partTexture(textures: Phaser.Textures.TextureManager, file: string, color: number): string {
   let key = `kubotz:${file}`;
   if (HEAD_FILES.includes(file)) key = `head:${hex(color)}:${file}`;
   else if (file === SWORD_FILE) key = `sword:${hex(color)}`;
   if (!textures.exists(key)) key = `kubotz:${file}`;
+  if (cel.on && textures.exists(CEL + key)) return CEL + key;
   return surface.worn && textures.exists(WORN + key) ? WORN + key : key;
 }
 
