@@ -91,7 +91,9 @@ export interface MapEmitter { x: number; y: number; effect: string; every?: numb
  * in front of everything.
  */
 export type MapLayer = 'behind' | 'arena' | 'front';
-export const LAYER_DEPTH: Record<MapLayer, number> = { behind: 1.85, arena: 3, front: 14 };
+// Behind: under the tiles' art (2) but over the outer hull (1.9) and the blocks' 2.5D faces (1.95), which are
+// nearly as dark as the room and would otherwise cut the glow with edges you cannot see.
+export const LAYER_DEPTH: Record<MapLayer, number> = { behind: 1.97, arena: 3, front: 14 };
 
 export type NpcBehaviour = 'attack' | 'flee' | 'idle';
 /**
