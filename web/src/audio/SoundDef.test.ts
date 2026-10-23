@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { renderSound, sweepAt, type SoundDef } from './SoundDef';
-import { SOUND_FILES, synthSamples } from './Synth';
+import { GAME_SOUNDS, SOUND_FILES, synthSamples } from './Synth';
 import { decodeWav, encodeWav, zip } from './Wav';
 
 const peak = (d: Float32Array) => d.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
 
 describe('sound files', () => {
   it('has every sound the game plays', () => {
-    for (const k of ['boom', 'orb-bounce', 'orb-pickup', 'orb-heal', 'step-0', 'step-1', 'step-2', 'holo-spawn', 'portal-warp', 'ui-move', 'ui-tick', 'ui-confirm', 'ui-back', 'ui-scan']) expect(SOUND_FILES[k], k).toBeTruthy();
+    for (const k of GAME_SOUNDS) expect(SOUND_FILES[k], k).toBeTruthy();
   });
   it('renders each one audible, finite and below clipping, the same every time', () => {
     for (const key of Object.keys(SOUND_FILES)) {
