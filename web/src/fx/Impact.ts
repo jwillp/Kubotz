@@ -534,7 +534,7 @@ export class ImpactFx {
         const inner = trail.blade ? 0.08 : 0.35;
         const inA = { x: a.ix + (a.ox - a.ix) * inner, y: a.iy + (a.oy - a.iy) * inner };
         const inB = { x: b.ix + (b.ox - b.ix) * inner, y: b.iy + (b.oy - b.iy) * inner };
-        g.fillStyle(trail.color, (trail.blade ? 0.42 : 0.32) * k * tail);
+        g.fillStyle(trail.color, (trail.blade ? 0.6 : 0.32) * k * tail);
         g.fillPoints([{ x: a.ox, y: a.oy }, { x: b.ox, y: b.oy }, inB, inA], true);
         g.fillStyle(0xffffff, 0.12 * k * tail);
         const midA = { x: (a.ox + inA.x) / 2, y: (a.oy + inA.y) / 2 };

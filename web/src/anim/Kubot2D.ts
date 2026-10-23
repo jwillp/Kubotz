@@ -177,7 +177,8 @@ export class Kubot2D {
     while (v.list.length < list.length) v.add(this.scene.add.image(0, 0, '__DEFAULT').setBlendMode(Phaser.BlendModes.ADD));
     (v.list as Phaser.GameObjects.Image[]).forEach((copy, i) => {
       const src = list[i];
-      if (!src || !src.visible || src === this.hex?.fill || src === this.hex?.sheen) { copy.setVisible(false); return; }
+      // (Not the laser blade: a flat tinted copy of it reads as a stray light; its swing smear shows its motion.)
+      if (!src || !src.visible || src === this.hex?.fill || src === this.hex?.sheen || src.texture.key.includes('sword')) { copy.setVisible(false); return; }
       copy.setVisible(true).setTexture(src.texture.key).setOrigin(src.originX, src.originY)
         .setPosition(src.x, src.y).setAngle(src.angle).setScale(src.scaleX, src.scaleY).setTintFill(color);
     });
