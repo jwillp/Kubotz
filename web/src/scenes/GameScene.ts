@@ -2154,12 +2154,13 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   }
 
   /**
-   * Telling Kubotz apart in a team of one colour: human players glow with
-   * their own accent (P1 white, P2 yellow, P3 cyan, P4 magenta) and stand on
-   * a ring of it, both soft; a Kubeball captain wears a gold chevron over its
-   * tag. Quieter CPU tags are there too, off. Each can be switched (marks, ?marks=).
+   * Kubeball: telling Kubotz apart in a team of one colour. Human players
+   * glow softly with their own accent (P1 white, P2 yellow, P3 cyan, P4
+   * magenta); the captain wears a gold chevron over its tag. A ring under
+   * the humans' feet and quieter CPU tags exist too, off. Each can be
+   * switched (marks, ?marks=).
    */
-  marks = { glow: true, ring: true, quietCpu: false, captain: true, colors: true };
+  marks = { glow: true, ring: false, quietCpu: false, captain: true, colors: true };
   private markG?: Phaser.GameObjects.Graphics;
   private humanGlows = new Map<Kubotz, Phaser.FX.Glow>();
 
@@ -2175,8 +2176,10 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
     g.clear(); top.clear();
     const zoom = this.cameras.main.zoom;
     const captains = this.tactics.size ? [...this.tactics.keys()].map((t) => this.captainOf(t)) : [];
+    // Kubeball only: the other modes keep their Kubotz as they were.
+    const kubeball = MODES[this.mode].ball === 'kubeball';
     for (const k of this.fighters) {
-      const human = k.controller.label !== 'CPU';
+      const human = kubeball && k.controller.label !== 'CPU';
       const shown = k.isAlive() && now >= k.appearAt;
       // The glow: added once, strength set every frame.
       if (human && !this.humanGlows.has(k) && k.model.view.postFX) this.humanGlows.set(k, k.model.view.postFX.addGlow(this.accentOf(k), 0, 0, false, 0.1, 10));
@@ -2188,7 +2191,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         g.lineStyle(4 / zoom, c, a).strokeEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
         g.fillStyle(c, a * 0.25).fillEllipse(k.x, k.body.bottom, 1.5 * UNIT, 0.42 * UNIT);
       }
-      k.tagStyle = !human && this.marks.quietCpu ? { scale: 0.72, alpha: 0.6 } : { scale: 1, alpha: 1 };
+      k.tagStyle = kubeball && !human && this.marks.quietCpu ? { scale: 0.72, alpha: 0.6 } : { scale: 1, alpha: 1 };
       // The captain's chevron, gold, over its tag.
       if (this.marks.captain && shown && captains.includes(k)) {
         const y = k.body.top - UNIT * 0.75 - (this.showRoles ? 92 : 58) / zoom;
