@@ -2,6 +2,11 @@
 <spriter_data scml_version="1.0" generator="BrashMonkey Spriter" generator_version="b10">
     <folder id="0" name="torso">
         <file id="0" name="torso/torso.png" width="209" height="143" pivot_x="0.872038" pivot_y="0.531034"/>
+        <file id="1" name="torso/torso-bulwark.png" width="321" height="255" pivot_x="0.742230" pivot_y="0.517403"/>
+        <file id="2" name="torso/torso-glider.png" width="321" height="255" pivot_x="0.742230" pivot_y="0.517403"/>
+        <file id="3" name="torso/torso-sprinter.png" width="321" height="255" pivot_x="0.742230" pivot_y="0.517403"/>
+        <file id="4" name="torso/torso-hopper.png" width="321" height="255" pivot_x="0.742230" pivot_y="0.517403"/>
+        <file id="5" name="torso/torso-striker.png" width="321" height="255" pivot_x="0.742230" pivot_y="0.517403"/>
     </folder>
     <folder id="1" name="legs">
         <file id="0" name="legs/lower-leg.png" width="79" height="86" pivot_x="0.197531" pivot_y="0.420455"/>
@@ -101,6 +106,21 @@
         <character_map id="6" name="gauntlet_iceGauntlet">
             <map folder="3" file="2" target_folder="3" target_file="10"/>
             <map folder="3" file="0" target_folder="3" target_file="11"/>
+        </character_map>
+        <character_map id="13" name="body_bulwark">
+            <map folder="0" file="0" target_folder="0" target_file="1"/>
+        </character_map>
+        <character_map id="14" name="body_glider">
+            <map folder="0" file="0" target_folder="0" target_file="2"/>
+        </character_map>
+        <character_map id="15" name="body_sprinter">
+            <map folder="0" file="0" target_folder="0" target_file="3"/>
+        </character_map>
+        <character_map id="16" name="body_hopper">
+            <map folder="0" file="0" target_folder="0" target_file="4"/>
+        </character_map>
+        <character_map id="17" name="body_striker">
+            <map folder="0" file="0" target_folder="0" target_file="5"/>
         </character_map>
         <animation id="0" name="Falling" length="1000">
             <mainline>

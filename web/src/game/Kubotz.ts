@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
 import type { Feel } from './Feel';
-import { moduleOf, type BodyModule } from './Modules';
+import { HEADS, bodyOf, type BodyModule } from './Modules';
 import { Animator } from '../anim/Animator';
 import type { Rig } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
@@ -211,9 +211,8 @@ const COMBO_RECOVERY = 220;
 
 export interface KubotzLook { head: string | null; color: number; }
 
-/** Helmet shapes, one per Kubot in order (character maps of kubotz.scml). */
-export const HEADS: (string | null)[] = [null, 'head_terminator', 'head_bigbuff', 'head_skull',
-  'head_diver', 'head_mantis', 'head_sentinel', 'head_tank', 'head_astro', 'head_brute'];
+/** Helmet shapes, one per Kubot in order (character maps of kubotz.scml; the helmet modules, game/Modules.ts). */
+export { HEADS } from './Modules';
 /** The helmet files a recoloured copy is made of (see BootScene.recolor). */
 export const HEAD_FILES = ['head/helmet2.png', 'head/helmet3.png', 'head/helmet4.png', 'head/helmet5-grey.png',
   'head/helmet-diver.png', 'head/helmet-mantis.png', 'head/helmet-sentinel.png', 'head/helmet-tank.png', 'head/helmet-astro.png', 'head/helmet-brute.png'];
@@ -407,7 +406,7 @@ export class Kubotz implements Damageable, Teamed {
   baseJumps: number = Config.NB_JUMPS;
   lowGravity = 1;
   /** Its body module (game/Modules.ts): how it moves and how far it flies when hit. */
-  private module: BodyModule = moduleOf();
+  private module: BodyModule = bodyOf();
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -603,7 +602,7 @@ export class Kubotz implements Damageable, Teamed {
     this.model = new Kubot2D(scene, rig, (file) => (file === BLADE_FILE && this.carrying
       ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     this.events = new EventPlayer((name, x, y, flip) => this.hooks.effect(name, x, y, flip));
-    this.bodyModule = moduleOf(opts.body);
+    this.bodyModule = bodyOf(opts.body);
     this.restyle();
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the Kubot.
@@ -2170,6 +2169,7 @@ export class Kubotz implements Damageable, Teamed {
 
     const maps: string[] = [];
     if (this.look.head) maps.push(this.look.head);
+    if (this.module.look) maps.push(this.module.look);
     if (this.weapon === 'plasmaBlade') maps.push('weapon_plasmaBlade');
     else if (this.weapon !== 'none') maps.push('weapon_laserGunMkI');
     if (this.weapon === 'none' && this.currentMove?.maps && (this.attack || this.charging)) maps.push(...this.currentMove.maps);

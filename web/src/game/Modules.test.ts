@@ -1,6 +1,7 @@
+import scml from '../../public/animations/kubotz.scml?raw';
 import { describe, expect, it } from 'vitest';
 import type { Feel } from './Feel';
-import { BASE_BUILD, DEFAULT_MODULE, MODULE_ORDER, MODULES, buildScale, jumpHeight, moduleOf, moduleStats, stepModule } from './Modules';
+import { BASE_BUILD, DEFAULT_BODY, FEET, HEADS, HELMETS, MODULE_KINDS, WEAPONS, BODY_ORDER, BODIES, buildScale, jumpHeight, bodyOf, bodyStats, stepBody } from './Modules';
 
 /** Seconds in the air for a full hop: up under gravity, down under the fall gravity up to the fall speed. */
 function airTime(f: Feel): number {
@@ -13,31 +14,32 @@ function airTime(f: Feel): number {
   return up + down;
 }
 
-const all = MODULE_ORDER.map((id) => MODULES[id]);
+const all = BODY_ORDER.map((id) => BODIES[id]);
 
 describe('body modules', () => {
   it('lists every module once, keyed by its own id', () => {
-    expect(new Set(MODULE_ORDER).size).toBe(MODULE_ORDER.length);
-    expect([...MODULE_ORDER].sort()).toEqual(Object.keys(MODULES).sort());
-    for (const [id, m] of Object.entries(MODULES)) expect(m.id).toBe(id);
+    expect(new Set(BODY_ORDER).size).toBe(BODY_ORDER.length);
+    expect([...BODY_ORDER].sort()).toEqual(Object.keys(BODIES).sort());
+    for (const [id, m] of Object.entries(BODIES)) expect(m.id).toBe(id);
   });
 
   it('falls back to the Core for a missing or unknown id (old saved setups)', () => {
-    expect(moduleOf().id).toBe(DEFAULT_MODULE);
-    expect(moduleOf('nope').id).toBe(DEFAULT_MODULE);
-    expect(moduleOf('glider').id).toBe('glider');
+    expect(bodyOf().id).toBe(DEFAULT_BODY);
+    expect(bodyOf('nope').id).toBe(DEFAULT_BODY);
+    expect(bodyOf('glider').id).toBe('glider');
   });
 
   it('steps through the menu order both ways and wraps round', () => {
-    const order = ['core', 'striker', 'hopper', 'sprinter', 'glider', 'bulwark'];
-    expect(stepModule('core', 1)).toBe(order[1]);
-    expect(stepModule('core', -1)).toBe(order[order.length - 1]);
-    expect(stepModule('bulwark', 1)).toBe('core');
-    expect(stepModule(undefined, 2)).toBe(order[2]);
+    const order = ['core', 'striker', 'hopper', 'sprinter', 'glider', 'bulwark', 'classic'];
+    expect(BODY_ORDER).toEqual(order);
+    expect(stepBody('core', 1)).toBe(order[1]);
+    expect(stepBody('core', -1)).toBe(order[order.length - 1]);
+    expect(stepBody('classic', 1)).toBe('core');
+    expect(stepBody(undefined, 2)).toBe(order[2]);
   });
 
   it('keeps the Core on the standard Kubot feel, build and weight', () => {
-    const core = moduleOf('core');
+    const core = bodyOf('core');
     expect(core.feel.name).toBe('Kubot');
     expect(core.knockback).toBe(1);
     expect(core.build).toEqual(BASE_BUILD);
@@ -49,22 +51,22 @@ describe('body modules', () => {
   });
 
   it('matches what the Modules menu says about each one', () => {
-    const run = (id: string) => MODULES[id].feel.run;
+    const run = (id: string) => BODIES[id].feel.run;
     // Sprinter: the fastest run of all.
     expect(Math.max(...all.map((m) => m.feel.run))).toBe(run('sprinter'));
     // Glider: the slowest fall and the longest time in the air.
-    expect(Math.min(...all.map((m) => m.feel.fall))).toBe(MODULES.glider.feel.fall);
-    expect(Math.max(...all.map((m) => airTime(m.feel)))).toBe(airTime(MODULES.glider.feel));
+    expect(Math.min(...all.map((m) => m.feel.fall))).toBe(BODIES.glider.feel.fall);
+    expect(Math.max(...all.map((m) => airTime(m.feel)))).toBe(airTime(BODIES.glider.feel));
     // Hopper: as high as the Core, hangs longer, the best air control.
-    expect(jumpHeight(MODULES.hopper.feel)).toBeGreaterThanOrEqual(jumpHeight(MODULES.core.feel) * 0.98);
-    expect(airTime(MODULES.hopper.feel)).toBeGreaterThan(airTime(MODULES.core.feel));
-    expect(Math.max(...all.map((m) => m.feel.airAccel))).toBe(MODULES.hopper.feel.airAccel);
+    expect(jumpHeight(BODIES.hopper.feel)).toBeGreaterThanOrEqual(jumpHeight(BODIES.core.feel) * 0.98);
+    expect(airTime(BODIES.hopper.feel)).toBeGreaterThan(airTime(BODIES.core.feel));
+    expect(Math.max(...all.map((m) => m.feel.airAccel))).toBe(BODIES.hopper.feel.airAccel);
     // Bulwark: the heaviest (least knockback), lower jumps than the Core, slow.
-    expect(Math.min(...all.map((m) => m.knockback))).toBe(MODULES.bulwark.knockback);
-    expect(jumpHeight(MODULES.bulwark.feel)).toBeLessThan(jumpHeight(MODULES.core.feel));
+    expect(Math.min(...all.map((m) => m.knockback))).toBe(BODIES.bulwark.knockback);
+    expect(jumpHeight(BODIES.bulwark.feel)).toBeLessThan(jumpHeight(BODIES.core.feel));
     expect(run('bulwark')).toBeLessThan(run('core'));
     // Striker: lighter than the Core (flies further).
-    expect(MODULES.striker.knockback).toBeGreaterThan(1);
+    expect(BODIES.striker.knockback).toBeGreaterThan(1);
   });
 
   it('keeps knockback and builds in a sane range', () => {
@@ -76,10 +78,10 @@ describe('body modules', () => {
   });
 
   it('scales the stat bars between 0.15 and 1, the extremes at the ends', () => {
-    for (const m of all) for (const v of Object.values(moduleStats(m))) { expect(v).toBeGreaterThanOrEqual(0.15); expect(v).toBeLessThanOrEqual(1); }
-    expect(moduleStats(MODULES.sprinter).run).toBe(1);
-    expect(moduleStats(MODULES.bulwark).weight).toBe(1);
-    expect(moduleStats(MODULES.bulwark).run).toBe(0.15);
+    for (const m of all) for (const v of Object.values(bodyStats(m))) { expect(v).toBeGreaterThanOrEqual(0.15); expect(v).toBeLessThanOrEqual(1); }
+    expect(bodyStats(BODIES.sprinter).run).toBe(1);
+    expect(bodyStats(BODIES.bulwark).weight).toBe(1);
+    expect(bodyStats(BODIES.bulwark).run).toBe(0.15);
   });
 });
 
@@ -103,5 +105,44 @@ describe('buildScale', () => {
 
   it('changes nothing on the base build', () => {
     for (const f of ['torso/torso.png', 'arms/hand.png', 'legs/lower-leg.png', 'feet/foot-sha.png']) expect(buildScale(f, BASE_BUILD)).toEqual([1, 1]);
+  });
+});
+
+describe('module groups', () => {
+  it('has the four groups, each with modules', () => {
+    expect(MODULE_KINDS.map((k) => k.kind)).toEqual(['helmet', 'body', 'weapon', 'feet']);
+    expect(HELMETS.length).toBeGreaterThan(0);
+    expect(WEAPONS.map((w) => w.weapon)).toEqual(['laserGunMkI', 'plasmaBlade']);
+    expect(FEET.length).toBe(1);
+  });
+
+  it('keeps the helmet order the setup screen and saved setups count by', () => {
+    expect(HEADS).toEqual([null, 'head_terminator', 'head_bigbuff', 'head_skull',
+      'head_diver', 'head_mantis', 'head_sentinel', 'head_tank', 'head_astro', 'head_brute']);
+  });
+
+  it('names whose numbers each body runs on (the debug line)', () => {
+    expect(BODIES.glider.debug).toBe('Samus');
+    expect(BODIES.sprinter.debug).toBe('Captain Falcon');
+    expect(BODIES.classic.debug).toBe('Kubot classic');
+    expect(BODIES.core.debug).toMatch(/^Kubot current/);
+    for (const m of all) expect(m.debug.length).toBeGreaterThan(0);
+  });
+});
+
+describe('body looks', () => {
+  const torsos = Object.keys(import.meta.glob('../../public/animations/torso/*.png')).map((p) => p.replace('../../public/animations/', ''));
+  const files = new Map([...scml.matchAll(/<file id="(\d+)" name="(torso\/[^"]+)"/g)].map((m) => [m[1], m[2]]));
+
+  it('gives every body but the Core and the Classic its own torso, mapped in kubotz.scml', () => {
+    for (const m of all) {
+      if (m.id === 'core' || m.id === 'classic') { expect(m.look).toBeUndefined(); continue; }
+      expect(m.look).toBe(`body_${m.id}`);
+      const map = scml.match(new RegExp(`<character_map id="\\d+" name="${m.look}">\\s*<map folder="0" file="0" target_folder="0" target_file="(\\d+)"/>`));
+      expect(map, m.id).not.toBeNull();
+      const file = files.get(map![1]);
+      expect(file).toBe(`torso/torso-${m.id}.png`);
+      expect(torsos).toContain(file);
+    }
   });
 });

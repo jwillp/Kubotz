@@ -4,7 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController, type Objective } from '../game/Ai';
-import { MODULE_ORDER, moduleOf } from '../game/Modules';
+import { BODY_ORDER, bodyOf } from '../game/Modules';
 import { BLADE_EMITTER, BLADE_TIP, Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, BLADE_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
 import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_SOLO, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, BladeLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/PlasmaBlade';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
@@ -356,7 +356,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // Below 0: infinite (the editor's own arena match, so a K.O. never ends it).
       k.lives = this.recharges < 0 ? Infinity : this.recharges;
       // Blasters, Blades: the mode's weapon from the start, for the whole match.
-      k.armed = k.weapon = MODES[this.mode].armed ?? 'none';
+      k.armed = k.weapon = MODES[this.mode].armed ?? spec.weapon ?? 'none'; // (Try it on a weapon module: that one, for good)
       k.facing = spawn.x < mapW / 2 ? 1 : -1;
       this.fighters.push(k);
       // The intro: one spawn after the other, each hidden until its turn.
@@ -418,11 +418,11 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
-    // Body modules (game/Modules.ts) for P1, to compare them: 1 Core, 2 Striker, 3 Hopper, 4 Sprinter, 5 Glider, 6 Bulwark.
-    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
+    // Body modules (game/Modules.ts) for P1, to compare them: 1 Core, 2 Striker, 3 Hopper, 4 Sprinter, 5 Glider, 6 Bulwark, 7 Classic.
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
       const p1 = this.fighters[0];
       if (!p1 || this.setup?.preview) return;
-      p1.bodyModule = moduleOf(MODULE_ORDER[i]);
+      p1.bodyModule = bodyOf(BODY_ORDER[i]);
       this.floatText(p1.x, p1.body.top - 0.6 * UNIT, `Body: ${p1.bodyModule.name}`, 0xffffff);
     }));
     kb.on('keydown-L', () => {
@@ -2273,7 +2273,8 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
         const k = this.spawnFoe(team, SLOT_COLORS[team], 5, Config.KUBOTZ_HEALTH, helmets[(i + team * 3) % helmets.length], Infinity, this.countdownAt);
         k.hudless = true;
         k.role = i === have ? (sky ? 'interceptor' : 'guardian') : 'striker';
-        k.armed = k.weapon = MODES[this.mode].armed ?? 'none'; // Kubeball: plasma blades for all
+        // (The Modules menu's Try it on a weapon: that one, for good.)
+      k.armed = k.weapon = MODES[this.mode].armed ?? 'none'; // Kubeball: plasma blades for all
       }
     }
     // Kubeball: each team plays a strategy, picked at random for the match.

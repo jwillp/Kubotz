@@ -20,7 +20,7 @@ import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
 import { ALL_THEMES, backdropOf } from '../fx/Backdrops';
 import { uiSound } from '../audio/Sounds';
-import { DEFAULT_MODULE, moduleOf, stepModule } from '../game/Modules';
+import { DEFAULT_BODY, HELMETS, bodyOf, stepBody } from '../game/Modules';
 
 /**
  * What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody.
@@ -45,8 +45,6 @@ const CENTER_W = 300;
 const RECHARGES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 /** Match lengths in minutes; 0 is no limit. */
 const MINUTES = [0, 2, 3, 5, 8];
-const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
-  'Diver', 'Mantis', 'Sentinel', 'Tank', 'Astro', 'Brute'];
 /** Rows in a slot: who drives it, its helmet, its body module, its team. */
 const FIELDS = ['input', 'helmet', 'body', 'team'] as const;
 /** The first row's centre in a slot, and the step between rows. */
@@ -210,10 +208,10 @@ export class SetupScene extends Phaser.Scene {
     const saved = this.registry.get('setup') as SetupState | undefined;
     this.state = saved ? structuredClone(saved) : {
       seats: [
-        { device: 'K1', team: 0, helmet: 0, level: CPU_LEVEL, body: DEFAULT_MODULE },
-        { device: 'CPU', team: 1, helmet: 1, level: CPU_LEVEL, body: DEFAULT_MODULE },
-        { device: 'OFF', team: 2, helmet: 2, level: CPU_LEVEL, body: DEFAULT_MODULE },
-        { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL, body: DEFAULT_MODULE },
+        { device: 'K1', team: 0, helmet: 0, level: CPU_LEVEL, body: DEFAULT_BODY },
+        { device: 'CPU', team: 1, helmet: 1, level: CPU_LEVEL, body: DEFAULT_BODY },
+        { device: 'OFF', team: 2, helmet: 2, level: CPU_LEVEL, body: DEFAULT_BODY },
+        { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL, body: DEFAULT_BODY },
       ],
       arena: (this.registry.get('arena') as number | undefined) ?? 0,
       recharges: Config.NB_LIVES,
@@ -222,7 +220,7 @@ export class SetupScene extends Phaser.Scene {
     };
     // Pads that went away since: their slots empty.
     for (const s of this.state.seats) if (typeof s.device === 'number' && !this.pad(s.device)) s.device = 'OFF';
-    for (const s of this.state.seats) s.body = moduleOf(s.body).id; // (setups saved before body modules)
+    for (const s of this.state.seats) s.body = bodyOf(s.body).id; // (setups saved before body modules)
     this.state.target ??= 10;
     // Training is for one player: slot 1 is a person (the keyboard by default).
     if (this.solo && (this.state.seats[0].device === 'OFF' || this.state.seats[0].device === 'CPU')) this.state.seats[0].device = 'K1';
@@ -437,7 +435,7 @@ export class SetupScene extends Phaser.Scene {
         } else if (f.field === 'helmet') {
           seat.helmet = (seat.helmet + d + HEADS.length) % HEADS.length;
         } else if (f.field === 'body') {
-          seat.body = stepModule(seat.body, d);
+          seat.body = stepBody(seat.body, d);
           this.taunt(f.slot);
         } else {
           // Ball games: red or blue.
@@ -705,10 +703,10 @@ export class SetupScene extends Phaser.Scene {
     }
     p.tag.setText(off ? '' : tag).setPosition(x + 44, SLOT_TOP + 15);
     // On the body row: what the body module does.
-    p.blurb.setText(focused === 'body' && !off ? moduleOf(seat.body).tagline : deviceBlurb(seat));
+    p.blurb.setText(focused === 'body' && !off ? bodyOf(seat.body).tagline : deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
-    p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
-    p.rows.body.label.setText(`${moduleOf(seat.body).name} body`);
+    p.rows.helmet.label.setText(HELMETS[seat.helmet]?.name ?? `Helmet ${seat.helmet + 1}`);
+    p.rows.body.label.setText(`${bodyOf(seat.body).name} body`);
     p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
     for (const field of ['helmet', 'body', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
@@ -733,9 +731,10 @@ export class SetupScene extends Phaser.Scene {
       p.anim.tick(deltaMs);
       if (p.anim.finished) p.anim.play('idle', { fade: 150 });
       const head = HEADS[seats[i].helmet];
-      p.kubot.build = moduleOf(seats[i].body).build;
+      const look = bodyOf(seats[i].body);
+      p.kubot.build = look.build;
       // Standing over the slot's top right, facing into the slot.
-      p.kubot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
+      p.kubot.update(p.anim.pose(), [head, look.look].filter((m): m is string => !!m), this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
         { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
       p.kubot.view.setScale(-ART_SCALE * 0.78, ART_SCALE * 0.78);
     });
