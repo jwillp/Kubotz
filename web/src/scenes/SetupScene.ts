@@ -20,6 +20,7 @@ import { faceButtons, MenuInput } from './MenuInput';
 import { paintRoomOnce } from './BackdropScene';
 import { ALL_THEMES, backdropOf } from '../fx/Backdrops';
 import { uiSound } from '../audio/Sounds';
+import { DEFAULT_MODULE, moduleOf, stepModule } from '../game/Modules';
 
 /**
  * What drives a slot: keyboard set 1 or 2, a gamepad (its index), the computer, or nobody.
@@ -28,7 +29,7 @@ import { uiSound } from '../audio/Sounds';
  */
 type Device = 'K1' | 'K2' | number | 'CPU' | 'OFF' | 'PAD';
 
-interface Seat { device: Device; team: number; helmet: number; level: number }
+interface Seat { device: Device; team: number; helmet: number; level: number; /** Body module id (game/Modules.ts). */ body: string }
 
 /** The setup screen's choices, kept in the registry so a rematch from the title keeps them. */
 interface SetupState { seats: Seat[]; arena: number; recharges: number; minutes: number; bonuses: BonusRate; /** Training: CPUs to defeat. */ target?: number; /** Ball games: the score to reach (0: none), per game. */ score?: Partial<Record<'kubeball' | 'skychase', number>> }
@@ -46,8 +47,11 @@ const RECHARGES = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const MINUTES = [0, 2, 3, 5, 8];
 const HELMET_NAMES = ['Classic', 'Terminator', 'Big Buff', 'Skull',
   'Diver', 'Mantis', 'Sentinel', 'Tank', 'Astro', 'Brute'];
-/** Rows in a slot: who drives it, its helmet, its team. */
-const FIELDS = ['input', 'helmet', 'team'] as const;
+/** Rows in a slot: who drives it, its helmet, its body module, its team. */
+const FIELDS = ['input', 'helmet', 'body', 'team'] as const;
+/** The first row's centre in a slot, and the step between rows. */
+const ROW_TOP = 138;
+const ROW_STEP = 32;
 type Field = typeof FIELDS[number];
 
 /** Attack / special keys of the two keyboard sets: attack joins a free slot, special leaves it. */
@@ -206,10 +210,10 @@ export class SetupScene extends Phaser.Scene {
     const saved = this.registry.get('setup') as SetupState | undefined;
     this.state = saved ? structuredClone(saved) : {
       seats: [
-        { device: 'K1', team: 0, helmet: 0, level: CPU_LEVEL },
-        { device: 'CPU', team: 1, helmet: 1, level: CPU_LEVEL },
-        { device: 'OFF', team: 2, helmet: 2, level: CPU_LEVEL },
-        { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL },
+        { device: 'K1', team: 0, helmet: 0, level: CPU_LEVEL, body: DEFAULT_MODULE },
+        { device: 'CPU', team: 1, helmet: 1, level: CPU_LEVEL, body: DEFAULT_MODULE },
+        { device: 'OFF', team: 2, helmet: 2, level: CPU_LEVEL, body: DEFAULT_MODULE },
+        { device: 'OFF', team: 3, helmet: 3, level: CPU_LEVEL, body: DEFAULT_MODULE },
       ],
       arena: (this.registry.get('arena') as number | undefined) ?? 0,
       recharges: Config.NB_LIVES,
@@ -218,6 +222,7 @@ export class SetupScene extends Phaser.Scene {
     };
     // Pads that went away since: their slots empty.
     for (const s of this.state.seats) if (typeof s.device === 'number' && !this.pad(s.device)) s.device = 'OFF';
+    for (const s of this.state.seats) s.body = moduleOf(s.body).id; // (setups saved before body modules)
     this.state.target ??= 10;
     // Training is for one player: slot 1 is a person (the keyboard by default).
     if (this.solo && (this.state.seats[0].device === 'OFF' || this.state.seats[0].device === 'CPU')) this.state.seats[0].device = 'K1';
@@ -360,10 +365,10 @@ export class SetupScene extends Phaser.Scene {
     const frame = this.add.graphics();
     const tag = heading(this, x + 44, SLOT_TOP + 6, '', 30, { glow: null, glitch: false }); // a player tag, not a title
     const slotNo = this.add.text(x + 104, SLOT_TOP + 14, `SLOT ${i + 1}`, body(12, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5);
-    const blurb = this.add.text(x + 18, SLOT_TOP + 58, '', body(12, { fontStyle: '500', color: '#cfe9ff', lineSpacing: 3 }));
+    const blurb = this.add.text(x + 18, SLOT_TOP + 52, '', body(12, { fontStyle: '500', color: '#cfe9ff', lineSpacing: 3, wordWrap: { width: 150 } }));
     const rows = {} as Record<Field, Row>;
     FIELDS.forEach((f, r) => {
-      const y = SLOT_TOP + 150 + r * 36;
+      const y = SLOT_TOP + ROW_TOP + r * ROW_STEP;
       rows[f] = {
         label: this.add.text(x + SLOT_W / 2, y, '', body(16, { fontStyle: '800' })).setOrigin(0.5)
           .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.setFocus({ kind: 'slot', slot: i, field: f })),
@@ -431,6 +436,9 @@ export class SetupScene extends Phaser.Scene {
           return;
         } else if (f.field === 'helmet') {
           seat.helmet = (seat.helmet + d + HEADS.length) % HEADS.length;
+        } else if (f.field === 'body') {
+          seat.body = stepModule(seat.body, d);
+          this.taunt(f.slot);
         } else {
           // Ball games: red or blue.
           const teams = MODES[this.mode].ball ? 2 : SLOT_COLORS.length;
@@ -693,14 +701,16 @@ export class SetupScene extends Phaser.Scene {
     // The focused row: a wash in the slot's colour.
     if (focused) {
       const r = FIELDS.indexOf(focused);
-      g.fillStyle(off ? NEON : color, 0.22).fillRect(x + 8, SLOT_TOP + 150 + r * 36 - 15, SLOT_W - 16, 30);
+      g.fillStyle(off ? NEON : color, 0.22).fillRect(x + 8, SLOT_TOP + ROW_TOP + r * ROW_STEP - 14, SLOT_W - 16, 28);
     }
     p.tag.setText(off ? '' : tag).setPosition(x + 44, SLOT_TOP + 15);
-    p.blurb.setText(deviceBlurb(seat));
+    // On the body row: what the body module does.
+    p.blurb.setText(focused === 'body' && !off ? moduleOf(seat.body).tagline : deviceBlurb(seat));
     p.rows.input.label.setText(deviceLabel(seat)).setColor(off ? '#9fc4e4' : '#ffffff');
     p.rows.helmet.label.setText(HELMET_NAMES[seat.helmet] ?? `Helmet ${seat.helmet + 1}`);
+    p.rows.body.label.setText(`${moduleOf(seat.body).name} body`);
     p.rows.team.label.setText(this.oneTeam ? 'PLAYERS TEAM' : `${TEAM_NAMES[this.teamOf(seat)]} team`.toUpperCase()).setColor('#' + hex(Phaser.Display.Color.ValueToColor(color).lighten(18).color));
-    for (const field of ['helmet', 'team'] as const) {
+    for (const field of ['helmet', 'body', 'team'] as const) {
       p.rows[field].label.setVisible(!off);
       for (const a of p.rows[field].arrows) a.setVisible(!off && (field !== 'team' || !this.oneTeam));
     }
@@ -723,6 +733,7 @@ export class SetupScene extends Phaser.Scene {
       p.anim.tick(deltaMs);
       if (p.anim.finished) p.anim.play('idle', { fade: 150 });
       const head = HEADS[seats[i].helmet];
+      p.kubot.build = moduleOf(seats[i].body).build;
       // Standing over the slot's top right, facing into the slot.
       p.kubot.update(p.anim.pose(), head ? [head] : [], this.slotX(i) + SLOT_W - 78, SLOT_TOP + 128, 160,
         { lean: 0, squash: 1, alpha: 1, flash: false, dtMs: deltaMs });
@@ -738,10 +749,11 @@ export class SetupScene extends Phaser.Scene {
     const freePad = () => { let i = 0; while (taken.has(i)) i++; taken.add(i); return i; };
     return this.seats().map((s): FighterSpec => {
       const team = this.teamOf(s);
-      if (s.device === 'CPU') return { input: 'CPU', team, helmet: s.helmet, cpuLevel: s.level };
+      const look = { helmet: s.helmet, body: s.body };
+      if (s.device === 'CPU') return { input: 'CPU', team, ...look, cpuLevel: s.level };
       const n = humans++;
-      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team, helmet: s.helmet };
-      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team, helmet: s.helmet };
+      if (s.device === 'K1' || s.device === 'K2') return { input: s.device === 'K1' ? 'P1' : 'P2', team, ...look };
+      return { input: n % 2 === 0 ? 'P1' : 'P2', pad: s.device === 'PAD' ? freePad() : s.device as number, team, ...look };
     });
   }
 

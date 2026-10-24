@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Config, UNIT } from '../config';
-import { feel } from './Feel';
+import type { Feel } from './Feel';
+import { moduleOf, type BodyModule } from './Modules';
 import { Animator } from '../anim/Animator';
 import type { Rig } from '../anim/Rig';
 import { ART_SCALE, Kubot2D } from '../anim/Kubot2D';
@@ -405,6 +406,8 @@ export class Kubotz implements Damageable, Teamed {
   /** Jumps it gets back at each respawn, and the share of gravity it falls under (Skychase: more jumps, a slow fall). */
   baseJumps: number = Config.NB_JUMPS;
   lowGravity = 1;
+  /** Its body module (game/Modules.ts): how it moves and how far it flies when hit. */
+  private module: BodyModule = moduleOf();
   shield = 0;
   powerUps: ActivePowerUp[] = [];
   lastAttacker: { by: Kubotz; at: number } | null = null;
@@ -587,8 +590,8 @@ export class Kubotz implements Damageable, Teamed {
     y: number,
     private hooks: ArenaHooks,
     physics: PhysicsWorld,
-    /** Faction (same team = no damage; defaults to its own slot) and helmet (index into HEADS; defaults by slot). */
-    opts: { team?: number; helmet?: number } = {},
+    /** Faction (same team = no damage; defaults to its own slot), helmet (index into HEADS; defaults by slot) and body module (game/Modules.ts). */
+    opts: { team?: number; helmet?: number; body?: string } = {},
   ) {
     this.body = new KubotzBody(physics, x, y);
     this.team = opts.team ?? index;
@@ -600,6 +603,7 @@ export class Kubotz implements Damageable, Teamed {
     this.model = new Kubot2D(scene, rig, (file) => (file === BLADE_FILE && this.carrying
       ? flagTexture(scene, this.carrying.color) : partTexture(scene.textures, file, color)));
     this.events = new EventPlayer((name, x, y, flip) => this.hooks.effect(name, x, y, flip));
+    this.bodyModule = moduleOf(opts.body);
     this.restyle();
     this.healthBar = scene.add.graphics().setDepth(20);
     // The P1 / P2 / P3 / P4 / CPU arrow label floats above the Kubot.
@@ -610,6 +614,16 @@ export class Kubotz implements Damageable, Teamed {
     if (!scene.textures.exists(this.tagKey)) makeTagTexture(scene, this.tagKey, who, tagColor);
     this.tag = scene.add.image(x, y, this.tagKey).setOrigin(0.5, 1).setDepth(21);
   }
+
+  /** Its body module; changing it changes its movement, weight and build at once. */
+  get bodyModule(): BodyModule { return this.module; }
+  set bodyModule(m: BodyModule) {
+    this.module = m;
+    this.model.build = m.build;
+  }
+
+  /** How it moves: its body module's feel. */
+  get feel(): Feel { return this.module.feel; }
 
   /** Winding up, striking or recovering (a CPU can see it coming). */
   get attacking(): boolean { return this.attack !== null; }
@@ -868,7 +882,7 @@ export class Kubotz implements Damageable, Teamed {
     // Heavy on the way down: past the apex gravity pulls much harder, up to a
     // terminal speed (the fast-fall speed when fast-falling). Hitstun and the
     // specials' bursts keep their speed (spikes, dive kicks), easing back after.
-    const f = feel();
+    const f = this.feel;
     // The feel's gravity, over the world's (which every body falls under).
     if (!this.grounded && !this.dodging) this.body.vy += (f.gravity * this.lowGravity - Config.GRAVITY) * UNIT * dt;
     if (!this.grounded && this.body.vy > 0 && !this.dodging) {
@@ -1244,7 +1258,7 @@ export class Kubotz implements Damageable, Teamed {
     let vx = b.vx / UNIT;
     let vy = b.vy / UNIT; // y-down
     const grounded = this.grounded;
-    const f = feel();
+    const f = this.feel;
     const accel = (grounded ? Config.RUN_ACCELERATION : f.airAccel) * this.speedFactor() * dt;
 
     if (grounded) { this.jumps = 0; this.helpless = false; this.sideSpecialUsed = false; this.upSpecialUsed = false; this.ledgeSafeReady = true; }
@@ -1314,7 +1328,7 @@ export class Kubotz implements Damageable, Teamed {
         b.dropTop = b.platformTop;
       }
       // Fast fall (Melee): down past the apex drops straight to the fast-fall speed.
-      if (!grounded && vy > 0) vy = Math.max(vy, feel().fastFall);
+      if (!grounded && vy > 0) vy = Math.max(vy, this.feel.fastFall);
     }
 
     if (now >= this.dropUntil) b.dropTop = null;
@@ -1349,7 +1363,7 @@ export class Kubotz implements Damageable, Teamed {
       this.hooks.airJump(this.x, this.body.bottom, this.look.color);
       if (!this.attack) this.anim.play(ANIM.FLIP, { restart: true, fade: 40 });
     }
-    return -feel().jump * height;
+    return -this.feel.jump * height;
   }
 
   private turnTo(dir: 1 | -1, now: number, grounded: boolean): void {
@@ -1513,7 +1527,7 @@ export class Kubotz implements Damageable, Teamed {
         } else if (dir === 'down') {
           this.comboStep = 0;
           this.strike(moves.dtilt, now);
-        } else if (dir === 'forward' && Math.abs(this.body.vx) > 0.55 * feel().run * UNIT) {
+        } else if (dir === 'forward' && Math.abs(this.body.vx) > 0.55 * this.feel.run * UNIT) {
           this.comboStep = 0;
           this.strike(moves.dash, now);
         } else if (dir === 'forward' || dir === 'back') {
@@ -1885,7 +1899,7 @@ export class Kubotz implements Damageable, Teamed {
     const away = l.dir === 1 ? 'right' : 'left';
     if (fresh('up')) {
       this.releaseLedge(now);
-      this.body.setVelocity(-l.dir * 2 * UNIT, -feel().jump * 1.05 * UNIT);
+      this.body.setVelocity(-l.dir * 2 * UNIT, -this.feel.jump * 1.05 * UNIT);
       this.lastJumpAt = now;
       this.jumpReadyAt = now + Config.JUMP_COOLDOWN;
       this.ledgeSafeUntil = Math.min(this.ledgeSafeUntil, now + 150);
@@ -2038,7 +2052,8 @@ export class Kubotz implements Damageable, Teamed {
       // Knockback grows with the damage taken (SSB), along the move's launch angle;
       // hitstun follows the launch speed, and a hard launch tumbles.
       const taken = 1 - this.health / Config.KUBOTZ_HEALTH;
-      speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1));
+      // Heavier body modules fly less far.
+      speed = launch.knockback * (1 + Config.KNOCKBACK_GROWTH * taken * (launch.growth ?? 1)) * this.module.knockback;
       const a = (launch.angle * Math.PI) / 180;
       // Sent off once the hitlag is over, bent by the stick then (DI).
       this.pendingLaunch = { vx: dirX * Math.cos(a) * speed * UNIT, vy: -Math.sin(a) * speed * UNIT, di: true };
@@ -2174,7 +2189,7 @@ export class Kubotz implements Damageable, Teamed {
     }
     const tt = Math.min(1, (now - this.turnAt) / this.turnMs);
     this.yaw = this.turnFrom + (this.yawTo - this.turnFrom) * tt * tt * (3 - 2 * tt);
-    const vx = this.body.vx / (feel().run * UNIT);
+    const vx = this.body.vx / (this.feel.run * UNIT);
     let lean = this.grounded ? vx * 0.05 : vx * 0.04;
     if (now < this.stunnedUntil) lean += Math.sin(now / 60) * 0.1;
     // Locked blades: leaning into the push, or bent back by it.
@@ -2252,7 +2267,7 @@ export class Kubotz implements Damageable, Teamed {
     } else if (Math.abs(vx) > 4) {
       a.play(ANIM.RUN, { fade: 90 });
       // The stride follows the speed.
-      a.setRate(Phaser.Math.Clamp(Math.abs(vx) / (feel().run * UNIT), 0.6, 1.4));
+      a.setRate(Phaser.Math.Clamp(Math.abs(vx) / (this.feel.run * UNIT), 0.6, 1.4));
     } else if (now < this.landUntil) a.play(ANIM.LAND, { fade: 40 });
     else if (this.pad.down) a.play(ANIM.CROUCH, { fade: 90 });
     else if (a.name !== ANIM.LAND || a.finished) a.play(ANIM.IDLE, { fade: 140 });

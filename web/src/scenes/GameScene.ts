@@ -4,7 +4,7 @@ import { SpriterData } from '../spriter/Spriter';
 import { TmxMap, MapObject } from '../map/TmxMap';
 import { HumanController, PLAYER_1_KEYS, PLAYER_2_KEYS, Controller } from '../game/Input';
 import { CpuController, type Objective } from '../game/Ai';
-import { FEEL_ORDER, setFeel } from '../game/Feel';
+import { MODULE_ORDER, moduleOf } from '../game/Modules';
 import { BLADE_EMITTER, BLADE_TIP, Kubotz, Damageable, ArenaHooks, Launch, Ledge, RESPAWN_INVINCIBLE_MS, SLOT_COLORS, BLADE_FILE, hitlagMs, type AttackBox } from '../game/Kubotz';
 import { BLADE_CROSS, BLADE_TOUCH, CLASH_RECOIL, LOCK_CROSS, LOCK_SHOVE, LOCK_SOLO, LOCK_HOLD_MS, DEFLECT_AIM, DEFLECT_DAMAGE, DEFLECT_SPEED, LOCK_ANGLE, LOCK_DAMAGE, LOCK_FORCE, LOCK_LAUNCH, BladeLock, bladeContact, crossAngle, sweep, sweptContact, type Blade } from '../game/PlasmaBlade';
 import { PowerUpOrb, randomPowerUp, POWER_UPS } from '../game/PowerUps';
@@ -348,7 +348,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       // (The editor's restarts keep each Kubot where it was.)
       const kept = setup.editor ? setup.keep?.[i] : undefined;
       const spawn = kept ? new Phaser.Math.Vector2(kept.x, kept.y) : spawns[i % spawns.length];
-      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet });
+      const k = new Kubotz(this, i, controller, color, rig, spawn.x, spawn.y, this, this.physicsWorld, { team: spec.team, helmet: spec.helmet, body: spec.body });
       if (controller instanceof CpuController) controller.agent = k;
       if (mode.ctf) k.role = 'striker';
       // The sandbox's dummy: it stands still to start with, at its spawn.
@@ -418,10 +418,12 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
       const on = this.toggleScreenFx();
       this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, on ? 'Effects on' : 'Effects off', 0xffffff);
     });
-    // Movement feel presets (game/Feel.ts): 1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus, 6 the classic Kubot.
+    // Body modules (game/Modules.ts) for P1, to compare them: 1 Core, 2 Striker, 3 Hopper, 4 Sprinter, 5 Glider, 6 Bulwark.
     ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX'].forEach((key, i) => kb.on(`keydown-${key}`, () => {
-      const f = setFeel(FEEL_ORDER[i]);
-      this.floatText(this.cameras.main.midPoint.x, this.cameras.main.midPoint.y, `Feel: ${f.name}`, 0xffffff);
+      const p1 = this.fighters[0];
+      if (!p1 || this.setup?.preview) return;
+      p1.bodyModule = moduleOf(MODULE_ORDER[i]);
+      this.floatText(p1.x, p1.body.top - 0.6 * UNIT, `Body: ${p1.bodyModule.name}`, 0xffffff);
     }));
     kb.on('keydown-L', () => {
       laserSmoke.mode = LASER_SMOKE_MODES[(LASER_SMOKE_MODES.indexOf(laserSmoke.mode) + 1) % LASER_SMOKE_MODES.length];
@@ -3009,7 +3011,7 @@ export class GameScene extends Phaser.Scene implements ArenaHooks {
   backToTitle(): void {
     if (this.quitting) return;
     this.quitting = true;
-    shutter(this, () => this.scene.start('Title'), 'back');
+    shutter(this, () => this.scene.start(this.setup?.returnTo ?? 'Title'), 'back');
   }
 }
 

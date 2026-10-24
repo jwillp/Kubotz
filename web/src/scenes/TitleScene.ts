@@ -10,6 +10,7 @@ import { MenuInput } from './MenuInput';
 /** The title menu: each entry opens a scene. */
 const ENTRIES: { label: string; scene: string; overlay?: boolean }[] = [
   { label: 'Play', scene: 'Modes' },
+  { label: 'Modules', scene: 'Modules' },
   { label: 'Moves', scene: 'MoveList' },
   // Over the title, which waits paused until Back.
   { label: 'Controls', scene: 'Controls', overlay: true },
@@ -47,7 +48,7 @@ export class TitleScene extends Phaser.Scene {
     this.bursts = new GlitchBursts(this.brand, { first: 1200, jolt: 4 });
 
     ENTRIES.forEach((m, i) => {
-      const t = new PlateButton(this, width / 2, 340 + i * 68, 340, 56, m.label, { size: 34 });
+      const t = new PlateButton(this, width / 2, 330 + i * (ENTRIES.length > 5 ? 60 : 68), 340, 56, m.label, { size: 34 });
       t.on('pointerover', () => this.select(i));
       t.on('pointerdown', () => this.start(i));
       this.items.push(t);

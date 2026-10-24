@@ -5,6 +5,7 @@ import { GLITCH_MS, hitGlitch } from '../fx/HitGlitch';
 import { lit } from '../fx/NormalMaps';
 import { CEL, toonLit } from '../fx/Cel';
 import { type PosedPart, type Pose, type Rig } from './Rig';
+import { BASE_BUILD, buildScale, type Build } from '../game/Modules';
 
 /** Spriter pixels to world pixels. */
 export const ART_SCALE = Config.SPRITER_SCALE * UNIT;
@@ -64,6 +65,8 @@ export class Kubot2D {
   private hex?: { fill: Phaser.GameObjects.Image; sheen: Phaser.GameObjects.Image };
   /** The camera the Kubot is seen through, when not the scene's main one. */
   camera?: Phaser.Cameras.Scene2D.Camera;
+  /** Its body module's proportions: torso size, arm and leg thickness (game/Modules.ts). */
+  build: Build = BASE_BUILD;
   /** What update() drew last, for the kill replays (game/Replay.ts). */
   lastDraw: DrawState | null = null;
 
@@ -122,11 +125,12 @@ export class Kubot2D {
       const ux = Math.cos(a) * w;
       const uy = Math.sin(a);
       const len = Math.hypot(ux, uy) || 1e-3;
+      const [along, across] = buildScale(p.file.name, this.build);
       img.setVisible(true)
         .setOrigin(p.pivotX, 1 - p.pivotY)
         .setPosition(p.tr.x * c + d.z * s, -p.tr.y)
         .setAngle(-(Math.atan2(uy, ux) * 180) / Math.PI)
-        .setScale(p.tr.scaleX * len, p.tr.scaleY * (Math.abs(w) / len) * Math.sign(w));
+        .setScale(p.tr.scaleX * len * along, p.tr.scaleY * (Math.abs(w) / len) * Math.sign(w) * across);
       if (fx.flash) img.setTintFill(0xffffff); else if (fx.shade !== undefined) img.setTint(fx.shade); else img.clearTint();
       this.view.moveTo(img, depth);
     });

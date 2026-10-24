@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { moduleOf } from '../game/Modules';
 import { Config, UNIT } from '../config';
 import { SpriterData } from '../spriter/Spriter';
 import { Rig } from '../anim/Rig';
@@ -182,6 +183,7 @@ export class ResultsScene extends Phaser.Scene {
     const rig = new Rig(this.registry.get('spriter') as SpriterData);
     r.colors.forEach((color, i) => {
       const kubot = new Kubot2D(this, rig, (file) => partTexture(this.textures, file, color));
+      kubot.build = moduleOf(r.fighters[i]?.body).build;
       kubot.visible = false;
       kubot.camera = this.worldCam;
       this.kubotz.push(kubot);
