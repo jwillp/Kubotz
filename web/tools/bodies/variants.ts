@@ -26,45 +26,58 @@ const black = (p: Pt[], dir = 60) => steel(p, { from: '#2c2e33', to: '#0a0b0e', 
 const bolt = (x: number, y: number, r = 4.5) =>
   `<circle cx="${x}" cy="${y}" r="${r}" fill="#55565a"/><circle cx="${x}" cy="${y}" r="${r * 0.62}" fill="#141518"/>`;
 
+/**
+ * Each body module's torso, drawn whole (not over the original): its own
+ * silhouette, still covering the joints where the original sits (neck about
+ * x 20-40, front shoulder about (104, 96), hips x 170-205 across y 60-125).
+ */
 export const VARIANTS: Record<string, Variant> = {
-  // Heavy armour: a thick slab down the back, a chest plate and a shoulder guard, bolted on.
-  bulwark: {
-    back: black([[16, 50], [168, 16], [180, -30], [20, 6]], 80)
-      + steel([[24, 4], [176, -26], [180, -14], [26, 16]], { dir: 100 })
-      + steel([[30, 26], [170, -2], [172, 6], [32, 34]], { from: '#5c5d61', to: '#3a3b3f', dir: 100 }),
-    front: steel([[44, 116], [190, 92], [200, 132], [56, 166]], { from: '#808184', to: '#404145', dir: 80 })
-      + black([[60, 146], [188, 122], [192, 134], [64, 158]], 0)
-      + bolt(80, 136) + bolt(172, 114) + bolt(120, 128, 3.5)
-      + steel([[-6, 54], [26, 22], [42, 66], [8, 104]], { dir: 20 }) + bolt(18, 62, 4),
-  },
-  // Gliding fins folded along the back, swept towards the hips.
-  glider: {
-    back: black([[40, 40], [124, 22], [186, -40], [146, -48]], 120)
-      + steel([[40, 40], [54, 37], [154, -46], [146, -48]], { from: '#9a9b9e', to: '#5a5b5f', dir: 0 })
-      + black([[112, 24], [176, 12], [216, -30], [186, -38]], 120)
-      + steel([[112, 24], [126, 21], [194, -36], [186, -38]], { from: '#9a9b9e', to: '#5a5b5f', dir: 0 }),
-    front: steel([[118, 112], [164, 104], [166, 113], [120, 121]], { dir: 0 })
-      + steel([[116, 98], [162, 90], [164, 99], [118, 107]], { dir: 0 }),
-  },
-  // Streamlined: a long spoiler along the back, and racing stripes across the chest.
-  sprinter: {
-    back: black([[26, 42], [168, 16], [226, -22], [204, -32], [30, 16]], 100)
-      + steel([[34, 18], [204, -30], [214, -26], [40, 28]], { from: '#9a9b9e', to: '#5a5b5f', dir: 0 }),
-    front: steel([[70, 44], [92, 40], [140, 128], [118, 132]], { from: '#7a7b7e', to: '#56575b', dir: 0 })
-      + steel([[98, 39], [110, 37], [158, 125], [146, 127]], { from: '#7a7b7e', to: '#56575b', dir: 0 }),
-  },
-  // A jump pack: two thrusters on the back by the hips.
-  hopper: {
-    back: black([[96, 26], [184, 10], [190, -42], [100, -24]], 90)
-      + steel([[104, -2], [182, -16], [184, -2], [106, 12]], { dir: 90 })
-      + steel([[102, -26], [184, -40], [186, -26], [104, -12]], { dir: 90 })
-      + black([[184, -44], [212, -50], [216, 6], [188, 12]], 0)
-      + steel([[192, -40], [206, -43], [208, 0], [194, 3]], { from: '#a4a5a8', to: '#55565a', dir: 0 }),
-    front: bolt(120, 6) + bolt(170, -2) + bolt(120, -18) + bolt(170, -26),
-  },
-  // Sharp and light: a chevron plate on the chest, a fin at the neck.
+  // Lean and aggressive: a sharp chest tapering to narrow hips, a blade-like plate across the chest.
   striker: {
-    back: steel([[16, 44], [62, 32], [30, -10]], { from: '#86878a', to: '#4a4b4f', dir: 135 }),
-    front: steel([[78, 132], [116, 92], [168, 118], [160, 124], [118, 102], [90, 134]], { from: '#86878a', to: '#4c4d51', dir: 70 }),
+    hideTorso: true,
+    back: '',
+    front: black([[14, 34], [64, 6], [130, 22], [196, 48], [206, 70], [200, 116], [150, 124], [70, 140], [18, 116]], 55)
+      + steel([[4, 40], [34, 22], [52, 58], [22, 96]], { from: '#6e6f72', to: '#47484c', dir: 30 })
+      + steel([[96, 96], [150, 80], [170, 124], [118, 134]], { from: '#7c7d80', to: '#4a4b4f', dir: 70 })
+      + steel([[172, 50], [208, 64], [202, 118], [176, 120]], { from: '#76777a', to: '#47484c', dir: 0 }),
+  },
+  // Compact, with heavy hips for the jumps: a wide skirt plate, a rib across.
+  hopper: {
+    hideTorso: true,
+    back: '',
+    front: black([[16, 46], [40, 18], [120, 14], [176, 6], [212, 34], [212, 128], [180, 148], [110, 136], [36, 128], [14, 100]], 60)
+      + steel([[6, 52], [30, 30], [48, 62], [20, 98]], { from: '#6e6f72', to: '#47484c', dir: 30 })
+      + steel([[76, 14], [94, 12], [102, 136], [84, 136]], { from: '#5e5f63', to: '#3a3b3f', dir: 0 })
+      + steel([[146, 4], [182, -4], [216, 30], [216, 134], [184, 154], [150, 144], [162, 110], [160, 40]], { from: '#7a7b7e', to: '#45464a', dir: 90 })
+      + bolt(188, 92),
+  },
+  // A long wedge leaning into the run: flat back with a spine plate, the chest pushed forward.
+  sprinter: {
+    hideTorso: true,
+    back: '',
+    front: black([[12, 28], [196, 12], [212, 50], [204, 118], [152, 122], [70, 152], [18, 122]], 70)
+      + steel([[20, 26], [196, 12], [200, 24], [110, 32], [24, 42]], { from: '#86878a', to: '#55565a', dir: 0 })
+      + steel([[40, 112], [110, 94], [150, 122], [72, 150]], { from: '#7c7d80', to: '#4a4b4f', dir: 70 })
+      + steel([[180, 16], [212, 50], [204, 118], [184, 120]], { from: '#6e6f73', to: '#424347', dir: 0 }),
+  },
+  // Slim and long: a narrow frame between two slanted side panels.
+  glider: {
+    hideTorso: true,
+    back: '',
+    front: black([[8, 48], [32, 30], [188, 34], [210, 50], [208, 110], [188, 116], [32, 112], [8, 92]], 60)
+      + steel([[34, 30], [150, 33], [140, 46], [40, 44]], { from: '#8a8b8e', to: '#55565a', dir: 0 })
+      + steel([[40, 100], [140, 100], [150, 113], [32, 112]], { from: '#8a8b8e', to: '#55565a', dir: 0 })
+      + steel([[176, 34], [210, 50], [208, 110], [178, 116]], { from: '#6e6f73', to: '#424347', dir: 0 })
+      + bolt(96, 72, 4),
+  },
+  // Heavy armour all round: a big block, thick plates on the back, the chest and the shoulder.
+  bulwark: {
+    hideTorso: true,
+    back: '',
+    front: black([[0, 14], [28, -10], [186, -14], [214, 10], [214, 140], [190, 160], [28, 160], [0, 132]], 60)
+      + steel([[28, -10], [186, -14], [214, 10], [150, 18], [40, 16]], { from: '#86878a', to: '#4a4b4f', dir: 90 })
+      + steel([[10, 120], [150, 110], [214, 132], [214, 140], [190, 160], [28, 160]], { from: '#808184', to: '#404145', dir: 90 })
+      + steel([[0, 30], [40, 14], [58, 80], [10, 112]], { from: '#7a7b7e', to: '#45464a', dir: 30 })
+      + bolt(26, 54) + bolt(190, 146) + bolt(60, 146) + bolt(176, 0),
   },
 };

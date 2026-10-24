@@ -11,16 +11,16 @@ import {
 } from '../game/Modules';
 import type { SpriterData } from '../spriter/Spriter';
 import { body, heading, HeadingText, NEON } from '../ui/Type';
-import { drawGlow, drawPlate, drawStrip, footer, frameTitle, kubeBackdrop, METAL_EDGE, PlateButton, shutter } from '../ui/Plate';
+import { drawPlate, drawStrip, footer, frameTitle, kubeBackdrop, PlateButton, shutter } from '../ui/Plate';
 import { uiSound } from '../audio/Sounds';
 import { MenuInput } from './MenuInput';
 
-const BTN_X = 260;
-const BTN_TOP = 238;
+const BTN_X = 280;
 const BTN_STEP = 44;
-/** The group tabs over the list. */
-const TAB_Y = 186;
-const TAB_W = 90;
+/** A group's label row above its modules (as on the mode screen). */
+const LABEL_STEP = 40;
+/** The window the list scrolls in. */
+const LIST = { top: 160, bottom: 700, left: 60, width: 460 };
 /** The panel describing the selected module, on the right. */
 const PANEL = { x: 500, y: 140, w: 732, h: 570 };
 /** The demo stage: its floor, and its ends (the Kubot runs between them). */
@@ -37,7 +37,7 @@ const BARS: { key: keyof BodyStats; label: string }[] = [
 ];
 /** How long the demo Kubot waits on the ground between jumps (ms). */
 const DEMO_REST = 450;
-/** Shoulders in the standard gamepad mapping: the previous / next group. */
+/** Shoulders in the standard gamepad mapping: the first module of the previous / next group. */
 const PAD = { L: 4, R: 5 } as const;
 
 /** Every group's modules, in menu order. */
@@ -50,21 +50,27 @@ const LISTS: Record<ModuleKind, ModuleInfo[]> = {
 
 /**
  * The Modules menu (title): Kubotz are modular, and their modules come in
- * groups (helmets, bodies, weapons, feet), one tab each. The group's modules
- * run down the left; the selected one is explained on the right. A body shows
+ * groups (helmets, bodies, weapons, feet), listed down the left under their
+ * labels as on the mode screen (the list scrolls; the selected module stays
+ * in view, with its group's label when it is the first of the group). The
+ * selected one is explained on the right. A body shows
  * its numbers as bars, a debug line naming whose numbers they are, and a
  * Kubot running and jumping with the body's own speeds and gravity (at half
  * size); the others show a Kubot wearing or holding the module. "Try it"
  * starts the sandbox with a base Kubot on only that module; quitting the
  * sandbox comes back here.
- * D-pad / stick up and down choose, left / right or LB / RB change the
- * group, A tries it, B goes back to the title.
+ * D-pad / stick up and down choose, left / right or LB / RB jump to the
+ * previous / next group, A tries it, B goes back to the title.
  */
 export class ModulesScene extends Phaser.Scene {
   private kind: ModuleKind = 'body';
   private selected = 0;
-  private items: PlateButton[] = [];
-  private tabs: { kind: ModuleKind; g: Phaser.GameObjects.Graphics; glow: Phaser.GameObjects.Graphics; label: Phaser.GameObjects.Text; x: number }[] = [];
+  /** Every module's button, in list order, with its group, index in the group and y in the list. */
+  private rows: { kind: ModuleKind; index: number; y: number; button: PlateButton }[] = [];
+  /** The first row of each group, and its label's y in the list. */
+  private labels = new Map<ModuleKind, number>();
+  private list!: Phaser.GameObjects.Container;
+  private listHeight = 0;
   private leaving = false;
   private menu!: MenuInput;
   private blurb!: Phaser.GameObjects.Text;
@@ -86,8 +92,8 @@ export class ModulesScene extends Phaser.Scene {
   constructor() { super('Modules'); }
 
   create(): void {
-    this.items = [];
-    this.tabs = [];
+    this.rows = [];
+    this.labels.clear();
     this.barLabels = [];
     this.leaving = false;
     this.padDown.clear();
@@ -123,25 +129,14 @@ export class ModulesScene extends Phaser.Scene {
     tryIt.setSelected(true);
     tryIt.on('pointerdown', () => this.tryModule());
 
-    // The group tabs.
-    const left = BTN_X - 170;
-    MODULE_KINDS.forEach((k, i) => {
-      const x = left + i * (TAB_W + 6);
-      const glow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
-      const g = this.add.graphics();
-      const label = this.add.text(x + TAB_W / 2, TAB_Y, k.label.toUpperCase(), body(14, { fontStyle: 'italic 800' })).setOrigin(0.5)
-        .setInteractive({ useHandCursor: true }).on('pointerdown', () => this.showKind(k.kind));
-      this.tabs.push({ kind: k.kind, g, glow, label, x });
-    });
-    this.add.text(left, TAB_Y - 30, 'LB / RB', body(11, { fontStyle: '700', color: '#6f93b3' }));
-
+    this.makeList();
     const saved = this.registry.get('modules') as { kind: ModuleKind; index: number } | undefined;
-    this.showKind(saved?.kind ?? 'body', saved?.index ?? 0);
+    this.select(saved?.kind ?? 'body', saved?.index ?? 0, true);
 
-    footer(this, ['D-pad / stick ↑↓ choose · ◀ ▶ or LB / RB group · A (Enter) try it in the sandbox · B (Esc) back']);
+    footer(this, ['D-pad / stick ↑↓ choose · ◀ ▶ or LB / RB previous / next group · A (Enter) try it in the sandbox · B (Esc) back']);
     this.menu = new MenuInput({
       move: (dx, dy) => {
-        if (dy) this.select((this.selected + dy + this.list.length) % this.list.length);
+        if (dy) this.step(dy);
         else if (dx) this.stepKind(dx);
       },
       confirm: () => this.tryModule(),
@@ -154,48 +149,81 @@ export class ModulesScene extends Phaser.Scene {
     kb.on('keydown-E', () => this.stepKind(1));
   }
 
-  private get list(): ModuleInfo[] { return LISTS[this.kind]; }
-  private get module(): ModuleInfo { return this.list[this.selected]; }
-  /** The selected body, when the group is the bodies. */
+  private get module(): ModuleInfo { return LISTS[this.kind][this.selected]; }
+  /** The selected body, when it is a body. */
   private get bodyModule(): BodyModule | null { return this.kind === 'body' ? this.module as BodyModule : null; }
 
+  /** Every group under its label, in one list masked to the left column (it scrolls). */
+  private makeList(): void {
+    this.list = this.add.container(0, LIST.top);
+    let y = 0;
+    for (const k of MODULE_KINDS) {
+      this.labels.set(k.kind, y);
+      this.list.add(this.add.text(BTN_X - 190, y + 22, k.label.toUpperCase().split('').join(' '), body(13, { fontStyle: '700', color: '#9fc4e4' })).setOrigin(0, 0.5));
+      y += LABEL_STEP;
+      LISTS[k.kind].forEach((m, index) => {
+        const button = new PlateButton(this, BTN_X, y + BTN_STEP / 2, 360, 38, m.name, { size: 21 });
+        // (Buttons scrolled out of the window still get the pointer: ignore them.)
+        button.on('pointerover', () => { if (this.inView(button)) this.select(k.kind, index); });
+        button.on('pointerdown', () => { if (this.inView(button)) { this.select(k.kind, index); this.tryModule(); } });
+        this.list.add(button);
+        this.rows.push({ kind: k.kind, index, y, button });
+        y += BTN_STEP;
+      });
+    }
+    this.listHeight = y;
+    const shape = this.make.graphics({}).fillRect(LIST.left, LIST.top, LIST.width, LIST.bottom - LIST.top);
+    this.list.setMask(shape.createGeometryMask());
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => { if (!this.leaving) this.step(Math.sign(dy)); });
+  }
+
+  private inView(b: PlateButton): boolean {
+    const y = this.list.y + b.y;
+    return y > LIST.top && y < LIST.bottom;
+  }
+
+  /** Up / down through the whole list, across groups (wraps round). */
+  private step(d: number): void {
+    const at = this.rows.findIndex((r) => r.kind === this.kind && r.index === this.selected);
+    const r = this.rows[(at + d + this.rows.length) % this.rows.length];
+    this.select(r.kind, r.index);
+  }
+
+  /** The first module of the previous / next group. */
   private stepKind(d: number): void {
     const at = MODULE_KINDS.findIndex((k) => k.kind === this.kind);
-    this.showKind(MODULE_KINDS[(at + d + MODULE_KINDS.length) % MODULE_KINDS.length].kind);
-    uiSound(this, 'move');
+    this.select(MODULE_KINDS[(at + d + MODULE_KINDS.length) % MODULE_KINDS.length].kind, 0);
   }
 
-  /** A group's modules down the left, the first (or `index`) selected. */
-  private showKind(kind: ModuleKind, index = 0): void {
+  /** Scrolls so the selected row shows, with its group's label when it is the group's first. */
+  private scrollTo(kind: ModuleKind, index: number, instant: boolean): void {
+    const row = this.rows.find((r) => r.kind === kind && r.index === index)!;
+    const top = index === 0 ? this.labels.get(kind)! : row.y;
+    const bottom = row.y + BTN_STEP;
+    const view = LIST.bottom - LIST.top;
+    let scroll = LIST.top - this.list.y; // the list's y showing at the window's top
+    if (top < scroll) scroll = top;
+    else if (bottom > scroll + view) scroll = bottom - view;
+    scroll = Phaser.Math.Clamp(scroll, 0, Math.max(0, this.listHeight - view));
+    this.tweens.killTweensOf(this.list);
+    if (instant) this.list.y = LIST.top - scroll;
+    else this.tweens.add({ targets: this.list, y: LIST.top - scroll, duration: 140, ease: 'Quad.out' });
+  }
+
+  private select(kind: ModuleKind, i: number, instant = false): void {
+    i = Phaser.Math.Clamp(i, 0, LISTS[kind].length - 1);
+    if (kind === this.kind && i === this.selected && !instant) return;
+    const kindChanged = kind !== this.kind || instant;
     this.kind = kind;
-    for (const b of this.items) b.destroy();
-    this.items = this.list.map((m, i) => {
-      const b = new PlateButton(this, BTN_X, BTN_TOP + i * BTN_STEP, 340, 38, m.name, { size: 21 });
-      b.on('pointerover', () => this.select(i));
-      b.on('pointerdown', () => { this.select(i); this.tryModule(); });
-      return b;
-    });
-    for (const t of this.tabs) {
-      const on = t.kind === kind;
-      t.g.clear();
-      t.glow.clear();
-      if (on) drawGlow(t.glow, t.x, TAB_Y - 16, TAB_W, 32, { cut: 8 });
-      drawPlate(t.g, t.x, TAB_Y - 16, TAB_W, 32, { cut: 8, alpha: on ? 0.95 : 0.6, edge: on ? NEON : METAL_EDGE });
-      t.label.setColor(on ? '#bfe9ff' : '#8fb6d8');
-    }
-    this.blurb.setText(MODULE_KINDS.find((k) => k.kind === kind)!.blurb);
-    const isBody = kind === 'body';
-    for (const o of [this.inspired, this.debug, this.bars, ...this.barLabels]) o.setVisible(isBody);
-    this.selected = -1;
-    this.select(Math.min(index, this.list.length - 1));
-  }
-
-  private select(i: number): void {
-    if (i === this.selected) return;
     this.selected = i;
-    this.items.forEach((t, j) => t.setSelected(j === i));
+    for (const r of this.rows) r.button.setSelected(r.kind === kind && r.index === i);
+    this.scrollTo(kind, i, instant);
+    if (kindChanged) {
+      this.blurb.setText(MODULE_KINDS.find((k) => k.kind === kind)!.blurb);
+      for (const o of [this.inspired, this.debug, this.bars, ...this.barLabels]) o.setVisible(kind === 'body');
+    }
     const m = this.module;
-    this.registry.set('modules', { kind: this.kind, index: i });
+    this.registry.set('modules', { kind, index: i });
     this.title.setText(m.name);
     this.tagline.setText(m.tagline);
     this.details.setText(m.details.map((d) => `▸  ${d}`).join('\n'));
@@ -227,7 +255,7 @@ export class ModulesScene extends Phaser.Scene {
     else this.standStill(dt);
   }
 
-  /** LB / RB on any pad: the previous / next group. */
+  /** LB / RB on any pad: the first module of the previous / next group. */
   private pollShoulders(): void {
     for (const p of this.input.gamepad?.gamepads ?? []) {
       if (!p?.connected) continue;

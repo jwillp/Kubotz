@@ -112,27 +112,27 @@ export const BODIES: Record<string, BodyModule> = {
   striker: {
     id: 'striker', look: 'body_striker', name: 'Striker', tagline: 'Light and sharp: always first to the fight.',
     details: ['Fast run and dash', 'Lower jumps than the Core', 'Light: flies a little further when hit'],
-    inspiredBy: 'Fox', debug: 'Fox', feel: FEELS.fox, knockback: 1.08, build: { torso: 0.92, arms: 0.86, legs: 0.88 },
+    inspiredBy: 'Fox', debug: 'Fox', feel: FEELS.fox, knockback: 1.08, build: { torso: 1, arms: 0.86, legs: 0.88 },
   },
   hopper: {
     id: 'hopper', look: 'body_hopper', name: 'Hopper', tagline: 'Big legs, long jumps, a slower run.',
     details: ['Jumps as high as the Core, and hangs longer', 'The best air control', 'Floatier falls, slower run'],
-    inspiredBy: 'Falco', debug: 'Falco', feel: FEELS.falco, knockback: 1.03, build: { torso: 0.95, arms: 0.92, legs: 1.22 },
+    inspiredBy: 'Falco', debug: 'Falco', feel: FEELS.falco, knockback: 1.03, build: { torso: 1, arms: 0.92, legs: 1.22 },
   },
   sprinter: {
     id: 'sprinter', look: 'body_sprinter', name: 'Sprinter', tagline: 'The fastest run; commits to every jump.',
     details: ['The fastest run of all', 'Slow walk, slow to get going', 'Wide drift in the air, low jumps'],
-    inspiredBy: 'Captain Falcon', debug: 'Captain Falcon', feel: FEELS.falcon, knockback: 0.97, build: { torso: 1.08, arms: 1.06, legs: 1.24 },
+    inspiredBy: 'Captain Falcon', debug: 'Captain Falcon', feel: FEELS.falcon, knockback: 0.97, build: { torso: 1, arms: 1.06, legs: 1.24 },
   },
   glider: {
     id: 'glider', look: 'body_glider', name: 'Glider', tagline: 'Floats down slowly and hangs in the air.',
     details: ['Very low gravity: long, floaty jumps', 'Slow falls, slow to land', 'Easy to recover, easy to juggle'],
-    inspiredBy: 'Samus', debug: 'Samus', feel: FEELS.samus, knockback: 0.95, build: { torso: 0.88, arms: 0.8, legs: 0.82 },
+    inspiredBy: 'Samus', debug: 'Samus', feel: FEELS.samus, knockback: 0.95, build: { torso: 1, arms: 0.8, legs: 0.82 },
   },
   bulwark: {
     id: 'bulwark', look: 'body_bulwark', name: 'Bulwark', tagline: 'Heavy plating: slow, but hard to send flying.',
     details: ['Slow run and air speed', 'Low jumps, heavy falls', 'Heavy: flies much less far when hit'],
-    inspiredBy: 'A heavyweight of its own', debug: 'custom heavy (no Ultimate fighter)', feel: BULWARK, knockback: 0.82, build: { torso: 1.25, arms: 1.35, legs: 1.35 },
+    inspiredBy: 'A heavyweight of its own', debug: 'custom heavy (no Ultimate fighter)', feel: BULWARK, knockback: 0.82, build: { torso: 1, arms: 1.35, legs: 1.35 },
   },
   classic: {
     id: 'classic', name: 'Classic', tagline: 'The 2015 Kubot: a heavy fall, a fast drift.',
