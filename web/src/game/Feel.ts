@@ -8,9 +8,8 @@ import { Config } from '../config';
  * unit). Jump speeds are solved so a full hop and a short hop stay in the air
  * as many frames as the fighter's (SH / FH air time) under its gravity and
  * fall speed. The Kubot's own (the default) is Fox's with Falco's jump
- * heights (owner, 2026-10-22). Switched in a match with the number keys
- * (1 Kubot, 2 Fox, 3 Falco, 4 Captain Falcon, 5 Samus, 6 the Kubot's
- * original feel) or ?feel=fox in the address.
+ * heights (owner, 2026-10-22). Each body module (game/Modules.ts) moves
+ * with one of them.
  */
 export interface Feel {
   name: string;
@@ -45,22 +44,3 @@ export const FEELS: Record<string, Feel> = {
   // walk 1.115, dash 1.87, run 1.654, air 1.103, air accel 0.09, gravity 0.075, fall 1.33 / 2.128, SH / FH 44 / 61 f.
   samus: { name: 'Samus', walk: 8.9, dash: 15.0, run: 13.2, air: 8.8, airAccel: 43, gravity: 36, fallGravity: 36, fall: 10.6, fastFall: 17.0, jump: 17.3, shortHop: 0.76 },
 };
-
-/** The keys 1 to 6, in order. */
-export const FEEL_ORDER = ['kubot', 'fox', 'falco', 'falcon', 'samus', 'classic'];
-
-const KEY = 'kubotz.feel';
-const fromUrl = new URLSearchParams(location.search).get('feel');
-let currentKey = fromUrl && FEELS[fromUrl] ? fromUrl : (() => {
-  try { const k = localStorage.getItem(KEY); return k && FEELS[k] ? k : 'kubot'; } catch { return 'kubot'; }
-})();
-
-/** The feel the Kubotz move with now. */
-export const feel = (): Feel => FEELS[currentKey];
-
-export function setFeel(key: string): Feel {
-  if (!FEELS[key]) return feel();
-  currentKey = key;
-  try { localStorage.setItem(KEY, key); } catch { /* not saved */ }
-  return feel();
-}

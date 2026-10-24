@@ -3,6 +3,7 @@
 import type { Pose } from '../anim/Rig';
 import type { Shield } from '../anim/Kubot2D';
 import type { MatchMode } from './Modes';
+import type { Weapon } from './Kubotz';
 
 /** Who drives a Kubot: keyboard set 1 or 2 (with any pad), or the computer. */
 export type InputKind = 'P1' | 'P2' | 'CPU';
@@ -15,6 +16,10 @@ export interface FighterSpec {
   team: number;
   /** Helmet: an index into HEADS / HEAD_FILES. */
   helmet: number;
+  /** Body module id (game/Modules.ts); the Core when missing. */
+  body?: string;
+  /** A weapon it holds for the whole match (the Modules menu's Try it on a weapon module). */
+  weapon?: Weapon;
   /** A CPU's level, 1 to 9 (see cpuReactionMs). */
   cpuLevel?: number;
   /** A CPU that does nothing, a target to test on (the editor's matches). */
@@ -163,6 +168,8 @@ export interface MatchSetup {
   bonuses: BonusRate;
   /** Lives per Kubot (default Config.NB_LIVES). */
   recharges?: number;
+  /** The scene quitting the match goes back to (default the title): the Modules menu's Try it. */
+  returnTo?: string;
   /** Match length in minutes; 0 or unset: no time limit. When time runs out, the team with the most lives left wins. */
   minutes?: number;
   /**

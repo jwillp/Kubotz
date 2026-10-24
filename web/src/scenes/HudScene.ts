@@ -127,6 +127,8 @@ export class HudScene extends Phaser.Scene {
     const keys = this.add.text(0, 228, 'Esc / Start / B resume  ·  Q / Select quit', body(14, { fontStyle: '500', color: '#8fb6d8' })).setOrigin(0.5);
     this.pause.add([dim, pg, title, keys]);
     PAUSE_ITEMS.forEach((label, i) => {
+      // Tried from the Modules menu: quitting goes back there.
+      if (i === PAUSE_ITEMS.length - 1 && this.game_.setup?.returnTo === 'Modules') label = 'Back to modules';
       const b = new PlateButton(this, 0, -36 + i * 62, 280, 48, label, { size: 22 });
       b.on('pointerover', () => this.selectPause(i));
       b.on('pointerdown', () => this.choosePause(i));

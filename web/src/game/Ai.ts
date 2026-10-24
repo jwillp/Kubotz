@@ -1,4 +1,3 @@
-import { feel } from './Feel';
 import { Config, UNIT } from '../config';
 import { Controller, PadState, emptyPad } from './Input';
 import type { Kubotz } from './Kubotz';
@@ -279,7 +278,7 @@ export class CpuController implements Controller {
         pad.special = true;
         pad[dx < 0 ? 'left' : 'right'] = true;
         return pad;
-      } else if (!ranged && Math.abs(dx) < 3.5 * UNIT && Math.abs(dy) < UNIT && Math.abs(me.body.vx) > 0.6 * feel().run * UNIT && Math.sign(me.body.vx) === Math.sign(dx)) {
+      } else if (!ranged && Math.abs(dx) < 3.5 * UNIT && Math.abs(dy) < UNIT && Math.abs(me.body.vx) > 0.6 * me.feel.run * UNIT && Math.sign(me.body.vx) === Math.sign(dx)) {
         // Running at it: a dash attack.
         pad.attack = true;
         pad[dx < 0 ? 'left' : 'right'] = true;
