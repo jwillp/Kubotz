@@ -81,7 +81,7 @@ export const ROOT_MOTION_GAIN = 3;
 /**
  * Starting to run on the ground (SSB's initial dash): the Kubot is at its
  * dash speed at once for the first frames (about 10 in Ultimate), then runs.
- * Run, dash, walk, air and jump speeds come from the feel preset (game/Feel.ts).
+ * Run, dash, walk, air and jump speeds come from the body module's feel (game/Modules.ts, game/Feel.ts).
  */
 const INITIAL_DASH_MS = 160;
 /** Letting go on the ground: stops from full speed in about 0.3 s (Ultimate: ~20 frames of traction). */
